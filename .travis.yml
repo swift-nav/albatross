@@ -1,0 +1,30 @@
+sudo: false
+dist: trusty
+language: cpp
+group: stable
+
+cache:
+  apt: true
+  ccache: true
+  directories:
+    - $TRAVIS_BUILD_DIR/libraries
+    - $TRAVIS_BUILD_DIR/.stack/
+    - .stack-work/
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
+      - libc++-dev
+      - libc++abi-dev
+      - clang-3.8
+      - clang-format-3.8
+      - clang-tidy-3.8
+env:
+  - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
+
+script:
+  bash ./ci/run_tests.sh || exit 1;
+

@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+.DS_Store
+.deps
+build*/
+.project
+.cproject
+.pydevproject
+.settings/
+.idea/
+/Debug/
