@@ -1,0 +1,29 @@
+General Cleanup
+===============
+- simpler syntax in readme (no need to namespace everything)
+- remove clang tooling dependency and options
+- DCSV_IO_NO_THREAD should go in the tests CMakeLists.txt (I think)
+- remove rapidcheck submodule
+- possible to typeset in LaTeX the function in the readme?
+- change filename parameter_handler.h to parameter_handling_mixin.h?
+
+Code
+====
+- IMO ParameterHandlingMixin should be concerned only with the bookkeeping necessary to
+  handle parameters internally. I think creating a ParameterHandlingMixin instance from
+  YAML is a separate concern and that logic should live elsewhere. Unless the YAML structure
+  is integral to the behavior and implementation of the ParameterHandlingMixin, I would
+  definitely advocate for separating the internal programmer's use of the class from the
+  external "populate from file" use of the class. This will let you focus on the internal
+  representation corner cases we discussed without bloating the class with parsing methods.
+
+- In model.h: typically the include guards should go at the very top of the file. 
+  Putting them after   the license is also acceptable, but definitely before any 
+  other #include statements.
+
+- You can use the 'inline' keyword when defining functions or methods in headers.
+
+- covariance_base.h probably will benefit from further iteration/refinement.
+
+- lets see what issues arise and try and refine the parameter handling and model
+  composition mechanisms as we learn more about it.
