@@ -8,26 +8,27 @@
 
 namespace albatross {
 
-template <typename Covariance, typename Predictor>
+template <typename Covariance>
 struct CovarianceFunction {
   Covariance covariance;
 
   template <typename OtherCovariance>
-  inline auto operator+(CovarianceFunction<OtherCovariance, Predictor> &other) {
-    using Sum = SumOfCovariance<Covariance, OtherCovariance, Predictor>;
+  inline auto operator+(CovarianceFunction<OtherCovariance> &other) {
+    using Sum = SumOfCovariance<Covariance, OtherCovariance>;
     auto sum = Sum(covariance, other.covariance);
-    return CovarianceFunction<Sum, Predictor>{sum};
+    return CovarianceFunction<Sum>{sum};
   }
 
   template <typename OtherCovariance>
-  inline auto operator*(CovarianceFunction<OtherCovariance, Predictor> &other) {
-    using Prod = ProductOfCovariance<Covariance, OtherCovariance, Predictor>;
+  inline auto operator*(CovarianceFunction<OtherCovariance> &other) {
+    using Prod = ProductOfCovariance<Covariance, OtherCovariance>;
     auto prod = Prod(covariance, other.covariance);
-    return CovarianceFunction<Prod, Predictor>{prod};
+    return CovarianceFunction<Prod>{prod};
   }
 
-  inline auto operator()(const Predictor &x, const Predictor &y) const {
-    return covariance(x, y);
+  template<typename First, typename Second>
+  inline auto operator()(const First &first, const Second &second) const {
+    return covariance(first, second);
   }
 
   inline auto get_name() const { return covariance.get_name(); };
@@ -68,7 +69,7 @@ struct CovarianceFunction {
  */
 template <typename Covariance, typename Predictor>
 Eigen::MatrixXd symmetric_covariance(
-    const CovarianceFunction<Covariance, Predictor> &f,
+    const CovarianceFunction<Covariance> &f,
     const std::vector<Predictor> &xs) {
   int n = static_cast<int>(xs.size());
   Eigen::MatrixXd C(n, n);
@@ -86,10 +87,17 @@ Eigen::MatrixXd symmetric_covariance(
   return C;
 }
 
-template <typename Covariance, typename Predictor>
+/*
+ * Computes the covariance matrix between some predictors (x) and
+ * a separate distinct set (y).  x and y can be of the same type,
+ * which is common when making predictions at new locations, or x may
+ * be of some arbitrary type, which is common when inspecting covariance
+ * functions.
+ */
+template <typename Covariance, typename OtherPredictor, typename Predictor>
 Eigen::MatrixXd asymmetric_covariance(
-    const CovarianceFunction<Covariance, Predictor> &f,
-    const std::vector<Predictor> &xs, const std::vector<Predictor> &ys) {
+    const CovarianceFunction<Covariance> &f,
+    const std::vector<OtherPredictor> &xs, const std::vector<Predictor> &ys) {
   int m = static_cast<int>(xs.size());
   int n = static_cast<int>(ys.size());
   Eigen::MatrixXd C(m, n);

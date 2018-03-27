@@ -2,16 +2,14 @@
 #define GP_DISTANCE_H
 
 #include "core/parameter_handler.h"
+#include <Eigen/Core>
 
 namespace albatross {
 
-template <class Predictor>
 class DistanceMetric : public ParameterHandlingMixin {
  public:
   DistanceMetric(){};
   virtual ~DistanceMetric(){};
-
-  virtual double operator()(const Predictor &x, const Predictor &y) const = 0;
 
   //  virtual double gradient(const Predictor &x, const Predictor &y,
   //                          const Eigen::VectorXd &grad) = 0;
@@ -27,28 +25,26 @@ class DistanceMetric : public ParameterHandlingMixin {
  protected:
 };
 
-template <class Predictor>
-class EuclideanDistance : public DistanceMetric<Predictor> {
+class EuclideanDistance : public DistanceMetric {
  public:
   EuclideanDistance(){};
   ~EuclideanDistance(){};
 
   std::string get_name() const override { return "euclidean"; };
 
-  double operator()(const Predictor &x, const Predictor &y) const {
+  double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
     return (x - y).norm();
   }
 };
 
-template <class Predictor>
-class RadialDistance : public DistanceMetric<Predictor> {
+class RadialDistance : public DistanceMetric {
  public:
   RadialDistance(){};
   ~RadialDistance(){};
 
   std::string get_name() const override { return "radial"; };
 
-  double operator()(const Predictor &x, const Predictor &y) const {
+  double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
     return fabs(x.norm() - y.norm());
   }
 };

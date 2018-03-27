@@ -25,8 +25,8 @@ namespace albatross {
  * is then used by the implementing function to determine how
  * correlated the two elements are as a function of their distance.
  */
-template <class Predictor, class DistanceMetricImpl>
-class RadialCovariance : public CovarianceBase<Predictor> {
+template <class DistanceMetricImpl>
+class RadialCovariance : public CovarianceBase {
  public:
   RadialCovariance() : distance_metric_(){};
 
@@ -53,9 +53,9 @@ class RadialCovariance : public CovarianceBase<Predictor> {
  * SquaredExponential distance
  *  - c(d) = -exp((d/length_scale)^2)
  */
-template <class Predictor, class DistanceMetricImpl>
+template <class DistanceMetricImpl>
 class SquaredExponential
-    : public RadialCovariance<Predictor, DistanceMetricImpl> {
+    : public RadialCovariance<DistanceMetricImpl> {
  public:
   SquaredExponential(double length_scale = 100000.,
                      double sigma_squared_exponential = 10.) {
@@ -71,6 +71,7 @@ class SquaredExponential
     return oss.str();
   }
 
+  template <typename Predictor>
   double operator()(const Predictor &x, const Predictor &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->params_.at("length_scale");
