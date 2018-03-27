@@ -1,4 +1,5 @@
 import sys
+import argparse
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -6,14 +7,29 @@ import matplotlib.pyplot as plt
 
 sns.set_style('darkgrid')
 
+
+def create_parser():
+    p = argparse.ArgumentParser()
+    p.add_argument("train")
+    p.add_argument("predictions")
+    p.add_argument("--output")
+    return p
+
+
 if __name__ == "__main__":
-    train_path = sys.argv[1]
-    predictions_path = sys.argv[2]
+
+    p = create_parser()
+    args = p.parse_args()
+
+    train_path = args.train
+    predictions_path = args.predictions
+    print train_path
     train_data = pd.read_csv(train_path)
     predictions_data = pd.read_csv(predictions_path)
 
     std = np.sqrt(predictions_data['variance'].values)
 
+    fig = plt.figure(figsize=(8, 8))
     plt.fill_between(predictions_data['x'],
                      predictions_data['y'] - 3 * std,
                      predictions_data['y'] + 3 * std, color='steelblue', alpha=0.1,
@@ -34,4 +50,8 @@ if __name__ == "__main__":
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.show()
+    fig.tight_layout()
+    if args.output:
+        plt.savefig(args.output)
+    else:
+        plt.show()
