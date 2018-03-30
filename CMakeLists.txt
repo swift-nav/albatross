@@ -38,10 +38,26 @@ include_directories("${PROJECT_SOURCE_DIR}/albatross")
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/FindYaml-Cpp.cmake)
 
-set(albatros_SRCS
-albatross/covariance_functions.cc
+set(albatross_SRCS
 CACHE INTERNAL ""
 )
+
+set(albatross_HEADERS
+    albatross/covariance_functions/covariance_base.h
+    albatross/covariance_functions/covariance_functions.h
+    albatross/covariance_functions/distance_metrics.h
+    albatross/covariance_functions/noise.h
+    albatross/covariance_functions/polynomials.h
+    albatross/covariance_functions/radial.h
+    albatross/gp/gp.h
+    albatross/core/model.h
+    albatross/core/keys.h
+    albatross/core/parameter_handler.h    
+    albatross/map_utils.h
+    CACHE INTERNAL ""
+)
+
+add_custom_target(albatross DEPENDS ${albatross_SRCS} ${albatross_HEADERS} COMMENT "albatross dependencies")
 
 add_subdirectory(tests)
 add_subdirectory(examples)

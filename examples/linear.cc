@@ -16,7 +16,7 @@ DEFINE_string(n, "10", "number of training points to use.");
 
 namespace albatross {
 
-class SlopeTerm : public CovarianceBase<double> {
+class SlopeTerm : public CovarianceBase {
  public:
   SlopeTerm(double sigma_slope = 0.1) {
     this->params_["sigma_slope"] = sigma_slope;
@@ -33,7 +33,7 @@ class SlopeTerm : public CovarianceBase<double> {
   }
 };
 
-class ScalarDistance : public DistanceMetric<double> {
+class ScalarDistance : public DistanceMetric {
  public:
 
   std::string get_name() const { return "scalar_distance"; }
@@ -161,15 +161,15 @@ int main(int argc, char *argv[]) {
   }
   auto data = read_linear_input(FLAGS_input);
 
-  using Mean = albatross::ConstantMean<double>;
+  using Mean = albatross::ConstantMean;
   using Slope = albatross::SlopeTerm;
   using Noise = albatross::IndependentNoise<double>;
-  using SqrExp = albatross::SquaredExponential<double, albatross::ScalarDistance>;
+  using SqrExp = albatross::SquaredExponential<albatross::ScalarDistance>;
 
-  albatross::CovarianceFunction<Mean, double> mean = {Mean(10.)};
-  albatross::CovarianceFunction<Slope, double> slope = {Slope(10.)};
-  albatross::CovarianceFunction<Noise, double> noise = {Noise(meas_noise)};
-  albatross::CovarianceFunction<SqrExp, double> sqrexp = {SqrExp(2., 5.)};
+  albatross::CovarianceFunction<Mean> mean = {Mean(10.)};
+  albatross::CovarianceFunction<Slope> slope = {Slope(10.)};
+  albatross::CovarianceFunction<Noise> noise = {Noise(meas_noise)};
+  albatross::CovarianceFunction<SqrExp> sqrexp = {SqrExp(2., 5.)};
 
   auto linear_model = mean + slope + noise + sqrexp;
 
