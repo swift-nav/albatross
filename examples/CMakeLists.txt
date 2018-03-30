@@ -1,21 +1,4 @@
 
-add_executable(temperature_example
-    EXCLUDE_FROM_ALL
-    temperature.cc
-)
-
-target_link_libraries(temperature_example m gflags yaml-cpp pthread)
-
-add_custom_target(
-    run_temperature_example ALL
-    COMMAND temperature_example
-    COMMENT "Running temperature_example"
-)
-
-add_dependencies(run_temperature_example
-    temperature_example
-)
-
 add_executable(linear_example
     EXCLUDE_FROM_ALL
     linear.cc
