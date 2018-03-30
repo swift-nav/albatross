@@ -152,7 +152,6 @@ class RegressionModel : public ParameterHandlingMixin {
   virtual PredictionDistribution predict_(
       const std::vector<Predictor> &predictors) const = 0;
 
- private:
   bool has_been_fit_ = false;
 };
 

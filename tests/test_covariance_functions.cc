@@ -17,17 +17,17 @@ std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
   return xs;
 }
 
-TEST(test_gp_covariance_functions, test_build_covariance) {
+TEST(test_covariance_functions, test_build_covariance) {
   using Predictor = Eigen::Vector3d;
-  using Mean = ConstantMean<Predictor>;
-  using Noise = IndependentNoise<Predictor>;
-  using SqExp = SquaredExponential<Predictor, EuclideanDistance<Predictor>>;
-  using RadialSqExp = SquaredExponential<Predictor, RadialDistance<Predictor>>;
+  using Mean = ConstantMean;
+  using Noise = IndependentNoise;
+  using SqExp = SquaredExponential<EuclideanDistance>;
+  using RadialSqExp = SquaredExponential<RadialDistance>;
 
-  CovarianceFunction<SqExp, Predictor> sqexp = {SqExp()};
-  CovarianceFunction<Mean, Predictor> mean = {Mean()};
-  CovarianceFunction<Noise, Predictor> noise = {Noise()};
-  CovarianceFunction<RadialSqExp, Predictor> radial_sqexp = {RadialSqExp()};
+  CovarianceFunction<SqExp> sqexp = {SqExp()};
+  CovarianceFunction<Mean> mean = {Mean()};
+  CovarianceFunction<Noise> noise = {Noise()};
+  CovarianceFunction<RadialSqExp> radial_sqexp = {RadialSqExp()};
 
   // Add and multiply covariance functions together and make sure they are
   // still capable of producing a covariance matrix.
@@ -40,27 +40,23 @@ TEST(test_gp_covariance_functions, test_build_covariance) {
   std::cout << covariance_function.to_string() << std::endl;
 }
 
-TEST(test_gp_covariance_functions, test_build_covariance) {
+TEST(test_covariance_functions, test_other_predictor) {
   using Predictor = Eigen::Vector3d;
-  using Mean = ConstantMean<Predictor>;
-  using Noise = IndependentNoise<Predictor>;
-  using SqExp = SquaredExponential<Predictor, EuclideanDistance<Predictor>>;
-  using RadialSqExp = SquaredExponential<Predictor, RadialDistance<Predictor>>;
+  using Mean = ConstantMean;
+  using Noise = IndependentNoise;
 
-  CovarianceFunction<SqExp, Predictor> sqexp = {SqExp()};
-  CovarianceFunction<Mean, Predictor> mean = {Mean()};
-  CovarianceFunction<Noise, Predictor> noise = {Noise()};
-  CovarianceFunction<RadialSqExp, Predictor> radial_sqexp = {RadialSqExp()};
+  auto mean_term = Mean();
+  CovarianceFunction<Mean> mean = {mean_term};
+  CovarianceFunction<Noise> noise = {Noise()};
 
-  // Add and multiply covariance functions together and make sure they are
-  // still capable of producing a covariance matrix.
-  auto product = sqexp * radial_sqexp;
-  auto covariance_function = mean + product + noise;
+
+  auto cov = mean + noise;
+  std::cout << cov.to_string() << std::endl;
 
   auto xs = points_on_a_line(5);
-  Eigen::MatrixXd C = symmetric_covariance(covariance_function, xs);
+  auto terms = mean_term.get_state_space_representation(xs);
+  Eigen::MatrixXd C = asymmetric_covariance(cov, terms, xs);
   std::cout << C << std::endl;
-  std::cout << covariance_function.to_string() << std::endl;
 }
 
 }

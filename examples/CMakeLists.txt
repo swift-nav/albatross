@@ -16,10 +16,13 @@ add_dependencies(run_temperature_example
     temperature_example
 )
 
-
 add_executable(linear_example
     EXCLUDE_FROM_ALL
     linear.cc
+)
+
+add_dependencies(linear_example
+    albatross
 )
 
 target_link_libraries(linear_example m gflags yaml-cpp pthread)
@@ -37,6 +40,10 @@ add_dependencies(run_linear_example
 add_executable(inspection_example
     EXCLUDE_FROM_ALL
     inspection.cc
+)
+
+add_dependencies(inspection_example
+    albatross
 )
 
 target_link_libraries(inspection_example m gflags yaml-cpp pthread)

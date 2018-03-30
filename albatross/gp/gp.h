@@ -10,7 +10,6 @@
 #include "stdio.h"
 #include "core/model.h"
 
-
 namespace albatross {
 
 template <typename CovarianceFunction, typename Predictor>
@@ -49,6 +48,21 @@ class GaussianProcessRegression : public RegressionModel<Predictor> {
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, predictors);
     pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
 
+    return PredictionDistribution(pred, pred_cov);
+  }
+
+  template <typename OtherPredictor>
+  PredictionDistribution inspect(
+      const std::vector<OtherPredictor>& predictors) const {
+    assert(this->has_been_fit_);
+    const auto cross_cov = asymmetric_covariance(covariance_function_,
+                                                 predictors, train_predictors_);
+    // Then we can use the information vector to determine the posterior
+    const Eigen::VectorXd pred = cross_cov * information_;
+    Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, predictors);
+    pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
+    assert(static_cast<s32>(pred.size()) ==
+           static_cast<s32>(predictors.size()));
     return PredictionDistribution(pred, pred_cov);
   }
 

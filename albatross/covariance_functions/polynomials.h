@@ -17,8 +17,9 @@
 
 namespace albatross {
 
-template <class Predictor>
-class ConstantMean : public CovarianceBase<Predictor> {
+struct MeanTerm {};
+
+class ConstantMean : public CovarianceBase {
  public:
   ConstantMean(double sigma_mean = 10.) {
     this->params_["sigma_constant_mean"] = sigma_mean;
@@ -28,17 +29,25 @@ class ConstantMean : public CovarianceBase<Predictor> {
 
   std::string get_name() const { return "constant_mean"; }
 
+  template <typename Predictor>
+  std::vector<MeanTerm> get_state_space_representation(std::vector<Predictor> &x) {
+    std::vector<MeanTerm> terms = {MeanTerm()};
+    return terms;
+  }
+
   /*
    * This will create a covariance matrix that looks like,
    *     sigma_mean^2 * ones(m, n)
    * which is saying all observations are perfectly correlated,
    * so you can move one if you move the rest the same amount.
    */
-  double operator()(const Predictor &x __attribute__((unused)),
-                    const Predictor &y __attribute__((unused))) const {
+  template <typename First, typename Second>
+  double operator()(const First &x __attribute__((unused)),
+                    const Second &y __attribute__((unused))) const {
     double sigma_mean = this->params_.at("sigma_constant_mean");
     return sigma_mean * sigma_mean;
   }
+
 };
 
 }
