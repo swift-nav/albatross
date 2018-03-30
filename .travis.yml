@@ -39,5 +39,5 @@ matrix:
         - C_COMPILER=clang-3.8 CXX_COMPILER=clang++-3.8 COVERAGE='llvm-cov'
 
 script:
-    bash ./tests/travis/run_tests.sh || exit 1;
+    bash ./tests/travis/run_tests.sh;
 
