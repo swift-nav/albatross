@@ -41,9 +41,3 @@ matrix:
 script:
     bash ./tests/travis/run_tests.sh || exit 1;
 
-after_success:
-  - if [ -z "$COVERAGE" ]; then
-      echo "Done!";
-    else
-      cd $TRAVIS_BUILD_DIR/ && ./coverage.sh;
-    fi
