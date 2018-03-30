@@ -1,0 +1,49 @@
+sudo: false
+dist: trusty
+language: cpp
+group: stable
+
+cache:
+  apt: true
+  ccache: true
+
+matrix:
+  fast_finish: true
+  include:
+    - compiler: gcc
+	apt:
+	  sources:
+	    - ubuntu-toolchain-r-test
+	  packages:
+	    - g++-5
+	    - libc++-dev
+	    - libc++abi-dev
+	    - clang-3.8
+	    - clang-format-3.8
+	    - clang-tidy-3.8
+      env:
+        - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
+    - compiler: clang
+      addons:
+        apt:
+            - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.8 main'
+              key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - libc++-dev
+            - libc++abi-dev
+            - clang-3.8
+            - clang-format-3.8
+            - clang-tidy-3.8
+            - lcov
+      env:
+        - C_COMPILER=clang-3.8 CXX_COMPILER=clang++-3.8 COVERAGE='llvm-cov'
+
+script:
+    bash ./tests/travis/run_tests.sh || exit 1;
+
+after_success:
+  - if [ -z "$COVERAGE" ]; then
+      echo "Done!";
+    else
+      cd $TRAVIS_BUILD_DIR/ && ./coverage.sh;
+    fi
