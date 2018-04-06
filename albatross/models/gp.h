@@ -22,41 +22,48 @@
 
 namespace albatross {
 
+template <typename Feature>
+struct GaussianProcessFit {
+  std::vector<Feature> train_features;
+  Eigen::VectorXd information;
+  Eigen::LDLT<Eigen::MatrixXd> ldlt;
+};
+
+
 template <typename CovarianceFunction, typename Feature>
-class GaussianProcessRegression : public RegressionModel<Feature> {
+class GaussianProcessRegression : public RegressionModel<Feature, GaussianProcessFit<Feature>> {
  public:
   GaussianProcessRegression(CovarianceFunction& covariance_function)
-      : covariance_function_(covariance_function),
-        train_features_(),
-        ldlt_(),
-        information_(){};
+      : covariance_function_(covariance_function) {};
   ~GaussianProcessRegression(){};
 
   std::string get_name() const override {
     return "gaussian_process_regression";
   };
 
-  void fit_(const std::vector<Feature>& features,
-            const Eigen::VectorXd& targets) override {
-    train_features_ = features;
-    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, train_features_);
+  GaussianProcessFit<Feature> fit_(const std::vector<Feature>& features,
+                                   const Eigen::VectorXd& targets) const override {
+    GaussianProcessFit<Feature> model_fit;
+    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
     // Precompute the information vector which is all we need in
     // order to make predictions.
-    ldlt_ = cov.ldlt();
-    information_ = ldlt_.solve(targets);
+    model_fit.train_features = features;
+    model_fit.information = cov.ldlt().solve(targets);
+    model_fit.ldlt = cov.ldlt();
+    return model_fit;
   }
 
   PredictionDistribution predict_(
       const std::vector<Feature>& features) const override {
 
     const auto cross_cov = asymmetric_covariance(covariance_function_,
-                                                 features, train_features_);
-
+                                                 features,
+                                                 this->model_fit_->train_features);
     // Then we can use the information vector to determine the posterior
-    const Eigen::VectorXd pred = cross_cov * information_;
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_->information;
 
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
-    pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
+    pred_cov -= cross_cov * this->model_fit_->ldlt.solve(cross_cov.transpose());
 
     return PredictionDistribution(pred, pred_cov);
   }
@@ -64,13 +71,14 @@ class GaussianProcessRegression : public RegressionModel<Feature> {
   template <typename OtherFeature>
   PredictionDistribution inspect(
       const std::vector<OtherFeature>& features) const {
-    assert(this->has_been_fit_);
+    assert(this->model_fit_);
     const auto cross_cov = asymmetric_covariance(covariance_function_,
-                                                 features, train_features_);
+                                                 features,
+                                                 this->model_fit_->train_features);
     // Then we can use the information vector to determine the posterior
-    const Eigen::VectorXd pred = cross_cov * information_;
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_->information;
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
-    pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
+    pred_cov -= cross_cov * this->model_fit_->ldlt.solve(cross_cov.transpose());
     assert(static_cast<s32>(pred.size()) ==
            static_cast<s32>(features.size()));
     return PredictionDistribution(pred, pred_cov);
@@ -87,9 +95,6 @@ class GaussianProcessRegression : public RegressionModel<Feature> {
 
  private:
   CovarianceFunction covariance_function_;
-  std::vector<Feature> train_features_;
-  Eigen::LDLT<Eigen::MatrixXd> ldlt_;
-  Eigen::VectorXd information_;
 };
 
 template <typename CovFunc>

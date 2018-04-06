@@ -68,25 +68,14 @@ struct CovarianceFunction {
    */
 
   inline auto get_name() const { return covariance_term.get_name(); };
-  inline auto to_string() const { return covariance_term.to_string(); };
   inline auto get_params() const { return covariance_term.get_params(); };
-  inline auto to_yaml() const { return covariance_term.to_yaml(); };
-  inline auto to_file(const std::string &path) const {
-    return covariance_term.to_file(path);
-  };
-  inline auto from_string(const std::string &serialized_string) {
-    return covariance_term.from_string(serialized_string);
-  };
-  inline auto from_yaml(const YAML::Node &yaml_input) {
-    return covariance_term.from_yaml(yaml_input);
-  }
   inline auto set_params(const ParameterStore &params) {
     return covariance_term.set_params(params);
   };
   inline auto set_param(const ParameterKey &key, const ParameterValue &value) {
     return covariance_term.set_param(key, value);
   };
-  inline auto pretty_params() const { return covariance_term.pretty_params(); };
+  inline auto to_string() const { return covariance_term.to_string(); };
   inline auto get_params_as_vector() const {
     return covariance_term.get_params_as_vector();
   };

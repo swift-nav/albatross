@@ -16,8 +16,12 @@
 #include <Eigen/Core>
 #include <map>
 #include <vector>
+#include "optional.hpp"
 #include "map_utils.h"
+#include "static_inspection.h"
 #include "parameter_handling_mixin.h"
+
+using std::experimental::optional;
 
 namespace albatross {
 
@@ -39,12 +43,12 @@ struct PredictionDistribution {
  * it is assumed that each feature is regressed to a single double typed
  * target.
  */
-template <class Feature>
+template <class FeatureType>
 struct RegressionDataset {
-  std::vector<Feature> features;
+  std::vector<FeatureType> features;
   Eigen::VectorXd targets;
 
-  RegressionDataset(const std::vector<Feature> &features_,
+  RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
       : features(features_), targets(targets_) {
     // If the two inputs aren't the same size they clearly aren't
@@ -63,15 +67,15 @@ using FoldIndexer = std::map<FoldName, FoldIndices>;
  * A combination of training and testing datasets, typically used in cross
  * validation.
  */
-template <class Feature>
+template <class FeatureType>
 struct RegressionFold {
-  RegressionDataset<Feature> train;
-  RegressionDataset<Feature> test;
+  RegressionDataset<FeatureType> train;
+  RegressionDataset<FeatureType> test;
   FoldName name;
   FoldIndices test_indices;
 
-  RegressionFold(const RegressionDataset<Feature> &train_,
-                 const RegressionDataset<Feature> &test_,
+  RegressionFold(const RegressionDataset<FeatureType> &train_,
+                 const RegressionDataset<FeatureType> &test_,
                  const FoldName &name_, const FoldIndices &test_indices_)
       : train(train_), test(test_), name(name_), test_indices(test_indices_){};
 };
@@ -80,10 +84,11 @@ struct RegressionFold {
  * A model that uses a single Feature to estimate the value of a double typed
  * target.
  */
-template <class Feature>
+template <class FeatureType, class ModelFit>
 class RegressionModel : public ParameterHandlingMixin {
  public:
-  RegressionModel() : ParameterHandlingMixin(), has_been_fit_(false){};
+  typedef FeatureType Feature;
+  RegressionModel() : ParameterHandlingMixin(), model_fit_() {};
   virtual ~RegressionModel(){};
 
   /*
@@ -91,19 +96,20 @@ class RegressionModel : public ParameterHandlingMixin {
    * simple size checks and makes sure the fit method is called before
    * predict.
    */
-  void fit(const std::vector<Feature> &features,
+  ModelFit fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
-    fit_(features, targets);
-    has_been_fit_ = true;
+    auto model_fit = fit_(features, targets);
+    model_fit_ = model_fit;
+    return model_fit;
   }
 
   /*
    * Convenience function which unpacks a dataset into features and targets.
    */
-  void fit(const RegressionDataset<Feature> &dataset) {
-    fit(dataset.features, dataset.targets);
+  ModelFit fit(const RegressionDataset<FeatureType> &dataset) {
+    return fit(dataset.features, dataset.targets);
   }
 
   /*
@@ -112,8 +118,8 @@ class RegressionModel : public ParameterHandlingMixin {
    * properly sized PredictionDistributions.
    */
   PredictionDistribution predict(
-      const std::vector<Feature> &features) const {
-    assert(has_been_fit_);
+      const std::vector<FeatureType> &features) const {
+    assert(model_fit_);
     PredictionDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
@@ -127,9 +133,9 @@ class RegressionModel : public ParameterHandlingMixin {
    * some models.
    */
   PredictionDistribution fit_and_predict(
-      const std::vector<Feature> &train_features,
+      const std::vector<FeatureType> &train_features,
       const Eigen::VectorXd &train_targets,
-      const std::vector<Feature> &test_features) {
+      const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
     return predict(test_features);
@@ -140,24 +146,31 @@ class RegressionModel : public ParameterHandlingMixin {
    * in a RegressionFold struct
    */
   PredictionDistribution fit_and_predict(
-      const RegressionFold<Feature> &fold) {
+      const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
   }
 
+  virtual std::string get_name() const = 0;
+
  protected:
-  virtual void fit_(const std::vector<Feature> &features,
-                    const Eigen::VectorXd &targets) = 0;
+  /*
+   * These methods are required from an implmenting class, notice that
+   * the methods are marked `const`.  Anything that needs to be stored
+   * in the model should be returned in the `ModelFit` type.
+   */
+  virtual ModelFit fit_(const std::vector<FeatureType> &features,
+                          const Eigen::VectorXd &targets) const = 0;
 
   virtual PredictionDistribution predict_(
-      const std::vector<Feature> &features) const = 0;
+      const std::vector<FeatureType> &features) const = 0;
 
-  bool has_been_fit_ = false;
+  optional<ModelFit> model_fit_;
 };
 
-template <class Feature>
+template <class FeatureType, class ModelFit>
 using RegressionModelCreator =
-    std::function<std::unique_ptr<RegressionModel<Feature>>()>;
+    std::function<std::unique_ptr<RegressionModel<FeatureType, ModelFit>>()>;
 }
 
 #endif
