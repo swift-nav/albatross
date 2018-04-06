@@ -9,6 +9,7 @@ test_core_model.cc
 test_covariance_functions.cc
 test_evaluate.cc
 test_map_utils.cc
+test_serialize.cc
 test_parameter_handling_mixin.cc
 )
 
@@ -16,7 +17,7 @@ add_dependencies(albatross_unit_tests
     albatross
 )
 
-target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags yaml-cpp)
+target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags)
 
 add_custom_target(
 run_albatross_unit_tests ALL

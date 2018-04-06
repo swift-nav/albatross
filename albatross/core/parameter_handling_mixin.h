@@ -13,7 +13,6 @@
 #ifndef ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
-#include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -33,50 +32,6 @@ class ParameterHandlingMixin {
   ParameterHandlingMixin(const ParameterStore &params) : params_(params){};
 
   virtual ~ParameterHandlingMixin(){};
-
-  virtual std::string get_name() const = 0;
-
-  YAML::Node to_yaml() const {
-    YAML::Node yaml_model;
-    yaml_model[keys::YAML_MODEL_NAME] = get_name();
-
-    YAML::Node yaml_params;
-    for (const auto &pair : get_params()) {
-      yaml_params[pair.first] = pair.second;
-    }
-    yaml_model[keys::YAML_MODEL_PARAMS] = yaml_params;
-    return yaml_model;
-  }
-
-  std::string to_string() const { return YAML::Dump(to_yaml()); }
-
-  void to_file(const std::string &path) const {
-    std::ofstream output_file;
-    output_file.open(path);
-    output_file << to_string();
-    output_file.close();
-  }
-
-  void from_string(const std::string &serialized_string) {
-    // Load the YAML config file
-    const YAML::Node yaml_params = YAML::Load(serialized_string);
-    from_yaml(yaml_params);
-  }
-
-  void from_yaml(const YAML::Node &yaml_input) {
-    YAML::Node yaml_params = yaml_input;
-    if (YAML::Node model_name = yaml_params[keys::YAML_MODEL_NAME]) {
-      assert(model_name.as<std::string>() == get_name());
-      yaml_params = yaml_params[keys::YAML_MODEL_PARAMS].as<YAML::Node>();
-    }
-
-    ParameterStore params;
-    for (YAML::const_iterator it = yaml_params.begin(); it != yaml_params.end();
-         ++it) {
-      params[it->first.as<ParameterKey>()] = it->second.as<ParameterValue>();
-    }
-    set_params(params);
-  }
 
   /*
    * Provides a safe interface to the parameter values
@@ -98,10 +53,9 @@ class ParameterHandlingMixin {
    * Prints out a set of parameters in a way that is both
    * readable and can be easily copy/pasted into code.
    */
-  std::string pretty_params() {
+  std::string to_string() {
     std::stringstream ss;
-    ss << "name = " << get_name() << std::endl;
-    ss << "params = {" << std::endl;
+    ss << "{" << std::endl;
     for (const auto &pair : get_params()) {
       ss << "    {\"" << pair.first << "\", " << pair.second << "},"
          << std::endl;
@@ -152,6 +106,7 @@ class ParameterHandlingMixin {
  protected:
   ParameterStore params_;
 };
+
 }
 
 #endif

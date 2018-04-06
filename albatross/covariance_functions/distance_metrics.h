@@ -23,6 +23,7 @@ class DistanceMetric : public ParameterHandlingMixin {
   DistanceMetric(){};
   virtual ~DistanceMetric(){};
 
+ virtual std::string get_name() const = 0;
  protected:
 };
 
