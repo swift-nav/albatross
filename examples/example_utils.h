@@ -20,7 +20,7 @@
 #include <Eigen/Core>
 #include "csv.h"
 
-#include "gp/gp.h"
+#include "models/gp.h"
 #include "core/model.h"
 #include "covariance_functions/covariance_functions.h"
 
@@ -174,8 +174,9 @@ void maybe_create_training_data(std::string input_path,
   }
 }
 
+template <typename ModelFit>
 void write_predictions_to_csv(const std::string output_path,
-                              const albatross::RegressionModel<double> &model,
+                              const albatross::RegressionModel<double, ModelFit> &model,
                               const double low,
                               const double high) {
   std::ofstream output;

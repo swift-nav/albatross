@@ -69,17 +69,16 @@ class MockModel : public RegressionModel<MockPredictor, MockFit> {
 
     for (int i = 0; i < n; i++) {
       int index = features[static_cast<std::size_t>(i)].value;
-      predictions[i] = fit_storage_->train_data.find(index)->second;
+      predictions[i] = model_fit_->train_data.find(index)->second;
     }
 
     return PredictionDistribution(predictions);
   }
 };
 
-static inline RegressionDataset<Eigen::VectorXd> make_toy_linear_regression_data() {
-  double a = 5.;
-  double b = 1.;
-  double sigma = 0.1;
+static inline RegressionDataset<Eigen::VectorXd> make_toy_linear_regression_data(const double a = 5.,
+                                                                                 const double b = 1.,
+                                                                                 const double sigma = 0.1) {
 
   std::random_device rd{};
   std::mt19937 gen{rd()};

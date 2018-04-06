@@ -9,7 +9,7 @@ test_core_model.cc
 test_covariance_functions.cc
 test_evaluate.cc
 test_map_utils.cc
-test_serialize.cc
+#test_serialize.cc
 test_parameter_handling_mixin.cc
 )
 
