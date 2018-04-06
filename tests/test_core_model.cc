@@ -12,54 +12,9 @@
 
 #include <gtest/gtest.h>
 #include "core/model.h"
+#include "test_utils.h"
 
 namespace albatross {
-
-// A simple predictor which is effectively just an integer.
-struct MockPredictor {
-  int value;
-  MockPredictor(int v) : value(v){};
-};
-
-/*
- * A simple model which builds a map from MockPredict (aka, int)
- * to a double value.
- */
-class MockModel : public RegressionModel<MockPredictor> {
- public:
-  MockModel() : train_data_(){};
-
-  std::string get_name() const { return "mock_model"; };
-
- private:
-  // builds the map from int to value
-  void fit_(const std::vector<MockPredictor> &features,
-            const Eigen::VectorXd &targets) {
-    int n = static_cast<int>(features.size());
-    Eigen::VectorXd predictions(n);
-
-    for (int i = 0; i < n; i++) {
-      train_data_[features[static_cast<std::size_t>(i)].value] = targets[i];
-    }
-  }
-
-  // looks up the prediction in the map
-  PredictionDistribution predict_(
-      const std::vector<MockPredictor> &features) const {
-    int n = static_cast<int>(features.size());
-    Eigen::VectorXd predictions(n);
-
-    for (int i = 0; i < n; i++) {
-      int index = features[static_cast<std::size_t>(i)].value;
-      predictions[i] = train_data_.find(index)->second;
-    }
-
-    return PredictionDistribution(predictions);
-  }
-
-  std::map<int, double> train_data_;
-};
-
 /*
  * Simply makes sure that a BaseModel that should be able to
  * make perfect predictions compiles and runs as expected.
@@ -74,9 +29,19 @@ TEST(test_base_model, test_base_model) {
   }
 
   MockModel m;
-  m.fit(features, targets);
-  PredictionDistribution predictions = m.predict(features);
+  RegressionDataset<MockPredictor> dataset(features, targets);
 
+  auto model_fit_direct = m.fit(features, targets);
+  auto model_fit_dataset = m.fit(dataset);
+
+  // It shouldn't matter how we call fit.
+  EXPECT_EQ(model_fit_direct, model_fit_direct);
+
+  // We shoudl be able to perfectly predict in this case.
+  PredictionDistribution predictions = m.predict(features);
   EXPECT_LT((predictions.mean - targets).norm(), 1e-10);
 }
+
+
+
 }

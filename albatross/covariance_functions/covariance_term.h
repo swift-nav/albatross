@@ -29,6 +29,8 @@ class CovarianceTerm : public ParameterHandlingMixin {
  public:
   CovarianceTerm() : ParameterHandlingMixin(){};
   virtual ~CovarianceTerm(){};
+
+  virtual std::string get_name() const = 0;
 };
 
 /*
