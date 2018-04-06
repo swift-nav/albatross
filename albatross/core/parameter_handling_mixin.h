@@ -53,7 +53,7 @@ class ParameterHandlingMixin {
    * Prints out a set of parameters in a way that is both
    * readable and can be easily copy/pasted into code.
    */
-  std::string to_string() {
+  std::string to_string() const {
     std::stringstream ss;
     ss << "{" << std::endl;
     for (const auto &pair : get_params()) {

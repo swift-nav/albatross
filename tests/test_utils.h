@@ -76,10 +76,9 @@ class MockModel : public RegressionModel<MockPredictor, MockFit> {
   }
 };
 
-static inline RegressionDataset<Eigen::VectorXd> make_toy_linear_regression_data() {
-  double a = 5.;
-  double b = 1.;
-  double sigma = 0.1;
+static inline RegressionDataset<Eigen::VectorXd> make_toy_linear_regression_data(const double a = 5.,
+                                                                                 const double b = 1.,
+                                                                                 const double sigma = 0.1) {
 
   std::random_device rd{};
   std::mt19937 gen{rd()};

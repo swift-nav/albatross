@@ -75,7 +75,7 @@ struct CovarianceFunction {
   inline auto set_param(const ParameterKey &key, const ParameterValue &value) {
     return covariance_term.set_param(key, value);
   };
-  inline auto to_string() const { return covariance_term.pretty_params(); };
+  inline auto to_string() const { return covariance_term.to_string(); };
   inline auto get_params_as_vector() const {
     return covariance_term.get_params_as_vector();
   };

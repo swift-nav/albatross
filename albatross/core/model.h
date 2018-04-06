@@ -88,7 +88,7 @@ template <class FeatureType, class ModelFit>
 class RegressionModel : public ParameterHandlingMixin {
  public:
   typedef FeatureType Feature;
-  RegressionModel() : ParameterHandlingMixin(), fit_storage_() {};
+  RegressionModel() : ParameterHandlingMixin(), model_fit_() {};
   virtual ~RegressionModel(){};
 
   /*
@@ -101,7 +101,7 @@ class RegressionModel : public ParameterHandlingMixin {
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
     auto model_fit = fit_(features, targets);
-    fit_storage_ = model_fit;
+    model_fit_ = model_fit;
     return model_fit;
   }
 
@@ -119,7 +119,7 @@ class RegressionModel : public ParameterHandlingMixin {
    */
   PredictionDistribution predict(
       const std::vector<FeatureType> &features) const {
-    assert(fit_storage_);
+    assert(model_fit_);
     PredictionDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
@@ -165,7 +165,7 @@ class RegressionModel : public ParameterHandlingMixin {
   virtual PredictionDistribution predict_(
       const std::vector<FeatureType> &features) const = 0;
 
-  optional<ModelFit> fit_storage_;
+  optional<ModelFit> model_fit_;
 };
 
 template <class FeatureType, class ModelFit>
