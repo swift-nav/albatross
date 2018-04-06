@@ -13,10 +13,12 @@
 #ifndef ALBATROSS_EVALUATE_H
 #define ALBATROSS_EVALUATE_H
 
+#include <math.h>
 #include <map>
 #include <memory>
 #include <functional>
 #include "core/model.h"
+#include <Eigen/Cholesky>
 
 namespace albatross {
 
@@ -27,6 +29,21 @@ namespace albatross {
  */
 using EvaluationMetric = std::function<double(
     const PredictionDistribution& prediction, const Eigen::VectorXd& targets)>;
+
+/*
+ * Computes the negative log likelihood under the assumption that the predcitve
+ * distribution is multivariate normal.
+ */
+static inline double negative_log_likelihood(const PredictionDistribution& prediction,
+                                             const Eigen::VectorXd& truth){
+  auto llt = prediction.covariance.llt();
+  auto cholesky = llt.matrixL();
+  double det = cholesky.determinant();
+  double log_det = log(det);
+  auto normalized_residuals = cholesky.solve(prediction.mean - truth);
+  double residuals = normalized_residuals.dot(normalized_residuals);
+  return 0.5 * (log_det + residuals + static_cast<double>(truth.size()) * 2 * M_PI);
+}
 
 static inline double root_mean_square_error(const PredictionDistribution& prediction,
                               const Eigen::VectorXd& truth){
@@ -212,8 +229,9 @@ static inline Eigen::VectorXd compute_scores(
  */
 template <class FeatureType>
 static inline Eigen::VectorXd cross_validated_scores(
+    const EvaluationMetric& metric,
     const std::vector<RegressionFold<FeatureType>>& folds,
-    const EvaluationMetric& metric, RegressionModel<FeatureType>* model) {
+    RegressionModel<FeatureType>* model) {
   // Create a vector of predictions.
   std::vector<PredictionDistribution> predictions =
       cross_validated_predictions<FeatureType>(folds, model);

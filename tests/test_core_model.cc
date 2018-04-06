@@ -29,7 +29,6 @@ TEST(test_base_model, test_base_model_fit_predict) {
   EXPECT_LT((predictions.mean - dataset.targets).norm(), 1e-10);
 }
 
-
 TEST(test_base_model, test_regression_model_abstraction) {
   // This just tests to make sure that an implementation of a RegressionModel
   // can be passed around as a pointer to the abstract class.

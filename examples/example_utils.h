@@ -126,9 +126,10 @@ albatross::RegressionDataset<double> read_csv_input(std::string file_path) {
   bool more_to_parse = true;
   while (more_to_parse) {
     more_to_parse = file_in.read_row(x, y);
-
-    xs.push_back(x);
-    ys.push_back(y);
+    if (more_to_parse) {
+      xs.push_back(x);
+      ys.push_back(y);
+    }
   }
   Eigen::Map<Eigen::VectorXd> eigen_ys(&ys[0],
                                            static_cast<int>(ys.size()));

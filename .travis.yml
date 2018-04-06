@@ -22,6 +22,7 @@ addons:
       - clang-3.8
       - clang-format-3.8
       - clang-tidy-3.8
+      - libnlopt-dev
 env:
   - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
 

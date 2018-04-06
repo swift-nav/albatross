@@ -62,7 +62,7 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
   std::unique_ptr<RegressionModel<double>> model = this->creator.create();
-  auto cv_scores = cross_validated_scores(folds, root_mean_square_error, model.get());
+  auto cv_scores = cross_validated_scores(root_mean_square_error, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.

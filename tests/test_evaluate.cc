@@ -29,8 +29,9 @@ TEST_F(LinearRegressionTest, test_leave_one_out) {
 
   const auto folds = leave_one_out(dataset_);
   std::cout << "Cross validated" << std::endl;
+
   Eigen::VectorXd rmses =
-      cross_validated_scores(folds, root_mean_square_error, model_ptr_.get());
+      cross_validated_scores(root_mean_square_error, folds, model_ptr_.get());
   double out_of_sample_rmse = rmses.mean();
 
   // Make sure the RMSE computed doing leave one out cross validation is larger
@@ -76,7 +77,7 @@ TEST_F(LinearRegressionTest, test_cross_validated_predict) {
 TEST_F(LinearRegressionTest, test_leave_one_group_out) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
   Eigen::VectorXd rmses =
-      cross_validated_scores(folds, root_mean_square_error, model_ptr_.get());
+      cross_validated_scores(root_mean_square_error, folds, model_ptr_.get());
 
   // Make sure we get a single RMSE for each of the three groups.
   EXPECT_EQ(rmses.size(), 3);

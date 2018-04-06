@@ -10,12 +10,22 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <functional>
 #include "gflags/gflags.h"
+#include "tune.h"
+#include "evaluate.h"
 #include "example_utils.h"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
+
+double loo_nll(const albatross::RegressionDataset<double> &dataset,
+                albatross::RegressionModel<double> *model) {
+  auto loo_folds = albatross::leave_one_out(dataset);
+  return albatross::cross_validated_scores(albatross::negative_log_likelihood,
+                                           loo_folds, model).mean();
+}
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -27,38 +37,78 @@ int main(int argc, char *argv[]) {
 
   maybe_create_training_data(FLAGS_input, n, low, high, meas_noise);
 
-  auto data = read_csv_input(FLAGS_input);
-
   using namespace albatross;
 
+  std::cout << "Reading the input data." << std::endl;
+  RegressionDataset<double> data = read_csv_input(FLAGS_input);
+
+  std::cout << "Defining the model." << std::endl;
   using Noise = IndependentNoise<double>;
   using SqrExp = SquaredExponential<ScalarDistance>;
 
   CovarianceFunction<Constant> mean = {Constant(100.)};
   CovarianceFunction<SlopeTerm> slope = {SlopeTerm(100.)};
-  CovarianceFunction<Noise> noise = {Noise(meas_noise)};
-  CovarianceFunction<SqrExp> sqrexp = {SqrExp(2., 5.)};
-
+  CovarianceFunction<Noise> noise = {Noise(10.)};
+  CovarianceFunction<SqrExp> sqrexp = {SqrExp(1.5, 100.)};
   auto linear_model = mean + slope + noise + sqrexp;
 
+  /*
+   * A side effect of having statically composable covariance
+   * functions is that we don't explicitly know the type of the
+   * resulting Gaussian process, so to instantiate the model
+   * we need to ride off of template inferrence using a helper
+   * function.
+   */
+  std::cout << "Instantiating the model." << std::endl;
   auto model = gp_from_covariance<double>(linear_model);
 
-  std::cout << "Using Model:" << std::endl;
-  std::cout << model.pretty_string() << std::endl;
+  /*
+   * Tuning works by iteratively creating new models and assigning
+   * them different parameters.  In order to do so it needs a function
+   * that will generate a pointer to a new model which we define here
+   * using lambdas.
+   */
+  RegressionModelCreator<double> model_creator = [linear_model]() {
+    return gp_pointer_from_covariance<double>(linear_model);
+  };
 
+
+  /*
+   * Now we tune the model by finding the hyper parameters that
+   * maximize the likelihood (or minimize the negative log likelihood).
+   */
+  std::cout << "Tuning the model." << std::endl;
+  TuningMetric<double> metric = loo_nll;
+  auto params = tune_regression_model<double>(model_creator, data, metric);
+
+  /*
+   * We can then use the tuned hyper parameters and fit our model to the data
+   */
+  std::cout << "Fitting the tuned model." << std::endl;
+  model.set_params(params);
   model.fit(data);
 
+  /*
+   * This step could be skipped but both tests and illustrates how a
+   * Gaussian process can be serialized, then deserialized.
+   */
   std::ostringstream oss;
+  std::cout << "Serializing the model." << std::endl;
   {
     cereal::JSONOutputArchive archive(oss);
     archive(cereal::make_nvp(model.get_name(), model));
   }
   std::istringstream iss(oss.str());
-  auto untrained_model = gp_from_covariance<double>(linear_model);
+  auto deserialized = gp_from_covariance<double>(linear_model);
+  std::cout << "Deserializing the model." << std::endl;
   {
     cereal::JSONInputArchive archive(iss);
-    archive(cereal::make_nvp(model.get_name(), untrained_model));
+    archive(cereal::make_nvp(model.get_name(), deserialized));
   }
 
-  write_predictions_to_csv(FLAGS_output, untrained_model, low, high);
+  /*
+   * Make predictions at a bunch of locations which we can then
+   * visualize if desired.
+   */
+  write_predictions_to_csv(FLAGS_output, deserialized, low, high);
 }
