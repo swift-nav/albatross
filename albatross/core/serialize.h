@@ -71,18 +71,6 @@ class SerializableRegressionModel : public RegressionModel<FeatureType> {
   ModelFit model_fit_;
 };
 
-template <typename... Args>
-void to_json(std::ostream &output_stream, Args&&... args) {
-  cereal::JSONOutputArchive archive(output_stream);
-  archive(std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-std::string from_json(std::istream &input_stream, Args&... args) {
-  cereal::JSONInputArchive archive(input_stream);
-  archive(std::forward<Args>(args)...);
-}
-
 }
 
 #endif

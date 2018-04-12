@@ -13,14 +13,7 @@
 #include <gtest/gtest.h>
 #include "core/parameter_handling_mixin.h"
 
-namespace albatross {
-
-class MockParameterHandler : public ParameterHandlingMixin {
- public:
-  MockParameterHandler(const ParameterStore &params)
-      : ParameterHandlingMixin(params){};
-  std::string get_name() const { return "mock_parameter_handler"; };
-};
+#include "test_utils.h"
 
 namespace albatross {
 
@@ -44,27 +37,6 @@ TEST(test_parameter_handler, test_get_set) {
   EXPECT_EQ(modified_params["A"], 2.);
   EXPECT_EQ(modified_params["B"], 3.);
 };
-
-void expect_params_equal(const ParameterStore &x, const ParameterStore &y) {
-  // Make sure all pairs in x are in y.
-  for (const auto &x_pair : x) {
-    const auto y_value = y.at(x_pair.first);
-    EXPECT_DOUBLE_EQ(x_pair.second, y_value);
-  }
-  // And all pairs in y are in x.
-  for (const auto &y_pair : y) {
-    const auto x_value = x.at(y_pair.first);
-    EXPECT_DOUBLE_EQ(y_pair.second, x_value);
-  }
-}
-
-void expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
-                                   const std::vector<ParameterValue> &y) {
-  for (std::size_t i = 0; i < x.size(); i++) {
-    EXPECT_DOUBLE_EQ(x[i], y[i]);
-  }
-  EXPECT_EQ(x.size(), y.size());
-}
 
 /*
  * Here we test to make sure that the parameters are in the same
