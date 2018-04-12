@@ -54,12 +54,12 @@ static inline double standard_deviation(const PredictionDistribution& prediction
  * test cases.  This function takes a map from FoldName to
  * FoldIndices and a dataset and creates the resulting folds.
  */
-template <typename Predictor>
-static inline std::vector<RegressionFold<Predictor>> folds_from_fold_indexer(
-    const RegressionDataset<Predictor>& dataset, const FoldIndexer& groups) {
+template <typename FeatureType>
+static inline std::vector<RegressionFold<FeatureType>> folds_from_fold_indexer(
+    const RegressionDataset<FeatureType>& dataset, const FoldIndexer& groups) {
   // For a dataset with n features, we'll have n folds.
   const s32 n = static_cast<s32>(dataset.features.size());
-  std::vector<RegressionFold<Predictor>> folds;
+  std::vector<RegressionFold<FeatureType>> folds;
   // For each fold, partition into train and test sets.
   for (const auto& pair : groups) {
     // These get exposed inside the returned RegressionFold and because
@@ -69,9 +69,9 @@ static inline std::vector<RegressionFold<Predictor>> folds_from_fold_indexer(
     const FoldIndices indices(pair.second);
     const s32 k = static_cast<s32>(indices.size());
 
-    std::vector<Predictor> train_features(static_cast<std::size_t>(n - k));
+    std::vector<FeatureType> train_features(static_cast<std::size_t>(n - k));
     Eigen::VectorXd train_targets(n - k);
-    std::vector<Predictor> test_features(static_cast<std::size_t>(k));
+    std::vector<FeatureType> test_features(static_cast<std::size_t>(k));
     Eigen::VectorXd test_targets(k);
 
     s32 train_cnt = 0;
@@ -95,18 +95,18 @@ static inline std::vector<RegressionFold<Predictor>> folds_from_fold_indexer(
     }
     assert(test_cnt == k);
     assert(train_cnt == n - k);
-    const RegressionDataset<Predictor> train_split(train_features,
+    const RegressionDataset<FeatureType> train_split(train_features,
                                                    train_targets);
-    const RegressionDataset<Predictor> test_split(test_features,
+    const RegressionDataset<FeatureType> test_split(test_features,
                                                   test_targets);
-    folds.push_back(RegressionFold<Predictor>(train_split, test_split,
+    folds.push_back(RegressionFold<FeatureType>(train_split, test_split,
                                               group_name, indices));
   }
   return folds;
 }
 
-template <typename Predictor>
-static inline FoldIndexer leave_one_out_indexer(const RegressionDataset<Predictor>& dataset) {
+template <typename FeatureType>
+static inline FoldIndexer leave_one_out_indexer(const RegressionDataset<FeatureType>& dataset) {
   FoldIndexer groups;
   for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
     FoldName group_name = std::to_string(i);
@@ -119,10 +119,10 @@ static inline FoldIndexer leave_one_out_indexer(const RegressionDataset<Predicto
  * Splits a dataset into cross validation folds where each fold contains all but
  * one predictor/target pair.
  */
-template <typename Predictor>
+template <typename FeatureType>
 static inline FoldIndexer leave_one_group_out_indexer(
-    const RegressionDataset<Predictor>& dataset,
-    const std::function<FoldName(const Predictor&)>& get_group_name) {
+    const RegressionDataset<FeatureType>& dataset,
+    const std::function<FoldName(const FeatureType&)>& get_group_name) {
   FoldIndexer groups;
   for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
     const std::string k =
@@ -146,24 +146,24 @@ static inline FoldIndexer leave_one_group_out_indexer(
  * Generates cross validation folds which represent leave one out
  * cross validation.
  */
-template <typename Predictor>
-static inline std::vector<RegressionFold<Predictor>> leave_one_out(
-    const RegressionDataset<Predictor>& dataset) {
-  return folds_from_fold_indexer<Predictor>(
-      dataset, leave_one_out_indexer<Predictor>(dataset));
+template <typename FeatureType>
+static inline std::vector<RegressionFold<FeatureType>> leave_one_out(
+    const RegressionDataset<FeatureType>& dataset) {
+  return folds_from_fold_indexer<FeatureType>(
+      dataset, leave_one_out_indexer<FeatureType>(dataset));
 }
 
 /*
- * Uses a `get_group_name` function to bucket each Predictor into
+ * Uses a `get_group_name` function to bucket each FeatureType into
  * a group, then holds out one group at a time.
  */
-template <typename Predictor>
-static inline std::vector<RegressionFold<Predictor>> leave_one_group_out(
-    const RegressionDataset<Predictor>& dataset,
-    const std::function<FoldName(const Predictor&)>& get_group_name) {
+template <typename FeatureType>
+static inline std::vector<RegressionFold<FeatureType>> leave_one_group_out(
+    const RegressionDataset<FeatureType>& dataset,
+    const std::function<FoldName(const FeatureType&)>& get_group_name) {
   const FoldIndexer indexer =
-      leave_one_group_out_indexer<Predictor>(dataset, get_group_name);
-  return folds_from_fold_indexer<Predictor>(dataset, indexer);
+      leave_one_group_out_indexer<FeatureType>(dataset, get_group_name);
+  return folds_from_fold_indexer<FeatureType>(dataset, indexer);
 }
 
 /*
@@ -172,16 +172,16 @@ static inline std::vector<RegressionFold<Predictor>> leave_one_group_out(
  * for things like computing an EvaluationMetric for each fold, or assembling
  * all the predictions into a single cross validated PredictionDistribution.
  */
-template <typename Predictor>
+template <typename FeatureType>
 static inline std::vector<PredictionDistribution> cross_validated_predictions(
-    const std::vector<RegressionFold<Predictor>>& folds,
-    RegressionModel<Predictor>* model) {
+    const std::vector<RegressionFold<FeatureType>>& folds,
+    RegressionModel<FeatureType>* model) {
   // Iteratively make predictions and assemble the output vector
   std::vector<PredictionDistribution> predictions;
   for (std::size_t i = 0; i < folds.size(); i++) {
-    predictions.push_back(model->fit_and_predict(folds[i].train.features,
-                                                 folds[i].train.targets,
-                                                 folds[i].test.features));
+    predictions.push_back(model->fit_and_predict(folds[i].train_dataset.features,
+                                                 folds[i].train_dataset.targets,
+                                                 folds[i].test_dataset.features));
   }
   return predictions;
 }
@@ -190,9 +190,9 @@ static inline std::vector<PredictionDistribution> cross_validated_predictions(
  * Iterates over previously computed predictions for each fold and
  * returns a vector of scores for each fold.
  */
-template <class Predictor>
+template <class FeatureType>
 static inline Eigen::VectorXd compute_scores(
-    const std::vector<RegressionFold<Predictor>>& folds,
+    const std::vector<RegressionFold<FeatureType>>& folds,
     const EvaluationMetric& metric,
     const std::vector<PredictionDistribution>& predictions) {
   // Create a vector of metrics, one for each fold.
@@ -201,7 +201,7 @@ static inline Eigen::VectorXd compute_scores(
   // to create the final output.
   for (std::size_t i = 0; i < folds.size(); i++) {
     metrics[static_cast<s32>(i)] =
-        metric(predictions[i], folds[i].test.targets);
+        metric(predictions[i], folds[i].test_dataset.targets);
   }
   return metrics;
 }
@@ -210,13 +210,13 @@ static inline Eigen::VectorXd compute_scores(
  * Iterates over each fold in a cross validation set and fits/predicts and
  * scores the fold, returning a vector of scores for each fold.
  */
-template <class Predictor>
+template <class FeatureType>
 static inline Eigen::VectorXd cross_validated_scores(
-    const std::vector<RegressionFold<Predictor>>& folds,
-    const EvaluationMetric& metric, RegressionModel<Predictor>* model) {
+    const std::vector<RegressionFold<FeatureType>>& folds,
+    const EvaluationMetric& metric, RegressionModel<FeatureType>* model) {
   // Create a vector of predictions.
   std::vector<PredictionDistribution> predictions =
-      cross_validated_predictions<Predictor>(folds, model);
+      cross_validated_predictions<FeatureType>(folds, model);
   return compute_scores(folds, metric, predictions);
 }
 
@@ -230,15 +230,15 @@ static inline Eigen::VectorXd cross_validated_scores(
  * a time, so the full dense prediction covariance is
  * unknown.
  */
-template <typename Predictor>
+template <typename FeatureType>
 static inline PredictionDistribution cross_validated_predict(
-    const std::vector<RegressionFold<Predictor>>& folds,
-    RegressionModel<Predictor>* model) {
+    const std::vector<RegressionFold<FeatureType>>& folds,
+    RegressionModel<FeatureType>* model) {
   // Get the cross validated predictions, note however that
   // depending on the type of folds, these predictions may
   // be shuffled.
   const std::vector<PredictionDistribution> predictions =
-      cross_validated_predictions<Predictor>(folds, model);
+      cross_validated_predictions<FeatureType>(folds, model);
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
   s32 n = 0;

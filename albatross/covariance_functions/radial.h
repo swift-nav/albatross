@@ -73,10 +73,10 @@ class SquaredExponential
   }
 
   // This operator is only defined when the distance metric is also defined.
-  template <typename Feature,
-            typename std::enable_if<has_call_operator<DistanceMetricImpl, Feature&, Feature&>::value,
+  template <typename X,
+            typename std::enable_if<has_call_operator<DistanceMetricImpl, X&, X&>::value,
                                     int>::type = 0>
-  double operator()(const Feature &x, const Feature &y) const {
+  double operator()(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->params_.at("length_scale");
     distance /= length_scale;

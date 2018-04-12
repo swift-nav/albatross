@@ -29,8 +29,8 @@ class Constant : public CovarianceTerm {
 
   std::string get_name() const { return "constant"; }
 
-  template <typename Feature>
-  std::vector<ConstantTerm> get_state_space_representation(std::vector<Feature> &x) const {
+  template <typename X>
+  std::vector<ConstantTerm> get_state_space_representation(std::vector<X> &x) const {
     std::vector<ConstantTerm> terms = {ConstantTerm()};
     return terms;
   }
