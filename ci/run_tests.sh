@@ -1,5 +1,6 @@
 #!/bin/bash -ex
-mkdir build
+
+mkdir -p build
 cd build
 # Run the long integration tests in release mode so they're fast.
 cmake -DENABLE_AUTOLINT=ON \

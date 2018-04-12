@@ -1,3 +1,5 @@
+include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/")
+
 set(example_HEADERS
     example_utils.h
     CACHE INTERNAL ""
@@ -12,7 +14,7 @@ add_dependencies(sinc_example
     albatross
 )
 
-target_link_libraries(sinc_example m gflags yaml-cpp pthread)
+target_link_libraries(sinc_example m gflags pthread)
 
 add_custom_target(
     run_sinc_example ALL
@@ -34,7 +36,7 @@ add_dependencies(inspection_example
     albatross
 )
 
-target_link_libraries(inspection_example m gflags yaml-cpp pthread)
+target_link_libraries(inspection_example m gflags pthread)
 
 add_custom_target(
     run_inspection_example ALL

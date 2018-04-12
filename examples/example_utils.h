@@ -20,7 +20,7 @@
 #include <Eigen/Core>
 #include "csv.h"
 
-#include "gp/gp.h"
+#include "models/gp.h"
 #include "core/model.h"
 #include "covariance_functions/covariance_functions.h"
 
@@ -43,17 +43,6 @@ class SlopeTerm : public CovarianceTerm {
                     const double &y) const {
     double sigma_slope = this->params_.at("sigma_slope");
     return sigma_slope * sigma_slope * x * y;
-  }
-};
-
-class ScalarDistance : public DistanceMetric {
- public:
-
-  std::string get_name() const { return "scalar_distance"; }
-
-  double operator()(const double &x,
-                    const double &y) const {
-    return fabs(x - y);
   }
 };
 

@@ -23,6 +23,7 @@ class DistanceMetric : public ParameterHandlingMixin {
   DistanceMetric(){};
   virtual ~DistanceMetric(){};
 
+ virtual std::string get_name() const = 0;
  protected:
 };
 
@@ -31,7 +32,7 @@ class EuclideanDistance : public DistanceMetric {
   EuclideanDistance(){};
   ~EuclideanDistance(){};
 
-  std::string get_name() const override { return "euclidean"; };
+  std::string get_name() const override { return "euclidean_distance"; };
 
   double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
     return (x - y).norm();
@@ -43,12 +44,25 @@ class RadialDistance : public DistanceMetric {
   RadialDistance(){};
   ~RadialDistance(){};
 
-  std::string get_name() const override { return "radial"; };
+  std::string get_name() const override { return "radial_distance"; };
 
   double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
     return fabs(x.norm() - y.norm());
   }
 };
+
+class ScalarDistance : public DistanceMetric {
+ public:
+  ScalarDistance() {};
+  ~ScalarDistance() {};
+  std::string get_name() const { return "scalar_distance"; }
+
+  double operator()(const double &x,
+                    const double &y) const {
+    return fabs(x - y);
+  }
+};
+
 }
 
 #endif

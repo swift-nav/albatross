@@ -41,12 +41,24 @@ int main(int argc, char *argv[]) {
 
   auto linear_model = mean + slope + noise + sqrexp;
 
-  std::cout << "Using Model:" << std::endl;
-  std::cout << linear_model.to_string() << std::endl;
+  auto model = gp_from_covariance<double>(linear_model);
 
-  auto model = gp_from_covariance(linear_model);
+  std::cout << "Using Model:" << std::endl;
+  std::cout << model.pretty_string() << std::endl;
 
   model.fit(data);
 
-  write_predictions_to_csv(FLAGS_output, model, low, high);
+  std::ostringstream oss;
+  {
+    cereal::JSONOutputArchive archive(oss);
+    archive(cereal::make_nvp(model.get_name(), model));
+  }
+  std::istringstream iss(oss.str());
+  auto untrained_model = gp_from_covariance<double>(linear_model);
+  {
+    cereal::JSONInputArchive archive(iss);
+    archive(cereal::make_nvp(model.get_name(), untrained_model));
+  }
+
+  write_predictions_to_csv(FLAGS_output, untrained_model, low, high);
 }
