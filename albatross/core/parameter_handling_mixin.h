@@ -17,6 +17,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+
+#include "cereal_utils.h"
 #include "keys.h"
 #include "map_utils.h"
 
@@ -99,6 +101,17 @@ class ParameterHandlingMixin {
   }
 
   /*
+   * For serialization through cereal.
+   */
+  template <class Archive>
+  void save(Archive & archive) const {
+    archive(cereal::make_nvp("parameter_store", params_));
+  };
+
+  template <class Archive>
+  void load(Archive & archive) {
+    archive(cereal::make_nvp("parameter_store", params_));
+  };
 
   /*
    * For debugging.

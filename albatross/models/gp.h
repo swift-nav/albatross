@@ -15,67 +15,126 @@
 
 #include <functional>
 #include <memory>
-#include <Eigen/Cholesky>
-#include <Eigen/Core>
 #include "stdio.h"
+
+#include "../core/cereal_utils.h"
 #include "core/model.h"
+#include "core/serialize.h"
 
 namespace albatross {
 
-template <typename CovarianceFunction, typename Feature>
-class GaussianProcessRegression : public RegressionModel<Feature> {
+template <typename FeatureType>
+struct GaussianProcessFit {
+  std::vector<FeatureType> train_features;
+  Eigen::MatrixXd train_covariance;
+  Eigen::VectorXd information;
+
+  template <typename Archive>
+  // todo: enable if FeatureType is serializable
+  void serialize(Archive &archive) {
+    archive(cereal::make_nvp("information", information));
+    archive(cereal::make_nvp("train_covariance", train_covariance));
+    archive(cereal::make_nvp("train_features", train_features));
+  }
+
+  bool operator == (const GaussianProcessFit &other) const {
+    return (train_features == other.train_features &&
+            train_covariance == other.train_covariance &&
+            information == other.information);
+  }
+
+};
+
+template <typename FeatureType>
+using SerializableGaussianProcess = SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>;
+
+template <typename FeatureType, typename CovarianceFunction>
+class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType> {
  public:
+  typedef GaussianProcessFit<FeatureType> FitType;
+  typedef CovarianceFunction CovarianceType;
+
+  GaussianProcessRegression()
+      : covariance_function_(),
+        model_name_(covariance_function_.get_name()) {};
   GaussianProcessRegression(CovarianceFunction& covariance_function)
       : covariance_function_(covariance_function),
-        train_features_(),
-        ldlt_(),
-        information_(){};
+        model_name_(covariance_function_.get_name()) {};
+  /*
+   * Sometimes it's nice to be able to provide a custom model name since
+   * these models are generalizable.
+   */
+  GaussianProcessRegression(CovarianceFunction& covariance_function,
+                            const std::string &model_name)
+      : covariance_function_(covariance_function), model_name_(model_name) {};
   ~GaussianProcessRegression(){};
 
   std::string get_name() const override {
-    return "gaussian_process_regression";
+    return model_name_;
   };
 
-  void fit_(const std::vector<Feature>& features,
-            const Eigen::VectorXd& targets) override {
-    train_features_ = features;
-    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, train_features_);
+  template <typename Archive>
+  void save(Archive & archive) const {
+    archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
+  }
+
+  template <typename Archive>
+  void load(Archive & archive) {
+    archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
+  }
+
+  FitType serializable_fit_(const std::vector<FeatureType>& features,
+                                   const Eigen::VectorXd& targets) const override {
+    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
     // Precompute the information vector which is all we need in
     // order to make predictions.
-    ldlt_ = cov.ldlt();
-    information_ = ldlt_.solve(targets);
+
+    FitType model_fit;
+    model_fit.train_features = features;
+    model_fit.train_covariance = cov;
+    model_fit.information = cov.ldlt().solve(targets);
+    return model_fit;
   }
 
   PredictionDistribution predict_(
-      const std::vector<Feature>& features) const override {
+      const std::vector<FeatureType>& features) const override {
 
     const auto cross_cov = asymmetric_covariance(covariance_function_,
-                                                 features, train_features_);
-
+                                                 features,
+                                                 this->model_fit_.train_features);
     // Then we can use the information vector to determine the posterior
-    const Eigen::VectorXd pred = cross_cov * information_;
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
 
+    // TODO: right now this is recomputing the LDLT, so is highly inefficient,
+    // Ideally this would get stored inside GaussianProcessFit.
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
-    pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
+    auto ldlt = this->model_fit_.train_covariance.ldlt();
+    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
 
     return PredictionDistribution(pred, pred_cov);
   }
 
-  template <typename OtherFeature>
+  template <typename OtherFeatureType>
   PredictionDistribution inspect(
-      const std::vector<OtherFeature>& features) const {
-    assert(this->has_been_fit_);
+      const std::vector<OtherFeatureType>& features) const {
+    assert(this->has_been_fit());
     const auto cross_cov = asymmetric_covariance(covariance_function_,
-                                                 features, train_features_);
+                                                 features,
+                                                 this->model_fit_.train_features);
     // Then we can use the information vector to determine the posterior
-    const Eigen::VectorXd pred = cross_cov * information_;
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
-    pred_cov -= cross_cov * ldlt_.solve(cross_cov.transpose());
+    auto ldlt = this->model_fit_.train_covariance.ldlt();
+    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     assert(static_cast<s32>(pred.size()) ==
            static_cast<s32>(features.size()));
     return PredictionDistribution(pred, pred_cov);
   }
 
+  /*
+   * The Gaussian Process Regression model derives its parameters from
+   * the covariance functions.
+   */
   ParameterStore get_params() const override {
     return covariance_function_.get_params();
   }
@@ -85,18 +144,42 @@ class GaussianProcessRegression : public RegressionModel<Feature> {
     covariance_function_.set_param(name, value);
   }
 
+  std::string pretty_string() const {
+    std::ostringstream ss;
+    ss << get_name() << std::endl;
+    ss << covariance_function_.pretty_string();
+    ss << "has_been_fit: " << this->has_been_fit() << std::endl;
+    return ss.str();
+  }
+
  private:
   CovarianceFunction covariance_function_;
-  std::vector<Feature> train_features_;
-  Eigen::LDLT<Eigen::MatrixXd> ldlt_;
-  Eigen::VectorXd information_;
+  std::string model_name_;
 };
 
-template <typename CovFunc>
-GaussianProcessRegression<CovFunc, double> gp_from_covariance(
+template <typename FeatureType, typename CovFunc>
+GaussianProcessRegression<FeatureType, CovFunc> gp_from_covariance(
     CovFunc covariance_function) {
-  return GaussianProcessRegression<CovFunc, double>(covariance_function);
+  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function);
 };
+
+template <typename FeatureType, typename CovFunc>
+GaussianProcessRegression<FeatureType, CovFunc> gp_from_covariance(
+    CovFunc covariance_function, const std::string &model_name) {
+  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function, model_name);
+};
+
+template <typename FeatureType, typename CovFunc>
+std::unique_ptr<GaussianProcessRegression<FeatureType, CovFunc>> gp_pointer_from_covariance(
+    CovFunc covariance_function) {
+  return std::make_unique<GaussianProcessRegression<FeatureType, CovFunc>>(covariance_function);
+}
+
+template <typename FeatureType, typename CovFunc>
+std::unique_ptr<GaussianProcessRegression<FeatureType, CovFunc>> gp_pointer_from_covariance(
+    CovFunc covariance_function, const std::string &model_name) {
+  return std::make_unique<GaussianProcessRegression<FeatureType, CovFunc>>(covariance_function, model_name);
+}
 
 }
 

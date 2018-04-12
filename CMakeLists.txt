@@ -14,6 +14,7 @@ add_subdirectory(third_party/googletest)
 
 include_directories(SYSTEM ${gtest_SOURCE_DIR} ${gtest_SOURCE_DIR}/include)
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/eigen/")
+include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/cereal/include")
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -fexceptions -frtti")
@@ -38,9 +39,12 @@ set(albatross_HEADERS
     albatross/core/keys.h
     albatross/core/model.h
     albatross/core/traits.h
+    albatross/core/serialize.h
+    albatross/core/cereal_utils.h
     albatross/core/parameter_handling_mixin.h    
-    albatross/evaluate.h    
+    albatross/evaluate.h
     albatross/map_utils.h
+    tests/test_utils.h
     CACHE INTERNAL ""
 )
 

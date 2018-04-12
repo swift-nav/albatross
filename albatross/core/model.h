@@ -19,6 +19,7 @@
 #include "map_utils.h"
 #include "parameter_handling_mixin.h"
 #include "traits.h"
+#include <cereal/archives/json.hpp>
 
 namespace albatross {
 
@@ -156,6 +157,45 @@ class RegressionModel : public ParameterHandlingMixin {
       const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
+  }
+
+  std::string pretty_string() const {
+    std::ostringstream ss;
+    ss << get_name() << std::endl;
+    ss << ParameterHandlingMixin::pretty_string();
+    return ss.str();
+  }
+
+  virtual bool has_been_fit() const {
+    return has_been_fit_;
+  }
+
+  virtual std::string get_name() const = 0;
+
+  /*
+   * Here we define the serialization routines.  Note that while in most
+   * cases we could use the cereal method `serialize`, in this case we don't
+   * know for sure where the parameters are stored.  The GaussianProcessRegression
+   * model, for example, derives its parameters from its covariance function,
+   * so it's `params_` are actually empty.  As a result we need to use the
+   * save/load cereal variant and deal with parameters through the get/set
+   * interface.
+   */
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    auto params = get_params();
+    archive(cereal::make_nvp("parameters", params));
+    archive(cereal::make_nvp("has_been_fit", has_been_fit_));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    auto params = get_params();
+    archive(cereal::make_nvp("parameters", params));
+    archive(cereal::make_nvp("has_been_fit", has_been_fit_));
+    set_params(params);
   }
 
  protected:
