@@ -22,13 +22,7 @@ class MockParameterHandler : public ParameterHandlingMixin {
   std::string get_name() const { return "mock_parameter_handler"; };
 };
 
-class TestParameterHandler : public ParameterHandlingMixin {
- public:
-  TestParameterHandler() : ParameterHandlingMixin() {
-    params_ = {{"A", 1.}, {"B", 2.}};
-  };
-  std::string get_name() const { return "test_parameter_handler"; };
-};
+namespace albatross {
 
 /*
  * Simply makes sure that a BaseModel that should be able to
@@ -119,29 +113,4 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
                                 original_handler.get_params_as_vector());
 }
 
-/*
- * Tests to make sure we can serialize from one parameter handler to
- * another.
- */
-TEST(test_parameter_handler, test_serialization) {
-  const ParameterStore original = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
-  const std::vector<ParameterValue> original_param_vector = {1., 2., 3.};
-  MockParameterHandler original_handler(original);
-  // Make another handler that starts with different parameters
-  MockParameterHandler new_handler({{"2", 4.}, {"1", 5.}, {"3", 6.}});
-
-  // can serialize
-  std::ostringstream os;
-  os << original_handler.to_string() << std::endl;
-
-  // can deserialize
-  new_handler.from_string(original_handler.to_string());
-
-  // deserialized has the same paremters
-  expect_params_equal(original, new_handler.get_params());
-
-  // And the same parameter vector (ie, order was preserved)
-  expect_parameter_vector_equal(original_param_vector,
-                                new_handler.get_params_as_vector());
-}
 }
