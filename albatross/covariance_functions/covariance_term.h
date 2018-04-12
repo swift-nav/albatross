@@ -13,9 +13,8 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 
-#include <sstream>
-
-#include "../core/static_inspection.h"
+#include <iostream>
+#include "../core/traits.h"
 #include "map_utils.h"
 #include "core/parameter_handling_mixin.h"
 

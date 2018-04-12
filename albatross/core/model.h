@@ -18,6 +18,7 @@
 #include <vector>
 #include "map_utils.h"
 #include "parameter_handling_mixin.h"
+#include "traits.h"
 
 namespace albatross {
 

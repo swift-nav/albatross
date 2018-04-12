@@ -40,10 +40,10 @@ set(albatross_HEADERS
     albatross/covariance_functions/noise.h
     albatross/covariance_functions/polynomials.h
     albatross/covariance_functions/radial.h
-    albatross/gp/gp.h
+    albatross/models/gp.h
     albatross/core/keys.h
     albatross/core/model.h
-    albatross/core/static_inspection.h
+    albatross/core/traits.h
     albatross/core/parameter_handling_mixin.h    
     albatross/evaluate.h    
     albatross/map_utils.h
