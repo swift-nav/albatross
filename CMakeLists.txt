@@ -29,21 +29,21 @@ CACHE INTERNAL ""
 )
 
 set(albatross_HEADERS
+    albatross/evaluate.h
+    albatross/map_utils.h
+    albatross/core/keys.h
+    albatross/core/model.h
+    albatross/core/traits.h
+    albatross/core/serialize.h
+    albatross/core/parameter_handling_mixin.h    
+    albatross/cereal/eigen.h
+    albatross/models/gp.h
     albatross/covariance_functions/covariance_term.h
     albatross/covariance_functions/covariance_functions.h
     albatross/covariance_functions/distance_metrics.h
     albatross/covariance_functions/noise.h
     albatross/covariance_functions/polynomials.h
     albatross/covariance_functions/radial.h
-    albatross/models/gp.h
-    albatross/core/keys.h
-    albatross/core/model.h
-    albatross/core/traits.h
-    albatross/core/serialize.h
-    albatross/core/cereal_utils.h
-    albatross/core/parameter_handling_mixin.h    
-    albatross/evaluate.h
-    albatross/map_utils.h
     tests/test_utils.h
     CACHE INTERNAL ""
 )

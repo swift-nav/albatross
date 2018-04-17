@@ -95,7 +95,7 @@ class ModelRepresentation {
 };
 
 using MockSerializablePointer = std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
-using MockRegressionPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
+using RegressionPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
 
 
 class UnfitSerializableModel : public ModelRepresentation<MockSerializablePointer> {
@@ -152,7 +152,7 @@ public:
 };
 
 
-class UnfitRegressionModel : public ModelRepresentation<MockRegressionPointer> {
+class UnfitRegressionModel : public ModelRepresentation<RegressionPointer> {
 public:
   RepresentationType create() const override {
     return std::make_unique<MockModel>(log(2.));

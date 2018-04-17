@@ -25,8 +25,7 @@ struct CovarianceFunction {
   Term covariance_term;
 
   CovarianceFunction() : covariance_term() {};
-  CovarianceFunction(Term &term) : covariance_term(term) {};
-  CovarianceFunction(Term &&term) : covariance_term(term) {};
+  CovarianceFunction(const Term &term) : covariance_term(term) {};
 
   template <typename Other>
   inline auto operator+(CovarianceFunction<Other> &other) {

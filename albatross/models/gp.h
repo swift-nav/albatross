@@ -17,7 +17,7 @@
 #include <memory>
 #include "stdio.h"
 
-#include "../core/cereal_utils.h"
+#include "cereal/eigen.h"
 #include "core/model.h"
 #include "core/serialize.h"
 

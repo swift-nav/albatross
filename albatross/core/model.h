@@ -94,7 +94,13 @@ class RegressionModel : public ParameterHandlingMixin {
     return false;
   }
 
-  bool operator == (const RegressionModel<FeatureType> &other) const {
+  virtual bool operator == (const RegressionModel<FeatureType> &other) const {
+    // If the fit method has been called it's possible that some unknown
+    // class members may have been modified.  As such, if a model has been
+    // fit we fail hard to avoid possibly unexpected behavior.  Any
+    // implementation that wants a functional equality operator after
+    // having been fit will need to override this one.
+    assert(!has_been_fit());
     return (get_name() == other.get_name() &&
             get_params() == other.get_params() &&
             has_been_fit() == other.has_been_fit());

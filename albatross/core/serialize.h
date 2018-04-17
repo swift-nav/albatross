@@ -27,13 +27,10 @@ class SerializableRegressionModel : public RegressionModel<FeatureType> {
   SerializableRegressionModel() : model_fit_() {};
   virtual ~SerializableRegressionModel() {};
 
-  template <typename OtherFit>
-  bool operator == (const SerializableRegressionModel<FeatureType, OtherFit> &other) const {
-    return false;
-  }
-
   bool operator == (const SerializableRegressionModel<FeatureType, ModelFit> &other) const {
-    return (RegressionModel<FeatureType>::operator ==(other) &&
+    return (this->get_name() == other.get_name() &&
+            this->get_params() == other.get_params() &&
+            this->has_been_fit() == other.has_been_fit() &&
             model_fit_ == other.get_fit());
   }
 

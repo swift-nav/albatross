@@ -10,14 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CEREAL_UTILS_H
-#define ALBATROSS_CEREAL_UTILS_H
+#ifndef ALBATROSS_CEREAL_EIGEN_H
+#define ALBATROSS_CEREAL_EIGEN_H
 
 
 #include "cereal/cereal.hpp"
 #include <cereal/types/map.hpp>
 #include <cereal/types/vector.hpp>
-#include <map>
 #include "Eigen/Dense"
 
 namespace cereal {

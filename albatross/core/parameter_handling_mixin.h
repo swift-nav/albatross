@@ -18,9 +18,9 @@
 #include <map>
 #include <vector>
 
-#include "cereal_utils.h"
 #include "keys.h"
 #include "map_utils.h"
+#include "cereal/cereal.hpp"
 
 namespace albatross {
 
