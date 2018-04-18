@@ -22,7 +22,7 @@
 #include "core/serialize.h"
 #include "models/gp.h"
 #include "covariance_functions/covariance_functions.h"
-#include "models/linear_regression.h"
+#include "models/least_squares.h"
 #include <cereal/types/map.hpp>
 
 
@@ -145,46 +145,39 @@ static inline void expect_parameter_vector_equal(const std::vector<ParameterValu
 }
 
 
-static inline RegressionDataset<Eigen::VectorXd> make_toy_linear_regression_data(const double a = 5.,
-                                                                                 const double b = 1.,
-                                                                                 const double sigma = 0.1) {
+static inline auto make_toy_linear_data(const double a = 5.,
+                                                             const double b = 1.,
+                                                             const double sigma = 0.1) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(3);
   std::normal_distribution<> d{0., sigma};
 
   s32 n = 10;
-  std::vector<Eigen::VectorXd> features;
+  std::vector<double> features;
   Eigen::VectorXd targets(n);
-  Eigen::VectorXd coefs(2);
-  coefs << a, b;
 
   for (s32 i = 0; i < n; i++) {
     double x = static_cast<double>(i);
-    auto feature = Eigen::VectorXd(2);
-    feature << 1., x;
-    features.push_back(feature);
-    targets[i] = feature.dot(coefs) + d(gen);
+    features.push_back(x);
+    targets[i] = a + x * b + d(gen);
   }
 
-  return RegressionDataset<Eigen::VectorXd>(features, targets);
+  return RegressionDataset<double>(features, targets);
 }
 
 class LinearRegressionTest : public ::testing::Test {
  public:
-  LinearRegressionTest() : model_ptr_(), dataset_({}, {}) {
 
+  LinearRegressionTest() : model_ptr_(), dataset_() {
     model_ptr_ = std::make_unique<LinearRegression>();
-    dataset_ = make_toy_linear_regression_data();
+    dataset_ = make_toy_linear_data();
   };
 
   std::unique_ptr<LinearRegression> model_ptr_;
-  RegressionDataset<Eigen::VectorXd> dataset_;
+  RegressionDataset<double> dataset_;
 };
 
-using SqrExp = SquaredExponential<ScalarDistance>;
-class SquaredExpoentialGaussianProcess : public GaussianProcessRegression<double, CovarianceFunction<SqrExp>> {
-};
 
 }
 

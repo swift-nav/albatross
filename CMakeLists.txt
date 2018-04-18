@@ -33,11 +33,13 @@ set(albatross_HEADERS
     albatross/map_utils.h
     albatross/core/keys.h
     albatross/core/model.h
+    albatross/core/model_adapter.h
     albatross/core/traits.h
     albatross/core/serialize.h
     albatross/core/parameter_handling_mixin.h    
     albatross/cereal/eigen.h
     albatross/models/gp.h
+    albatross/models/least_squares.h
     albatross/covariance_functions/covariance_term.h
     albatross/covariance_functions/covariance_functions.h
     albatross/covariance_functions/distance_metrics.h

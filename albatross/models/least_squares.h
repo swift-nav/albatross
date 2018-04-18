@@ -54,7 +54,8 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
    * This lets you customize the least squares approach if need be,
    * default uses the QR decomposition.
    */
-  virtual Eigen::VectorXd least_squares_solver(Eigen::MatrixXd &A, Eigen::VectorXd &b) {
+  virtual Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
+                                               const Eigen::VectorXd &b) const {
     return A.colPivHouseholderQr().solve(b);
   }
 
