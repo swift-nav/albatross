@@ -46,6 +46,8 @@ struct RegressionDataset {
   std::vector<FeatureType> features;
   Eigen::VectorXd targets;
 
+  RegressionDataset() {};
+
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
       : features(features_), targets(targets_) {

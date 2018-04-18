@@ -19,6 +19,15 @@ namespace albatross {
 
 struct ConstantTerm {};
 
+/*
+ * The Constant covariance term represents a single scalar
+ * value that is shared across all FeatureTypes.  This can
+ * be thought of as a mean term.  In fact, the only reason
+ * it isn't called a mean term is to avoid ambiguity with the
+ * mean of a Gaussian process and because with a prior, the
+ * underlying constant term would actually be a biased estimate
+ * of the mean.
+ */
 class Constant : public CovarianceTerm {
  public:
   Constant(double sigma_constant = 10.) {
