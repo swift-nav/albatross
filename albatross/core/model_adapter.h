@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2018 Swift Navigation Inc
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -25,10 +25,10 @@ namespace albatross {
 template <typename FeatureType, typename SubModelType>
 class AdaptedRegressionModel : public RegressionModel<FeatureType> {
  public:
-  typedef typename SubModelType::Feature SubFeature;
+  using SubFeature = typename SubModelType::Feature;
 
   AdaptedRegressionModel() : sub_model_(){};
-  AdaptedRegressionModel(SubModelType& sub_model) : sub_model_(sub_model){};
+  AdaptedRegressionModel(const SubModelType& sub_model) : sub_model_(sub_model){};
   virtual ~AdaptedRegressionModel() {};
 
   virtual SubFeature convert_feature(const FeatureType& parent_feature) const = 0;

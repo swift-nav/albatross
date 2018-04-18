@@ -87,7 +87,7 @@ struct RegressionFold {
 template <typename FeatureType>
 class RegressionModel : public ParameterHandlingMixin {
  public:
-  typedef FeatureType Feature;
+  using Feature = FeatureType;
   RegressionModel() : ParameterHandlingMixin(), has_been_fit_() {};
   virtual ~RegressionModel(){};
 

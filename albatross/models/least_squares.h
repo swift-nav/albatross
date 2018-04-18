@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_MODELS_LEAST_SQUARES_H
 #define ALBATROSS_MODELS_LEAST_SQUARES_H
 
-/*
- * Here we define a LeastSquaresRegression model which is less because
- * it'll be super useful on its own (albatross is probably overkill
- * if all you need is linear regression) but serves as an example of
- * extending the `RegressionModel` for non Gaussian process models.
- */
-
 #include <gtest/gtest.h>
 #include <cmath>
 #include <Eigen/Dense>
