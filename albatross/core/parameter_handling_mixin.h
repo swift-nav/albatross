@@ -21,6 +21,7 @@
 #include "keys.h"
 #include "map_utils.h"
 #include "cereal/cereal.hpp"
+#include <cereal/types/map.hpp>
 
 namespace albatross {
 
