@@ -46,6 +46,8 @@ struct RegressionDataset {
   std::vector<FeatureType> features;
   Eigen::VectorXd targets;
 
+  RegressionDataset() {};
+
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
       : features(features_), targets(targets_) {
@@ -85,7 +87,7 @@ struct RegressionFold {
 template <typename FeatureType>
 class RegressionModel : public ParameterHandlingMixin {
  public:
-  typedef FeatureType Feature;
+  using Feature = FeatureType;
   RegressionModel() : ParameterHandlingMixin(), has_been_fit_() {};
   virtual ~RegressionModel(){};
 

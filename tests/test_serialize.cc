@@ -16,12 +16,19 @@
 
 #include "test_utils.h"
 
+#include "models/gp.h"
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
 
 CEREAL_REGISTER_TYPE_WITH_NAME(albatross::MockModel, "mock_model_name");
 
 namespace albatross {
+
+using SqrExp = SquaredExponential<ScalarDistance>;
+using Noise = IndependentNoise<double>;
+using SqrExpAndNoise = SumOfCovarianceTerms<SqrExp, Noise>;
+using CovFunc = CovarianceFunction<SqrExpAndNoise>;
+using SquaredExpoentialGaussianProcess = GaussianProcessRegression<double, CovFunc>;
 
 /*
  * Make sure we can serialize a model and recover the parameters.
@@ -182,14 +189,10 @@ class FitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExp
 public:
   RepresentationType create() const override {
 
-    auto dataset = make_toy_linear_regression_data();
-    std::vector<double> features;
-    for (const auto &row : dataset.features) {
-      features.push_back(row[1]);
-    }
+    auto dataset = make_toy_linear_data();
     auto gp = std::make_unique<SquaredExpoentialGaussianProcess>();
     gp->set_param("length_scale", log(2.));
-    gp->fit(features, dataset.targets);
+    gp->fit(dataset);
     return gp;
   }
   bool are_equal(const RepresentationType &lhs,

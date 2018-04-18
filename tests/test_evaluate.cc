@@ -15,7 +15,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include "evaluate.h"
-#include "models/linear_regression.h"
+#include "models/least_squares.h"
 
 #include "test_utils.h"
 
@@ -24,9 +24,11 @@ namespace albatross {
 TEST_F(LinearRegressionTest, test_leave_one_out) {
   PredictionDistribution preds = model_ptr_->fit_and_predict(
       dataset_.features, dataset_.targets, dataset_.features);
+  std::cout << "RMSE" << std::endl;
   double in_sample_rmse = root_mean_square_error(preds, dataset_.targets);
 
   const auto folds = leave_one_out(dataset_);
+  std::cout << "Cross validated" << std::endl;
   Eigen::VectorXd rmses =
       cross_validated_scores(folds, root_mean_square_error, model_ptr_.get());
   double out_of_sample_rmse = rmses.mean();
@@ -39,10 +41,10 @@ TEST_F(LinearRegressionTest, test_leave_one_out) {
 
 // Group values by interval, but return keys that once sorted won't be
 // in order
-std::string group_by_interval(Eigen::VectorXd x) {
-  if (x[1] <= 3) {
+std::string group_by_interval(const double &x) {
+  if (x <= 3) {
     return "2";
-  } else if (x[1] <= 6) {
+  } else if (x <= 6) {
     return "3";
   } else {
     return "1";
@@ -59,7 +61,7 @@ bool is_monotonic_increasing(Eigen::VectorXd &x) {
 }
 
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {
-  const auto folds = leave_one_group_out<Eigen::VectorXd>(dataset_, group_by_interval);
+  const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
 
   PredictionDistribution preds =
       cross_validated_predict(folds, model_ptr_.get());
@@ -72,7 +74,7 @@ TEST_F(LinearRegressionTest, test_cross_validated_predict) {
 }
 
 TEST_F(LinearRegressionTest, test_leave_one_group_out) {
-  const auto folds = leave_one_group_out<Eigen::VectorXd>(dataset_, group_by_interval);
+  const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
   Eigen::VectorXd rmses =
       cross_validated_scores(folds, root_mean_square_error, model_ptr_.get());
 
