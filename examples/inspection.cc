@@ -34,20 +34,18 @@ int main(int argc, char *argv[]) {
   using Noise = IndependentNoise<double>;
   using SqrExp = SquaredExponential<ScalarDistance>;
 
-  const auto constant_term = Constant(100.);
+  auto constant_term = Constant(100.);
   CovarianceFunction<Constant> constant = {constant_term};
   CovarianceFunction<SlopeTerm> slope = {SlopeTerm(100.)};
   CovarianceFunction<Noise> noise = {Noise(meas_noise)};
   CovarianceFunction<SqrExp> sqrexp = {SqrExp(2., 5.)};
 
-
-
   auto linear_model = constant + slope + noise + sqrexp;
 
-  std::cout << "Using Model:" << std::endl;
-  std::cout << linear_model.to_string() << std::endl;
+  auto model = gp_from_covariance<double>(linear_model);
 
-  auto model = gp_from_covariance(linear_model);
+  std::cout << "Using Model:" << std::endl;
+  std::cout << model.pretty_string() << std::endl;
 
   model.fit(data);
 

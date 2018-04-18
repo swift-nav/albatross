@@ -13,70 +13,50 @@
 #ifndef ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
-#include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <vector>
+
 #include "keys.h"
 #include "map_utils.h"
+#include "cereal/cereal.hpp"
 
 namespace albatross {
 
 using ParameterKey = std::string;
 using ParameterValue = double;
+// If you change the way these are stored, be sure there's
+// a corresponding cereal type included or you'll get some
+// really impressive compilation errors.
 using ParameterStore = std::map<ParameterKey, ParameterValue>;
 
+/*
+ * Prints out a set of parameters in a way that is both
+ * readable and can be easily copy/pasted into code.
+ */
+inline std::string pretty_params(const ParameterStore &params) {
+  std::ostringstream ss;
+  ss << "{" << std::endl;
+  for (const auto &pair : params) {
+    ss << "    {\"" << pair.first << "\", " << pair.second << "},"
+       << std::endl;
+  }
+  ss << "};" << std::endl;
+  return ss.str();
+}
+
+/*
+ * This mixin class is intended to be included an any class which
+ * depends on some set of parameters which we want to programatically
+ * change for things such as optimization routines / seralization.
+ */
 class ParameterHandlingMixin {
  public:
   ParameterHandlingMixin() : params_(){};
   ParameterHandlingMixin(const ParameterStore &params) : params_(params){};
 
   virtual ~ParameterHandlingMixin(){};
-
-  virtual std::string get_name() const = 0;
-
-  YAML::Node to_yaml() const {
-    YAML::Node yaml_model;
-    yaml_model[keys::YAML_MODEL_NAME] = get_name();
-
-    YAML::Node yaml_params;
-    for (const auto &pair : get_params()) {
-      yaml_params[pair.first] = pair.second;
-    }
-    yaml_model[keys::YAML_MODEL_PARAMS] = yaml_params;
-    return yaml_model;
-  }
-
-  std::string to_string() const { return YAML::Dump(to_yaml()); }
-
-  void to_file(const std::string &path) const {
-    std::ofstream output_file;
-    output_file.open(path);
-    output_file << to_string();
-    output_file.close();
-  }
-
-  void from_string(const std::string &serialized_string) {
-    // Load the YAML config file
-    const YAML::Node yaml_params = YAML::Load(serialized_string);
-    from_yaml(yaml_params);
-  }
-
-  void from_yaml(const YAML::Node &yaml_input) {
-    YAML::Node yaml_params = yaml_input;
-    if (YAML::Node model_name = yaml_params[keys::YAML_MODEL_NAME]) {
-      assert(model_name.as<std::string>() == get_name());
-      yaml_params = yaml_params[keys::YAML_MODEL_PARAMS].as<YAML::Node>();
-    }
-
-    ParameterStore params;
-    for (YAML::const_iterator it = yaml_params.begin(); it != yaml_params.end();
-         ++it) {
-      params[it->first.as<ParameterKey>()] = it->second.as<ParameterValue>();
-    }
-    set_params(params);
-  }
 
   /*
    * Provides a safe interface to the parameter values
@@ -95,27 +75,10 @@ class ParameterHandlingMixin {
   }
 
   /*
-   * Prints out a set of parameters in a way that is both
-   * readable and can be easily copy/pasted into code.
-   */
-  std::string pretty_params() {
-    std::stringstream ss;
-    ss << "name = " << get_name() << std::endl;
-    ss << "params = {" << std::endl;
-    for (const auto &pair : get_params()) {
-      ss << "    {\"" << pair.first << "\", " << pair.second << "},"
-         << std::endl;
-    }
-    ss << "};" << std::endl;
-    return ss.str();
-  }
-
-  /*
-   * These method which collapse a set of vectors to a vector, and
+   * These methods which collapse a set of vectors to a vector, and
    * set them from a vector facilitate things like tuning in which
    * some function doesn't actually care what any of the parameters
-   * correspond to, it wants to perturb them and come up with new
-   * paramter sets.
+   * correspond to.
    */
   std::vector<ParameterValue> get_params_as_vector() const {
     std::vector<ParameterValue> x;
@@ -138,6 +101,26 @@ class ParameterHandlingMixin {
   }
 
   /*
+   * For serialization through cereal.
+   */
+  template <class Archive>
+  void save(Archive & archive) const {
+    archive(cereal::make_nvp("parameter_store", params_));
+  };
+
+  template <class Archive>
+  void load(Archive & archive) {
+    archive(cereal::make_nvp("parameter_store", params_));
+  };
+
+  /*
+   * For debugging.
+   */
+  std::string pretty_string() const {
+    return pretty_params(get_params());
+  }
+
+  /*
    * The following methods are ones that may want to be overriden for
    * clasess that contain nested params (for example).
    */
@@ -152,6 +135,7 @@ class ParameterHandlingMixin {
  protected:
   ParameterStore params_;
 };
+
 }
 
 #endif

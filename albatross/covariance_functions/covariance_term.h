@@ -13,9 +13,8 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 
-#include <sstream>
-
-#include "../core/static_inspection.h"
+#include <iostream>
+#include "../core/traits.h"
 #include "map_utils.h"
 #include "core/parameter_handling_mixin.h"
 
@@ -29,6 +28,15 @@ class CovarianceTerm : public ParameterHandlingMixin {
  public:
   CovarianceTerm() : ParameterHandlingMixin(){};
   virtual ~CovarianceTerm(){};
+
+  virtual std::string get_name() const = 0;
+
+  std::string pretty_string() const {
+    std::ostringstream ss;
+    ss << get_name() << std::endl;
+    ss << ParameterHandlingMixin::pretty_string();
+    return ss.str();
+  }
 };
 
 /*
@@ -41,6 +49,7 @@ class CovarianceTerm : public ParameterHandlingMixin {
 template <class LHS, class RHS>
 class CombinationOfCovarianceTerms : public CovarianceTerm {
  public:
+  CombinationOfCovarianceTerms() : lhs_(), rhs_(){};
   CombinationOfCovarianceTerms(LHS &lhs, RHS &rhs) : lhs_(lhs), rhs_(rhs){};
   virtual ~CombinationOfCovarianceTerms(){};
 
@@ -76,6 +85,8 @@ class CombinationOfCovarianceTerms : public CovarianceTerm {
 template <class LHS, class RHS>
 class SumOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
  public:
+  SumOfCovarianceTerms()
+      : CombinationOfCovarianceTerms<LHS, RHS>(){};
   SumOfCovarianceTerms(LHS &lhs, RHS &rhs)
       : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
 
@@ -123,6 +134,8 @@ class SumOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
 template <class LHS, class RHS>
 class ProductOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
  public:
+  ProductOfCovarianceTerms()
+      : CombinationOfCovarianceTerms<LHS, RHS>(){};
   ProductOfCovarianceTerms(LHS &lhs, RHS &rhs)
       : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
 

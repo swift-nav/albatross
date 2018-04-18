@@ -18,6 +18,8 @@
 #include <vector>
 #include "map_utils.h"
 #include "parameter_handling_mixin.h"
+#include "traits.h"
+#include <cereal/archives/json.hpp>
 
 namespace albatross {
 
@@ -39,12 +41,12 @@ struct PredictionDistribution {
  * it is assumed that each feature is regressed to a single double typed
  * target.
  */
-template <class Feature>
+template <typename FeatureType>
 struct RegressionDataset {
-  std::vector<Feature> features;
+  std::vector<FeatureType> features;
   Eigen::VectorXd targets;
 
-  RegressionDataset(const std::vector<Feature> &features_,
+  RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
       : features(features_), targets(targets_) {
     // If the two inputs aren't the same size they clearly aren't
@@ -63,35 +65,53 @@ using FoldIndexer = std::map<FoldName, FoldIndices>;
  * A combination of training and testing datasets, typically used in cross
  * validation.
  */
-template <class Feature>
+template <typename FeatureType>
 struct RegressionFold {
-  RegressionDataset<Feature> train;
-  RegressionDataset<Feature> test;
+  RegressionDataset<FeatureType> train_dataset;
+  RegressionDataset<FeatureType> test_dataset;
   FoldName name;
   FoldIndices test_indices;
 
-  RegressionFold(const RegressionDataset<Feature> &train_,
-                 const RegressionDataset<Feature> &test_,
+  RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
+                 const RegressionDataset<FeatureType> &test_dataset_,
                  const FoldName &name_, const FoldIndices &test_indices_)
-      : train(train_), test(test_), name(name_), test_indices(test_indices_){};
+      : train_dataset(train_dataset_), test_dataset(test_dataset_), name(name_), test_indices(test_indices_){};
 };
 
 /*
  * A model that uses a single Feature to estimate the value of a double typed
  * target.
  */
-template <class Feature>
+template <typename FeatureType>
 class RegressionModel : public ParameterHandlingMixin {
  public:
-  RegressionModel() : ParameterHandlingMixin(), has_been_fit_(false){};
+  typedef FeatureType Feature;
+  RegressionModel() : ParameterHandlingMixin(), has_been_fit_() {};
   virtual ~RegressionModel(){};
+
+  template <typename OtherFeatureType>
+  bool operator == (const RegressionModel<FeatureType> &other) const {
+    return false;
+  }
+
+  virtual bool operator == (const RegressionModel<FeatureType> &other) const {
+    // If the fit method has been called it's possible that some unknown
+    // class members may have been modified.  As such, if a model has been
+    // fit we fail hard to avoid possibly unexpected behavior.  Any
+    // implementation that wants a functional equality operator after
+    // having been fit will need to override this one.
+    assert(!has_been_fit());
+    return (get_name() == other.get_name() &&
+            get_params() == other.get_params() &&
+            has_been_fit() == other.has_been_fit());
+  }
 
   /*
    * Provides a wrapper around the implementation `fit_` which performs
    * simple size checks and makes sure the fit method is called before
    * predict.
    */
-  void fit(const std::vector<Feature> &features,
+  void fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
@@ -102,7 +122,7 @@ class RegressionModel : public ParameterHandlingMixin {
   /*
    * Convenience function which unpacks a dataset into features and targets.
    */
-  void fit(const RegressionDataset<Feature> &dataset) {
+  void fit(const RegressionDataset<FeatureType> &dataset) {
     fit(dataset.features, dataset.targets);
   }
 
@@ -112,8 +132,8 @@ class RegressionModel : public ParameterHandlingMixin {
    * properly sized PredictionDistributions.
    */
   PredictionDistribution predict(
-      const std::vector<Feature> &features) const {
-    assert(has_been_fit_);
+      const std::vector<FeatureType> &features) const {
+    assert(has_been_fit());
     PredictionDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
@@ -127,9 +147,9 @@ class RegressionModel : public ParameterHandlingMixin {
    * some models.
    */
   PredictionDistribution fit_and_predict(
-      const std::vector<Feature> &train_features,
+      const std::vector<FeatureType> &train_features,
       const Eigen::VectorXd &train_targets,
-      const std::vector<Feature> &test_features) {
+      const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
     return predict(test_features);
@@ -140,24 +160,66 @@ class RegressionModel : public ParameterHandlingMixin {
    * in a RegressionFold struct
    */
   PredictionDistribution fit_and_predict(
-      const RegressionFold<Feature> &fold) {
+      const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
   }
 
+  std::string pretty_string() const {
+    std::ostringstream ss;
+    ss << get_name() << std::endl;
+    ss << ParameterHandlingMixin::pretty_string();
+    return ss.str();
+  }
+
+  virtual bool has_been_fit() const {
+    return has_been_fit_;
+  }
+
+  virtual std::string get_name() const = 0;
+
+  /*
+   * Here we define the serialization routines.  Note that while in most
+   * cases we could use the cereal method `serialize`, in this case we don't
+   * know for sure where the parameters are stored.  The GaussianProcessRegression
+   * model, for example, derives its parameters from its covariance function,
+   * so it's `params_` are actually empty.  As a result we need to use the
+   * save/load cereal variant and deal with parameters through the get/set
+   * interface.
+   */
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    auto params = get_params();
+    archive(cereal::make_nvp("parameters", params));
+    archive(cereal::make_nvp("has_been_fit", has_been_fit_));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    auto params = get_params();
+    archive(cereal::make_nvp("parameters", params));
+    archive(cereal::make_nvp("has_been_fit", has_been_fit_));
+    set_params(params);
+  }
+
  protected:
-  virtual void fit_(const std::vector<Feature> &features,
+
+  virtual void fit_(const std::vector<FeatureType> &features,
                     const Eigen::VectorXd &targets) = 0;
 
   virtual PredictionDistribution predict_(
-      const std::vector<Feature> &features) const = 0;
+      const std::vector<FeatureType> &features) const = 0;
 
-  bool has_been_fit_ = false;
+
+  bool has_been_fit_;
 };
 
-template <class Feature>
+
+template <typename FeatureType>
 using RegressionModelCreator =
-    std::function<std::unique_ptr<RegressionModel<Feature>>()>;
+    std::function<std::unique_ptr<RegressionModel<FeatureType>>()>;
 }
 
 #endif
