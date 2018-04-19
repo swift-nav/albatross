@@ -22,7 +22,9 @@ DEFINE_string(n, "10", "number of training points to use.");
 
 double loo_nll(const albatross::RegressionDataset<double> &dataset,
                 albatross::RegressionModel<double> *model) {
+  std::cout << "create folds" << std::endl;
   auto loo_folds = albatross::leave_one_out(dataset);
+  std::cout << "cross validate" << std::endl;
   return albatross::cross_validated_scores(albatross::negative_log_likelihood,
                                            loo_folds, model).mean();
 }
@@ -61,29 +63,22 @@ int main(int argc, char *argv[]) {
    */
   std::cout << "Instantiating the model." << std::endl;
   auto model = gp_from_covariance<double>(linear_model);
-  model.fit(data);
 
   /*
-   * This step could be skipped but both tests and illustrates how a
-   * Gaussian process can be serialized, then deserialized.
+   * Tuning works by iteratively creating new models and assigning
+   * them different parameters.  In order to do so it needs a function
+   * that will generate a pointer to a new model which we define here
+   * using lambdas.
    */
-  std::ostringstream oss;
-  std::cout << "Serializing the model." << std::endl;
-  {
-    cereal::JSONOutputArchive archive(oss);
-    archive(cereal::make_nvp(model.get_name(), model));
-  }
-  std::istringstream iss(oss.str());
-  auto deserialized = gp_from_covariance<double>(linear_model);
-  std::cout << "Deserializing the model." << std::endl;
-  {
-    cereal::JSONInputArchive archive(iss);
-    archive(cereal::make_nvp(model.get_name(), deserialized));
-  }
+  RegressionModelCreator<double> model_creator = [linear_model]() {
+    return gp_pointer_from_covariance<double>(linear_model);
+  };
 
   /*
-   * Make predictions at a bunch of locations which we can then
-   * visualize if desired.
+   * Now we tune the model by finding the hyper parameters that
+   * maximize the likelihood (or minimize the negative log likelihood).
    */
-  write_predictions_to_csv(FLAGS_output, deserialized, low, high);
+  std::cout << "Tuning the model." << std::endl;
+  TuningMetric<double> metric = loo_nll;
+  auto params = tune_regression_model<double>(model_creator, data, metric);
 }

@@ -91,26 +91,19 @@ ParameterStore tune_regression_model(
 
   assert(x.size());
 
-  std::cout << "About to call nlopt" << std::endl;
   // The various algorithms in nlopt are coded by the first two characters.
   // In this case LN stands for local, gradient free.
   nlopt::opt opt(nlopt::LN_PRAXIS, (unsigned)x.size());
-  std::cout << "Instantiated opt object" << std::endl;
   opt.set_min_objective(objective_function<Predictor>, (void *)&config);
-  std::cout << "set the objective function" << std::endl;
   opt.set_ftol_abs(1e-8);
-  std::cout << "set the ftol_abs" << std::endl;
   opt.set_ftol_rel(1e-6);
-  std::cout << "set the ftol_rel" << std::endl;
   // the sensitivity to parameters varies greatly between parameters so
   // terminating based on change in x isn't a great criteria, we only
   // terminate based on xtol if the change is super small.
   opt.set_xtol_rel(1e-8);
-  std::cout << "set the xtol_rel" << std::endl;
   double minf;
   opt.optimize(x, minf);
 
-  std::cout << "Done with nlopt" << std::endl;
   // Tell the user what the final parameters were.
   example_model->set_params_from_vector(inverse_parameters(x));
   std::cout << "==================" << std::endl;

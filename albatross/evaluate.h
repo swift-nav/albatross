@@ -18,6 +18,7 @@
 #include <memory>
 #include <functional>
 #include "core/model.h"
+#include <Eigen/Dense>
 #include <Eigen/Cholesky>
 
 namespace albatross {
@@ -40,7 +41,8 @@ static inline double negative_log_likelihood(const PredictionDistribution& predi
   auto cholesky = llt.matrixL();
   double det = cholesky.determinant();
   double log_det = log(det);
-  auto normalized_residuals = cholesky.solve(prediction.mean - truth);
+  Eigen::VectorXd normalized_residuals(truth.size());
+  normalized_residuals = cholesky.solve(prediction.mean - truth);
   double residuals = normalized_residuals.dot(normalized_residuals);
   return 0.5 * (log_det + residuals + static_cast<double>(truth.size()) * 2 * M_PI);
 }
