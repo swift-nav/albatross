@@ -89,7 +89,7 @@ class LinearRegression : public AdaptedRegressionModel<double, LeastSquaresRegre
 
   std::string get_name() const override { return "linear_regression"; };
 
-  Eigen::VectorXd convert_feature(const double& x) const {
+  const Eigen::VectorXd convert_feature(const double& x) const {
     Eigen::VectorXd converted(2);
     converted << 1., x;
     return converted;

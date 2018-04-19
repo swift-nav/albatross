@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_CORE_MODEL_ADAPTER_H
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
+#include "model.h"
+
 namespace albatross {
 
 /*
@@ -21,9 +23,14 @@ namespace albatross {
  * converting from X to Y.
  *
  * A good example can be found in the definition of LinearRegression.
+ *
+ * Note that RegressionModelImplementation exists in case one wants
+ * to adapt something that has extended RegressionModel.
  */
-template <typename FeatureType, typename SubModelType>
-class AdaptedRegressionModel : public RegressionModel<FeatureType> {
+template <typename FeatureType,
+          typename SubModelType,
+          typename RegressionModelImplementation=RegressionModel<FeatureType>>
+class AdaptedRegressionModel : public RegressionModelImplementation{
  public:
   using SubFeature = typename SubModelType::Feature;
 
@@ -31,7 +38,9 @@ class AdaptedRegressionModel : public RegressionModel<FeatureType> {
   AdaptedRegressionModel(const SubModelType& sub_model) : sub_model_(sub_model){};
   virtual ~AdaptedRegressionModel() {};
 
-  virtual SubFeature convert_feature(const FeatureType& parent_feature) const = 0;
+  // This function will often be required by AdaptedModels
+  // The default implementation is a null operation.
+  virtual const SubFeature convert_feature(const FeatureType& parent_feature) const = 0;
 
   std::string get_name() const override { return sub_model_.get_name(); };
 
@@ -69,7 +78,7 @@ class AdaptedRegressionModel : public RegressionModel<FeatureType> {
 
  protected:
 
-  std::vector<SubFeature> convert_features(const std::vector<FeatureType> &parent_features) const {
+  const std::vector<SubFeature> convert_features(const std::vector<FeatureType> &parent_features) const {
     std::vector<SubFeature> converted;
     for (const auto &f : parent_features) {
       converted.push_back(convert_feature(f));
