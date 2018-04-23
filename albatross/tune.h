@@ -23,20 +23,17 @@ namespace albatross {
 std::vector<ParameterValue> transform_parameters(
     const std::vector<ParameterValue>& x) {
   std::vector<ParameterValue> transformed(x.size());
-  for (std::size_t i = 0; i < x.size(); i++) {
-    transformed[i] = log(x[i]);
-  }
+  std::transform(x.begin(), x.end(), transformed.begin(), log);
   return transformed;
 }
 
 std::vector<ParameterValue> inverse_parameters(
     const std::vector<ParameterValue>& x) {
   std::vector<ParameterValue> inverted(x.size());
-  for (std::size_t i = 0; i < x.size(); i++) {
-    inverted[i] = exp(x[i]);
-  }
+  std::transform(x.begin(), x.end(), inverted.begin(), exp);
   return inverted;
 }
+
 template <class Predictor>
 using TuningMetric = std::function<double(const RegressionDataset<Predictor> &,
                                           RegressionModel<Predictor> *)>;

@@ -142,6 +142,12 @@ class RegressionModel : public ParameterHandlingMixin {
     return preds;
   }
 
+  PredictionDistribution predict(
+      const FeatureType &feature) const {
+    std::vector<FeatureType> features = {feature};
+    return predict(features);
+  }
+
   /*
    * Computes predictions for the test features given set of training
    * features and targets. In the general case this is simply a call to fit,
