@@ -29,6 +29,7 @@ CACHE INTERNAL ""
 )
 
 set(albatross_HEADERS
+    albatross/tune.h
     albatross/evaluate.h
     albatross/map_utils.h
     albatross/core/keys.h

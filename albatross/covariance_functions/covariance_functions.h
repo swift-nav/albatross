@@ -62,11 +62,11 @@ struct CovarianceFunction {
             typename Y,
             typename std::enable_if<(!has_call_operator<Term, X&, Y&>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const = delete; // see code for help debugging.
+  double operator() (X &x, Y &y) const = delete; // see below for help debugging.
   /*
    * If you encounter a deleted function error here ^ it implies that you've
    * attempted to call a covariance function with arguments X, Y that are
-   * undefined for the corresponding CovarianceTerm.  The subsequent compiler
+   * undefined for the corresponding CovarianceTerm(s).  The subsequent compiler
    * errors should give you an indication of which types were attempted.
    */
 
@@ -142,6 +142,7 @@ Eigen::MatrixXd asymmetric_covariance(
   }
   return C;
 }
+
 }
 
 #endif

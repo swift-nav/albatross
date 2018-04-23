@@ -104,13 +104,11 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
                                                  this->model_fit_.train_features);
     // Then we can use the information vector to determine the posterior
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
-
     // TODO: right now this is recomputing the LDLT, so is highly inefficient,
     // Ideally this would get stored inside GaussianProcessFit.
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
     auto ldlt = this->model_fit_.train_covariance.ldlt();
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-
     return PredictionDistribution(pred, pred_cov);
   }
 
