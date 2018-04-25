@@ -16,7 +16,7 @@
 namespace albatross {
 
 /*
- * This struct determines whether or not a class has a method defined for,
+ * This determines whether or not a class has a method defined for,
  *   `operator() (X x, Y y, Z z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
@@ -31,6 +31,24 @@ class has_call_operator
 
 public:
     static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
+ * This traits helper class defines `::type` to be `T::FitType`
+ * if a type with that name has been defined for T and will
+ * otherwise be `void`.
+ */
+template <typename T>
+class fit_type_or_void
+{
+    template <typename C,
+              typename = typename C::FitType>
+    static typename C::FitType test(int);
+    template <typename C>
+    static void test(...);
+
+public:
+    typedef decltype(test<T>(0)) type;
 };
 
 }

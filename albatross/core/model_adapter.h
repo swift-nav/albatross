@@ -14,8 +14,11 @@
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
 #include "model.h"
+#include "traits.h"
+#include "serialize.h"
 
 namespace albatross {
+
 
 /*
  * This provides a way of creating a RegressionModel<X> which
@@ -44,39 +47,54 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
 
   std::string get_name() const override { return sub_model_.get_name(); };
 
-  void fit_(const std::vector<FeatureType>& features,
-            const Eigen::VectorXd& targets) override {
-    sub_model_.fit(convert_features(features), targets);
-  }
-
   bool has_been_fit() const override { return sub_model_.has_been_fit(); }
 
-  PredictionDistribution predict_(
-      const std::vector<FeatureType>& features) const override {
-    auto predictions = sub_model_.predict(convert_features(features));
-    return predictions;
-  };
-
   ParameterStore get_params() const override { return sub_model_.get_params(); }
+
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+    archive(cereal::make_nvp("sub_model", sub_model_));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+    archive(cereal::make_nvp("sub_model", sub_model_));
+  }
 
   void unchecked_set_param(const std::string& name,
                            const double value) override {
     sub_model_.set_param(name, value);
   }
 
-  template<class Archive>
-  void save(Archive & archive) const
-  {
-    archive(cereal::make_nvp("sub_model", cereal::base_class<RegressionModel<FeatureType>>(this)));
-  }
-
-  template<class Archive>
-  void load(Archive & archive) const
-  {
-    archive(cereal::make_nvp("sub_model", cereal::base_class<RegressionModel<FeatureType>>(this)));
-  }
-
  protected:
+
+  void fit_(const std::vector<FeatureType> &features,
+            const Eigen::VectorXd &targets) override {
+    this->sub_model_.fit(convert_features(features), targets);
+  }
+
+  /*
+   * In order to make it possible for this model adapter to extend
+   * a SerializableRegressionModel we need to define the proper pure virtual
+   * serializable_fit_ method.  Because the function is virtual this
+   * cannot be defined using templating and SFINAE.
+   */
+  typename fit_type_or_void<SubModelType>::type
+  serializable_fit_(const std::vector<FeatureType> &features,
+                         const Eigen::VectorXd &targets) const {
+    assert(false && "serializable_fit_ for an adapted model should never be called");
+    typename fit_type_or_void<SubModelType>::type dummy;
+    return dummy;
+  }
+
+  PredictionDistribution predict_(
+      const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict(convert_features(features));
+  }
 
   const std::vector<SubFeature> convert_features(const std::vector<FeatureType> &parent_features) const {
     std::vector<SubFeature> converted;
@@ -88,7 +106,6 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
 
   SubModelType sub_model_;
 };
-
 
 }
 

@@ -101,15 +101,17 @@ class ModelRepresentation {
   };
 };
 
-using MockSerializablePointer = std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
-using RegressionPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
+using SerializableMockPointer = std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
+using RegressionMockPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
+using SerializableLeastSquaresPointer = std::unique_ptr<SerializableRegressionModel<double, LeastSquaresFit>>;
+using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
 
-
-class UnfitSerializableModel : public ModelRepresentation<MockSerializablePointer> {
+class UnfitSerializableModel : public ModelRepresentation<SerializableMockPointer> {
 public:
   RepresentationType create() const override {
     return std::make_unique<MockModel>(log(2.));
   }
+
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
     return *lhs == *rhs;
@@ -117,7 +119,7 @@ public:
 };
 
 
-class FitSerializableModel : public ModelRepresentation<MockSerializablePointer> {
+class FitSerializableModel : public ModelRepresentation<SerializableMockPointer> {
 public:
   RepresentationType create() const override {
     auto dataset = mock_training_data();
@@ -125,6 +127,7 @@ public:
     model_ptr->fit(dataset);
     return model_ptr;
   }
+
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
     return *lhs == *rhs && lhs->get_fit() == rhs->get_fit();
@@ -140,6 +143,7 @@ public:
     model.fit(dataset);
     return model;
   }
+
   bool are_equal(const RepresentationType &lhs,
                         const RepresentationType &rhs) const override {
     return lhs == rhs && lhs.get_fit() == rhs.get_fit();
@@ -159,7 +163,7 @@ public:
 };
 
 
-class UnfitRegressionModel : public ModelRepresentation<RegressionPointer> {
+class UnfitRegressionModel : public ModelRepresentation<RegressionMockPointer> {
 public:
   RepresentationType create() const override {
     return std::make_unique<MockModel>(log(2.));
@@ -171,6 +175,36 @@ public:
 };
 
 
+class FitLinearRegressionModel : public ModelRepresentation<LinearRegression> {
+ public:
+   RepresentationType create() const override {
+     auto model = LinearRegression();
+     auto dataset = make_toy_linear_data();
+     model.fit(dataset);
+     return model;
+   }
+
+   bool are_equal(const RepresentationType &lhs,
+                  const RepresentationType &rhs) const override {
+     return lhs.get_fit() == rhs.get_fit();
+   };
+};
+
+class FitLinearSerializablePointer : public ModelRepresentation<SerializableLeastSquaresPointer> {
+ public:
+   RepresentationType create() const override {
+     auto model = std::make_unique<LinearRegression>();
+     auto dataset = make_toy_linear_data();
+     model->fit(dataset);
+     return model;
+   }
+
+   bool are_equal(const RepresentationType &lhs,
+                  const RepresentationType &rhs) const override {
+     return lhs->get_fit() == rhs->get_fit();
+   };
+};
+
 class UnfitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExpoentialGaussianProcess>> {
 public:
   RepresentationType create() const override {
@@ -178,6 +212,7 @@ public:
     gp->set_param("length_scale", log(2.));
     return gp;
   }
+
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
     return *lhs == *rhs;
@@ -195,6 +230,7 @@ public:
     gp->fit(dataset);
     return gp;
   }
+
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
     return *lhs == *rhs && lhs->get_fit() == rhs->get_fit();
@@ -213,6 +249,8 @@ typedef ::testing::Types<UnfitSerializableModel,
                          FitSerializableModel,
                          FitDirectModel,
                          UnfitDirectModel,
+                         FitLinearRegressionModel,
+                         FitLinearSerializablePointer,
                          UnfitGaussianProcess,
                          FitGaussianProcess> ModelsAndRepresentations;
 TYPED_TEST_CASE(PolymorphicSerializeTest, ModelsAndRepresentations);
