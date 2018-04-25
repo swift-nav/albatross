@@ -10,19 +10,19 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
+#include "covariance_functions/covariance_functions.h"
+#include "evaluate.h"
 #include "models/gp.h"
 #include "models/least_squares.h"
-#include "covariance_functions/covariance_functions.h"
 #include "test_utils.h"
-#include "evaluate.h"
 #include <cereal/archives/json.hpp>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
 class AbstractTestModel {
- public:
-  virtual ~AbstractTestModel() {};
+public:
+  virtual ~AbstractTestModel(){};
   virtual std::unique_ptr<RegressionModel<double>> create() const = 0;
 };
 
@@ -36,7 +36,6 @@ public:
     auto covariance = squared_exponential + noise;
     return gp_pointer_from_covariance<double>(covariance);
   }
-
 };
 
 class MakeLinearRegression : public AbstractTestModel {
@@ -46,28 +45,25 @@ public:
   }
 };
 
-
 template <typename ModelCreator>
 class RegressionModelTester : public ::testing::Test {
- public:
+public:
   ModelCreator creator;
 };
 
-typedef ::testing::Types<MakeLinearRegression,
-                         MakeGaussianProcess> ModelCreators;
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess>
+    ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
-
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
   std::unique_ptr<RegressionModel<double>> model = this->creator.create();
-  auto cv_scores = cross_validated_scores(root_mean_square_error, folds, model.get());
+  auto cv_scores =
+      cross_validated_scores(root_mean_square_error, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
   EXPECT_LE(cv_scores.mean(), 0.1);
 }
-
-
 }

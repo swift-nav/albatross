@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include "core/model.h"
 #include "test_utils.h"
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -32,7 +32,7 @@ TEST(test_base_model, test_base_model_fit_predict) {
 TEST(test_base_model, test_regression_model_abstraction) {
   // This just tests to make sure that an implementation of a RegressionModel
   // can be passed around as a pointer to the abstract class.
-  std::unique_ptr<RegressionModel<MockPredictor>> m_ptr = std::make_unique<MockModel>();
+  std::unique_ptr<RegressionModel<MockPredictor>> m_ptr =
+      std::make_unique<MockModel>();
 }
-
 }

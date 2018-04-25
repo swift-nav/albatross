@@ -10,12 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
-#include <cmath>
-#include <Eigen/Dense>
-#include <iostream>
 #include "evaluate.h"
 #include "models/least_squares.h"
+#include <Eigen/Dense>
+#include <cmath>
+#include <gtest/gtest.h>
+#include <iostream>
 
 #include "test_utils.h"
 

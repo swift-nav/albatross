@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "gflags/gflags.h"
 #include "example_utils.h"
+#include "gflags/gflags.h"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
@@ -49,9 +49,11 @@ int main(int argc, char *argv[]) {
 
   model.fit(data);
 
-  const auto constant_state = constant_term.get_state_space_representation(data.features);
+  const auto constant_state =
+      constant_term.get_state_space_representation(data.features);
 
   auto posterior_state = model.inspect(constant_state);
   std::cout << "The posterior estimate of the constant term is: ";
-  std::cout << posterior_state.mean << " +/- " << posterior_state.covariance << std::endl;
+  std::cout << posterior_state.mean << " +/- " << posterior_state.covariance
+            << std::endl;
 }
