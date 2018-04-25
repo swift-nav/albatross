@@ -113,7 +113,7 @@ class RegressionModel : public ParameterHandlingMixin {
    * simple size checks and makes sure the fit method is called before
    * predict.
    */
-  void fit(const std::vector<FeatureType> &features,
+  virtual void fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
@@ -124,7 +124,7 @@ class RegressionModel : public ParameterHandlingMixin {
   /*
    * Convenience function which unpacks a dataset into features and targets.
    */
-  void fit(const RegressionDataset<FeatureType> &dataset) {
+  virtual void fit(const RegressionDataset<FeatureType> &dataset) {
     fit(dataset.features, dataset.targets);
   }
 
@@ -133,7 +133,7 @@ class RegressionModel : public ParameterHandlingMixin {
    * and makes simple checks to confirm the implementation is returning
    * properly sized PredictionDistributions.
    */
-  PredictionDistribution predict(
+  virtual PredictionDistribution predict(
       const std::vector<FeatureType> &features) const {
     assert(has_been_fit());
     PredictionDistribution preds = predict_(features);

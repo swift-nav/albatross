@@ -25,6 +25,16 @@ namespace albatross {
 
 struct LeastSquaresFit {
   Eigen::VectorXd coefs;
+
+  bool operator == (const LeastSquaresFit &other) const {
+    return coefs == other.coefs;
+  }
+
+  template <typename Archive>
+  void serialize(Archive &archive) {
+    archive(coefs);
+  }
+
 };
 
 /*
@@ -85,8 +95,12 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
  *
  * Setup like this the resulting fit will represent an offset and slope.
  */
-class LinearRegression : public AdaptedRegressionModel<double, LeastSquaresRegression> {
+class LinearRegression : public AdaptedSerializableRegressionModel<double,
+                                                                   LeastSquaresRegression,
+                                                                   LeastSquaresFit> {
 
+ public:
+  LinearRegression() {};
   std::string get_name() const override { return "linear_regression"; };
 
   const Eigen::VectorXd convert_feature(const double& x) const {
@@ -95,8 +109,24 @@ class LinearRegression : public AdaptedRegressionModel<double, LeastSquaresRegre
     return converted;
   }
 
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    archive(cereal::make_nvp("linear_regression",
+                             cereal::base_class<BaseClass>(this)));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    archive(cereal::make_nvp("linear_regression",
+                             cereal::base_class<BaseClass>(this)));
+  }
+
 };
 
 }
+
+CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 
 #endif

@@ -14,6 +14,7 @@
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
 #include "model.h"
+#include "serialize.h"
 
 namespace albatross {
 
@@ -44,39 +45,57 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
 
   std::string get_name() const override { return sub_model_.get_name(); };
 
-  void fit_(const std::vector<FeatureType>& features,
-            const Eigen::VectorXd& targets) override {
-    sub_model_.fit(convert_features(features), targets);
-  }
-
   bool has_been_fit() const override { return sub_model_.has_been_fit(); }
 
-  PredictionDistribution predict_(
-      const std::vector<FeatureType>& features) const override {
-    auto predictions = sub_model_.predict(convert_features(features));
-    return predictions;
-  };
-
   ParameterStore get_params() const override { return sub_model_.get_params(); }
+
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+    archive(cereal::make_nvp("sub_model", sub_model_));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+    archive(cereal::make_nvp("sub_model", sub_model_));
+  }
 
   void unchecked_set_param(const std::string& name,
                            const double value) override {
     sub_model_.set_param(name, value);
   }
 
-  template<class Archive>
-  void save(Archive & archive) const
-  {
-    archive(cereal::make_nvp("sub_model", cereal::base_class<RegressionModel<FeatureType>>(this)));
+  void fit(const std::vector<FeatureType> &features,
+           const Eigen::VectorXd &targets) override {
+    sub_model_.fit(convert_features(features), targets);
   }
 
-  template<class Archive>
-  void load(Archive & archive) const
-  {
-    archive(cereal::make_nvp("sub_model", cereal::base_class<RegressionModel<FeatureType>>(this)));
+  void fit(const RegressionDataset<FeatureType> &dataset) {
+    fit(dataset.features, dataset.targets);
+  }
+
+  PredictionDistribution predict(
+      const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict(convert_features(features));
   }
 
  protected:
+
+  /*
+   * The AdaptedRegressionModel overrides the RegressionModel's fit_/predict_ methods
+   * which are required to satisfy the abstract interface, but should never be called
+   * since the public fit/predict methods are redirect directly to `sub_model_`.
+   */
+  void fit_(const std::vector<FeatureType>& features) const {
+    assert(false && "this should never be called.");
+  }
+
+  PredictionDistribution predict_(const std::vector<FeatureType>& features) const {
+    assert(false && "this should never be called.");
+  }
 
   const std::vector<SubFeature> convert_features(const std::vector<FeatureType> &parent_features) const {
     std::vector<SubFeature> converted;
@@ -89,6 +108,41 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
   SubModelType sub_model_;
 };
 
+template <typename FeatureType,
+          typename SubModelType,
+          typename ModelFit>
+class AdaptedSerializableRegressionModel
+    : public AdaptedRegressionModel<FeatureType,
+                                    SubModelType,
+                                    SerializableRegressionModel<FeatureType, ModelFit>> {
+ public:
+  using BaseClass = AdaptedRegressionModel<FeatureType,
+      SubModelType,
+      SerializableRegressionModel<FeatureType, ModelFit>>;
+
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    archive(cereal::make_nvp("adapted_serializable_regression_model",
+                             cereal::base_class<SerializableRegressionModel<FeatureType, ModelFit>>(this)));
+    archive(cereal::make_nvp("sub_model", this->sub_model_));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    archive(cereal::make_nvp("adapted_serializable_regression_model",
+                             cereal::base_class<SerializableRegressionModel<FeatureType, ModelFit>>(this)));
+    archive(cereal::make_nvp("sub_model", this->sub_model_));
+  }
+
+ protected:
+
+  ModelFit serializable_fit_(const std::vector<FeatureType> &features,
+                             const Eigen::VectorXd &targets) const {
+    assert(false && "this should never be called"); // see AdaptedRegressionModel
+  }
+};
 
 }
 
