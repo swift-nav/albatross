@@ -67,6 +67,9 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   GaussianProcessRegression(CovarianceFunction& covariance_function,
                             const std::string &model_name)
       : covariance_function_(covariance_function), model_name_(model_name) {};
+  GaussianProcessRegression(const std::string &model_name)
+      : covariance_function_(), model_name_(model_name) {};
+
   ~GaussianProcessRegression(){};
 
   std::string get_name() const override {
@@ -76,11 +79,13 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   template <typename Archive>
   void save(Archive & archive) const {
     archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
+    archive(model_name_);
   }
 
   template <typename Archive>
   void load(Archive & archive) {
     archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
+    archive(model_name_);
   }
 
   template <typename OtherFeatureType>

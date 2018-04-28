@@ -33,6 +33,20 @@ public:
     static constexpr bool value = decltype(test<T>(0))::value;
 };
 
+
+template <typename T, typename... Args>
+class has_fit_type
+{
+  template <typename C,
+            typename = typename C::FitType>
+    static std::true_type test(int);
+    template <typename C>
+    static std::false_type test(...);
+
+public:
+    static constexpr bool value = decltype(test<T>(0))::value;
+};
+
 /*
  * This traits helper class defines `::type` to be `T::FitType`
  * if a type with that name has been defined for T and will

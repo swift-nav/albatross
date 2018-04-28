@@ -37,6 +37,23 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
  public:
   using SubFeature = typename SubModelType::Feature;
 
+  template <typename X, typename T>
+  using enable_if_serializable = std::enable_if<has_fit_type<X>::value, T>;
+
+  template <typename X>
+  using fit_type_if_serializable = typename enable_if_serializable<X, typename fit_type_or_void<X>::type>::type;
+
+  static_assert(std::is_same<RegressionModelImplementation,
+                             RegressionModel<FeatureType>>::value ||
+                std::is_base_of<RegressionModel<FeatureType>,
+                                RegressionModelImplementation>::value,
+                "The template parameter RegressionModelImplementation must be a derivative of RegressionModel<FeatureType>");
+
+  static_assert(!has_fit_type<RegressionModelImplementation>::value ||
+                std::is_same<typename fit_type_or_void<RegressionModelImplementation>::type,
+                             typename fit_type_or_void<SubModelType>::type>::value,
+                "If the RegressionModelImplementation is serializable, it must have the same FitType as the sub_model");
+
   AdaptedRegressionModel() : sub_model_(){};
   AdaptedRegressionModel(const SubModelType& sub_model) : sub_model_(sub_model){};
   virtual ~AdaptedRegressionModel() {};
@@ -70,6 +87,11 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
     sub_model_.set_param(name, value);
   }
 
+  fit_type_if_serializable<SubModelType>
+  get_fit() const {
+    return sub_model_.get_fit();
+  }
+
  protected:
 
   void fit_(const std::vector<FeatureType> &features,
@@ -80,14 +102,13 @@ class AdaptedRegressionModel : public RegressionModelImplementation{
   /*
    * In order to make it possible for this model adapter to extend
    * a SerializableRegressionModel we need to define the proper pure virtual
-   * serializable_fit_ method.  Because the function is virtual this
-   * cannot be defined using templating and SFINAE.
+   * serializable_fit_ method.
    */
-  typename fit_type_or_void<SubModelType>::type
+  fit_type_if_serializable<RegressionModelImplementation>
   serializable_fit_(const std::vector<FeatureType> &features,
-                         const Eigen::VectorXd &targets) const {
+                    const Eigen::VectorXd &targets) const override {
     assert(false && "serializable_fit_ for an adapted model should never be called");
-    typename fit_type_or_void<SubModelType>::type dummy;
+    typename fit_type_or_void<RegressionModelImplementation>::type dummy;
     return dummy;
   }
 

@@ -88,16 +88,20 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
 
 };
 
-using LinearRegressionBase = AdaptedRegressionModel<double,
-    LeastSquaresRegression,
-    SerializableRegressionModel<double, LeastSquaresFit>>;
+
 /*
- * Creates a least squares problem by building a design matrix that looks like:
+ * Creates a least squares problem by building a design matrix where the
+ * i^th row looks like:
  *
  *   A_i = [1 x]
  *
- * Setup like this the resulting fit will represent an offset and slope.
+ * Setup like this the resulting least squares solve will represent
+ * an offset and slope.
  */
+using LinearRegressionBase = AdaptedRegressionModel<double,
+    LeastSquaresRegression,
+    SerializableRegressionModel<double, LeastSquaresFit>>;
+
 class LinearRegression : public LinearRegressionBase {
 
  public:

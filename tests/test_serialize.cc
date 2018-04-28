@@ -28,7 +28,7 @@ using SqrExp = SquaredExponential<ScalarDistance>;
 using Noise = IndependentNoise<double>;
 using SqrExpAndNoise = SumOfCovarianceTerms<SqrExp, Noise>;
 using CovFunc = CovarianceFunction<SqrExpAndNoise>;
-using SquaredExpoentialGaussianProcess = GaussianProcessRegression<double, CovFunc>;
+using SquaredExponentialGaussianProcess = GaussianProcessRegression<double, CovFunc>;
 
 /*
  * Make sure we can serialize a model and recover the parameters.
@@ -205,10 +205,10 @@ class FitLinearSerializablePointer : public ModelRepresentation<SerializableLeas
    };
 };
 
-class UnfitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExpoentialGaussianProcess>> {
+class UnfitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExponentialGaussianProcess>> {
 public:
   RepresentationType create() const override {
-    auto gp = std::make_unique<SquaredExpoentialGaussianProcess>();
+    auto gp = std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
     gp->set_param("length_scale", log(2.));
     return gp;
   }
@@ -220,12 +220,12 @@ public:
 };
 
 
-class FitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExpoentialGaussianProcess>> {
+class FitGaussianProcess : public ModelRepresentation<std::unique_ptr<SquaredExponentialGaussianProcess>> {
 public:
   RepresentationType create() const override {
 
     auto dataset = make_toy_linear_data();
-    auto gp = std::make_unique<SquaredExpoentialGaussianProcess>();
+    auto gp = std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
     gp->set_param("length_scale", log(2.));
     gp->fit(dataset);
     return gp;
