@@ -34,7 +34,11 @@ public:
 };
 
 
-template <typename T, typename... Args>
+/*
+ * Inspects T to see if it has a class level type called FitType,
+ * the result is returned in ::value.
+ */
+template <typename T>
 class has_fit_type
 {
   template <typename C,
@@ -46,6 +50,14 @@ class has_fit_type
 public:
     static constexpr bool value = decltype(test<T>(0))::value;
 };
+
+/*
+ * One way to tell the difference between a RegressionModel
+ * and a SerializableRegressionModel is by inspecting for a
+ * FitType.
+ */
+template <typename T>
+using is_serializable_regression_model = has_fit_type<T>;
 
 /*
  * This traits helper class defines `::type` to be `T::FitType`
@@ -64,6 +76,7 @@ class fit_type_or_void
 public:
     typedef decltype(test<T>(0)) type;
 };
+
 
 }
 

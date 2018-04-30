@@ -99,8 +99,7 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
  * an offset and slope.
  */
 using LinearRegressionBase = AdaptedRegressionModel<double,
-    LeastSquaresRegression,
-    SerializableRegressionModel<double, LeastSquaresFit>>;
+                                                    LeastSquaresRegression>;
 
 class LinearRegression : public LinearRegressionBase {
 

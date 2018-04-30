@@ -19,6 +19,31 @@
 
 namespace albatross {
 
+template <typename X, typename T>
+using enable_if_serializable = std::enable_if<is_serializable_regression_model<X>::value, T>;
+
+template <typename X>
+using fit_type_if_serializable = typename enable_if_serializable<X, typename fit_type_or_void<X>::type>::type;
+
+/*
+ * This helper function takes a model which is being adapted (SubModelType)
+ * and decides which base class to extend by inspecting whether or not the
+ * SubModelType is a pure RegressionModel or a SerializableRegressionModel.
+ */
+template <typename FeatureType, typename SubModelType>
+class choose_regression_model_implementation
+{
+    template <typename C,
+              typename = typename C::FitType>
+    static SerializableRegressionModel<FeatureType, typename C::FitType> *test(int);
+
+    template <typename C>
+    static RegressionModel<FeatureType> *test(...);
+
+public:
+    typedef typename std::remove_pointer<decltype(test<SubModelType>(0))>::type type;
+};
+
 
 /*
  * This provides a way of creating a RegressionModel<X> which
@@ -31,23 +56,19 @@ namespace albatross {
  * to adapt something that has extended RegressionModel.
  */
 template <typename FeatureType,
-          typename SubModelType,
-          typename RegressionModelImplementation=RegressionModel<FeatureType>>
-class AdaptedRegressionModel : public RegressionModelImplementation{
+          typename SubModelType>
+class AdaptedRegressionModel : public choose_regression_model_implementation<FeatureType, SubModelType>::type {
+
  public:
   using SubFeature = typename SubModelType::Feature;
-
-  template <typename X, typename T>
-  using enable_if_serializable = std::enable_if<has_fit_type<X>::value, T>;
-
-  template <typename X>
-  using fit_type_if_serializable = typename enable_if_serializable<X, typename fit_type_or_void<X>::type>::type;
+  using RegressionModelImplementation = typename choose_regression_model_implementation<FeatureType,
+                                                                                        SubModelType>::type;
 
   static_assert(std::is_same<RegressionModelImplementation,
                              RegressionModel<FeatureType>>::value ||
                 std::is_base_of<RegressionModel<FeatureType>,
                                 RegressionModelImplementation>::value,
-                "The template parameter RegressionModelImplementation must be a derivative of RegressionModel<FeatureType>");
+                "The template parameter RegressionModelImplementation must be derived from RegressionModel<FeatureType>");
 
   static_assert(!has_fit_type<RegressionModelImplementation>::value ||
                 std::is_same<typename fit_type_or_void<RegressionModelImplementation>::type,
