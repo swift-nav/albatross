@@ -24,6 +24,7 @@ template <typename FeatureType, typename ModelFit>
 class SerializableRegressionModel : public RegressionModel<FeatureType> {
 
  public:
+  using FitType = ModelFit;
   SerializableRegressionModel() : model_fit_() {};
   virtual ~SerializableRegressionModel() {};
 
@@ -56,7 +57,6 @@ class SerializableRegressionModel : public RegressionModel<FeatureType> {
   }
 
  protected:
-
   void fit_(const std::vector<FeatureType> &features,
                     const Eigen::VectorXd &targets) {
     model_fit_ = serializable_fit_(features, targets);

@@ -25,6 +25,16 @@ namespace albatross {
 
 struct LeastSquaresFit {
   Eigen::VectorXd coefs;
+
+  bool operator == (const LeastSquaresFit &other) const {
+    return coefs == other.coefs;
+  }
+
+  template <typename Archive>
+  void serialize(Archive &archive) {
+    archive(coefs);
+  }
+
 };
 
 /*
@@ -41,17 +51,6 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
   LeastSquaresRegression() {};
   std::string get_name() const override { return "least_squares"; };
 
- protected:
-
-  /*
-   * This lets you customize the least squares approach if need be,
-   * default uses the QR decomposition.
-   */
-  virtual Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
-                                               const Eigen::VectorXd &b) const {
-    return A.colPivHouseholderQr().solve(b);
-  }
-
   LeastSquaresFit serializable_fit_(const std::vector<Eigen::VectorXd> &features,
                                      const Eigen::VectorXd &targets) const override {
     // Build the design matrix
@@ -66,7 +65,9 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
     return model_fit;
   }
 
-  PredictionDistribution predict_(const std::vector<Eigen::VectorXd> &features) const {
+ protected:
+
+  PredictionDistribution predict_(const std::vector<Eigen::VectorXd> &features) const override {
     int n = static_cast<s32>(features.size());
     Eigen::VectorXd predictions(n);
     for (s32 i = 0; i < n; i++) {
@@ -75,18 +76,35 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
 
     return PredictionDistribution(predictions);
   }
+
+  /*
+   * This lets you customize the least squares approach if need be,
+   * default uses the QR decomposition.
+   */
+  virtual Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
+                                               const Eigen::VectorXd &b) const {
+    return A.colPivHouseholderQr().solve(b);
+  }
+
 };
 
 
 /*
- * Creates a least squares problem by building a design matrix that looks like:
+ * Creates a least squares problem by building a design matrix where the
+ * i^th row looks like:
  *
  *   A_i = [1 x]
  *
- * Setup like this the resulting fit will represent an offset and slope.
+ * Setup like this the resulting least squares solve will represent
+ * an offset and slope.
  */
-class LinearRegression : public AdaptedRegressionModel<double, LeastSquaresRegression> {
+using LinearRegressionBase = AdaptedRegressionModel<double,
+                                                    LeastSquaresRegression>;
 
+class LinearRegression : public LinearRegressionBase {
+
+ public:
+  LinearRegression() {};
   std::string get_name() const override { return "linear_regression"; };
 
   const Eigen::VectorXd convert_feature(const double& x) const {
@@ -95,8 +113,30 @@ class LinearRegression : public AdaptedRegressionModel<double, LeastSquaresRegre
     return converted;
   }
 
+  /*
+   * save/load methods are inherited from the SerializableRegressionModel,
+   * but by defining them here and explicitly showing the inheritence
+   * through the use of `base_class` we can make use of cereal's
+   * polymorphic serialization.
+   */
+  template<class Archive>
+  void save(Archive & archive) const
+  {
+    archive(cereal::make_nvp("linear_regression",
+                             cereal::base_class<LinearRegressionBase>(this)));
+  }
+
+  template<class Archive>
+  void load(Archive & archive)
+  {
+    archive(cereal::make_nvp("linear_regression",
+                             cereal::base_class<LinearRegressionBase>(this)));
+  }
+
 };
 
 }
+
+CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 
 #endif

@@ -16,7 +16,7 @@
 namespace albatross {
 
 /*
- * This struct determines whether or not a class has a method defined for,
+ * This determines whether or not a class has a method defined for,
  *   `operator() (X x, Y y, Z z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
@@ -32,6 +32,51 @@ class has_call_operator
 public:
     static constexpr bool value = decltype(test<T>(0))::value;
 };
+
+
+/*
+ * Inspects T to see if it has a class level type called FitType,
+ * the result is returned in ::value.
+ */
+template <typename T>
+class has_fit_type
+{
+  template <typename C,
+            typename = typename C::FitType>
+    static std::true_type test(int);
+    template <typename C>
+    static std::false_type test(...);
+
+public:
+    static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
+ * One way to tell the difference between a RegressionModel
+ * and a SerializableRegressionModel is by inspecting for a
+ * FitType.
+ */
+template <typename T>
+using is_serializable_regression_model = has_fit_type<T>;
+
+/*
+ * This traits helper class defines `::type` to be `T::FitType`
+ * if a type with that name has been defined for T and will
+ * otherwise be `void`.
+ */
+template <typename T>
+class fit_type_or_void
+{
+    template <typename C,
+              typename = typename C::FitType>
+    static typename C::FitType test(int);
+    template <typename C>
+    static void test(...);
+
+public:
+    typedef decltype(test<T>(0)) type;
+};
+
 
 }
 

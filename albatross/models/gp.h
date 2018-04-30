@@ -67,6 +67,9 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   GaussianProcessRegression(CovarianceFunction& covariance_function,
                             const std::string &model_name)
       : covariance_function_(covariance_function), model_name_(model_name) {};
+  GaussianProcessRegression(const std::string &model_name)
+      : covariance_function_(), model_name_(model_name) {};
+
   ~GaussianProcessRegression(){};
 
   std::string get_name() const override {
@@ -76,40 +79,13 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   template <typename Archive>
   void save(Archive & archive) const {
     archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
+    archive(model_name_);
   }
 
   template <typename Archive>
   void load(Archive & archive) {
     archive(cereal::base_class<SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>>(this));
-  }
-
-  FitType serializable_fit_(const std::vector<FeatureType>& features,
-                                   const Eigen::VectorXd& targets) const override {
-    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
-    // Precompute the information vector which is all we need in
-    // order to make predictions.
-
-    FitType model_fit;
-    model_fit.train_features = features;
-    model_fit.train_covariance = cov;
-    model_fit.information = cov.ldlt().solve(targets);
-    return model_fit;
-  }
-
-  PredictionDistribution predict_(
-      const std::vector<FeatureType>& features) const override {
-
-    const auto cross_cov = asymmetric_covariance(covariance_function_,
-                                                 features,
-                                                 this->model_fit_.train_features);
-    // Then we can use the information vector to determine the posterior
-    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
-    // TODO: right now this is recomputing the LDLT, so is highly inefficient,
-    // Ideally this would get stored inside GaussianProcessFit.
-    Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_covariance.ldlt();
-    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    return PredictionDistribution(pred, pred_cov);
+    archive(model_name_);
   }
 
   template <typename OtherFeatureType>
@@ -148,6 +124,37 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
     ss << covariance_function_.pretty_string();
     ss << "has_been_fit: " << this->has_been_fit() << std::endl;
     return ss.str();
+  }
+
+ protected:
+
+  FitType serializable_fit_(const std::vector<FeatureType>& features,
+                                   const Eigen::VectorXd& targets) const override {
+    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
+    // Precompute the information vector which is all we need in
+    // order to make predictions.
+
+    FitType model_fit;
+    model_fit.train_features = features;
+    model_fit.train_covariance = cov;
+    model_fit.information = cov.ldlt().solve(targets);
+    return model_fit;
+  }
+
+  PredictionDistribution predict_(
+      const std::vector<FeatureType>& features) const override {
+
+    const auto cross_cov = asymmetric_covariance(covariance_function_,
+                                                 features,
+                                                 this->model_fit_.train_features);
+    // Then we can use the information vector to determine the posterior
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
+    // TODO: right now this is recomputing the LDLT, so is highly inefficient,
+    // Ideally this would get stored inside GaussianProcessFit.
+    Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
+    auto ldlt = this->model_fit_.train_covariance.ldlt();
+    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
+    return PredictionDistribution(pred, pred_cov);
   }
 
  private:
