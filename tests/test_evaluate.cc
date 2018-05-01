@@ -22,13 +22,10 @@
 namespace albatross {
 
 TEST_F(LinearRegressionTest, test_leave_one_out) {
-  PredictionDistribution preds = model_ptr_->fit_and_predict(
+  PredictDistribution preds = model_ptr_->fit_and_predict(
       dataset_.features, dataset_.targets, dataset_.features);
-  std::cout << "RMSE" << std::endl;
   double in_sample_rmse = root_mean_square_error(preds, dataset_.targets);
-
   const auto folds = leave_one_out(dataset_);
-  std::cout << "Cross validated" << std::endl;
 
   Eigen::VectorXd rmses =
       cross_validated_scores(root_mean_square_error, folds, model_ptr_.get());
@@ -64,7 +61,7 @@ bool is_monotonic_increasing(Eigen::VectorXd &x) {
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
 
-  PredictionDistribution preds =
+  PredictDistribution preds =
       cross_validated_predict(folds, model_ptr_.get());
 
   // Make sure the group cross validation resulted in folds that

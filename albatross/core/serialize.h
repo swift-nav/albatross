@@ -58,12 +58,12 @@ class SerializableRegressionModel : public RegressionModel<FeatureType> {
 
  protected:
   void fit_(const std::vector<FeatureType> &features,
-                    const Eigen::VectorXd &targets) {
+            const TargetDistribution &targets) {
     model_fit_ = serializable_fit_(features, targets);
   }
 
   virtual ModelFit serializable_fit_(const std::vector<FeatureType> &features,
-                                     const Eigen::VectorXd &targets) const = 0;
+                                     const TargetDistribution &targets) const = 0;
 
   ModelFit model_fit_;
 };

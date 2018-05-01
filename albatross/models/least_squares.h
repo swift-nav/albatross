@@ -52,7 +52,10 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
   std::string get_name() const override { return "least_squares"; };
 
   LeastSquaresFit serializable_fit_(const std::vector<Eigen::VectorXd> &features,
-                                     const Eigen::VectorXd &targets) const override {
+                                    const TargetDistribution &targets) const override {
+    // The way this is currently implemented we assume all targets have the same
+    // variance (or zero variance).
+    assert(!targets.has_covariance());
     // Build the design matrix
     int m = static_cast<int>(features.size());
     int n = static_cast<int>(features[0].size());
@@ -61,20 +64,20 @@ class LeastSquaresRegression : public SerializableRegressionModel<Eigen::VectorX
       A.row(i) = features[static_cast<std::size_t>(i)];
     }
     // Solve for the coefficients using the QR decomposition.
-    LeastSquaresFit model_fit = {least_squares_solver(A, targets)};
+    LeastSquaresFit model_fit = {least_squares_solver(A, targets.mean)};
     return model_fit;
   }
 
  protected:
 
-  PredictionDistribution predict_(const std::vector<Eigen::VectorXd> &features) const override {
+  PredictDistribution predict_(const std::vector<Eigen::VectorXd> &features) const override {
     int n = static_cast<s32>(features.size());
     Eigen::VectorXd predictions(n);
     for (s32 i = 0; i < n; i++) {
       predictions(i) = features[static_cast<std::size_t>(i)].dot(this->model_fit_.coefs);
     }
 
-    return PredictionDistribution(predictions);
+    return PredictDistribution(predictions);
   }
 
   /*

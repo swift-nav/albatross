@@ -116,7 +116,7 @@ class AdaptedRegressionModel : public choose_regression_model_implementation<Fea
  protected:
 
   void fit_(const std::vector<FeatureType> &features,
-            const Eigen::VectorXd &targets) override {
+            const TargetDistribution &targets) override {
     this->sub_model_.fit(convert_features(features), targets);
   }
 
@@ -127,13 +127,13 @@ class AdaptedRegressionModel : public choose_regression_model_implementation<Fea
    */
   fit_type_if_serializable<RegressionModelImplementation>
   serializable_fit_(const std::vector<FeatureType> &features,
-                    const Eigen::VectorXd &targets) const override {
+                    const TargetDistribution &targets) const override {
     assert(false && "serializable_fit_ for an adapted model should never be called");
     typename fit_type_or_void<RegressionModelImplementation>::type dummy;
     return dummy;
   }
 
-  PredictionDistribution predict_(
+  PredictDistribution predict_(
       const std::vector<FeatureType> &features) const override {
     return sub_model_.predict(convert_features(features));
   }
