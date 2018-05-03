@@ -61,7 +61,7 @@ TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
-  std::unique_ptr<RegressionModel<double>> model = this->creator.create();
+  auto model = this->creator.create();
   auto cv_scores = cross_validated_scores(root_mean_square_error, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
@@ -69,5 +69,26 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   EXPECT_LE(cv_scores.mean(), 0.1);
 }
 
+/*
+ * Here we build two different datasets.  Each dataset consists of targets which
+ * have been distorted by non-constant noise (heteroscedastic), we then perform
+ * cross-validated evaluation of a GaussianProcess which takes that noise into
+ * account, and one which is agnostic of the added noise and assert that taking
+ * noise into account improves the model.
+ */
+TEST(test_models, test_with_target_distribution) {
+  auto dataset = make_heteroscedastic_toy_linear_data();
+
+  auto folds = leave_one_out(dataset);
+  auto model = MakeGaussianProcess().create();
+  auto scores = cross_validated_scores(negative_log_likelihood, folds, model.get());
+
+  RegressionDataset<double> dataset_without_variance(dataset.features, dataset.targets.mean);
+  auto folds_without_variance = leave_one_out(dataset_without_variance);
+  auto scores_without_variance = cross_validated_scores(negative_log_likelihood, folds_without_variance, model.get());
+
+  EXPECT_LE(scores.mean(), scores_without_variance.mean());
+
+}
 
 }

@@ -23,6 +23,8 @@
 
 namespace albatross {
 
+using InspectionDistribution = PredictDistribution;
+
 template <typename FeatureType>
 struct GaussianProcessFit {
   std::vector<FeatureType> train_features;
@@ -89,7 +91,7 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   }
 
   template <typename OtherFeatureType>
-  PredictionDistribution inspect(
+  InspectionDistribution inspect(
       const std::vector<OtherFeatureType>& features) const {
     assert(this->has_been_fit());
     const auto cross_cov = asymmetric_covariance(covariance_function_,
@@ -102,7 +104,7 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     assert(static_cast<s32>(pred.size()) ==
            static_cast<s32>(features.size()));
-    return PredictionDistribution(pred, pred_cov);
+    return InspectionDistribution(pred, pred_cov);
   }
 
   /*
@@ -129,21 +131,21 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
  protected:
 
   FitType serializable_fit_(const std::vector<FeatureType>& features,
-                                   const Eigen::VectorXd& targets) const override {
+                            const TargetDistribution& targets) const override {
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
-    // Precompute the information vector which is all we need in
-    // order to make predictions.
-
     FitType model_fit;
     model_fit.train_features = features;
     model_fit.train_covariance = cov;
-    model_fit.information = cov.ldlt().solve(targets);
+    if (targets.has_covariance()) {
+      model_fit.train_covariance += targets.covariance;
+    }
+    // Precompute the information vector
+    model_fit.information = model_fit.train_covariance.ldlt().solve(targets.mean);
     return model_fit;
   }
 
-  PredictionDistribution predict_(
+  PredictDistribution predict_(
       const std::vector<FeatureType>& features) const override {
-
     const auto cross_cov = asymmetric_covariance(covariance_function_,
                                                  features,
                                                  this->model_fit_.train_features);
@@ -154,7 +156,7 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
     Eigen::MatrixXd pred_cov = symmetric_covariance(covariance_function_, features);
     auto ldlt = this->model_fit_.train_covariance.ldlt();
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    return PredictionDistribution(pred, pred_cov);
+    return PredictDistribution(pred, pred_cov);
   }
 
  private:

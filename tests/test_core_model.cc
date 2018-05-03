@@ -20,16 +20,16 @@ namespace albatross {
  * Simply makes sure that a BaseModel that should be able to
  * make perfect predictions compiles and runs as expected.
  */
-TEST(test_base_model, test_base_model_fit_predict) {
+TEST(test_core_model, test_fit_predict) {
   auto dataset = mock_training_data();
   MockModel m;
   m.fit(dataset);
   // We should be able to perfectly predict in this case.
-  PredictionDistribution predictions = m.predict(dataset.features);
-  EXPECT_LT((predictions.mean - dataset.targets).norm(), 1e-10);
+  PredictDistribution predictions = m.predict(dataset.features);
+  EXPECT_LT((predictions.mean - dataset.targets.mean).norm(), 1e-10);
 }
 
-TEST(test_base_model, test_regression_model_abstraction) {
+TEST(test_core_model, test_regression_model_abstraction) {
   // This just tests to make sure that an implementation of a RegressionModel
   // can be passed around as a pointer to the abstract class.
   std::unique_ptr<RegressionModel<MockPredictor>> m_ptr = std::make_unique<MockModel>();

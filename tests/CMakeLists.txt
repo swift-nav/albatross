@@ -12,6 +12,7 @@ test_map_utils.cc
 test_serialize.cc
 test_parameter_handling_mixin.cc
 test_models.cc
+test_core_distribution.cc
 )
 
 add_dependencies(albatross_unit_tests

@@ -159,7 +159,7 @@ void maybe_create_training_data(std::string input_path,
     train.open(input_path);
     train << "x,y" << std::endl;
     for (int i = 0; i < static_cast<int>(data.features.size()); i++) {
-      train << data.features[i] << ", " << data.targets[i] << std::endl;
+      train << data.features[i] << ", " << data.targets.mean[i] << std::endl;
     }
   }
 }

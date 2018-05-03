@@ -16,6 +16,7 @@
 #include <Eigen/Core>
 #include <map>
 #include <vector>
+#include "distribution.h"
 #include "map_utils.h"
 #include "parameter_handling_mixin.h"
 #include "traits.h"
@@ -23,16 +24,9 @@
 
 namespace albatross {
 
-struct PredictionDistribution {
-  Eigen::VectorXd mean;
-  Eigen::MatrixXd covariance;
-
-  PredictionDistribution(const Eigen::VectorXd &mean_)
-      : mean(mean_), covariance(){};
-  PredictionDistribution(const Eigen::VectorXd &mean_,
-                         const Eigen::MatrixXd &covariance_)
-      : mean(mean_), covariance(covariance_){};
-};
+using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
+using TargetDistribution = Distribution<DiagonalMatrixXd>;
+using PredictDistribution = Distribution<Eigen::MatrixXd>;
 
 /*
  * A RegressionDataset holds two vectors of data, the features
@@ -44,18 +38,22 @@ struct PredictionDistribution {
 template <typename FeatureType>
 struct RegressionDataset {
   std::vector<FeatureType> features;
-  Eigen::VectorXd targets;
+  TargetDistribution targets;
 
   RegressionDataset() {};
 
   RegressionDataset(const std::vector<FeatureType> &features_,
-                    const Eigen::VectorXd &targets_)
+                    const TargetDistribution &targets_)
       : features(features_), targets(targets_) {
     // If the two inputs aren't the same size they clearly aren't
     // consistent.
-    assert(static_cast<int>(features_.size()) ==
-           static_cast<int>(targets_.size()));
+    assert(static_cast<int>(features.size()) ==
+           static_cast<int>(targets.size()));
   }
+
+  RegressionDataset(const std::vector<FeatureType> &features_,
+                    const Eigen::VectorXd &targets_) :
+                      RegressionDataset(features_, TargetDistribution(targets_)) {}
 };
 
 typedef int32_t s32;
@@ -114,11 +112,20 @@ class RegressionModel : public ParameterHandlingMixin {
    * predict.
    */
   void fit(const std::vector<FeatureType> &features,
-           const Eigen::VectorXd &targets) {
+           const TargetDistribution &targets) {
+    assert(features.size() > 0);
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
     fit_(features, targets);
     has_been_fit_ = true;
+  }
+
+  /*
+   * Convenience function which assumes zero target covariance.
+   */
+  void fit(const std::vector<FeatureType> &features,
+           const Eigen::VectorXd &targets) {
+    fit(features, TargetDistribution(targets));
   }
 
   /*
@@ -131,18 +138,18 @@ class RegressionModel : public ParameterHandlingMixin {
   /*
    * Similar to fit, this predict method wraps the implementation `predict_`
    * and makes simple checks to confirm the implementation is returning
-   * properly sized PredictionDistributions.
+   * properly sized Distribution.
    */
-  PredictionDistribution predict(
+  PredictDistribution predict(
       const std::vector<FeatureType> &features) const {
     assert(has_been_fit());
-    PredictionDistribution preds = predict_(features);
+    PredictDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
     return preds;
   }
 
-  PredictionDistribution predict(
+  PredictDistribution predict(
       const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
     return predict(features);
@@ -154,9 +161,9 @@ class RegressionModel : public ParameterHandlingMixin {
    * follwed by predict but overriding this method may speed up computation for
    * some models.
    */
-  PredictionDistribution fit_and_predict(
+  PredictDistribution fit_and_predict(
       const std::vector<FeatureType> &train_features,
-      const Eigen::VectorXd &train_targets,
+      const TargetDistribution &train_targets,
       const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
@@ -167,7 +174,7 @@ class RegressionModel : public ParameterHandlingMixin {
    * A convenience wrapper around fit_and_predict which uses the entries
    * in a RegressionFold struct
    */
-  PredictionDistribution fit_and_predict(
+  PredictDistribution fit_and_predict(
       const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
@@ -215,9 +222,9 @@ class RegressionModel : public ParameterHandlingMixin {
  protected:
 
   virtual void fit_(const std::vector<FeatureType> &features,
-                    const Eigen::VectorXd &targets) = 0;
+                    const TargetDistribution &targets) = 0;
 
-  virtual PredictionDistribution predict_(
+  virtual PredictDistribution predict_(
       const std::vector<FeatureType> &features) const = 0;
 
   bool has_been_fit_;

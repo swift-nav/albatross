@@ -74,19 +74,19 @@ class MockModel : public SerializableRegressionModel<MockPredictor, MockFit> {
 
   // builds the map from int to value
   MockFit serializable_fit_(const std::vector<MockPredictor> &features,
-            const Eigen::VectorXd &targets) const override {
+            const TargetDistribution &targets) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
     MockFit model_fit;
     for (int i = 0; i < n; i++) {
-      model_fit.train_data[features[static_cast<std::size_t>(i)].value] = targets[i];
+      model_fit.train_data[features[static_cast<std::size_t>(i)].value] = targets.mean[i];
     }
     return model_fit;
   }
 
   // looks up the prediction in the map
-  PredictionDistribution predict_(
+  PredictDistribution predict_(
       const std::vector<MockPredictor> &features) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
@@ -96,7 +96,7 @@ class MockModel : public SerializableRegressionModel<MockPredictor, MockFit> {
       predictions[i] = this->model_fit_.train_data.find(index)->second;
     }
 
-    return PredictionDistribution(predictions);
+    return PredictDistribution(predictions);
   }
 };
 
@@ -146,8 +146,8 @@ static inline void expect_parameter_vector_equal(const std::vector<ParameterValu
 
 
 static inline auto make_toy_linear_data(const double a = 5.,
-                                                             const double b = 1.,
-                                                             const double sigma = 0.1) {
+                                        const double b = 1.,
+                                        const double sigma = 0.1) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(3);
@@ -165,6 +165,35 @@ static inline auto make_toy_linear_data(const double a = 5.,
 
   return RegressionDataset<double>(features, targets);
 }
+
+static inline auto make_heteroscedastic_toy_linear_data(const double a = 5.,
+                                        const double b = 1.,
+                                        const double sigma = 0.1) {
+
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  gen.seed(7);
+  std::normal_distribution<> d{0., 1.};
+
+  RegressionDataset<double> dataset = make_toy_linear_data(a, b, sigma);
+
+  auto targets = dataset.targets.mean;
+  auto variance = Eigen::VectorXd(targets.size());
+
+  for (int i = 0; i < targets.size(); i++) {
+    double std = 0.1 * fabs(dataset.features[i]);
+    targets[i] += std * d(gen);
+    variance[i] = sigma * sigma + std * std;
+  }
+
+  auto diag_matrix = variance.asDiagonal();
+
+  TargetDistribution target_dist(targets, diag_matrix);
+
+  return RegressionDataset<double>(dataset.features, target_dist);
+}
+
+
 
 class LinearRegressionTest : public ::testing::Test {
  public:
