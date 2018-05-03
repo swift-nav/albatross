@@ -13,13 +13,15 @@ test_serialize.cc
 test_parameter_handling_mixin.cc
 test_models.cc
 test_core_distribution.cc
+test_tune.cc
 )
 
 add_dependencies(albatross_unit_tests
     albatross
+    clang-format-all
 )
 
-target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags)
+target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt)
 
 add_custom_target(
 run_albatross_unit_tests ALL

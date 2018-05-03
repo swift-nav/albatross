@@ -81,5 +81,7 @@ int main(int argc, char *argv[]) {
    */
   std::cout << "Tuning the model." << std::endl;
   TuningMetric<double> metric = loo_nll;
-  auto params = tune_regression_model<double>(model_creator, data, metric);
+
+  TuneModelConfg<double> config(model_creator, data, metric);
+  auto params = tune_regression_model<double>(config);
 }
