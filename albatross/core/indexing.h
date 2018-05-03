@@ -45,15 +45,6 @@ Eigen::VectorXd subset(const std::vector<SizeType> &indices, const Eigen::Vector
 }
 
 /*
- * Extract a subset of an Eigen::DiagonalMatrix
- */
-template <typename SizeType, typename Scalar, int Size>
-Eigen::DiagonalMatrix<Scalar, Size> subset(const std::vector<SizeType> &indices,
-                                           const Eigen::DiagonalMatrix<Scalar, Size> &v) {
-  return subset(indices, v.diagonal()).asDiagonal();
-}
-
-/*
  * Extracts a subset of an Eigen::Matrix for the given row and column
  * indices.
  */
@@ -79,9 +70,18 @@ Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
  * columns.
  */
 template <typename SizeType>
-Eigen::MatrixXd subset(const std::vector<SizeType> &indices, const Eigen::MatrixXd &v) {
+Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices, const Eigen::MatrixXd &v) {
   assert(v.rows() == v.cols());
   return subset(indices, indices, v);
+}
+
+/*
+ * Extract a subset of an Eigen::DiagonalMatrix
+ */
+template <typename SizeType, typename Scalar, int Size>
+Eigen::DiagonalMatrix<Scalar, Size> symmetric_subset(const std::vector<SizeType> &indices,
+                                                     const Eigen::DiagonalMatrix<Scalar, Size> &v) {
+  return subset(indices, v.diagonal()).asDiagonal();
 }
 
 }

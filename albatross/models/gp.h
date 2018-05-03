@@ -133,22 +133,19 @@ class GaussianProcessRegression : public SerializableGaussianProcess<FeatureType
   FitType serializable_fit_(const std::vector<FeatureType>& features,
                             const TargetDistribution& targets) const override {
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
-    // Precompute the information vector which is all we need in
-    // order to make predictions.
-
     FitType model_fit;
     model_fit.train_features = features;
     model_fit.train_covariance = cov;
     if (targets.has_covariance()) {
       model_fit.train_covariance += targets.covariance;
     }
-    model_fit.information = cov.ldlt().solve(targets.mean);
+    // Precompute the information vector
+    model_fit.information = model_fit.train_covariance.ldlt().solve(targets.mean);
     return model_fit;
   }
 
   PredictDistribution predict_(
       const std::vector<FeatureType>& features) const override {
-
     const auto cross_cov = asymmetric_covariance(covariance_function_,
                                                  features,
                                                  this->model_fit_.train_features);
