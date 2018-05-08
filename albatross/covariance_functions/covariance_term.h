@@ -21,8 +21,13 @@
 namespace albatross {
 
 /*
- * An abstract class (though no purely abstract due to templating)
- * which holds anything all Covariance terms should have in common.
+ * An abstract class which holds anything all Covariance
+ * terms should have in common.
+ *
+ * In addition to these abstract methods one or many
+ * methods with signature,
+ *     operator ()(const X &x, const Y &y)
+ * should be defined.
  */
 class CovarianceTerm : public ParameterHandlingMixin {
 public:
@@ -135,7 +140,7 @@ public:
 
   /*
    * If both LHS and RHS have a valid call method for the types X and Y
-   * this will return the sum of the two.
+   * this will return the product of the two.
    */
   template <typename X, typename Y,
             typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
