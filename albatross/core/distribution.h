@@ -13,10 +13,10 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
-#include <vector>
-#include <iostream>
-#include <Eigen/Core>
 #include "indexing.h"
+#include <Eigen/Core>
+#include <iostream>
+#include <vector>
 
 namespace albatross {
 
@@ -25,8 +25,7 @@ namespace albatross {
  * multivariate Gaussian distribution with mean and optional
  * covariance.
  */
-template <typename CovarianceType>
-struct Distribution {
+template <typename CovarianceType> struct Distribution {
   Eigen::VectorXd mean;
   CovarianceType covariance;
 
@@ -49,20 +48,19 @@ struct Distribution {
     return covariance.size() > 0;
   }
 
-  Distribution()
-      : mean(), covariance(){};
-  Distribution(const Eigen::VectorXd &mean_)
-      : mean(mean_), covariance(){};
-  Distribution(const Eigen::VectorXd &mean_,
-               const CovarianceType &covariance_)
+  Distribution() : mean(), covariance(){};
+  Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(){};
+  Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
       : mean(mean_), covariance(covariance_){};
 };
 
 using DenseDistribution = Distribution<Eigen::MatrixXd>;
-using DiagonalDistribution = Distribution<Eigen::DiagonalMatrix<double, Eigen::Dynamic>>;
+using DiagonalDistribution =
+    Distribution<Eigen::DiagonalMatrix<double, Eigen::Dynamic>>;
 
 template <typename CovarianceType, typename SizeType>
-Distribution<CovarianceType> subset(const std::vector<SizeType> &indices, const Distribution<CovarianceType> &dist) {
+Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
+                                    const Distribution<CovarianceType> &dist) {
   auto mean = subset(indices, Eigen::VectorXd(dist.mean));
   if (dist.has_covariance()) {
     auto cov = symmetric_subset(indices, dist.covariance);
@@ -71,7 +69,6 @@ Distribution<CovarianceType> subset(const std::vector<SizeType> &indices, const 
     return Distribution<CovarianceType>(mean);
   }
 }
-
 }
 
 #endif

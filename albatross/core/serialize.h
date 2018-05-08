@@ -13,22 +13,25 @@
 #ifndef ALBATROSS_CORE_SERIALIZE_H
 #define ALBATROSS_CORE_SERIALIZE_H
 
-#include <memory>
-#include <iostream>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <iostream>
+#include <memory>
+
+#include <core/model.h>
 
 namespace albatross {
 
 template <typename FeatureType, typename ModelFit>
 class SerializableRegressionModel : public RegressionModel<FeatureType> {
 
- public:
+public:
   using FitType = ModelFit;
-  SerializableRegressionModel() : model_fit_() {};
-  virtual ~SerializableRegressionModel() {};
+  SerializableRegressionModel() : model_fit_(){};
+  virtual ~SerializableRegressionModel(){};
 
-  bool operator == (const SerializableRegressionModel<FeatureType, ModelFit> &other) const {
+  bool operator==(
+      const SerializableRegressionModel<FeatureType, ModelFit> &other) const {
     return (this->get_name() == other.get_name() &&
             this->get_params() == other.get_params() &&
             this->has_been_fit() == other.has_been_fit() &&
@@ -36,38 +39,34 @@ class SerializableRegressionModel : public RegressionModel<FeatureType> {
   }
 
   // todo: enable if ModelFit is serializable.
-  template<class Archive>
-  void save(Archive & archive) const
-  {
-    archive(cereal::make_nvp("model_definition",
-                        cereal::base_class<RegressionModel<FeatureType>>(this)));
+  template <class Archive> void save(Archive &archive) const {
+    archive(cereal::make_nvp(
+        "model_definition",
+        cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
   }
 
-  template<class Archive>
-  void load(Archive & archive)
-  {
-    archive(cereal::make_nvp("model_definition",
-                        cereal::base_class<RegressionModel<FeatureType>>(this)));
+  template <class Archive> void load(Archive &archive) {
+    archive(cereal::make_nvp(
+        "model_definition",
+        cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
   }
 
-  ModelFit get_fit() const {
-    return model_fit_;
-  }
+  ModelFit get_fit() const { return model_fit_; }
 
- protected:
+protected:
   void fit_(const std::vector<FeatureType> &features,
             const TargetDistribution &targets) {
     model_fit_ = serializable_fit_(features, targets);
   }
 
-  virtual ModelFit serializable_fit_(const std::vector<FeatureType> &features,
-                                     const TargetDistribution &targets) const = 0;
+  virtual ModelFit
+  serializable_fit_(const std::vector<FeatureType> &features,
+                    const TargetDistribution &targets) const = 0;
 
   ModelFit model_fit_;
 };
-
 }
 
 #endif

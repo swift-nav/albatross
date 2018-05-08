@@ -13,9 +13,9 @@
 #ifndef ALBATROSS_CORE_INDEXING_H
 #define ALBATROSS_CORE_INDEXING_H
 
-#include <vector>
-#include <iostream>
 #include <Eigen/Core>
+#include <iostream>
+#include <vector>
 
 namespace albatross {
 
@@ -24,7 +24,8 @@ namespace albatross {
  */
 
 template <typename SizeType, typename X>
-std::vector<X> subset(const std::vector<SizeType> &indices, const std::vector<X> &v) {
+std::vector<X> subset(const std::vector<SizeType> &indices,
+                      const std::vector<X> &v) {
   std::vector<X> out(indices.size());
   for (std::size_t i = 0; i < static_cast<std::size_t>(indices.size()); i++) {
     out[i] = v[static_cast<std::size_t>(indices[i])];
@@ -36,10 +37,12 @@ std::vector<X> subset(const std::vector<SizeType> &indices, const std::vector<X>
  * Extract a subset of an Eigen::Vector
  */
 template <typename SizeType>
-Eigen::VectorXd subset(const std::vector<SizeType> &indices, const Eigen::VectorXd &v) {
+Eigen::VectorXd subset(const std::vector<SizeType> &indices,
+                       const Eigen::VectorXd &v) {
   Eigen::VectorXd out(static_cast<Eigen::Index>(indices.size()));
   for (std::size_t i = 0; i < indices.size(); i++) {
-    out[static_cast<Eigen::Index>(i)] = v[static_cast<Eigen::Index>(indices[i])];
+    out[static_cast<Eigen::Index>(i)] =
+        v[static_cast<Eigen::Index>(indices[i])];
   }
   return out;
 }
@@ -66,11 +69,13 @@ Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
 }
 
 /*
- * Takes a symmetric subset of an Eigen::Matrix.  Ie, it'll index the same rows and
+ * Takes a symmetric subset of an Eigen::Matrix.  Ie, it'll index the same rows
+ * and
  * columns.
  */
 template <typename SizeType>
-Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices, const Eigen::MatrixXd &v) {
+Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
+                                 const Eigen::MatrixXd &v) {
   assert(v.rows() == v.cols());
   return subset(indices, indices, v);
 }
@@ -79,11 +84,11 @@ Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices, const Eig
  * Extract a subset of an Eigen::DiagonalMatrix
  */
 template <typename SizeType, typename Scalar, int Size>
-Eigen::DiagonalMatrix<Scalar, Size> symmetric_subset(const std::vector<SizeType> &indices,
-                                                     const Eigen::DiagonalMatrix<Scalar, Size> &v) {
+Eigen::DiagonalMatrix<Scalar, Size>
+symmetric_subset(const std::vector<SizeType> &indices,
+                 const Eigen::DiagonalMatrix<Scalar, Size> &v) {
   return subset(indices, v.diagonal()).asDiagonal();
 }
-
 }
 
 #endif

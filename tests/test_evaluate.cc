@@ -10,12 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
-#include <cmath>
-#include <Eigen/Dense>
-#include <iostream>
 #include "evaluate.h"
 #include "models/least_squares.h"
+#include <Eigen/Dense>
+#include <cmath>
+#include <gtest/gtest.h>
+#include <iostream>
 
 #include "test_utils.h"
 
@@ -61,8 +61,7 @@ bool is_monotonic_increasing(Eigen::VectorXd &x) {
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
 
-  PredictDistribution preds =
-      cross_validated_predict(folds, model_ptr_.get());
+  PredictDistribution preds = cross_validated_predict(folds, model_ptr_.get());
 
   // Make sure the group cross validation resulted in folds that
   // are out of order

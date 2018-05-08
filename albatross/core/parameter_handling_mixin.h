@@ -13,14 +13,16 @@
 #ifndef ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
+#include <assert.h>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <vector>
 
+#include "cereal/cereal.hpp"
 #include "keys.h"
 #include "map_utils.h"
-#include "cereal/cereal.hpp"
 #include <cereal/types/map.hpp>
 
 namespace albatross {
@@ -40,8 +42,7 @@ inline std::string pretty_params(const ParameterStore &params) {
   std::ostringstream ss;
   ss << "{" << std::endl;
   for (const auto &pair : params) {
-    ss << "    {\"" << pair.first << "\", " << pair.second << "},"
-       << std::endl;
+    ss << "    {\"" << pair.first << "\", " << pair.second << "}," << std::endl;
   }
   ss << "};" << std::endl;
   return ss.str();
@@ -53,7 +54,7 @@ inline std::string pretty_params(const ParameterStore &params) {
  * change for things such as optimization routines / seralization.
  */
 class ParameterHandlingMixin {
- public:
+public:
   ParameterHandlingMixin() : params_(){};
   ParameterHandlingMixin(const ParameterStore &params) : params_(params){};
 
@@ -104,22 +105,18 @@ class ParameterHandlingMixin {
   /*
    * For serialization through cereal.
    */
-  template <class Archive>
-  void save(Archive & archive) const {
+  template <class Archive> void save(Archive &archive) const {
     archive(cereal::make_nvp("parameter_store", params_));
   };
 
-  template <class Archive>
-  void load(Archive & archive) {
+  template <class Archive> void load(Archive &archive) {
     archive(cereal::make_nvp("parameter_store", params_));
   };
 
   /*
    * For debugging.
    */
-  std::string pretty_string() const {
-    return pretty_params(get_params());
-  }
+  std::string pretty_string() const { return pretty_params(get_params()); }
 
   /*
    * The following methods are ones that may want to be overriden for
@@ -133,10 +130,9 @@ class ParameterHandlingMixin {
     params_[name] = value;
   }
 
- protected:
+protected:
   ParameterStore params_;
 };
-
 }
 
 #endif

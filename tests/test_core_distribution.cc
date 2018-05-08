@@ -40,14 +40,13 @@ TEST(test_core_distribution, test_constructors) {
   ASSERT_TRUE(with_cov.has_covariance());
 }
 
-Eigen::VectorXd arange(int k=5) {
+Eigen::VectorXd arange(int k = 5) {
   Eigen::VectorXd mean(k);
   for (Eigen::Index i = 0; i < k; i++) {
     mean[i] = i;
   }
   return mean;
 }
-
 
 void expect_subset_equal(const Eigen::VectorXd &original,
                          const Eigen::VectorXd &actual,
@@ -74,15 +73,12 @@ void expect_subset_equal(const Eigen::DiagonalMatrix<Scalar, Size> &original,
   expect_subset_equal(original.diagonal(), actual.diagonal(), indices);
 }
 
-
 template <typename DistributionType>
-class PolymorphicDistributionTest : public ::testing::Test {
-};
+class PolymorphicDistributionTest : public ::testing::Test {};
 
-typedef ::testing::Types<TargetDistribution,
-                         PredictDistribution> DistributionsToTest;
+typedef ::testing::Types<TargetDistribution, PredictDistribution>
+    DistributionsToTest;
 TYPED_TEST_CASE(PolymorphicDistributionTest, DistributionsToTest);
-
 
 TYPED_TEST(PolymorphicDistributionTest, can_compute_subset) {
   const TypeParam dist(arange(5));
@@ -94,6 +90,6 @@ TYPED_TEST(PolymorphicDistributionTest, can_compute_subset) {
 
   if (dist.has_covariance()) {
     expect_subset_equal(dist.covariance, ss.covariance, indices);
-  }}
-
+  }
+}
 }

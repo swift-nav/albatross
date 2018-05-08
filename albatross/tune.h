@@ -13,22 +13,22 @@
 #ifndef ALBATROSS_TUNE_H
 #define ALBATROSS_TUNE_H
 
-#include <map>
-#include <vector>
 #include "core/model.h"
 #include "nlopt.hpp"
+#include <map>
+#include <vector>
 
 namespace albatross {
 
-std::vector<ParameterValue> transform_parameters(
-    const std::vector<ParameterValue>& x) {
+std::vector<ParameterValue>
+transform_parameters(const std::vector<ParameterValue> &x) {
   std::vector<ParameterValue> transformed(x.size());
   std::transform(x.begin(), x.end(), transformed.begin(), log);
   return transformed;
 }
 
-std::vector<ParameterValue> inverse_parameters(
-    const std::vector<ParameterValue>& x) {
+std::vector<ParameterValue>
+inverse_parameters(const std::vector<ParameterValue> &x) {
   std::vector<ParameterValue> inverted(x.size());
   std::transform(x.begin(), x.end(), inverted.begin(), exp);
   return inverted;
@@ -38,8 +38,7 @@ template <class Predictor>
 using TuningMetric = std::function<double(const RegressionDataset<Predictor> &,
                                           RegressionModel<Predictor> *)>;
 
-template <class Predictor>
-struct TuneModelConfg {
+template <class Predictor> struct TuneModelConfg {
   RegressionModelCreator<Predictor> model_creator;
   RegressionDataset<Predictor> dataset;
   TuningMetric<Predictor> metric;
@@ -54,9 +53,8 @@ template <class Predictor>
 double objective_function(const std::vector<double> &x,
                           std::vector<double> &grad, void *void_tune_config) {
   if (!grad.empty()) {
-    throw std::invalid_argument(
-        "The algorithm being used by nlopt requires"
-        "a gradient but one isn't available.");
+    throw std::invalid_argument("The algorithm being used by nlopt requires"
+                                "a gradient but one isn't available.");
   }
 
   const TuneModelConfg<Predictor> config =
@@ -76,10 +74,10 @@ double objective_function(const std::vector<double> &x,
 }
 
 template <class Predictor>
-ParameterStore tune_regression_model(
-    const RegressionModelCreator<Predictor> &model_creator,
-    const RegressionDataset<Predictor> &dataset,
-    const TuningMetric<Predictor> &metric) {
+ParameterStore
+tune_regression_model(const RegressionModelCreator<Predictor> &model_creator,
+                      const RegressionDataset<Predictor> &dataset,
+                      const TuningMetric<Predictor> &metric) {
   const auto example_model = model_creator();
 
   TuneModelConfg<Predictor> config(model_creator, dataset, metric);
@@ -110,6 +108,5 @@ ParameterStore tune_regression_model(
 
   return example_model->get_params();
 }
-
 }
 #endif

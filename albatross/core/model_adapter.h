@@ -14,16 +14,19 @@
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
 #include "model.h"
-#include "traits.h"
 #include "serialize.h"
+#include "traits.h"
 
 namespace albatross {
 
 template <typename X, typename T>
-using enable_if_serializable = std::enable_if<is_serializable_regression_model<X>::value, T>;
+using enable_if_serializable =
+    std::enable_if<is_serializable_regression_model<X>::value, T>;
 
 template <typename X>
-using fit_type_if_serializable = typename enable_if_serializable<X, typename fit_type_or_void<X>::type>::type;
+using fit_type_if_serializable =
+    typename enable_if_serializable<X,
+                                    typename fit_type_or_void<X>::type>::type;
 
 /*
  * This helper function takes a model which is being adapted (SubModelType)
@@ -31,19 +34,17 @@ using fit_type_if_serializable = typename enable_if_serializable<X, typename fit
  * SubModelType is a pure RegressionModel or a SerializableRegressionModel.
  */
 template <typename FeatureType, typename SubModelType>
-class choose_regression_model_implementation
-{
-    template <typename C,
-              typename = typename C::FitType>
-    static SerializableRegressionModel<FeatureType, typename C::FitType> *test(int);
+class choose_regression_model_implementation {
+  template <typename C, typename = typename C::FitType>
+  static SerializableRegressionModel<FeatureType, typename C::FitType> *
+  test(int);
 
-    template <typename C>
-    static RegressionModel<FeatureType> *test(...);
+  template <typename C> static RegressionModel<FeatureType> *test(...);
 
 public:
-    typedef typename std::remove_pointer<decltype(test<SubModelType>(0))>::type type;
+  typedef
+      typename std::remove_pointer<decltype(test<SubModelType>(0))>::type type;
 };
-
 
 /*
  * This provides a way of creating a RegressionModel<X> which
@@ -55,33 +56,41 @@ public:
  * Note that RegressionModelImplementation exists in case one wants
  * to adapt something that has extended RegressionModel.
  */
-template <typename FeatureType,
-          typename SubModelType>
-class AdaptedRegressionModel : public choose_regression_model_implementation<FeatureType, SubModelType>::type {
+template <typename FeatureType, typename SubModelType>
+class AdaptedRegressionModel
+    : public choose_regression_model_implementation<FeatureType,
+                                                    SubModelType>::type {
 
- public:
+public:
   using SubFeature = typename SubModelType::Feature;
-  using RegressionModelImplementation = typename choose_regression_model_implementation<FeatureType,
-                                                                                        SubModelType>::type;
+  using RegressionModelImplementation =
+      typename choose_regression_model_implementation<FeatureType,
+                                                      SubModelType>::type;
 
   static_assert(std::is_same<RegressionModelImplementation,
                              RegressionModel<FeatureType>>::value ||
-                std::is_base_of<RegressionModel<FeatureType>,
-                                RegressionModelImplementation>::value,
-                "The template parameter RegressionModelImplementation must be derived from RegressionModel<FeatureType>");
+                    std::is_base_of<RegressionModel<FeatureType>,
+                                    RegressionModelImplementation>::value,
+                "The template parameter RegressionModelImplementation must be "
+                "derived from RegressionModel<FeatureType>");
 
-  static_assert(!has_fit_type<RegressionModelImplementation>::value ||
-                std::is_same<typename fit_type_or_void<RegressionModelImplementation>::type,
-                             typename fit_type_or_void<SubModelType>::type>::value,
-                "If the RegressionModelImplementation is serializable, it must have the same FitType as the sub_model");
+  static_assert(
+      !has_fit_type<RegressionModelImplementation>::value ||
+          std::is_same<
+              typename fit_type_or_void<RegressionModelImplementation>::type,
+              typename fit_type_or_void<SubModelType>::type>::value,
+      "If the RegressionModelImplementation is serializable, it must have the "
+      "same FitType as the sub_model");
 
   AdaptedRegressionModel() : sub_model_(){};
-  AdaptedRegressionModel(const SubModelType& sub_model) : sub_model_(sub_model){};
-  virtual ~AdaptedRegressionModel() {};
+  AdaptedRegressionModel(const SubModelType &sub_model)
+      : sub_model_(sub_model){};
+  virtual ~AdaptedRegressionModel(){};
 
   // This function will often be required by AdaptedModels
   // The default implementation is a null operation.
-  virtual const SubFeature convert_feature(const FeatureType& parent_feature) const = 0;
+  virtual const SubFeature
+  convert_feature(const FeatureType &parent_feature) const = 0;
 
   std::string get_name() const override { return sub_model_.get_name(); };
 
@@ -89,32 +98,28 @@ class AdaptedRegressionModel : public choose_regression_model_implementation<Fea
 
   ParameterStore get_params() const override { return sub_model_.get_params(); }
 
-  template<class Archive>
-  void save(Archive & archive) const
-  {
-    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+  template <class Archive> void save(Archive &archive) const {
+    archive(cereal::make_nvp(
+        "base_class", cereal::base_class<RegressionModelImplementation>(this)));
     archive(cereal::make_nvp("sub_model", sub_model_));
   }
 
-  template<class Archive>
-  void load(Archive & archive)
-  {
-    archive(cereal::make_nvp("base_class", cereal::base_class<RegressionModelImplementation>(this)));
+  template <class Archive> void load(Archive &archive) {
+    archive(cereal::make_nvp(
+        "base_class", cereal::base_class<RegressionModelImplementation>(this)));
     archive(cereal::make_nvp("sub_model", sub_model_));
   }
 
-  void unchecked_set_param(const std::string& name,
+  void unchecked_set_param(const std::string &name,
                            const double value) override {
     sub_model_.set_param(name, value);
   }
 
-  fit_type_if_serializable<SubModelType>
-  get_fit() const {
+  fit_type_if_serializable<SubModelType> get_fit() const {
     return sub_model_.get_fit();
   }
 
- protected:
-
+protected:
   void fit_(const std::vector<FeatureType> &features,
             const TargetDistribution &targets) override {
     this->sub_model_.fit(convert_features(features), targets);
@@ -128,17 +133,19 @@ class AdaptedRegressionModel : public choose_regression_model_implementation<Fea
   fit_type_if_serializable<RegressionModelImplementation>
   serializable_fit_(const std::vector<FeatureType> &features,
                     const TargetDistribution &targets) const override {
-    assert(false && "serializable_fit_ for an adapted model should never be called");
+    assert(false &&
+           "serializable_fit_ for an adapted model should never be called");
     typename fit_type_or_void<RegressionModelImplementation>::type dummy;
     return dummy;
   }
 
-  PredictDistribution predict_(
-      const std::vector<FeatureType> &features) const override {
+  PredictDistribution
+  predict_(const std::vector<FeatureType> &features) const override {
     return sub_model_.predict(convert_features(features));
   }
 
-  const std::vector<SubFeature> convert_features(const std::vector<FeatureType> &parent_features) const {
+  const std::vector<SubFeature>
+  convert_features(const std::vector<FeatureType> &parent_features) const {
     std::vector<SubFeature> converted;
     for (const auto &f : parent_features) {
       converted.push_back(convert_feature(f));
@@ -148,7 +155,6 @@ class AdaptedRegressionModel : public choose_regression_model_implementation<Fea
 
   SubModelType sub_model_;
 };
-
 }
 
 #endif

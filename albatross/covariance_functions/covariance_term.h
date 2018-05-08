@@ -13,10 +13,10 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
 
-#include <iostream>
 #include "../core/traits.h"
-#include "map_utils.h"
 #include "core/parameter_handling_mixin.h"
+#include "map_utils.h"
+#include <iostream>
 
 namespace albatross {
 
@@ -25,7 +25,7 @@ namespace albatross {
  * which holds anything all Covariance terms should have in common.
  */
 class CovarianceTerm : public ParameterHandlingMixin {
- public:
+public:
   CovarianceTerm() : ParameterHandlingMixin(){};
   virtual ~CovarianceTerm(){};
 
@@ -48,7 +48,7 @@ class CovarianceTerm : public ParameterHandlingMixin {
  */
 template <class LHS, class RHS>
 class CombinationOfCovarianceTerms : public CovarianceTerm {
- public:
+public:
   CombinationOfCovarianceTerms() : lhs_(), rhs_(){};
   CombinationOfCovarianceTerms(LHS &lhs, RHS &rhs) : lhs_(lhs), rhs_(rhs){};
   virtual ~CombinationOfCovarianceTerms(){};
@@ -75,18 +75,15 @@ class CombinationOfCovarianceTerms : public CovarianceTerm {
     }
   }
 
- protected:
-
+protected:
   LHS lhs_;
   RHS rhs_;
 };
 
-
 template <class LHS, class RHS>
 class SumOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
- public:
-  SumOfCovarianceTerms()
-      : CombinationOfCovarianceTerms<LHS, RHS>(){};
+public:
+  SumOfCovarianceTerms() : CombinationOfCovarianceTerms<LHS, RHS>(){};
   SumOfCovarianceTerms(LHS &lhs, RHS &rhs)
       : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
 
@@ -96,46 +93,41 @@ class SumOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
    * If both LHS and RHS have a valid call method for the types X and Y
    * this will return the sum of the two.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(has_call_operator<LHS, X&, Y&>::value &&
-                                     has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
+                                     has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
 
   /*
    * If only LHS has a valid call method we ignore R.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(has_call_operator<LHS, X&, Y&>::value &&
-                                     !has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
+                                     !has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->lhs_(x, y);
   }
 
   /*
    * If only RHS has a valid call method we ignore L.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(!has_call_operator<LHS, X&, Y&>::value &&
-                                     has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_call_operator<LHS, X &, Y &>::value &&
+                                     has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->rhs_(x, y);
   }
-
 };
 
 template <class LHS, class RHS>
 class ProductOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
- public:
-  ProductOfCovarianceTerms()
-      : CombinationOfCovarianceTerms<LHS, RHS>(){};
+public:
+  ProductOfCovarianceTerms() : CombinationOfCovarianceTerms<LHS, RHS>(){};
   ProductOfCovarianceTerms(LHS &lhs, RHS &rhs)
       : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
 
@@ -145,41 +137,37 @@ class ProductOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
    * If both LHS and RHS have a valid call method for the types X and Y
    * this will return the sum of the two.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(has_call_operator<LHS, X&, Y&>::value &&
-                                     has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
+                                     has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->lhs_(x, y) * this->rhs_(x, y);
   }
 
   /*
    * If only LHS has a valid call method we ignore R.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(has_call_operator<LHS, X&, Y&>::value &&
-                                     !has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
+                                     !has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->lhs_(x, y);
   }
 
   /*
    * If only RHS has a valid call method we ignore L.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(!has_call_operator<LHS, X&, Y&>::value &&
-                                     has_call_operator<RHS, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_call_operator<LHS, X &, Y &>::value &&
+                                     has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const {
+  double operator()(X &x, Y &y) const {
     return this->rhs_(x, y);
   }
-
 };
 
-}  // albatross
+} // albatross
 
 #endif

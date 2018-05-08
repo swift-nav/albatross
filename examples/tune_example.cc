@@ -10,23 +10,24 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <functional>
-#include "gflags/gflags.h"
 #include "tune.h"
 #include "evaluate.h"
 #include "example_utils.h"
+#include "gflags/gflags.h"
+#include <functional>
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
 
 double loo_nll(const albatross::RegressionDataset<double> &dataset,
-                albatross::RegressionModel<double> *model) {
+               albatross::RegressionModel<double> *model) {
   std::cout << "create folds" << std::endl;
   auto loo_folds = albatross::leave_one_out(dataset);
   std::cout << "cross validate" << std::endl;
   return albatross::cross_validated_scores(albatross::negative_log_likelihood,
-                                           loo_folds, model).mean();
+                                           loo_folds, model)
+      .mean();
 }
 
 int main(int argc, char *argv[]) {
