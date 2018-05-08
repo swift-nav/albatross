@@ -13,14 +13,14 @@
 #ifndef ALBATROSS_CORE_MODEL_H
 #define ALBATROSS_CORE_MODEL_H
 
-#include <Eigen/Core>
-#include <map>
-#include <vector>
 #include "distribution.h"
 #include "map_utils.h"
 #include "parameter_handling_mixin.h"
 #include "traits.h"
+#include <Eigen/Core>
 #include <cereal/archives/json.hpp>
+#include <map>
+#include <vector>
 
 namespace albatross {
 
@@ -35,12 +35,11 @@ using PredictDistribution = Distribution<Eigen::MatrixXd>;
  * it is assumed that each feature is regressed to a single double typed
  * target.
  */
-template <typename FeatureType>
-struct RegressionDataset {
+template <typename FeatureType> struct RegressionDataset {
   std::vector<FeatureType> features;
   TargetDistribution targets;
 
-  RegressionDataset() {};
+  RegressionDataset(){};
 
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const TargetDistribution &targets_)
@@ -52,8 +51,8 @@ struct RegressionDataset {
   }
 
   RegressionDataset(const std::vector<FeatureType> &features_,
-                    const Eigen::VectorXd &targets_) :
-                      RegressionDataset(features_, TargetDistribution(targets_)) {}
+                    const Eigen::VectorXd &targets_)
+      : RegressionDataset(features_, TargetDistribution(targets_)) {}
 };
 
 typedef int32_t s32;
@@ -65,8 +64,7 @@ using FoldIndexer = std::map<FoldName, FoldIndices>;
  * A combination of training and testing datasets, typically used in cross
  * validation.
  */
-template <typename FeatureType>
-struct RegressionFold {
+template <typename FeatureType> struct RegressionFold {
   RegressionDataset<FeatureType> train_dataset;
   RegressionDataset<FeatureType> test_dataset;
   FoldName name;
@@ -75,7 +73,8 @@ struct RegressionFold {
   RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
                  const RegressionDataset<FeatureType> &test_dataset_,
                  const FoldName &name_, const FoldIndices &test_indices_)
-      : train_dataset(train_dataset_), test_dataset(test_dataset_), name(name_), test_indices(test_indices_){};
+      : train_dataset(train_dataset_), test_dataset(test_dataset_), name(name_),
+        test_indices(test_indices_){};
 };
 
 /*
@@ -84,17 +83,17 @@ struct RegressionFold {
  */
 template <typename FeatureType>
 class RegressionModel : public ParameterHandlingMixin {
- public:
+public:
   using Feature = FeatureType;
-  RegressionModel() : ParameterHandlingMixin(), has_been_fit_() {};
+  RegressionModel() : ParameterHandlingMixin(), has_been_fit_(){};
   virtual ~RegressionModel(){};
 
   template <typename OtherFeatureType>
-  bool operator == (const RegressionModel<FeatureType> &other) const {
+  bool operator==(const RegressionModel<FeatureType> &other) const {
     return false;
   }
 
-  virtual bool operator == (const RegressionModel<FeatureType> &other) const {
+  virtual bool operator==(const RegressionModel<FeatureType> &other) const {
     // If the fit method has been called it's possible that some unknown
     // class members may have been modified.  As such, if a model has been
     // fit we fail hard to avoid possibly unexpected behavior.  Any
@@ -140,8 +139,7 @@ class RegressionModel : public ParameterHandlingMixin {
    * and makes simple checks to confirm the implementation is returning
    * properly sized Distribution.
    */
-  PredictDistribution predict(
-      const std::vector<FeatureType> &features) const {
+  PredictDistribution predict(const std::vector<FeatureType> &features) const {
     assert(has_been_fit());
     PredictDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
@@ -149,8 +147,7 @@ class RegressionModel : public ParameterHandlingMixin {
     return preds;
   }
 
-  PredictDistribution predict(
-      const FeatureType &feature) const {
+  PredictDistribution predict(const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
     return predict(features);
   }
@@ -161,10 +158,10 @@ class RegressionModel : public ParameterHandlingMixin {
    * follwed by predict but overriding this method may speed up computation for
    * some models.
    */
-  PredictDistribution fit_and_predict(
-      const std::vector<FeatureType> &train_features,
-      const TargetDistribution &train_targets,
-      const std::vector<FeatureType> &test_features) {
+  PredictDistribution
+  fit_and_predict(const std::vector<FeatureType> &train_features,
+                  const TargetDistribution &train_targets,
+                  const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
     return predict(test_features);
@@ -174,8 +171,7 @@ class RegressionModel : public ParameterHandlingMixin {
    * A convenience wrapper around fit_and_predict which uses the entries
    * in a RegressionFold struct
    */
-  PredictDistribution fit_and_predict(
-      const RegressionFold<FeatureType> &fold) {
+  PredictDistribution fit_and_predict(const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
   }
@@ -187,49 +183,42 @@ class RegressionModel : public ParameterHandlingMixin {
     return ss.str();
   }
 
-  virtual bool has_been_fit() const {
-    return has_been_fit_;
-  }
+  virtual bool has_been_fit() const { return has_been_fit_; }
 
   virtual std::string get_name() const = 0;
 
   /*
    * Here we define the serialization routines.  Note that while in most
    * cases we could use the cereal method `serialize`, in this case we don't
-   * know for sure where the parameters are stored.  The GaussianProcessRegression
+   * know for sure where the parameters are stored.  The
+   * GaussianProcessRegression
    * model, for example, derives its parameters from its covariance function,
    * so it's `params_` are actually empty.  As a result we need to use the
    * save/load cereal variant and deal with parameters through the get/set
    * interface.
    */
-  template<class Archive>
-  void save(Archive & archive) const
-  {
+  template <class Archive> void save(Archive &archive) const {
     auto params = get_params();
     archive(cereal::make_nvp("parameters", params));
     archive(cereal::make_nvp("has_been_fit", has_been_fit_));
   }
 
-  template<class Archive>
-  void load(Archive & archive)
-  {
+  template <class Archive> void load(Archive &archive) {
     auto params = get_params();
     archive(cereal::make_nvp("parameters", params));
     archive(cereal::make_nvp("has_been_fit", has_been_fit_));
     set_params(params);
   }
 
- protected:
-
+protected:
   virtual void fit_(const std::vector<FeatureType> &features,
                     const TargetDistribution &targets) = 0;
 
-  virtual PredictDistribution predict_(
-      const std::vector<FeatureType> &features) const = 0;
+  virtual PredictDistribution
+  predict_(const std::vector<FeatureType> &features) const = 0;
 
   bool has_been_fit_;
 };
-
 
 template <typename FeatureType>
 using RegressionModelCreator =

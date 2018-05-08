@@ -19,16 +19,17 @@
 namespace albatross {
 
 class DistanceMetric : public ParameterHandlingMixin {
- public:
+public:
   DistanceMetric(){};
   virtual ~DistanceMetric(){};
 
- virtual std::string get_name() const = 0;
- protected:
+  virtual std::string get_name() const = 0;
+
+protected:
 };
 
 class EuclideanDistance : public DistanceMetric {
- public:
+public:
   EuclideanDistance(){};
   ~EuclideanDistance(){};
 
@@ -40,7 +41,7 @@ class EuclideanDistance : public DistanceMetric {
 };
 
 class RadialDistance : public DistanceMetric {
- public:
+public:
   RadialDistance(){};
   ~RadialDistance(){};
 
@@ -52,17 +53,15 @@ class RadialDistance : public DistanceMetric {
 };
 
 class ScalarDistance : public DistanceMetric {
- public:
-  ScalarDistance() {};
-  ~ScalarDistance() {};
+public:
+  ScalarDistance(){};
+  ~ScalarDistance(){};
   std::string get_name() const { return "scalar_distance"; }
 
-  double operator()(const double &x,
-                    const double &y) const {
+  double operator()(const double &x, const double &y) const {
     return fabs(x - y);
   }
 };
-
 }
 
 #endif

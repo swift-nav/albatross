@@ -28,7 +28,7 @@ namespace albatross {
  */
 template <class DistanceMetricImpl>
 class RadialCovariance : public CovarianceTerm {
- public:
+public:
   RadialCovariance() : distance_metric_(){};
 
   ~RadialCovariance(){};
@@ -46,7 +46,7 @@ class RadialCovariance : public CovarianceTerm {
     }
   }
 
- protected:
+protected:
   DistanceMetricImpl distance_metric_;
 };
 
@@ -55,9 +55,8 @@ class RadialCovariance : public CovarianceTerm {
  *  - c(d) = -exp((d/length_scale)^2)
  */
 template <class DistanceMetricImpl>
-class SquaredExponential
-    : public RadialCovariance<DistanceMetricImpl> {
- public:
+class SquaredExponential : public RadialCovariance<DistanceMetricImpl> {
+public:
   SquaredExponential(double length_scale = 100000.,
                      double sigma_squared_exponential = 10.) {
     this->params_["length_scale"] = length_scale;
@@ -74,8 +73,9 @@ class SquaredExponential
 
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
-            typename std::enable_if<has_call_operator<DistanceMetricImpl, X&, X&>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                has_call_operator<DistanceMetricImpl, X &, X &>::value,
+                int>::type = 0>
   double operator()(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->params_.at("length_scale");

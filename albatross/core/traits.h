@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_CORE_MAGIC_H
 #define ALBATROSS_CORE_MAGIC_H
 
+#include <utility>
+
 namespace albatross {
 
 /*
@@ -20,35 +22,27 @@ namespace albatross {
  *   `operator() (X x, Y y, Z z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
-template <typename T, typename... Args>
-class has_call_operator
-{
-    template <typename C,
-              typename = decltype( std::declval<C>()(std::declval<Args>()...))>
-    static std::true_type test(int);
-    template <typename C>
-    static std::false_type test(...);
+template <typename T, typename... Args> class has_call_operator {
+  template <typename C,
+            typename = decltype(std::declval<C>()(std::declval<Args>()...))>
+  static std::true_type test(int);
+  template <typename C> static std::false_type test(...);
 
 public:
-    static constexpr bool value = decltype(test<T>(0))::value;
+  static constexpr bool value = decltype(test<T>(0))::value;
 };
-
 
 /*
  * Inspects T to see if it has a class level type called FitType,
  * the result is returned in ::value.
  */
-template <typename T>
-class has_fit_type
-{
-  template <typename C,
-            typename = typename C::FitType>
-    static std::true_type test(int);
-    template <typename C>
-    static std::false_type test(...);
+template <typename T> class has_fit_type {
+  template <typename C, typename = typename C::FitType>
+  static std::true_type test(int);
+  template <typename C> static std::false_type test(...);
 
 public:
-    static constexpr bool value = decltype(test<T>(0))::value;
+  static constexpr bool value = decltype(test<T>(0))::value;
 };
 
 /*
@@ -56,28 +50,21 @@ public:
  * and a SerializableRegressionModel is by inspecting for a
  * FitType.
  */
-template <typename T>
-using is_serializable_regression_model = has_fit_type<T>;
+template <typename T> using is_serializable_regression_model = has_fit_type<T>;
 
 /*
  * This traits helper class defines `::type` to be `T::FitType`
  * if a type with that name has been defined for T and will
  * otherwise be `void`.
  */
-template <typename T>
-class fit_type_or_void
-{
-    template <typename C,
-              typename = typename C::FitType>
-    static typename C::FitType test(int);
-    template <typename C>
-    static void test(...);
+template <typename T> class fit_type_or_void {
+  template <typename C, typename = typename C::FitType>
+  static typename C::FitType test(int);
+  template <typename C> static void test(...);
 
 public:
-    typedef decltype(test<T>(0)) type;
+  typedef decltype(test<T>(0)) type;
 };
-
-
 }
 
 #endif

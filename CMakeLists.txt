@@ -2,6 +2,7 @@ project(albatross)
 cmake_minimum_required(VERSION 2.8.7)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(ClangTools)
 
 # Enable Clang auto-formatting, defaults to on. 
 option(ENABLE_AUTOFORMAT "Enable automatic formatting and replacement with clang-format." ON)

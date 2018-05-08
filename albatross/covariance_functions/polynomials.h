@@ -29,7 +29,7 @@ struct ConstantTerm {};
  * of the mean.
  */
 class Constant : public CovarianceTerm {
- public:
+public:
   Constant(double sigma_constant = 10.) {
     this->params_["sigma_constant"] = sigma_constant;
   };
@@ -39,7 +39,8 @@ class Constant : public CovarianceTerm {
   std::string get_name() const { return "constant"; }
 
   template <typename X>
-  std::vector<ConstantTerm> get_state_space_representation(std::vector<X> &x) const {
+  std::vector<ConstantTerm>
+  get_state_space_representation(std::vector<X> &x) const {
     std::vector<ConstantTerm> terms = {ConstantTerm()};
     return terms;
   }
@@ -57,7 +58,6 @@ class Constant : public CovarianceTerm {
     return sigma_constant * sigma_constant;
   }
 };
-
 }
 
 #endif

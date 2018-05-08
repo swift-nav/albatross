@@ -15,17 +15,16 @@
 
 #include "covariance_term.h"
 #include "noise.h"
-#include "radial.h"
 #include "polynomials.h"
+#include "radial.h"
 
 namespace albatross {
 
-template <typename Term>
-struct CovarianceFunction {
+template <typename Term> struct CovarianceFunction {
   Term covariance_term;
 
-  CovarianceFunction() : covariance_term() {};
-  CovarianceFunction(const Term &term) : covariance_term(term) {};
+  CovarianceFunction() : covariance_term(){};
+  CovarianceFunction(const Term &term) : covariance_term(term){};
 
   template <typename Other>
   inline auto operator+(CovarianceFunction<Other> &other) {
@@ -47,10 +46,9 @@ struct CovarianceFunction {
    * types.  This allows us to distinguish between covariance functions which
    * are 0. and ones that are just not defined (read: possibly bugs).
    */
-  template<typename X,
-           typename Y,
-           typename std::enable_if<(has_call_operator<Term, X&, Y&>::value),
-                          int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(has_call_operator<Term, X &, Y &>::value),
+                                    int>::type = 0>
   inline auto operator()(const X &x, const Y &y) const {
     return covariance_term(x, y);
   }
@@ -58,17 +56,16 @@ struct CovarianceFunction {
   /*
    * If neither have a valid call method we fail compilation.
    */
-  template <typename X,
-            typename Y,
-            typename std::enable_if<(!has_call_operator<Term, X&, Y&>::value),
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_call_operator<Term, X &, Y &>::value),
                                     int>::type = 0>
-  double operator() (X &x, Y &y) const = delete; // see below for help debugging.
-  /*
-   * If you encounter a deleted function error here ^ it implies that you've
-   * attempted to call a covariance function with arguments X, Y that are
-   * undefined for the corresponding CovarianceTerm(s).  The subsequent compiler
-   * errors should give you an indication of which types were attempted.
-   */
+  double operator()(X &x, Y &y) const = delete; // see below for help debugging.
+                                                /*
+                                                 * If you encounter a deleted function error here ^ it implies that you've
+                                                 * attempted to call a covariance function with arguments X, Y that are
+                                                 * undefined for the corresponding CovarianceTerm(s).  The subsequent compiler
+                                                 * errors should give you an indication of which types were attempted.
+                                                 */
 
   inline auto get_name() const { return covariance_term.get_name(); };
   inline auto get_params() const { return covariance_term.get_params(); };
@@ -90,16 +87,14 @@ struct CovarianceFunction {
   };
 };
 
-
 /*
  * Creates a covariance matrix given a single vector of
  * predictors.  Element i, j of the resulting covariance
  * matrix will hold
  */
 template <typename Covariance, typename Feature>
-Eigen::MatrixXd symmetric_covariance(
-    const CovarianceFunction<Covariance> &f,
-    const std::vector<Feature> &xs) {
+Eigen::MatrixXd symmetric_covariance(const CovarianceFunction<Covariance> &f,
+                                     const std::vector<Feature> &xs) {
   int n = static_cast<int>(xs.size());
   Eigen::MatrixXd C(n, n);
 
@@ -124,9 +119,9 @@ Eigen::MatrixXd symmetric_covariance(
  * functions.
  */
 template <typename Covariance, typename OtherFeature, typename Feature>
-Eigen::MatrixXd asymmetric_covariance(
-    const CovarianceFunction<Covariance> &f,
-    const std::vector<OtherFeature> &xs, const std::vector<Feature> &ys) {
+Eigen::MatrixXd asymmetric_covariance(const CovarianceFunction<Covariance> &f,
+                                      const std::vector<OtherFeature> &xs,
+                                      const std::vector<Feature> &ys) {
   int m = static_cast<int>(xs.size());
   int n = static_cast<int>(ys.size());
   Eigen::MatrixXd C(m, n);
@@ -142,7 +137,6 @@ Eigen::MatrixXd asymmetric_covariance(
   }
   return C;
 }
-
 }
 
 #endif

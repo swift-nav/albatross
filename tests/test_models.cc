@@ -10,19 +10,19 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
+#include "covariance_functions/covariance_functions.h"
+#include "evaluate.h"
 #include "models/gp.h"
 #include "models/least_squares.h"
-#include "covariance_functions/covariance_functions.h"
 #include "test_utils.h"
-#include "evaluate.h"
 #include <cereal/archives/json.hpp>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
 class AbstractTestModel {
- public:
-  virtual ~AbstractTestModel() {};
+public:
+  virtual ~AbstractTestModel(){};
   virtual std::unique_ptr<RegressionModel<double>> create() const = 0;
 };
 
@@ -36,7 +36,6 @@ public:
     auto covariance = squared_exponential + noise;
     return gp_pointer_from_covariance<double>(covariance);
   }
-
 };
 
 class MakeLinearRegression : public AbstractTestModel {
@@ -46,23 +45,22 @@ public:
   }
 };
 
-
 template <typename ModelCreator>
 class RegressionModelTester : public ::testing::Test {
- public:
+public:
   ModelCreator creator;
 };
 
-typedef ::testing::Types<MakeLinearRegression,
-                         MakeGaussianProcess> ModelCreators;
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess>
+    ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
-
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
   auto model = this->creator.create();
-  auto cv_scores = cross_validated_scores(root_mean_square_error, folds, model.get());
+  auto cv_scores =
+      cross_validated_scores(root_mean_square_error, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
@@ -81,14 +79,15 @@ TEST(test_models, test_with_target_distribution) {
 
   auto folds = leave_one_out(dataset);
   auto model = MakeGaussianProcess().create();
-  auto scores = cross_validated_scores(negative_log_likelihood, folds, model.get());
+  auto scores =
+      cross_validated_scores(negative_log_likelihood, folds, model.get());
 
-  RegressionDataset<double> dataset_without_variance(dataset.features, dataset.targets.mean);
+  RegressionDataset<double> dataset_without_variance(dataset.features,
+                                                     dataset.targets.mean);
   auto folds_without_variance = leave_one_out(dataset_without_variance);
-  auto scores_without_variance = cross_validated_scores(negative_log_likelihood, folds_without_variance, model.get());
+  auto scores_without_variance = cross_validated_scores(
+      negative_log_likelihood, folds_without_variance, model.get());
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
-
 }
-
 }

@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include "core/parameter_handling_mixin.h"
+#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -51,9 +51,7 @@ TEST(test_parameter_handler, test_is_ordered) {
   // march through each store one by one and make sure the keys are the same
   typedef ParameterStore::const_iterator iter_t;
   for (std::pair<iter_t, iter_t> p(ordered.begin(), unordered.begin());
-       p.first != ordered.end();
-       ++p.first, ++p.second)
-  {
+       p.first != ordered.end(); ++p.first, ++p.second) {
     const auto ordered_pair = *p.first;
     const auto unordered_pair = *p.second;
     EXPECT_EQ(ordered_pair.first, unordered_pair.first);
@@ -84,5 +82,4 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
   expect_parameter_vector_equal(expected_param_vector,
                                 original_handler.get_params_as_vector());
 }
-
 }
