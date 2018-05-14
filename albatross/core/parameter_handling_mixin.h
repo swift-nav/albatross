@@ -51,7 +51,7 @@ inline std::string pretty_params(const ParameterStore &params) {
 /*
  * This mixin class is intended to be included an any class which
  * depends on some set of parameters which we want to programatically
- * change for things such as optimization routines / seralization.
+ * change for things such as optimization routines / serialization.
  */
 class ParameterHandlingMixin {
 public:
