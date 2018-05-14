@@ -96,7 +96,9 @@ public:
 
   bool has_been_fit() const override { return sub_model_.has_been_fit(); }
 
-  ParameterStore get_params() const override { return sub_model_.get_params(); }
+  ParameterStore get_params() const override {
+    return map_join(this->params_, sub_model_.get_params());
+  }
 
   template <class Archive> void save(Archive &archive) const {
     archive(cereal::make_nvp(
@@ -112,7 +114,12 @@ public:
 
   void unchecked_set_param(const std::string &name,
                            const double value) override {
-    sub_model_.set_param(name, value);
+
+    if (map_contains(this->params_, name)) {
+      this->params_[name] = value;
+    } else {
+      sub_model_.set_param(name, value);
+    }
   }
 
   fit_type_if_serializable<SubModelType> get_fit() const {
