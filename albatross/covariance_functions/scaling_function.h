@@ -38,7 +38,7 @@ public:
  *     y ~ N(0, S)  with  S_ij = cov(y_i, y_j)
  * And you may then make observations of that random variable
  * but through a known transformation,
- *     z = f(y) y
+ *     z = f(y) * y
  * where f is a determinstic function of y that returns a scalar.
  * You might then ask what the covariance between two elements in
  * z is which is woudl be given by,
