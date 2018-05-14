@@ -17,26 +17,27 @@
 #include "noise.h"
 #include "polynomials.h"
 #include "radial.h"
+#include "scaling_function.h"
 
 namespace albatross {
 
 template <typename Term> struct CovarianceFunction {
-  Term covariance_term;
+  Term term;
 
-  CovarianceFunction() : covariance_term(){};
-  CovarianceFunction(const Term &term) : covariance_term(term){};
+  CovarianceFunction() : term(){};
+  CovarianceFunction(const Term &term_) : term(term_){};
 
   template <typename Other>
   inline auto operator+(CovarianceFunction<Other> &other) {
     using Sum = SumOfCovarianceTerms<Term, Other>;
-    auto sum = Sum(covariance_term, other.covariance_term);
+    auto sum = Sum(term, other.term);
     return CovarianceFunction<Sum>{sum};
   }
 
   template <typename Other>
   inline auto operator*(CovarianceFunction<Other> &other) {
     using Prod = ProductOfCovarianceTerms<Term, Other>;
-    auto prod = Prod(covariance_term, other.covariance_term);
+    auto prod = Prod(term, other.term);
     return CovarianceFunction<Prod>{prod};
   }
 
@@ -50,11 +51,11 @@ template <typename Term> struct CovarianceFunction {
             typename std::enable_if<(has_call_operator<Term, X &, Y &>::value),
                                     int>::type = 0>
   inline auto operator()(const X &x, const Y &y) const {
-    return covariance_term(x, y);
+    return term(x, y);
   }
 
   /*
-   * If neither have a valid call method we fail compilation.
+   * If neither have a valid call method we fail.
    */
   template <typename X, typename Y,
             typename std::enable_if<(!has_call_operator<Term, X &, Y &>::value),
@@ -67,23 +68,23 @@ template <typename Term> struct CovarianceFunction {
                                                  * errors should give you an indication of which types were attempted.
                                                  */
 
-  inline auto get_name() const { return covariance_term.get_name(); };
-  inline auto get_params() const { return covariance_term.get_params(); };
+  inline auto get_name() const { return term.get_name(); };
+  inline auto get_params() const { return term.get_params(); };
   inline auto set_params(const ParameterStore &params) {
-    return covariance_term.set_params(params);
+    return term.set_params(params);
   };
   inline auto set_param(const ParameterKey &key, const ParameterValue &value) {
-    return covariance_term.set_param(key, value);
+    return term.set_param(key, value);
   };
-  inline auto pretty_string() const { return covariance_term.pretty_string(); };
+  inline auto pretty_string() const { return term.pretty_string(); };
   inline auto get_params_as_vector() const {
-    return covariance_term.get_params_as_vector();
+    return term.get_params_as_vector();
   };
   inline auto set_params_from_vector(const std::vector<ParameterValue> &x) {
-    return covariance_term.set_params_from_vector(x);
+    return term.set_params_from_vector(x);
   };
   inline auto unchecked_set_param(const std::string &name, const double value) {
-    return covariance_term.unchecked_set_param(name, value);
+    return term.unchecked_set_param(name, value);
   };
 };
 
