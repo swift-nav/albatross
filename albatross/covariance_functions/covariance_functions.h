@@ -22,6 +22,7 @@
 namespace albatross {
 
 template <typename Term> struct CovarianceFunction {
+  using TermType = Term;
   Term term;
 
   CovarianceFunction() : term(){};
@@ -113,6 +114,17 @@ Eigen::MatrixXd symmetric_covariance(const CovarianceFunction<Covariance> &f,
 }
 
 /*
+ * Convenience function that turns a covariance term into a function
+ * before computing a covariance matrix.
+ */
+template <typename CovarianceTerm, typename Feature>
+Eigen::MatrixXd symmetric_covariance(const CovarianceTerm &term,
+                                     const std::vector<Feature> &xs) {
+  CovarianceFunction<CovarianceTerm> func(term);
+  return symmetric_covariance(func, xs);
+}
+
+/*
  * Computes the covariance matrix between some predictors (x) and
  * a separate distinct set (y).  x and y can be of the same type,
  * which is common when making predictions at new locations, or x may
@@ -137,6 +149,18 @@ Eigen::MatrixXd asymmetric_covariance(const CovarianceFunction<Covariance> &f,
     }
   }
   return C;
+}
+
+/*
+ * Convenience function that turns a covariance term into a function
+ * before computing a covariance matrix.
+ */
+template <typename CovarianceTerm, typename OtherFeature, typename Feature>
+Eigen::MatrixXd asymmetric_covariance(const CovarianceTerm &term,
+                                      const std::vector<OtherFeature> &xs,
+                                      const std::vector<Feature> &ys) {
+  CovarianceFunction<CovarianceTerm> func(term);
+  return asymmetric_covariance(func, xs, ys);
 }
 } // namespace albatross
 
