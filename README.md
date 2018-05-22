@@ -11,7 +11,7 @@ A framework for statistical modelling in C++, with a focus on Gaussian processes
 
 `albatross` is a header only library so incorporating it in your C++ project should be as simple as adding `./albatross` as an include directory.
 
-Make sure you've run `git submodule update --recursive` to be sure all the third party libraries required by albatross are up to date.
+Make sure you've run `git submodule update --recursive --init` to be sure all the third party libraries required by albatross are up to date.
 
 If you want to run the tests you can do so using `cmake`,
 
