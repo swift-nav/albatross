@@ -62,4 +62,4 @@ TEST(test_tune, test_multiple_datasets) {
   std::cout << output_stream.str() << std::endl;
   auto params = tune_regression_model(config);
 }
-}
+} // namespace albatross

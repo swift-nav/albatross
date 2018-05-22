@@ -69,6 +69,6 @@ Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
     return Distribution<CovarianceType>(mean);
   }
 }
-}
+} // namespace albatross
 
 #endif

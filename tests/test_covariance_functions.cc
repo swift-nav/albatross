@@ -82,4 +82,4 @@ TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
   // Make sure C is positive definite.
   auto inverse = C.inverse();
 }
-}
+} // namespace albatross

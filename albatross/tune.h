@@ -23,14 +23,22 @@ namespace albatross {
 inline std::vector<ParameterValue>
 transform_parameters(const std::vector<ParameterValue> &x) {
   std::vector<ParameterValue> transformed(x.size());
-  std::transform(x.begin(), x.end(), transformed.begin(), log);
+
+  // https://stackoverflow.com/questions/12915676/how-can-i-avoid-the-compiler-error-stdtransform
+  auto double_log = [&](double z) { return log(z); };
+  std::transform(x.begin(), x.end(), transformed.begin(), double_log);
+
   return transformed;
 }
 
 inline std::vector<ParameterValue>
 inverse_parameters(const std::vector<ParameterValue> &x) {
   std::vector<ParameterValue> inverted(x.size());
-  std::transform(x.begin(), x.end(), inverted.begin(), exp);
+
+  // https://stackoverflow.com/questions/12915676/how-can-i-avoid-the-compiler-error-stdtransform
+  auto double_exp = [&](double z) { return exp(z); };
+  std::transform(x.begin(), x.end(), inverted.begin(), double_exp);
+
   return inverted;
 }
 
@@ -143,5 +151,5 @@ tune_regression_model(const TuneModelConfg<FeatureType> &config) {
 
   return example_model->get_params();
 }
-}
+} // namespace albatross
 #endif

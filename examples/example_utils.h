@@ -44,7 +44,7 @@ public:
     return sigma_slope * sigma_slope * x * y;
   }
 };
-}
+} // namespace albatross
 
 /*
  * Randomly samples n points between low and high.

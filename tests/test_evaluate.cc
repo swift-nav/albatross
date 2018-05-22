@@ -78,4 +78,4 @@ TEST_F(LinearRegressionTest, test_leave_one_group_out) {
   // Make sure we get a single RMSE for each of the three groups.
   EXPECT_EQ(rmses.size(), 3);
 }
-}
+} // namespace albatross

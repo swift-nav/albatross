@@ -99,4 +99,4 @@ TEST(test_map_utils, map_join) {
     }
   }
 }
-}
+} // namespace albatross

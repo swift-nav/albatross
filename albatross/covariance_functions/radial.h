@@ -84,5 +84,5 @@ public:
     return sigma * sigma * exp(-distance * distance);
   }
 };
-}
+} // namespace albatross
 #endif

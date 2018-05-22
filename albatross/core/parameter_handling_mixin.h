@@ -133,6 +133,6 @@ public:
 protected:
   ParameterStore params_;
 };
-}
+} // namespace albatross
 
 #endif

@@ -138,6 +138,6 @@ Eigen::MatrixXd asymmetric_covariance(const CovarianceFunction<Covariance> &f,
   }
   return C;
 }
-}
+} // namespace albatross
 
 #endif

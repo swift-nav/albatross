@@ -53,7 +53,7 @@ public:
                              cereal::base_class<TestAdaptedModelBase>(this)));
   }
 };
-}
+} // namespace albatross
 
 void test_get_set(albatross::RegressionModel<double> &model,
                   const std::string &key) {

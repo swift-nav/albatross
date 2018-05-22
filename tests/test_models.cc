@@ -90,4 +90,4 @@ TEST(test_models, test_with_target_distribution) {
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }
-}
+} // namespace albatross

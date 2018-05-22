@@ -151,4 +151,4 @@ TEST(test_scaling_functions, test_inference) {
   // that we made scaled observations of it.
   EXPECT_LE(fabs(state_estimate.mean[0] - attenuation), 1e-2);
 }
-}
+} // namespace albatross

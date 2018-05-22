@@ -108,7 +108,7 @@ public:
   LinearRegression(){};
   std::string get_name() const override { return "linear_regression"; };
 
-  const Eigen::VectorXd convert_feature(const double &x) const {
+  const Eigen::VectorXd convert_feature(const double &x) const override {
     Eigen::VectorXd converted(2);
     converted << 1., x;
     return converted;
@@ -130,7 +130,7 @@ public:
                              cereal::base_class<LinearRegressionBase>(this)));
   }
 };
-}
+} // namespace albatross
 
 CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 

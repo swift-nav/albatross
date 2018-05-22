@@ -89,6 +89,6 @@ symmetric_subset(const std::vector<SizeType> &indices,
                  const Eigen::DiagonalMatrix<Scalar, Size> &v) {
   return subset(indices, v.diagonal()).asDiagonal();
 }
-}
+} // namespace albatross
 
 #endif

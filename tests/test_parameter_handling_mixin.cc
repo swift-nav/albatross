@@ -82,4 +82,4 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
   expect_parameter_vector_equal(expected_param_vector,
                                 original_handler.get_params_as_vector());
 }
-}
+} // namespace albatross

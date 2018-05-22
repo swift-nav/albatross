@@ -87,7 +87,7 @@ protected:
 
   // looks up the prediction in the map
   PredictDistribution
-  predict_(const std::vector<MockPredictor> &features) const {
+  predict_(const std::vector<MockPredictor> &features) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
@@ -205,6 +205,6 @@ public:
   std::unique_ptr<LinearRegression> model_ptr_;
   RegressionDataset<double> dataset_;
 };
-}
+} // namespace albatross
 
 #endif

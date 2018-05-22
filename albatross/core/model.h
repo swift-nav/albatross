@@ -223,6 +223,6 @@ protected:
 template <typename FeatureType>
 using RegressionModelCreator =
     std::function<std::unique_ptr<RegressionModel<FeatureType>>()>;
-}
+} // namespace albatross
 
 #endif
