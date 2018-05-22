@@ -162,6 +162,6 @@ protected:
 
   SubModelType sub_model_;
 };
-}
+} // namespace albatross
 
 #endif

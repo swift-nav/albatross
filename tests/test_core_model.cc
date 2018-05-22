@@ -35,4 +35,4 @@ TEST(test_core_model, test_regression_model_abstraction) {
   std::unique_ptr<RegressionModel<MockPredictor>> m_ptr =
       std::make_unique<MockModel>();
 }
-}
+} // namespace albatross

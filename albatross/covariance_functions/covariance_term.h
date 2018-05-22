@@ -173,6 +173,6 @@ public:
   }
 };
 
-} // albatross
+} // namespace albatross
 
 #endif

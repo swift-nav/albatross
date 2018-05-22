@@ -40,6 +40,6 @@ public:
     }
   }
 };
-}
+} // namespace albatross
 
 #endif

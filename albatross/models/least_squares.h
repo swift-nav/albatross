@@ -130,7 +130,7 @@ public:
                              cereal::base_class<LinearRegressionBase>(this)));
   }
 };
-}
+} // namespace albatross
 
 CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 

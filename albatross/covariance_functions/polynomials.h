@@ -58,6 +58,6 @@ public:
     return sigma_constant * sigma_constant;
   }
 };
-}
+} // namespace albatross
 
 #endif

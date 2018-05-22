@@ -92,4 +92,4 @@ TYPED_TEST(PolymorphicDistributionTest, can_compute_subset) {
     expect_subset_equal(dist.covariance, ss.covariance, indices);
   }
 }
-}
+} // namespace albatross

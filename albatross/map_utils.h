@@ -72,5 +72,5 @@ std::map<K, V> map_join(const std::map<K, V> m, const std::map<K, V> other) {
   join.insert(m.begin(), m.end());
   return join;
 }
-}
+} // namespace albatross
 #endif

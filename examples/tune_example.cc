@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "tune.h"
 #include "evaluate.h"
 #include "example_utils.h"
 #include "gflags/gflags.h"
+#include "tune.h"
 #include <functional>
 
 DEFINE_string(input, "", "path to csv containing input data.");

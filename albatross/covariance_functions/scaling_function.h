@@ -136,5 +136,5 @@ public:
 private:
   ScalingFunction scaling_function_;
 };
-}
+} // namespace albatross
 #endif

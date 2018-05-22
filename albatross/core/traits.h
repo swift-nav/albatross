@@ -65,6 +65,6 @@ template <typename T> class fit_type_or_void {
 public:
   typedef decltype(test<T>(0)) type;
 };
-}
+} // namespace albatross
 
 #endif

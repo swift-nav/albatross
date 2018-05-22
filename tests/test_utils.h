@@ -205,6 +205,6 @@ public:
   std::unique_ptr<LinearRegression> model_ptr_;
   RegressionDataset<double> dataset_;
 };
-}
+} // namespace albatross
 
 #endif

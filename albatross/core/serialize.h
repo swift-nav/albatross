@@ -67,6 +67,6 @@ protected:
 
   ModelFit model_fit_;
 };
-}
+} // namespace albatross
 
 #endif

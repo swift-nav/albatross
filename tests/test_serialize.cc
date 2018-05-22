@@ -281,4 +281,4 @@ TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
   // And make sure the serialized strings are the same,
   EXPECT_EQ(os_again.str(), os.str());
 }
-}
+} // namespace albatross

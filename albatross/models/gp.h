@@ -187,6 +187,6 @@ gp_pointer_from_covariance(CovFunc covariance_function,
   return std::make_unique<GaussianProcessRegression<FeatureType, CovFunc>>(
       covariance_function, model_name);
 }
-}
+} // namespace albatross
 
 #endif

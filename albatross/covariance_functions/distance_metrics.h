@@ -62,6 +62,6 @@ public:
     return fabs(x - y);
   }
 };
-}
+} // namespace albatross
 
 #endif
