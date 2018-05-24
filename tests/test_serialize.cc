@@ -128,7 +128,7 @@ public:
     auto dataset = mock_training_data();
     auto model_ptr = std::make_unique<MockModel>(log(2.));
     model_ptr->fit(dataset);
-    return model_ptr;
+    return std::move(model_ptr);
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -194,7 +194,7 @@ public:
     auto model = std::make_unique<LinearRegression>();
     auto dataset = make_toy_linear_data();
     model->fit(dataset);
-    return model;
+    return std::move(model);
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -211,7 +211,7 @@ public:
     auto gp =
         std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
     gp->set_param("length_scale", log(2.));
-    return gp;
+    return std::move(gp);
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -231,7 +231,7 @@ public:
         std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
     gp->set_param("length_scale", log(2.));
     gp->fit(dataset);
-    return gp;
+    return std::move(gp);
   }
 
   bool are_equal(const RepresentationType &lhs,

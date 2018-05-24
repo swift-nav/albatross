@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 # This brings in the external project support in cmake
 include(ExternalProject)
 
-set(SWIFT_GFLAGS_CMAKE_CXX_FLAGS "")
+set(ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS "")
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(SWIFT_GFLAGS_CMAKE_CXX_FLAGS "-stdlib=libc++")
+  set(ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS "-stdlib=libc++")
 endif()
 
 # This adds libgflags as an external project with the specified parameters.
@@ -22,7 +22,7 @@ ExternalProject_Add(libgflags
   # This simply passes down cmake arguments, which allows us to define
   # gflags-specific cmake flags as arguments to the toplevel cmake
   # invocation.
-  CMAKE_ARGS ${CMAKE_ARGS} -DCMAKE_CXX_FLAGS=${SWIFT_GFLAGS_CMAKE_CXX_FLAGS})
+  CMAKE_ARGS ${CMAKE_ARGS} -DCMAKE_CXX_FLAGS=${ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS})
 
 # This pulls out the variables `source_dir` and `binary_dir` from the
 # gflags project, so we can refer to them below.

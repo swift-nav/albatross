@@ -11,20 +11,39 @@ cache:
     - $TRAVIS_BUILD_DIR/.stack/
     - .stack-work/
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-5
-      - libc++-dev
-      - libc++abi-dev
-      - clang-3.8
-      - clang-format-3.8
-      - clang-tidy-3.8
-      - libnlopt-dev
-env:
-  - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
+matrix:
+  fast_finish: true
+  include:
+  - compiler: gcc
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-5
+          - libc++-dev
+          - libc++abi-dev
+          - clang-3.8
+          - clang-format-3.8
+          - clang-tidy-3.8
+          - libnlopt-dev
+    env:
+      - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
+  - compiler: clang
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - libc++-dev
+          - libc++abi-dev
+          - clang-3.8
+          - clang-format-3.8
+          - clang-tidy-3.8
+          - libnlopt-dev
+    env:
+      - C_COMPILER=clang-3.8 CXX_COMPILER=clang++-3.8 COVERAGE=''
+
 
 script:
   bash ./ci/run_tests.sh || exit 1;
