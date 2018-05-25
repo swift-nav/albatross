@@ -58,7 +58,6 @@ TEST(test_tune, test_multiple_datasets) {
   std::ostringstream output_stream;
   TuneModelConfg<double> config(model_creator, datasets, metric,
                                 albatross::mean_aggregator, output_stream);
-  std::cout << "output" << std::endl;
   std::cout << output_stream.str() << std::endl;
   auto params = tune_regression_model(config);
 }

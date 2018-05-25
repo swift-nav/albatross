@@ -7,6 +7,7 @@ add_executable(albatross_unit_tests
 EXCLUDE_FROM_ALL
 test_core_model.cc
 test_covariance_functions.cc
+test_distance_metrics.cc
 test_evaluate.cc
 test_map_utils.cc
 test_serialize.cc
