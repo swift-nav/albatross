@@ -74,9 +74,18 @@ TYPED_TEST_CASE(TestVectorCovarianceFunctions,
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
 
   typename TestFixture::CovFunc covariance_function;
-
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = symmetric_covariance(covariance_function, xs);
+  assert(C.rows() == xs.size());
+  assert(C.cols() == xs.size());
+  // Make sure C is positive definite.
+  auto inverse = C.inverse();
+}
+
+TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
+  typename TestFixture::CovFunc covariance_function;
+  auto xs = points_on_a_line(5);
+  Eigen::MatrixXd C = symmetric_covariance(covariance_function.term, xs);
   assert(C.rows() == xs.size());
   assert(C.cols() == xs.size());
   // Make sure C is positive definite.
