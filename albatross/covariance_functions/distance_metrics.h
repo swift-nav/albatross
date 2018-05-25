@@ -30,7 +30,6 @@ protected:
 
 class EuclideanDistance : public DistanceMetric {
 public:
-  EuclideanDistance(){};
   ~EuclideanDistance(){};
 
   std::string get_name() const override { return "euclidean_distance"; };
@@ -42,7 +41,6 @@ public:
 
 class RadialDistance : public DistanceMetric {
 public:
-  RadialDistance(){};
   ~RadialDistance(){};
 
   std::string get_name() const override { return "radial_distance"; };
@@ -52,9 +50,19 @@ public:
   }
 };
 
+class AngularDistance : public DistanceMetric {
+public:
+  ~AngularDistance(){};
+
+  std::string get_name() const override { return "angular_distance"; };
+
+  double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
+    return acos(x.dot(y) / (x.norm() * y.norm()));
+  }
+};
+
 class ScalarDistance : public DistanceMetric {
 public:
-  ScalarDistance(){};
   ~ScalarDistance(){};
   std::string get_name() const { return "scalar_distance"; }
 

@@ -64,15 +64,16 @@ public:
   T value_;
 };
 
-typedef ::testing::Types<SquaredExponential<EuclideanDistance>,
-                         SquaredExponential<RadialDistance>>
+typedef ::testing::Types<
+    SquaredExponential<EuclideanDistance>, SquaredExponential<RadialDistance>,
+    Exponential<EuclideanDistance>, Exponential<AngularDistance>,
+    Exponential<RadialDistance>>
     VectorCompatibleCovarianceFunctions;
 
 TYPED_TEST_CASE(TestVectorCovarianceFunctions,
                 VectorCompatibleCovarianceFunctions);
 
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
-
   typename TestFixture::CovFunc covariance_function;
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = symmetric_covariance(covariance_function, xs);
