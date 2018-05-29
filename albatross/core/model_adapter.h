@@ -126,6 +126,11 @@ public:
     return sub_model_.get_fit();
   }
 
+  double nll(const std::vector<FeatureType> &features,
+             const TargetDistribution &targets) const {
+    return sub_model_.nll(convert_features(features), targets);
+  }
+
 protected:
   void fit_(const std::vector<FeatureType> &features,
             const TargetDistribution &targets) override {

@@ -124,6 +124,16 @@ public:
     return ss.str();
   }
 
+  double nll(const std::vector<FeatureType> &features,
+             const TargetDistribution &targets) const override {
+    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
+    if (targets.has_covariance()) {
+      cov += targets.covariance;
+    }
+    return negative_log_likelihood(targets.mean, cov);
+  }
+
+
 protected:
   FitType serializable_fit_(const std::vector<FeatureType> &features,
                             const TargetDistribution &targets) const override {

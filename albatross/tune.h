@@ -14,6 +14,7 @@
 #define ALBATROSS_TUNE_H
 
 #include "core/model.h"
+#include "evaluate.h"
 #include "nlopt.hpp"
 #include <map>
 #include <vector>
@@ -45,6 +46,18 @@ inverse_parameters(const std::vector<ParameterValue> &x) {
 template <class FeatureType>
 using TuningMetric = std::function<double(
     const RegressionDataset<FeatureType> &, RegressionModel<FeatureType> *)>;
+
+template <class FeatureType>
+double marginal_negative_log_likelihood(const RegressionDataset<FeatureType> &dataset,
+                                        RegressionModel<FeatureType> *model) {
+  using SerializableGP = SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>;
+  SerializableGP *gp_model = static_cast<SerializableGP*>(model);
+  gp_model->fit(dataset);
+  const auto model_fit = gp_model->get_fit();
+  const auto prior_mean = Eigen::VectorXd::Zero(dataset.targets.size());
+  PredictDistribution prior(prior_mean, model_fit.train_covariance);
+  return negative_log_likelihood(prior, dataset.targets);
+}
 
 using TuningMetricAggregator =
     std::function<double(const std::vector<double> &metrics)>;

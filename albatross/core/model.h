@@ -176,6 +176,11 @@ public:
                            fold.test.features);
   }
 
+  virtual double nll(const std::vector<FeatureType> &features,
+                     const TargetDistribution &targets) const {
+    return 0.;
+  }
+
   std::string pretty_string() const {
     std::ostringstream ss;
     ss << get_name() << std::endl;

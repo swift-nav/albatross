@@ -36,6 +36,24 @@ using EvaluationMetric = std::function<double(
  * distribution is multivariate normal.
  */
 static inline double
+negative_log_likelihood(const Eigen::VectorXd &mean,
+                        const Eigen::MatrixXd &covariance) {
+  auto llt = covariance.llt();
+  auto cholesky = llt.matrixL();
+  double det = cholesky.determinant();
+  double log_det = log(det);
+  Eigen::VectorXd normalized_residuals(mean.size());
+  normalized_residuals = cholesky.solve(mean);
+  double residuals = normalized_residuals.dot(normalized_residuals);
+  return 0.5 *
+         (log_det + residuals + static_cast<double>(mean.size()) * 2 * M_PI);
+}
+
+/*
+ * Computes the negative log likelihood under the assumption that the predcitve
+ * distribution is multivariate normal.
+ */
+static inline double
 negative_log_likelihood(const PredictDistribution &prediction,
                         const TargetDistribution &truth) {
 
@@ -46,15 +64,7 @@ negative_log_likelihood(const PredictDistribution &prediction,
     covariance += truth.covariance;
   }
 
-  auto llt = covariance.llt();
-  auto cholesky = llt.matrixL();
-  double det = cholesky.determinant();
-  double log_det = log(det);
-  Eigen::VectorXd normalized_residuals(truth.size());
-  normalized_residuals = cholesky.solve(mean - truth.mean);
-  double residuals = normalized_residuals.dot(normalized_residuals);
-  return 0.5 *
-         (log_det + residuals + static_cast<double>(truth.size()) * 2 * M_PI);
+  return negative_log_likelihood(mean, covariance);
 }
 
 static inline double
