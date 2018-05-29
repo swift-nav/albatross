@@ -80,13 +80,12 @@ TEST(test_models, test_with_target_distribution) {
   auto folds = leave_one_out(dataset);
   auto model = MakeGaussianProcess().create();
   auto scores = cross_validated_scores(
-      evaluation_metrics::negative_log_likelihood, folds, model.get());
-
+      evaluation_metrics::root_mean_square_error, folds, model.get());
   RegressionDataset<double> dataset_without_variance(dataset.features,
                                                      dataset.targets.mean);
   auto folds_without_variance = leave_one_out(dataset_without_variance);
   auto scores_without_variance =
-      cross_validated_scores(evaluation_metrics::negative_log_likelihood,
+      cross_validated_scores(evaluation_metrics::root_mean_square_error,
                              folds_without_variance, model.get());
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());

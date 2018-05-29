@@ -25,23 +25,84 @@
 namespace albatross {
 
 /*
+ * Negative log likelihood of a univariate normal.
+ */
+static inline double negative_log_likelihood(double deviation,
+                                             double variance) {
+  double nll = deviation;
+  nll *= nll;
+  nll /= (2 * variance);
+  nll += 0.5 * log(2 * M_PI * variance);
+  return nll;
+}
+
+static inline double log_sum(const Eigen::VectorXd &x) {
+  double sum = 0.;
+  for (Eigen::Index i = 0; i < x.size(); i++) {
+    sum += log(x[i]);
+  }
+  return sum;
+}
+
+/*
+ * Negative log likelihood of a pre decomposed multivariate
+ * normal.
+ */
+template <typename _MatrixType, int _UpLo>
+static inline double
+negative_log_likelihood(const Eigen::VectorXd &deviation,
+                        const Eigen::LDLT<_MatrixType, _UpLo> &ldlt) {
+  const auto diag = ldlt.vectorD();
+  const auto L = ldlt.matrixL();
+  const double rank = static_cast<double>(diag.size());
+  const double mahalanobis = deviation.dot(ldlt.solve(deviation));
+  const double log_det = log_sum(diag);
+  return -0.5 * (log_det + mahalanobis + rank * log(2 * M_PI));
+}
+
+/*
  * Computes the negative log likelihood under the assumption that the predcitve
  * distribution is multivariate normal.
  */
 static inline double
-negative_log_likelihood(const Eigen::VectorXd &mean,
+negative_log_likelihood(const Eigen::VectorXd &deviation,
                         const Eigen::MatrixXd &covariance) {
-  auto llt = covariance.llt();
-  auto cholesky = llt.matrixL();
-  double det = cholesky.determinant();
-  double log_det = log(det);
-  Eigen::VectorXd normalized_residuals(mean.size());
-  normalized_residuals = cholesky.solve(mean);
-  double residuals = normalized_residuals.dot(normalized_residuals);
-  return 0.5 *
-         (log_det + residuals + static_cast<double>(mean.size()) * 2 * M_PI);
+  assert(deviation.size() == covariance.rows());
+  assert(covariance.cols() == covariance.rows());
+  if (deviation.size() == 1) {
+    // Looks like we have a univariate distribution, skipping
+    // all the matrix decomposition steps should speed this up.
+    return negative_log_likelihood(deviation[0], covariance(0, 0));
+  } else {
+    const auto ldlt = covariance.ldlt();
+    return negative_log_likelihood(deviation, ldlt);
+  }
 }
 
+/*
+ * This handles the case where the covariance matrix is diagonal, which
+ * means makes the computation a lot simpler since all variables are
+ * independent.
+ */
+static inline double
+negative_log_likelihood(const Eigen::VectorXd &deviation,
+                        const DiagonalMatrixXd &diagonal_covariance) {
+  const auto variances = diagonal_covariance.diagonal();
+  double nll = 0.;
+  for (Eigen::Index i = 0; i < deviation.size(); i++) {
+    nll += negative_log_likelihood(deviation[i], variances[i]);
+  }
+  return nll;
+}
+
+/*
+ * Evaluation metrics are best kept in a separate namespace since
+ * the compiler can get confused with the use of std::function
+ * (which is used in the definition of an EvaluationMetric) and
+ * overloaded functions.
+ *
+ * https://stackoverflow.com/questions/30393285/stdfunction-fails-to-distinguish-overloaded-functions
+ */
 namespace evaluation_metrics {
 
 static inline double

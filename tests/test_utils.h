@@ -205,6 +205,17 @@ public:
   std::unique_ptr<LinearRegression> model_ptr_;
   RegressionDataset<double> dataset_;
 };
+
+static inline std::unique_ptr<RegressionModel<double>>
+one_dimensional_gaussian_process() {
+  using SqrExp = SquaredExponential<ScalarDistance>;
+  using Noise = IndependentNoise<double>;
+  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
+  CovarianceFunction<Noise> noise = {Noise(0.1)};
+  auto covariance = squared_exponential + noise;
+  return gp_pointer_from_covariance<double>(covariance);
+}
+
 } // namespace albatross
 
 #endif

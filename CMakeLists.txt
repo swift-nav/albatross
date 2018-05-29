@@ -36,6 +36,8 @@ CACHE INTERNAL ""
 set(albatross_HEADERS
     albatross/tune.h
     albatross/evaluate.h
+    albatross/crossvalidation.h
+    albatross/tuning_metrics.h
     albatross/map_utils.h
     albatross/core/keys.h
     albatross/core/model.h
