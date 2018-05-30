@@ -22,8 +22,9 @@ namespace albatross {
 double loo_nll(const albatross::RegressionDataset<double> &dataset,
                albatross::RegressionModel<double> *model) {
   auto loo_folds = albatross::leave_one_out(dataset);
-  return albatross::cross_validated_scores(albatross::negative_log_likelihood,
-                                           loo_folds, model)
+  return albatross::cross_validated_scores(
+             albatross::evaluation_metrics::negative_log_likelihood, loo_folds,
+             model)
       .mean();
 }
 

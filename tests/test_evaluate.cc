@@ -21,6 +21,8 @@
 
 namespace albatross {
 
+using albatross::evaluation_metrics::root_mean_square_error;
+
 TEST_F(LinearRegressionTest, test_leave_one_out) {
   PredictDistribution preds = model_ptr_->fit_and_predict(
       dataset_.features, dataset_.targets, dataset_.features);

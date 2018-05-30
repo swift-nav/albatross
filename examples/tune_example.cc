@@ -25,7 +25,7 @@ double loo_nll(const albatross::RegressionDataset<double> &dataset,
   std::cout << "create folds" << std::endl;
   auto loo_folds = albatross::leave_one_out(dataset);
   std::cout << "cross validate" << std::endl;
-  return albatross::cross_validated_scores(albatross::negative_log_likelihood,
+  return albatross::cross_validated_scores(albatross::evaluation_metrics::negative_log_likelihood,
                                            loo_folds, model)
       .mean();
 }
