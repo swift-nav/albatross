@@ -22,7 +22,7 @@ namespace albatross {
 TEST(test_tune, test_single_dataset) {
   auto dataset = make_toy_linear_data();
 
-  auto model_creator = one_dimensional_gaussian_process;
+  auto model_creator = toy_gaussian_process;
 
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
@@ -36,7 +36,7 @@ TEST(test_tune, test_multiple_datasets) {
   auto another_dataset = make_toy_linear_data(1., 5., 0.1);
   std::vector<RegressionDataset<double>> datasets = {one_dataset,
                                                      another_dataset};
-  auto model_creator = one_dimensional_gaussian_process;
+  auto model_creator = toy_gaussian_process;
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
   TuneModelConfg<double> config(model_creator, datasets, metric,

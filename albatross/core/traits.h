@@ -65,6 +65,23 @@ template <typename T> class fit_type_or_void {
 public:
   typedef decltype(test<T>(0)) type;
 };
+
+/*
+ * Helper function for enable_if and is_serializable_regression_model
+ */
+template <typename X, typename T>
+using enable_if_serializable =
+    std::enable_if<is_serializable_regression_model<X>::value, T>;
+
+/*
+ * Will result in substitution failure if X is not serializable and
+ * otherwise resolves to X::FitType.
+ */
+template <typename X>
+using fit_type_if_serializable =
+    typename enable_if_serializable<X,
+                                    typename fit_type_or_void<X>::type>::type;
+
 } // namespace albatross
 
 #endif

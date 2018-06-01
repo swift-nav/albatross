@@ -23,6 +23,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <memory>
 #include <random>
 
 namespace albatross {
@@ -195,6 +196,61 @@ make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
   return RegressionDataset<double>(dataset.features, target_dist);
 }
 
+static inline auto toy_covariance_function() {
+  using SqrExp = SquaredExponential<ScalarDistance>;
+  using Noise = IndependentNoise<double>;
+  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
+  CovarianceFunction<Noise> noise = {Noise(0.1)};
+  auto covariance = squared_exponential + noise;
+  return covariance;
+}
+
+static inline std::unique_ptr<RegressionModel<double>> toy_gaussian_process() {
+  return gp_pointer_from_covariance<double>(toy_covariance_function());
+}
+
+/*
+ * Here we create data and a model that will make it easier to test
+ * that models using the model_adapter.h interface work.
+ */
+struct AdaptedFeature {
+  double value;
+};
+
+static inline auto make_adapted_toy_linear_data() {
+  const auto dataset = make_toy_linear_data();
+
+  std::vector<AdaptedFeature> adapted_features;
+  for (const auto &f : dataset.features) {
+    adapted_features.push_back({f});
+  }
+
+  RegressionDataset<AdaptedFeature> adapted_dataset(adapted_features,
+                                                    dataset.targets);
+  return adapted_dataset;
+}
+
+template <typename SubModelType>
+class AdaptedExample
+    : public AdaptedRegressionModel<AdaptedFeature, SubModelType> {
+public:
+  AdaptedExample(const SubModelType &model)
+      : AdaptedRegressionModel<AdaptedFeature, SubModelType>(model){};
+  virtual ~AdaptedExample(){};
+
+  virtual const double
+  convert_feature(const AdaptedFeature &parent_feature) const {
+    return parent_feature.value;
+  }
+};
+
+static inline std::unique_ptr<RegressionModel<AdaptedFeature>>
+adapted_toy_gaussian_process() {
+  auto covariance = toy_covariance_function();
+  auto gp = gp_from_covariance<double>(covariance);
+  return std::make_unique<AdaptedExample<decltype(gp)>>(gp);
+}
+
 class LinearRegressionTest : public ::testing::Test {
 public:
   LinearRegressionTest() : model_ptr_(), dataset_() {
@@ -205,16 +261,6 @@ public:
   std::unique_ptr<LinearRegression> model_ptr_;
   RegressionDataset<double> dataset_;
 };
-
-static inline std::unique_ptr<RegressionModel<double>>
-one_dimensional_gaussian_process() {
-  using SqrExp = SquaredExponential<ScalarDistance>;
-  using Noise = IndependentNoise<double>;
-  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
-  CovarianceFunction<Noise> noise = {Noise(0.1)};
-  auto covariance = squared_exponential + noise;
-  return gp_pointer_from_covariance<double>(covariance);
-}
 
 } // namespace albatross
 

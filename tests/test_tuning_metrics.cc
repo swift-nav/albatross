@@ -22,7 +22,7 @@ namespace albatross {
 TEST(test_tuning_metrics, test_fast_loo_equals_slow) {
   auto dataset = make_toy_linear_data();
 
-  auto model_creator = one_dimensional_gaussian_process;
+  auto model_creator = toy_gaussian_process;
   auto model = model_creator();
 
   double fast_loo_nll = gp_fast_loo_nll(dataset, model.get());
@@ -61,10 +61,20 @@ TYPED_TEST_CASE(TuningMetricTester, MetricsToTest);
 
 TYPED_TEST(TuningMetricTester, test_sanity) {
   const auto dataset = make_toy_linear_data();
-  const auto model_creator = one_dimensional_gaussian_process;
+  const auto model_creator = toy_gaussian_process;
   const auto model = model_creator();
   const auto metric = this->test_metric.function(dataset, model.get());
   EXPECT_FALSE(std::isnan(metric));
+}
+
+TEST(test_tuning_metrics, test_fast_loo_works_on_adapted_model) {
+  auto dataset = make_adapted_toy_linear_data();
+
+  auto model_creator = adapted_toy_gaussian_process;
+  auto model = model_creator();
+
+  double fast_loo_nll =
+      gp_fast_loo_nll<AdaptedFeature, double>(dataset, model.get());
 }
 
 } // namespace albatross

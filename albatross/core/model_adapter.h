@@ -19,15 +19,6 @@
 
 namespace albatross {
 
-template <typename X, typename T>
-using enable_if_serializable =
-    std::enable_if<is_serializable_regression_model<X>::value, T>;
-
-template <typename X>
-using fit_type_if_serializable =
-    typename enable_if_serializable<X,
-                                    typename fit_type_or_void<X>::type>::type;
-
 /*
  * This helper function takes a model which is being adapted (SubModelType)
  * and decides which base class to extend by inspecting whether or not the
@@ -122,7 +113,7 @@ public:
     }
   }
 
-  fit_type_if_serializable<SubModelType> get_fit() const {
+  fit_type_if_serializable<SubModelType> get_fit() const override {
     return sub_model_.get_fit();
   }
 

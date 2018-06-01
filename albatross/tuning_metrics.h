@@ -27,12 +27,14 @@ using TuningMetric = std::function<double(
     const RegressionDataset<FeatureType> &, RegressionModel<FeatureType> *)>;
 
 /*
- * Use caution with this metric!  It assumes that the RegressionModel<T>
- * is actually a SerializableRegressionModel<T, GaussianProcessFit<T>>
+ * Use caution with this metric!  You'll have to manually ensure that
+ * the template parameters are correct for the specific model you wish
+ * to tune as internally it assumes that the RegressionModel<T>
+ * is actually a SerializableRegressionModel<X, GaussianProcessFit<Y>>
  * and if that is not the case at run time a segfault will surely follow.
  *
  * BUT if you do in fact know your regression model is a GP this will
- * result in an order of magnitude faster tuning.
+ * result in n^3 versus n^4 complexity.
  */
 template <typename FeatureType, typename SubFeatureType = FeatureType>
 inline double gp_fast_loo_nll(const RegressionDataset<FeatureType> &dataset,

@@ -46,9 +46,10 @@ template <typename FeatureType> struct GaussianProcessFit {
   }
 };
 
-template <typename FeatureType>
+template <typename FeatureType, typename SubFeatureType = FeatureType>
 using SerializableGaussianProcess =
-    SerializableRegressionModel<FeatureType, GaussianProcessFit<FeatureType>>;
+    SerializableRegressionModel<FeatureType,
+                                GaussianProcessFit<SubFeatureType>>;
 
 template <typename FeatureType, typename CovarianceFunction>
 class GaussianProcessRegression
@@ -173,8 +174,10 @@ private:
  * See section 5.4.2 Rasmussen Gaussian Processes
  */
 static inline Distribution<DiagonalMatrixXd>
-fast_gp_loo_predictions(const Eigen::VectorXd &targets,
-                        const Eigen::MatrixXd &train_covariance) {
+fast_gp_loo_cross_validated_predict(const Eigen::VectorXd &targets,
+                                    const Eigen::MatrixXd &train_covariance) {
+  assert(targets.size() == train_covariance.rows());
+  assert(train_covariance.rows() == train_covariance.cols());
   Eigen::VectorXd information = train_covariance.ldlt().solve(targets);
   Eigen::MatrixXd inverse = train_covariance.inverse();
 
@@ -187,15 +190,15 @@ fast_gp_loo_predictions(const Eigen::VectorXd &targets,
   return Distribution<DiagonalMatrixXd>(loo_mean, loo_variance.asDiagonal());
 }
 
-template <typename FeatureType>
+template <typename FeatureType, typename SubFeatureType = FeatureType>
 static inline Distribution<DiagonalMatrixXd>
 fast_gp_loo_cross_validated_predict(
     const RegressionDataset<FeatureType> &dataset,
-    SerializableGaussianProcess<FeatureType> *model) {
+    SerializableGaussianProcess<FeatureType, SubFeatureType> *model) {
   model->fit(dataset);
   const auto model_fit = model->get_fit();
-  return fast_gp_loo_predictions(dataset.targets.mean,
-                                 model_fit.train_covariance);
+  return fast_gp_loo_cross_validated_predict(dataset.targets.mean,
+                                             model_fit.train_covariance);
 }
 
 template <typename FeatureType, typename CovFunc>
