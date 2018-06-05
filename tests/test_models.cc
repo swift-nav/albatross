@@ -59,8 +59,8 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
   auto model = this->creator.create();
-  auto cv_scores =
-      cross_validated_scores(root_mean_square_error, folds, model.get());
+  auto cv_scores = cross_validated_scores(
+      evaluation_metrics::root_mean_square_error, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
@@ -79,14 +79,14 @@ TEST(test_models, test_with_target_distribution) {
 
   auto folds = leave_one_out(dataset);
   auto model = MakeGaussianProcess().create();
-  auto scores =
-      cross_validated_scores(negative_log_likelihood, folds, model.get());
-
+  auto scores = cross_validated_scores(
+      evaluation_metrics::root_mean_square_error, folds, model.get());
   RegressionDataset<double> dataset_without_variance(dataset.features,
                                                      dataset.targets.mean);
   auto folds_without_variance = leave_one_out(dataset_without_variance);
-  auto scores_without_variance = cross_validated_scores(
-      negative_log_likelihood, folds_without_variance, model.get());
+  auto scores_without_variance =
+      cross_validated_scores(evaluation_metrics::root_mean_square_error,
+                             folds_without_variance, model.get());
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }

@@ -21,6 +21,35 @@
 
 namespace albatross {
 
+using albatross::evaluation_metrics::root_mean_square_error;
+
+/* Make sure the multivariate negative log likelihood
+ * matches python.
+ *
+ * import numpy as np
+ * from scipy import stats
+ *
+ * x = np.array([-1, 0., 1])
+ * cov = np.array([[1., 0.9, 0.8],
+ *                 [0.9, 1., 0.9],
+ *                 [0.8, 0.9, 1.]])
+ * stats.multivariate_normal.logpdf(x, np.zeros(x.size), cov)
+ * -6.0946974293510134
+ *
+ */
+TEST(test_evaluate, test_negative_log_likelihood) {
+  Eigen::VectorXd x(3);
+  x << -1., 0., 1.;
+  Eigen::MatrixXd cov(3, 3);
+  cov << 1., 0.9, 0.8, 0.9, 1., 0.9, 0.8, 0.9, 1.;
+
+  const auto nll = albatross::negative_log_likelihood(x, cov);
+  EXPECT_NEAR(nll, -6.0946974293510134, 1e-6);
+
+  const auto ldlt_nll = albatross::negative_log_likelihood(x, cov.ldlt());
+  EXPECT_NEAR(nll, ldlt_nll, 1e-6);
+}
+
 TEST_F(LinearRegressionTest, test_leave_one_out) {
   PredictDistribution preds = model_ptr_->fit_and_predict(
       dataset_.features, dataset_.targets, dataset_.features);

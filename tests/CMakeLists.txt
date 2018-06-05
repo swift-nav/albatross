@@ -15,6 +15,7 @@ test_parameter_handling_mixin.cc
 test_models.cc
 test_core_distribution.cc
 test_tune.cc
+test_tuning_metrics.cc
 )
 
 add_dependencies(albatross_unit_tests

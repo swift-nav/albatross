@@ -11,7 +11,6 @@
  */
 
 #include "tune.h"
-#include "evaluate.h"
 #include "example_utils.h"
 #include "gflags/gflags.h"
 #include <functional>
@@ -19,16 +18,6 @@
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
-
-double loo_nll(const albatross::RegressionDataset<double> &dataset,
-               albatross::RegressionModel<double> *model) {
-  std::cout << "create folds" << std::endl;
-  auto loo_folds = albatross::leave_one_out(dataset);
-  std::cout << "cross validate" << std::endl;
-  return albatross::cross_validated_scores(albatross::negative_log_likelihood,
-                                           loo_folds, model)
-      .mean();
-}
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -80,7 +69,7 @@ int main(int argc, char *argv[]) {
    * maximize the likelihood (or minimize the negative log likelihood).
    */
   std::cout << "Tuning the model." << std::endl;
-  TuningMetric<double> metric = loo_nll;
+  TuningMetric<double> metric = albatross::gp_fast_loo_nll<double>;
 
   TuneModelConfg<double> config(model_creator, data, metric);
   auto params = tune_regression_model<double>(config);

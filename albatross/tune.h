@@ -14,7 +14,9 @@
 #define ALBATROSS_TUNE_H
 
 #include "core/model.h"
+#include "evaluate.h"
 #include "nlopt.hpp"
+#include "tuning_metrics.h"
 #include <map>
 #include <vector>
 
@@ -40,25 +42,6 @@ inverse_parameters(const std::vector<ParameterValue> &x) {
   std::transform(x.begin(), x.end(), inverted.begin(), double_exp);
 
   return inverted;
-}
-
-template <class FeatureType>
-using TuningMetric = std::function<double(
-    const RegressionDataset<FeatureType> &, RegressionModel<FeatureType> *)>;
-
-using TuningMetricAggregator =
-    std::function<double(const std::vector<double> &metrics)>;
-
-/*
- * Returns the mean of metrics computed across multiple datasets.
- */
-inline double mean_aggregator(const std::vector<double> &metrics) {
-  double mean = 0.;
-  for (const auto &metric : metrics) {
-    mean += metric;
-  }
-  mean /= static_cast<double>(metrics.size());
-  return mean;
 }
 
 template <class FeatureType> struct TuneModelConfg {

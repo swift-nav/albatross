@@ -53,7 +53,7 @@ public:
     archive(cereal::make_nvp("model_fit", this->model_fit_));
   }
 
-  ModelFit get_fit() const { return model_fit_; }
+  virtual ModelFit get_fit() const { return model_fit_; }
 
 protected:
   void fit_(const std::vector<FeatureType> &features,

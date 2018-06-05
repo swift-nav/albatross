@@ -14,6 +14,7 @@
 #define ALBATROSS_EVALUATE_H
 
 #include "core/model.h"
+#include "crossvalidation.h"
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <functional>
@@ -24,38 +25,85 @@
 namespace albatross {
 
 /*
- * An evaluation metric is a function that takes a prediction distribution and
- * corresponding targets and returns a single real value that summarizes
- * the quality of the prediction.
+ * Negative log likelihood of a univariate normal.
  */
-using EvaluationMetric = std::function<double(
-    const PredictDistribution &prediction, const TargetDistribution &targets)>;
+static inline double negative_log_likelihood(double deviation,
+                                             double variance) {
+  double nll = deviation;
+  nll *= nll;
+  nll /= (2 * variance);
+  nll += 0.5 * log(2 * M_PI * variance);
+  return nll;
+}
+
+static inline double log_sum(const Eigen::VectorXd &x) {
+  double sum = 0.;
+  for (Eigen::Index i = 0; i < x.size(); i++) {
+    sum += log(x[i]);
+  }
+  return sum;
+}
+
+/*
+ * Negative log likelihood of a pre decomposed multivariate
+ * normal.
+ */
+template <typename _MatrixType, int _UpLo>
+static inline double
+negative_log_likelihood(const Eigen::VectorXd &deviation,
+                        const Eigen::LDLT<_MatrixType, _UpLo> &ldlt) {
+  const auto diag = ldlt.vectorD();
+  const auto L = ldlt.matrixL();
+  const double rank = static_cast<double>(diag.size());
+  const double mahalanobis = deviation.dot(ldlt.solve(deviation));
+  const double log_det = log_sum(diag);
+  return -0.5 * (log_det + mahalanobis + rank * log(2 * M_PI));
+}
 
 /*
  * Computes the negative log likelihood under the assumption that the predcitve
  * distribution is multivariate normal.
  */
 static inline double
-negative_log_likelihood(const PredictDistribution &prediction,
-                        const TargetDistribution &truth) {
-
-  const auto mean = prediction.mean;
-  Eigen::MatrixXd covariance(prediction.covariance);
-
-  if (truth.has_covariance()) {
-    covariance += truth.covariance;
+negative_log_likelihood(const Eigen::VectorXd &deviation,
+                        const Eigen::MatrixXd &covariance) {
+  assert(deviation.size() == covariance.rows());
+  assert(covariance.cols() == covariance.rows());
+  if (deviation.size() == 1) {
+    // Looks like we have a univariate distribution, skipping
+    // all the matrix decomposition steps should speed this up.
+    return negative_log_likelihood(deviation[0], covariance(0, 0));
+  } else {
+    const auto ldlt = covariance.ldlt();
+    return negative_log_likelihood(deviation, ldlt);
   }
-
-  auto llt = covariance.llt();
-  auto cholesky = llt.matrixL();
-  double det = cholesky.determinant();
-  double log_det = log(det);
-  Eigen::VectorXd normalized_residuals(truth.size());
-  normalized_residuals = cholesky.solve(mean - truth.mean);
-  double residuals = normalized_residuals.dot(normalized_residuals);
-  return 0.5 *
-         (log_det + residuals + static_cast<double>(truth.size()) * 2 * M_PI);
 }
+
+/*
+ * This handles the case where the covariance matrix is diagonal, which
+ * means makes the computation a lot simpler since all variables are
+ * independent.
+ */
+static inline double
+negative_log_likelihood(const Eigen::VectorXd &deviation,
+                        const DiagonalMatrixXd &diagonal_covariance) {
+  const auto variances = diagonal_covariance.diagonal();
+  double nll = 0.;
+  for (Eigen::Index i = 0; i < deviation.size(); i++) {
+    nll += negative_log_likelihood(deviation[i], variances[i]);
+  }
+  return nll;
+}
+
+/*
+ * Evaluation metrics are best kept in a separate namespace since
+ * the compiler can get confused with the use of std::function
+ * (which is used in the definition of an EvaluationMetric) and
+ * overloaded functions.
+ *
+ * https://stackoverflow.com/questions/30393285/stdfunction-fails-to-distinguish-overloaded-functions
+ */
+namespace evaluation_metrics {
 
 static inline double
 root_mean_square_error(const PredictDistribution &prediction,
@@ -78,221 +126,22 @@ static inline double standard_deviation(const PredictDistribution &prediction,
   return std::sqrt(error.dot(error) / (n_elements - 1));
 }
 
-inline FoldIndices get_train_indices(const FoldIndices &test_indices,
-                                     const int n) {
-  const s32 k = static_cast<s32>(test_indices.size());
-  // The train indices are all the indices that are not test indices.
-  FoldIndices train_indices(n - k);
-  s32 train_cnt = 0;
-  for (s32 j = 0; j < n; j++) {
-    if (std::find(test_indices.begin(), test_indices.end(), j) ==
-        test_indices.end()) {
-      train_indices[train_cnt] = j;
-      train_cnt++;
-    }
-  }
-  return train_indices;
-}
-
 /*
- * Each flavor of cross validation can be described by a set of
- * FoldIndices, which store which indices should be used for the
- * test cases.  This function takes a map from FoldName to
- * FoldIndices and a dataset and creates the resulting folds.
+ * Computes the negative log likelihood under the assumption that the predictive
+ * distribution is multivariate normal.
  */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>>
-folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
-                        const FoldIndexer &groups) {
-  // For a dataset with n features, we'll have n folds.
-  const s32 n = static_cast<s32>(dataset.features.size());
-  std::vector<RegressionFold<FeatureType>> folds;
-  // For each fold, partition into train and test sets.
-  for (const auto &pair : groups) {
-    // These get exposed inside the returned RegressionFold and because
-    // we'd like to prevent modification of the output from this function
-    // from changing the input FoldIndexer we perform a copy here.
-    const FoldName group_name(pair.first);
-    const FoldIndices test_indices(pair.second);
-    const auto train_indices = get_train_indices(test_indices, n);
-
-    std::vector<FeatureType> train_features =
-        subset(train_indices, dataset.features);
-    TargetDistribution train_targets = subset(train_indices, dataset.targets);
-
-    std::vector<FeatureType> test_features =
-        subset(test_indices, dataset.features);
-    TargetDistribution test_targets = subset(test_indices, dataset.targets);
-
-    assert(train_features.size() == train_targets.size());
-    assert(test_features.size() == test_targets.size());
-    assert(test_targets.size() + train_targets.size() == n);
-
-    const RegressionDataset<FeatureType> train_split(train_features,
-                                                     train_targets);
-    const RegressionDataset<FeatureType> test_split(test_features,
-                                                    test_targets);
-    folds.push_back(RegressionFold<FeatureType>(train_split, test_split,
-                                                group_name, test_indices));
+static inline double
+negative_log_likelihood(const PredictDistribution &prediction,
+                        const TargetDistribution &truth) {
+  const Eigen::VectorXd mean = prediction.mean - truth.mean;
+  Eigen::MatrixXd covariance(prediction.covariance);
+  if (truth.has_covariance()) {
+    covariance += truth.covariance;
   }
-  return folds;
+  return albatross::negative_log_likelihood(mean, covariance);
 }
 
-template <typename FeatureType>
-static inline FoldIndexer
-leave_one_out_indexer(const RegressionDataset<FeatureType> &dataset) {
-  FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
-    FoldName group_name = std::to_string(i);
-    groups[group_name] = {i};
-  }
-  return groups;
-}
-
-/*
- * Splits a dataset into cross validation folds where each fold contains all but
- * one predictor/target pair.
- */
-template <typename FeatureType>
-static inline FoldIndexer leave_one_group_out_indexer(
-    const RegressionDataset<FeatureType> &dataset,
-    const std::function<FoldName(const FeatureType &)> &get_group_name) {
-  FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
-    const std::string k =
-        get_group_name(dataset.features[static_cast<std::size_t>(i)]);
-    // Get the existing indices if we've already encountered this group_name
-    // otherwise initialize a new one.
-    FoldIndices indices;
-    if (groups.find(k) == groups.end()) {
-      indices = FoldIndices();
-    } else {
-      indices = groups[k];
-    }
-    // Add the current index.
-    indices.push_back(i);
-    groups[k] = indices;
-  }
-  return groups;
-}
-
-/*
- * Generates cross validation folds which represent leave one out
- * cross validation.
- */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>>
-leave_one_out(const RegressionDataset<FeatureType> &dataset) {
-  return folds_from_fold_indexer<FeatureType>(
-      dataset, leave_one_out_indexer<FeatureType>(dataset));
-}
-
-/*
- * Uses a `get_group_name` function to bucket each FeatureType into
- * a group, then holds out one group at a time.
- */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>> leave_one_group_out(
-    const RegressionDataset<FeatureType> &dataset,
-    const std::function<FoldName(const FeatureType &)> &get_group_name) {
-  const FoldIndexer indexer =
-      leave_one_group_out_indexer<FeatureType>(dataset, get_group_name);
-  return folds_from_fold_indexer<FeatureType>(dataset, indexer);
-}
-
-/*
- * Computes a PredictDistribution for each fold in set of cross validation
- * folds.  The resulting vector of PredictDistributions can then be used
- * for things like computing an EvaluationMetric for each fold, or assembling
- * all the predictions into a single cross validated PredictionDistribution.
- */
-template <typename FeatureType>
-static inline std::vector<PredictDistribution> cross_validated_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    RegressionModel<FeatureType> *model) {
-  // Iteratively make predictions and assemble the output vector
-  std::vector<PredictDistribution> predictions;
-  for (std::size_t i = 0; i < folds.size(); i++) {
-    predictions.push_back(model->fit_and_predict(
-        folds[i].train_dataset.features, folds[i].train_dataset.targets,
-        folds[i].test_dataset.features));
-  }
-  return predictions;
-}
-
-/*
- * Iterates over previously computed predictions for each fold and
- * returns a vector of scores for each fold.
- */
-template <class FeatureType>
-static inline Eigen::VectorXd
-compute_scores(const std::vector<RegressionFold<FeatureType>> &folds,
-               const EvaluationMetric &metric,
-               const std::vector<PredictDistribution> &predictions) {
-  // Create a vector of metrics, one for each fold.
-  Eigen::VectorXd metrics(static_cast<s32>(folds.size()));
-  // Loop over each fold, making predictions then evaluating them
-  // to create the final output.
-  for (std::size_t i = 0; i < folds.size(); i++) {
-    metrics[static_cast<s32>(i)] =
-        metric(predictions[i], folds[i].test_dataset.targets);
-  }
-  return metrics;
-}
-
-/*
- * Iterates over each fold in a cross validation set and fits/predicts and
- * scores the fold, returning a vector of scores for each fold.
- */
-template <class FeatureType>
-static inline Eigen::VectorXd
-cross_validated_scores(const EvaluationMetric &metric,
-                       const std::vector<RegressionFold<FeatureType>> &folds,
-                       RegressionModel<FeatureType> *model) {
-  // Create a vector of predictions.
-  std::vector<PredictDistribution> predictions =
-      cross_validated_predictions<FeatureType>(folds, model);
-  return compute_scores(folds, metric, predictions);
-}
-
-/*
- * Returns a single cross validated prediction distribution
- * for some cross validation folds, taking into account the
- * fact that each fold may contain reordered data.
- *
- * Note that the prediction covariance is not propagated
- * which is a result of having made predictions one fold at
- * a time, so the full dense prediction covariance is
- * unknown.
- */
-template <typename FeatureType>
-static inline PredictDistribution
-cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
-                        RegressionModel<FeatureType> *model) {
-  // Get the cross validated predictions, note however that
-  // depending on the type of folds, these predictions may
-  // be shuffled.
-  const std::vector<PredictDistribution> predictions =
-      cross_validated_predictions<FeatureType>(folds, model);
-  // Create a new prediction mean that will eventually contain
-  // the ordered concatenation of each fold's predictions.
-  s32 n = 0;
-  for (const auto &pred : predictions) {
-    n += static_cast<s32>(pred.mean.size());
-  }
-  Eigen::VectorXd mean(n);
-  // Put all the predicted means back in order.
-  for (s32 j = 0; j < static_cast<s32>(predictions.size()); j++) {
-    const auto pred = predictions[j];
-    const auto fold = folds[j];
-    for (s32 i = 0; i < static_cast<s32>(pred.mean.size()); i++) {
-      mean[static_cast<s32>(fold.test_indices[static_cast<std::size_t>(i)])] =
-          pred.mean[i];
-    }
-  }
-  return PredictDistribution(mean);
-}
-
+} // namespace evaluation_metrics
 } // namespace albatross
 
 #endif
