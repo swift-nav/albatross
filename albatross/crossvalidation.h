@@ -210,7 +210,7 @@ cross_validated_scores(const EvaluationMetric &metric,
  * for some cross validation folds, taking into account the
  * fact that each fold may contain reordered data.
  *
- * Note that the prediction covariance is not propagated
+ * Note that the prediction covariance is not returned
  * which is a result of having made predictions one fold at
  * a time, so the full dense prediction covariance is
  * unknown.
