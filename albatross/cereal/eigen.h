@@ -20,65 +20,81 @@
 
 namespace cereal {
 
-template <class Archive>
-inline void save(Archive &archive, const Eigen::VectorXd &v) {
-  size_type s = static_cast<size_type>(v.size());
-  archive(cereal::make_size_tag(s));
-  for (size_type i = 0; i < s; i++) {
-    archive(v[i]);
+/*
+ * The subsequent save/load methods catch the serialization methods
+ * for arbitrary Eigen::Matrix* types.  The general idea is that each
+ * row is saved as a Eigen::Vector.
+ */
+template <class Archive, typename _Scalar, int _Rows, int _Cols>
+inline void save(Archive &archive,
+                 const Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
+  size_type rows = static_cast<size_type>(v.rows());
+  archive(cereal::make_size_tag(rows));
+  for (size_type i = 0; i < rows; i++) {
+    Eigen::Matrix<_Scalar, _Cols, 1> row = v.row(i);
+    archive(row);
   }
 };
 
-template <class Archive>
-inline void load(Archive &archive, Eigen::VectorXd &v) {
-  size_type s = static_cast<size_type>(v.size());
-  archive(cereal::make_size_tag(s));
-  v.resize(s);
-  for (size_type i = 0; i < s; i++) {
-    archive(v[i]);
+template <class Archive, typename _Scalar, int _Rows, int _Cols>
+inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
+  size_type rows;
+  archive(cereal::make_size_tag(rows));
+  /*
+   * In order to determine the size of a matrix, we have to first determine
+   * how many rows, then inspect the size of the first row to get the
+   * number of columns.
+   */
+  if (rows > 0) {
+    Eigen::Matrix<_Scalar, _Rows, 1> first;
+    archive(first);
+    size_type cols = first.rows();
+    v.resize(rows, cols);
+    v.row(0) = first;
+
+    for (size_type i = 1; i < rows; i++) {
+      Eigen::Matrix<_Scalar, _Cols, 1> row;
+      archive(row);
+      v.row(i) = row;
+    }
+  } else {
+    // Serialized matrix is empty.
+    v.resize(0, 0);
   }
 };
 
 /*
- * For length 3 vectors, we wrap the length L call.
+ * The subsequent save/load methods catch the serialization methods
+ * for arbitrary Eigen::Vector* types through template specialization.
+ * In this case each scalar value is serialized.
  */
-template <typename Archive>
-inline void save(Archive &archive, const Eigen::Vector3d &v) {
-  Eigen::VectorXd as_xd(v.size());
-  as_xd << v;
-  save(archive, as_xd);
-}
-
-template <typename Archive>
-inline void load(Archive &archive, Eigen::Vector3d &v) {
-  Eigen::VectorXd as_xd(v.size());
-  load(archive, as_xd);
-  for (int i = 0; i < 3; i++) {
-    v[i] = as_xd[i];
-  }
-}
-
-template <class Archive>
-inline void save(Archive &archive, const Eigen::MatrixXd &v) {
+template <class Archive, typename _Scalar, int _Rows>
+inline void save(Archive &archive, const Eigen::Matrix<_Scalar, _Rows, 1> &v) {
   size_type rows = static_cast<size_type>(v.rows());
   archive(cereal::make_size_tag(rows));
   for (size_type i = 0; i < rows; i++) {
-    Eigen::VectorXd row = v.row(i);
-    archive(row);
+    archive(v(i));
   }
 };
 
-template <class Archive>
-inline void load(Archive &archive, Eigen::MatrixXd &v) {
-  size_type rows = static_cast<size_type>(v.rows());
+template <class Archive, typename _Scalar, int _Rows>
+inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, 1> &v) {
+  size_type rows;
   archive(cereal::make_size_tag(rows));
-  v.resize(rows, rows);
+  v.resize(rows);
   for (size_type i = 0; i < rows; i++) {
-    Eigen::VectorXd row;
-    archive(row);
-    v.row(i) = row;
+    archive(v(i));
   }
 };
+
+template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
+          typename _StorageIndex>
+inline void
+serialize(Archive &archive,
+          Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
+                                _StorageIndex> &v) {
+  archive(v.indices());
+}
 
 } // namespace cereal
 

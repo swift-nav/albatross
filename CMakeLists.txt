@@ -46,6 +46,7 @@ set(albatross_HEADERS
     albatross/core/serialize.h
     albatross/core/parameter_handling_mixin.h    
     albatross/cereal/eigen.h
+    albatross/eigen/serializable_ldlt.h
     albatross/models/gp.h
     albatross/models/least_squares.h
     albatross/covariance_functions/covariance_term.h

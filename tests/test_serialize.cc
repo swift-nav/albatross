@@ -12,6 +12,7 @@
 
 #include "core/model.h"
 #include "core/serialize.h"
+#include <functional>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
@@ -31,47 +32,12 @@ using CovFunc = CovarianceFunction<SqrExpAndNoise>;
 using SquaredExponentialGaussianProcess =
     GaussianProcessRegression<double, CovFunc>;
 
-/*
- * Make sure we can serialize a model and recover the parameters.
- */
-TEST(test_serialize, test_serialize_model_roundtrip) {
-  MockModel m(log(2.));
-  MockModel roundtrip;
-  std::ostringstream oss;
-  {
-    cereal::JSONOutputArchive archive(oss);
-    archive(m);
-  }
-  std::istringstream iss(oss.str());
-  {
-    cereal::JSONInputArchive archive(iss);
-    archive(roundtrip);
-  }
-  EXPECT_EQ(roundtrip, m);
-};
-
-/*
- * Tests to make sure we can serialize from one parameter handler to
- * another.
- */
-TEST(test_serialize, test_serialize_parameter_store_roundtrip) {
-  const ParameterStore original = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
-  MockParameterHandler original_handler(original);
-  std::ostringstream oss;
-  {
-    cereal::JSONOutputArchive archive(oss);
-    archive(original_handler);
-  }
-  // Make another handler that starts with different parameters
-  MockParameterHandler new_handler({{"2", 4.}, {"1", 5.}, {"3", 6.}});
-  std::istringstream iss(oss.str());
-  {
-    cereal::JSONInputArchive archive(iss);
-    archive(new_handler);
-  }
-  // deserialized has the same paremters
-  expect_params_equal(original, new_handler.get_params());
-}
+using SerializableMockPointer =
+    std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
+using RegressionMockPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
+using SerializableLeastSquaresPointer =
+    std::unique_ptr<SerializableRegressionModel<double, LeastSquaresFit>>;
+using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
 
 /*
  * In what follows we set up a series of test cases in which vary how
@@ -87,29 +53,92 @@ TEST(test_serialize, test_serialize_parameter_store_roundtrip) {
  *
  * same for a model that hasn't been fit first, etc ...
  *
- * To do so we create an abstract test case using the ModelRepresentation class,
- * create Specific variants of it, then run the same tests on all
+ * To do so we create an abstract test case using the SerializableType
+ * and create Specific variants of it, then run the same tests on all
  * the variants using TYPED_TEST.
  */
 
-template <typename X> class ModelRepresentation {
-public:
-  typedef X RepresentationType;
-  virtual RepresentationType create() const = 0;
+template <typename X> struct SerializableType {
+  using RepresentationType = X;
+  virtual RepresentationType create() const {
+    RepresentationType obj;
+    return obj;
+  }
   virtual bool are_equal(const X &lhs, const X &rhs) const {
     return lhs == rhs;
   };
 };
 
-using SerializableMockPointer =
-    std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
-using RegressionMockPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
-using SerializableLeastSquaresPointer =
-    std::unique_ptr<SerializableRegressionModel<double, LeastSquaresFit>>;
-using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
+struct EmptyEigenVectorXd : public SerializableType<Eigen::VectorXd> {
+  Eigen::VectorXd create() const override {
+    Eigen::VectorXd x;
+    return x;
+  }
+};
+
+struct EigenVectorXd : public SerializableType<Eigen::VectorXd> {
+  Eigen::VectorXd create() const override {
+    Eigen::VectorXd x(2);
+    x << 1., 2.;
+    return x;
+  }
+};
+
+struct EmptyEigenMatrixXd : public SerializableType<Eigen::MatrixXd> {
+  Eigen::MatrixXd create() const override {
+    Eigen::MatrixXd x;
+    return x;
+  }
+};
+
+struct EigenMatrixXd : public SerializableType<Eigen::MatrixXd> {
+  Eigen::MatrixXd create() const override {
+    Eigen::MatrixXd x(2, 3);
+    x << 1., 2., 3., 4., 5., 6.;
+    return x;
+  }
+};
+
+struct LDLT
+    : public SerializableType<Eigen::SerializableLDLT<Eigen::MatrixXd>> {
+  Eigen::Index n = 3;
+
+  RepresentationType create() const override {
+    auto part = Eigen::MatrixXd::Random(n, n);
+    auto cov = part * part.transpose();
+    auto ldlt = cov.ldlt();
+    auto information = Eigen::VectorXd::Ones(n);
+
+    // Make sure our two LDLT objects behave the same.
+    RepresentationType serializable_ldlt(ldlt);
+    EXPECT_EQ(ldlt.solve(information), serializable_ldlt.solve(information));
+
+    return serializable_ldlt;
+  }
+
+  bool are_equal(const RepresentationType &lhs,
+                 const RepresentationType &rhs) const override {
+    auto information = Eigen::VectorXd::Ones(n);
+    return (lhs == rhs && lhs.solve(information) == rhs.solve(information));
+  };
+};
+
+struct ParameterStoreType : public SerializableType<ParameterStore> {
+
+  RepresentationType create() const override {
+    ParameterStore original = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
+    return original;
+  }
+
+  bool are_equal(const RepresentationType &lhs,
+                 const RepresentationType &rhs) const override {
+    expect_params_equal(lhs, rhs);
+    return true;
+  };
+};
 
 class UnfitSerializableModel
-    : public ModelRepresentation<SerializableMockPointer> {
+    : public SerializableType<SerializableMockPointer> {
 public:
   RepresentationType create() const override {
     return std::make_unique<MockModel>(log(2.));
@@ -121,8 +150,7 @@ public:
   };
 };
 
-class FitSerializableModel
-    : public ModelRepresentation<SerializableMockPointer> {
+class FitSerializableModel : public SerializableType<SerializableMockPointer> {
 public:
   RepresentationType create() const override {
     auto dataset = mock_training_data();
@@ -137,7 +165,7 @@ public:
   };
 };
 
-class FitDirectModel : public ModelRepresentation<MockModel> {
+class FitDirectModel : public SerializableType<MockModel> {
 public:
   RepresentationType create() const override {
     auto dataset = mock_training_data();
@@ -152,7 +180,7 @@ public:
   };
 };
 
-class UnfitDirectModel : public ModelRepresentation<MockModel> {
+class UnfitDirectModel : public SerializableType<MockModel> {
 public:
   RepresentationType create() const override { return MockModel(log(2.)); }
   bool are_equal(const RepresentationType &lhs,
@@ -161,7 +189,7 @@ public:
   };
 };
 
-class UnfitRegressionModel : public ModelRepresentation<RegressionMockPointer> {
+class UnfitRegressionModel : public SerializableType<RegressionMockPointer> {
 public:
   RepresentationType create() const override {
     return std::make_unique<MockModel>(log(2.));
@@ -172,7 +200,7 @@ public:
   };
 };
 
-class FitLinearRegressionModel : public ModelRepresentation<LinearRegression> {
+class FitLinearRegressionModel : public SerializableType<LinearRegression> {
 public:
   RepresentationType create() const override {
     auto model = LinearRegression();
@@ -188,7 +216,7 @@ public:
 };
 
 class FitLinearSerializablePointer
-    : public ModelRepresentation<SerializableLeastSquaresPointer> {
+    : public SerializableType<SerializableLeastSquaresPointer> {
 public:
   RepresentationType create() const override {
     auto model = std::make_unique<LinearRegression>();
@@ -204,7 +232,7 @@ public:
 };
 
 class UnfitGaussianProcess
-    : public ModelRepresentation<
+    : public SerializableType<
           std::unique_ptr<SquaredExponentialGaussianProcess>> {
 public:
   RepresentationType create() const override {
@@ -221,7 +249,7 @@ public:
 };
 
 class FitGaussianProcess
-    : public ModelRepresentation<
+    : public SerializableType<
           std::unique_ptr<SquaredExponentialGaussianProcess>> {
 public:
   RepresentationType create() const override {
@@ -240,22 +268,10 @@ public:
   };
 };
 
-template <typename ModelRepresentationType>
-class PolymorphicSerializeTest : public ::testing::Test {
-public:
-  typedef typename ModelRepresentationType::RepresentationType Representation;
-};
-
-typedef ::testing::Types<UnfitSerializableModel, UnfitRegressionModel,
-                         FitSerializableModel, FitDirectModel, UnfitDirectModel,
-                         FitLinearRegressionModel, FitLinearSerializablePointer,
-                         UnfitGaussianProcess, FitGaussianProcess>
-    ModelsAndRepresentations;
-TYPED_TEST_CASE(PolymorphicSerializeTest, ModelsAndRepresentations);
-
-TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
-  TypeParam model_and_rep;
-  typename TestFixture::Representation original = model_and_rep.create();
+template <typename X>
+X expect_roundtrip_serializable(
+    const X &original,
+    const std::function<bool(const X &, const X &)> &compare) {
   // Serialize it
   std::ostringstream os;
   {
@@ -264,14 +280,14 @@ TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
   }
   // Deserialize it.
   std::istringstream is(os.str());
-  typename TestFixture::Representation deserialized;
+  X deserialized;
   {
     cereal::JSONInputArchive iarchive(is);
     iarchive(deserialized);
   }
   // Make sure the original and deserialized representations are
   // equivalent.
-  EXPECT_TRUE(model_and_rep.are_equal(original, deserialized));
+  EXPECT_TRUE(compare(original, deserialized));
   // Reserialize the deserialized object
   std::ostringstream os_again;
   {
@@ -280,5 +296,39 @@ TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
   }
   // And make sure the serialized strings are the same,
   EXPECT_EQ(os_again.str(), os.str());
+  return deserialized;
+}
+
+template <typename X> X expect_roundtrip_serializable(const X &original) {
+  std::function<bool(const X &, const X &)> equality =
+      [](const X &lhs, const X &rhs) { return lhs == rhs; };
+  return expect_roundtrip_serializable(original, equality);
+}
+
+template <typename Serializable>
+struct PolymorphicSerializeTest : public ::testing::Test {
+  typedef typename Serializable::RepresentationType Representation;
+};
+
+typedef ::testing::Types<
+    LDLT, SerializableType<Eigen::Vector3d>, SerializableType<Eigen::Matrix3d>,
+    SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd, EigenVectorXd,
+    EmptyEigenMatrixXd, EigenMatrixXd, ParameterStoreType,
+    SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
+    FitDirectModel, UnfitDirectModel, UnfitRegressionModel,
+    FitLinearRegressionModel, FitLinearSerializablePointer,
+    UnfitGaussianProcess, FitGaussianProcess>
+    ToTest;
+
+TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);
+
+TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
+  TypeParam model_and_rep;
+  using X = typename TypeParam::RepresentationType;
+  const X original = model_and_rep.create();
+  std::function<bool(const X &, const X &)> compare =
+      std::bind(&TypeParam::are_equal, model_and_rep, std::placeholders::_1,
+                std::placeholders::_2);
+  expect_roundtrip_serializable(original, compare);
 }
 } // namespace albatross

@@ -21,6 +21,7 @@
 #include "cereal/eigen.h"
 #include "core/model.h"
 #include "core/serialize.h"
+#include "eigen/serializable_ldlt.h"
 
 namespace albatross {
 
