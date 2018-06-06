@@ -26,24 +26,24 @@
 namespace albatross {
 
 using InspectionDistribution = PredictDistribution;
+using LDLT = Eigen::SerializableLDLT<Eigen::MatrixXd>;
 
 template <typename FeatureType> struct GaussianProcessFit {
   std::vector<FeatureType> train_features;
-  Eigen::MatrixXd train_covariance;
+  LDLT train_ldlt;
   Eigen::VectorXd information;
 
   template <typename Archive>
   // todo: enable if FeatureType is serializable
   void serialize(Archive &archive) {
     archive(cereal::make_nvp("information", information));
-    archive(cereal::make_nvp("train_covariance", train_covariance));
+    archive(cereal::make_nvp("train_ldlt", train_ldlt));
     archive(cereal::make_nvp("train_features", train_features));
   }
 
   bool operator==(const GaussianProcessFit &other) const {
     return (train_features == other.train_features &&
-            train_covariance == other.train_covariance &&
-            information == other.information);
+            train_ldlt == other.train_ldlt && information == other.information);
   }
 };
 
@@ -100,7 +100,7 @@ public:
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
     Eigen::MatrixXd pred_cov =
         symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_covariance.ldlt();
+    auto ldlt = this->model_fit_.train_ldlt();
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     assert(static_cast<s32>(pred.size()) == static_cast<s32>(features.size()));
     return InspectionDistribution(pred, pred_cov);
@@ -133,13 +133,12 @@ protected:
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
     FitType model_fit;
     model_fit.train_features = features;
-    model_fit.train_covariance = cov;
     if (targets.has_covariance()) {
-      model_fit.train_covariance += targets.covariance;
+      cov += targets.covariance;
     }
+    model_fit.train_ldlt = LDLT(cov.ldlt());
     // Precompute the information vector
-    model_fit.information =
-        model_fit.train_covariance.ldlt().solve(targets.mean);
+    model_fit.information = model_fit.train_ldlt.solve(targets.mean);
     return model_fit;
   }
 
@@ -153,7 +152,7 @@ protected:
     // Ideally this would get stored inside GaussianProcessFit.
     Eigen::MatrixXd pred_cov =
         symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_covariance.ldlt();
+    auto ldlt = this->model_fit_.train_ldlt;
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     return PredictDistribution(pred, pred_cov);
   }
@@ -176,11 +175,11 @@ private:
  */
 static inline Distribution<DiagonalMatrixXd>
 fast_gp_loo_cross_validated_predict(const Eigen::VectorXd &targets,
-                                    const Eigen::MatrixXd &train_covariance) {
-  assert(targets.size() == train_covariance.rows());
-  assert(train_covariance.rows() == train_covariance.cols());
-  Eigen::VectorXd information = train_covariance.ldlt().solve(targets);
-  Eigen::MatrixXd inverse = train_covariance.inverse();
+                                    const LDLT &train_covariance_ldlt) {
+  assert(targets.size() == train_covariance_ldlt.rows());
+  assert(train_covariance_ldlt.rows() == train_covariance_ldlt.cols());
+  Eigen::VectorXd information = train_covariance_ldlt.solve(targets);
+  const auto inverse = train_covariance_ldlt.solve(Eigen::MatrixXd::Identity(targets.size(), targets.size()));
 
   Eigen::VectorXd loo_mean(targets);
   Eigen::VectorXd loo_variance(targets.size());
