@@ -14,13 +14,13 @@ cache:
 matrix:
   fast_finish: true
   include:
-  - compiler: gcc
+  - compiler: gcc-6
     addons:
       apt:
         sources:
           - ubuntu-toolchain-r-test
         packages:
-          - g++-5
+          - g++-6
           - libc++-dev
           - libc++abi-dev
           - clang-3.8
@@ -28,8 +28,8 @@ matrix:
           - clang-tidy-3.8
           - libnlopt-dev
     env:
-      - C_COMPILER=gcc-5 CXX_COMPILER=g++-5 COVERAGE=''
-  - compiler: clang
+      - C_COMPILER=gcc-6 CXX_COMPILER=g++-6 COVERAGE=''
+  - compiler: clang-3.8
     addons:
       apt:
         sources:
