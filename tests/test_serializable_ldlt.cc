@@ -16,16 +16,31 @@
 
 namespace albatross {
 
-/*
- * This test makes sure that we can make predictions of what
- * the attenuation of a signal would be at some unobserved location.
- */
-TEST(test_scaling_functions, test_predicts) {
-  auto part = Eigen::MatrixXd::Random(n, n);
-  auto cov = part * part.transpose();
-  auto ldlt = cov.ldlt();
-  auto information = Eigen::VectorXd::Ones(n);
+class SerializableLDLTTest : public ::testing::Test {
+public:
+  SerializableLDLTTest() : cov(), information() {
+    const int n = 5;
+    const auto part = Eigen::MatrixXd(Eigen::MatrixXd::Random(n, n));
+    cov = part * part.transpose();
+    information = Eigen::VectorXd::Ones(n);
+  };
 
+  Eigen::MatrixXd cov;
+  Eigen::VectorXd information;
+};
+
+TEST_F(SerializableLDLTTest, test_solve) {
+  auto ldlt = cov.ldlt();
+  const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
+  EXPECT_EQ(serializable_ldlt.solve(information), ldlt.solve(information));
+}
+
+TEST_F(SerializableLDLTTest, test_inverse_diagonal) {
+  auto ldlt = cov.ldlt();
+  const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
+  const auto inverse = cov.inverse();
+  const auto diag = serializable_ldlt.inverse_diagonal();
+  EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-8);
 }
 
 } // namespace albatross

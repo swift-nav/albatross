@@ -99,12 +99,15 @@ struct EigenMatrixXd : public SerializableType<Eigen::MatrixXd> {
   }
 };
 
-struct LDLT
-    : public SerializableType<Eigen::SerializableLDLT<Eigen::MatrixXd>> {
+struct LDLT : public SerializableType<Eigen::SerializableLDLT> {
   Eigen::Index n = 3;
 
   RepresentationType create() const override {
-    auto part = Eigen::MatrixXd::Random(n, n);
+    // This looks weird, but without forcing this to a Eigen::MatrixXd
+    // type every time `part` is accessed it'll have new random values!
+    // so part.tranpose() will not be the transpose of `part` but the
+    // transpose of some new random matrix.  Seems like a bug to me.
+    const auto part = Eigen::MatrixXd(Eigen::MatrixXd::Random(n, n));
     auto cov = part * part.transpose();
     auto ldlt = cov.ldlt();
     auto information = Eigen::VectorXd::Ones(n);

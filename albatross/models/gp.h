@@ -26,11 +26,10 @@
 namespace albatross {
 
 using InspectionDistribution = PredictDistribution;
-using LDLT = Eigen::SerializableLDLT<Eigen::MatrixXd>;
 
 template <typename FeatureType> struct GaussianProcessFit {
   std::vector<FeatureType> train_features;
-  LDLT train_ldlt;
+  Eigen::SerializableLDLT train_ldlt;
   Eigen::VectorXd information;
 
   template <typename Archive>
@@ -100,7 +99,7 @@ public:
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
     Eigen::MatrixXd pred_cov =
         symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_ldlt();
+    auto ldlt = this->model_fit_.train_ldlt;
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     assert(static_cast<s32>(pred.size()) == static_cast<s32>(features.size()));
     return InspectionDistribution(pred, pred_cov);
@@ -136,7 +135,7 @@ protected:
     if (targets.has_covariance()) {
       cov += targets.covariance;
     }
-    model_fit.train_ldlt = LDLT(cov.ldlt());
+    model_fit.train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
     // Precompute the information vector
     model_fit.information = model_fit.train_ldlt.solve(targets.mean);
     return model_fit;
@@ -174,12 +173,14 @@ private:
  * See section 5.4.2 Rasmussen Gaussian Processes
  */
 static inline Distribution<DiagonalMatrixXd>
-fast_gp_loo_cross_validated_predict(const Eigen::VectorXd &targets,
-                                    const LDLT &train_covariance_ldlt) {
+fast_gp_loo_cross_validated_predict(
+    const Eigen::VectorXd &targets,
+    const Eigen::SerializableLDLT &train_covariance_ldlt) {
   assert(targets.size() == train_covariance_ldlt.rows());
   assert(train_covariance_ldlt.rows() == train_covariance_ldlt.cols());
   Eigen::VectorXd information = train_covariance_ldlt.solve(targets);
-  const auto inverse = train_covariance_ldlt.solve(Eigen::MatrixXd::Identity(targets.size(), targets.size()));
+  const auto inverse = train_covariance_ldlt.solve(
+      Eigen::MatrixXd::Identity(targets.size(), targets.size()));
 
   Eigen::VectorXd loo_mean(targets);
   Eigen::VectorXd loo_variance(targets.size());
@@ -198,7 +199,7 @@ fast_gp_loo_cross_validated_predict(
   model->fit(dataset);
   const auto model_fit = model->get_fit();
   return fast_gp_loo_cross_validated_predict(dataset.targets.mean,
-                                             model_fit.train_covariance);
+                                             model_fit.train_ldlt);
 }
 
 template <typename FeatureType, typename CovFunc>

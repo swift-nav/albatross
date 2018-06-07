@@ -38,6 +38,8 @@ inline void load_lower_triangle(Archive &archive,
                                 Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
   cereal::size_type storage_size;
   archive(cereal::make_size_tag(storage_size));
+  // TODO: understand why the storage size upon load is always augmented by two.
+  storage_size -= 2;
   // We assume the matrix is square and compute the number of rows from the
   // storage size.
   double drows = (std::sqrt(static_cast<double>(storage_size * 8 + 1)) - 1) / 2;
@@ -50,13 +52,13 @@ inline void load_lower_triangle(Archive &archive,
   }
 }
 
-template <typename MatrixType = MatrixXd>
-class SerializableLDLT : public LDLT<MatrixType, Lower> {
+class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
-  SerializableLDLT() : LDLT<MatrixType, Lower>(){};
+  SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
 
-  SerializableLDLT(const LDLT<MatrixType, Lower> &ldlt)
-      : LDLT<MatrixType, Lower>(ldlt){};
+  SerializableLDLT(const LDLT<MatrixXd, Lower> &ldlt)
+      // Can we get around copying here?
+      : LDLT<MatrixXd, Lower>(ldlt){};
 
   template <typename Archive> void save(Archive &archive) const {
     save_lower_triangle(archive, this->m_matrix);
@@ -68,14 +70,44 @@ public:
     archive(this->m_transpositions, this->m_isInitialized);
   }
 
+  /*
+   * The diagonal of the inverse of the matrix this LDLT
+   * decomposition represents in O(n^2) operations.
+   */
+  Eigen::VectorXd inverse_diagonal() const {
+    Eigen::Index n = this->rows();
+    Eigen::MatrixXd inverse_cholesky =
+        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(inverse_cholesky);
+
+    Eigen::VectorXd sqrt_diag = this->vectorD();
+    for (Eigen::Index i = 0; i < n; i++) {
+      sqrt_diag[i] = 1. / std::sqrt(sqrt_diag[i]);
+    }
+
+    Eigen::VectorXd inv_diag(n);
+    for (Eigen::Index i = 0; i < n; i++) {
+      const Eigen::VectorXd col_i =
+          inverse_cholesky.col(i).cwiseProduct(sqrt_diag);
+      ;
+      inv_diag[i] = col_i.dot(col_i);
+    }
+
+    return inv_diag;
+  }
+
   bool operator==(const SerializableLDLT &rhs) const {
     // Make sure the two lower triangles are the same and that
     // any permutations are identical.
+    if (!this->m_isInitialized && !rhs.m_isInitialized) {
+      return true;
+    }
     auto this_lower =
         MatrixXd(MatrixXd(this->matrixLDLT()).triangularView<Eigen::Lower>());
     auto rhs_lower =
         MatrixXd(MatrixXd(rhs.matrixLDLT()).triangularView<Eigen::Lower>());
-    return (this_lower == rhs_lower &&
+    return (this->m_isInitialized == rhs.m_isInitialized &&
+            this_lower == rhs_lower &&
             this->transpositionsP().indices() ==
                 rhs.transpositionsP().indices());
   }
