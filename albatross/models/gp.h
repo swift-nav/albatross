@@ -179,14 +179,12 @@ fast_gp_loo_cross_validated_predict(
   assert(targets.size() == train_covariance_ldlt.rows());
   assert(train_covariance_ldlt.rows() == train_covariance_ldlt.cols());
   Eigen::VectorXd information = train_covariance_ldlt.solve(targets);
-  const auto inverse = train_covariance_ldlt.solve(
-      Eigen::MatrixXd::Identity(targets.size(), targets.size()));
-
+  const auto inverse_diag = train_covariance_ldlt.inverse_diagonal();
   Eigen::VectorXd loo_mean(targets);
   Eigen::VectorXd loo_variance(targets.size());
   for (Eigen::Index i = 0; i < targets.size(); i++) {
-    loo_mean[i] -= information[i] / inverse(i, i);
-    loo_variance[i] = 1. / inverse(i, i);
+    loo_mean[i] -= information[i] / inverse_diag(i);
+    loo_variance[i] = 1. / inverse_diag(i);
   }
   return Distribution<DiagonalMatrixXd>(loo_mean, loo_variance.asDiagonal());
 }

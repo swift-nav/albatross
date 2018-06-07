@@ -271,10 +271,27 @@ public:
   };
 };
 
-template <typename X>
-X expect_roundtrip_serializable(
-    const X &original,
-    const std::function<bool(const X &, const X &)> &compare) {
+template <typename Serializable>
+struct PolymorphicSerializeTest : public ::testing::Test {
+  typedef typename Serializable::RepresentationType Representation;
+};
+
+typedef ::testing::Types<
+    LDLT, SerializableType<Eigen::Matrix3d>, SerializableType<Eigen::Matrix2i>,
+    EmptyEigenVectorXd, EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
+    ParameterStoreType, SerializableType<MockModel>, UnfitSerializableModel,
+    FitSerializableModel, FitDirectModel, UnfitDirectModel,
+    UnfitRegressionModel, FitLinearRegressionModel,
+    FitLinearSerializablePointer, UnfitGaussianProcess, FitGaussianProcess>
+    ToTest;
+
+TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);
+
+TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
+  TypeParam model_and_rep;
+  using X = typename TypeParam::RepresentationType;
+  const X original = model_and_rep.create();
+
   // Serialize it
   std::ostringstream os;
   {
@@ -290,7 +307,7 @@ X expect_roundtrip_serializable(
   }
   // Make sure the original and deserialized representations are
   // equivalent.
-  EXPECT_TRUE(compare(original, deserialized));
+  EXPECT_TRUE(model_and_rep.are_equal(original, deserialized));
   // Reserialize the deserialized object
   std::ostringstream os_again;
   {
@@ -299,39 +316,5 @@ X expect_roundtrip_serializable(
   }
   // And make sure the serialized strings are the same,
   EXPECT_EQ(os_again.str(), os.str());
-  return deserialized;
-}
-
-template <typename X> X expect_roundtrip_serializable(const X &original) {
-  std::function<bool(const X &, const X &)> equality =
-      [](const X &lhs, const X &rhs) { return lhs == rhs; };
-  return expect_roundtrip_serializable(original, equality);
-}
-
-template <typename Serializable>
-struct PolymorphicSerializeTest : public ::testing::Test {
-  typedef typename Serializable::RepresentationType Representation;
-};
-
-typedef ::testing::Types<
-    LDLT, SerializableType<Eigen::Vector3d>, SerializableType<Eigen::Matrix3d>,
-    SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd, EigenVectorXd,
-    EmptyEigenMatrixXd, EigenMatrixXd, ParameterStoreType,
-    SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
-    FitDirectModel, UnfitDirectModel, UnfitRegressionModel,
-    FitLinearRegressionModel, FitLinearSerializablePointer,
-    UnfitGaussianProcess, FitGaussianProcess>
-    ToTest;
-
-TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);
-
-TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize) {
-  TypeParam model_and_rep;
-  using X = typename TypeParam::RepresentationType;
-  const X original = model_and_rep.create();
-  std::function<bool(const X &, const X &)> compare =
-      std::bind(&TypeParam::are_equal, model_and_rep, std::placeholders::_1,
-                std::placeholders::_2);
-  expect_roundtrip_serializable(original, compare);
 }
 } // namespace albatross
