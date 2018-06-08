@@ -150,13 +150,12 @@ expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
 
 static inline auto make_toy_linear_data(const double a = 5.,
                                         const double b = 1.,
-                                        const double sigma = 0.1) {
+                                        const double sigma = 0.1,
+                                        const s32 n = 10) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(3);
   std::normal_distribution<> d{0., sigma};
-
-  s32 n = 10;
   std::vector<double> features;
   Eigen::VectorXd targets(n);
 

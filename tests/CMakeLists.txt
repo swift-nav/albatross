@@ -16,6 +16,7 @@ test_models.cc
 test_core_distribution.cc
 test_tune.cc
 test_tuning_metrics.cc
+test_serializable_ldlt.cc
 )
 
 add_dependencies(albatross_unit_tests

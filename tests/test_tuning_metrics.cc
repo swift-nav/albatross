@@ -20,7 +20,7 @@
 namespace albatross {
 
 TEST(test_tuning_metrics, test_fast_loo_equals_slow) {
-  auto dataset = make_toy_linear_data();
+  auto dataset = make_toy_linear_data(5., 1., 0.1, 4);
 
   auto model_creator = toy_gaussian_process;
   auto model = model_creator();
@@ -60,7 +60,8 @@ typedef ::testing::Types<TestMetric<loo_nll>, TestMetric<loo_rmse>,
 TYPED_TEST_CASE(TuningMetricTester, MetricsToTest);
 
 TYPED_TEST(TuningMetricTester, test_sanity) {
-  const auto dataset = make_toy_linear_data();
+  const auto dataset = make_toy_linear_data(5., 1., 0.1, 4);
+  ;
   const auto model_creator = toy_gaussian_process;
   const auto model = model_creator();
   const auto metric = this->test_metric.function(dataset, model.get());
