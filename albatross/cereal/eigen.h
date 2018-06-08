@@ -29,7 +29,12 @@ template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void save(Archive &archive,
                  const Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
   size_type rows = static_cast<size_type>(v.rows());
+  size_type cols = static_cast<size_type>(v.cols());
   archive(cereal::make_size_tag(rows));
+  // Storing the rows and columns is redundant information but
+  // makes loading a lot easier.
+  archive(rows);
+  archive(cols);
   for (size_type i = 0; i < rows; i++) {
     Eigen::Matrix<_Scalar, _Cols, 1> row = v.row(i);
     archive(row);
@@ -38,28 +43,21 @@ inline void save(Archive &archive,
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-  size_type rows;
-  archive(cereal::make_size_tag(rows));
+  size_type rows_plus_two, rows, cols;
+  archive(cereal::make_size_tag(rows_plus_two));
+  archive(rows);
+  archive(cols);
+  assert(rows == rows_plus_two - 2);
   /*
    * In order to determine the size of a matrix, we have to first determine
    * how many rows, then inspect the size of the first row to get the
    * number of columns.
    */
-  if (rows > 0) {
-    Eigen::Matrix<_Scalar, _Rows, 1> first;
-    archive(first);
-    size_type cols = first.rows();
-    v.resize(rows, cols);
-    v.row(0) = first;
-
-    for (size_type i = 1; i < rows; i++) {
-      Eigen::Matrix<_Scalar, _Cols, 1> row;
-      archive(row);
-      v.row(i) = row;
-    }
-  } else {
-    // Serialized matrix is empty.
-    v.resize(0, 0);
+  v.resize(rows, cols);
+  for (size_type i = 0; i < rows; i++) {
+    Eigen::Matrix<_Scalar, _Cols, 1> row;
+    archive(row);
+    v.row(i) = row;
   }
 };
 

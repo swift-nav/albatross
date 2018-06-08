@@ -41,9 +41,15 @@ inline void load_lower_triangle(Archive &archive,
   // TODO: understand why the storage size upon load is always augmented by two.
   storage_size -= 2;
   // We assume the matrix is square and compute the number of rows from the
-  // storage size.
-  double drows = (std::sqrt(static_cast<double>(storage_size * 8 + 1)) - 1) / 2;
-  cereal::size_type rows = static_cast<cereal::size_type>(drows);
+  // storage size using the quadratic formula.
+  //     rows^2 + rows - 2 * storage_size = 0
+  double a = 1;
+  double b = 1;
+  double c = -2. * static_cast<double>(storage_size);
+  double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
+  assert(rows_as_double - static_cast<Eigen::Index>(rows_as_double) == 0. &&
+         "inferred a non integer number of rows");
+  cereal::size_type rows = static_cast<cereal::size_type>(rows_as_double);
   v.resize(rows, rows);
   for (cereal::size_type i = 0; i < rows; i++) {
     for (cereal::size_type j = 0; j <= i; j++) {
@@ -80,16 +86,12 @@ public:
         this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
     this->matrixL().solveInPlace(inverse_cholesky);
 
-    Eigen::VectorXd sqrt_diag = this->vectorD();
-    for (Eigen::Index i = 0; i < n; i++) {
-      sqrt_diag[i] = 1. / std::sqrt(sqrt_diag[i]);
-    }
+    Eigen::VectorXd sqrt_diag = this->vectorD().array().sqrt().matrix();
 
     Eigen::VectorXd inv_diag(n);
     for (Eigen::Index i = 0; i < n; i++) {
       const Eigen::VectorXd col_i =
-          inverse_cholesky.col(i).cwiseProduct(sqrt_diag);
-      ;
+          inverse_cholesky.col(i).cwiseQuotient(sqrt_diag);
       inv_diag[i] = col_i.dot(col_i);
     }
 
