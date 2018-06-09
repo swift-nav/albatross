@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SPATIAL_EXAMPLE_UTILS_H
-#define ALBATROSS_SPATIAL_EXAMPLE_UTILS_H
+#ifndef ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
+#define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
 #include "csv.h"
 #include <Eigen/Core>
@@ -24,85 +24,105 @@
 #include "covariance_functions/covariance_functions.h"
 #include "models/gp.h"
 
-/*
- * Creates a grid of n points between low and high.
- */
-std::vector<Eigen::VectorXd> uniform_points_in_2d(const int n, const double low,
-                                                  const double high) {
-  std::default_random_engine generator;
-  std::uniform_real_distribution<double> distribution(low, high);
+namespace albatross {
 
-  std::vector<Eigen::VectorXd> features;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      double x_ratio = (double)i / (double)(n - 1);
-      double y_ratio = (double)i / (double)(n - 1);
+template <typename FeatureType, typename SubFeatureType=FeatureType>
+RegressionDataset<FeatureType> trim_outliers(const RegressionDataset<FeatureType> &dataset,
+                                             SerializableGaussianProcess<FeatureType, SubFeatureType> *model) {
+  auto loo_predictions = fast_gp_loo_cross_validated_predict(dataset, model);
 
-      double x = low + x_ratio * (high - low);
-      double y = low + y_ratio * (high - low);
-      Eigen::VectorXd f;
-      f << x, y;
-      features.push_back(f);
+  Eigen::VectorXd errors = loo_predictions.mean - dataset.targets.mean;
+  Eigen::VectorXd error_stddev = errors.array().cwiseQuotient(loo_predictions.covariance.diagonal().array().sqrt()).matrix();
+
+  double mean = error_stddev.array().mean();
+  double stddev = std::sqrt((error_stddev.array() - mean).pow(2.).mean());
+
+  std::vector<Eigen::Index> good_indices;
+  for (Eigen::Index i=0; i < errors.size(); i++) {
+    if (fabs(error_stddev[i]) <= 3.) {
+      good_indices.push_back(i);
     }
   }
-  return features;
+
+  std::vector<FeatureType> feature_subset = subset(good_indices, dataset.features);
+  TargetDistribution target_subset = subset(good_indices, dataset.targets);
+  RegressionDataset<FeatureType> subset_data(feature_subset, target_subset);
+
+  std::cout << "Removing " << errors.size() - good_indices.size() << " data entries" << std::endl;
+
+  return subset_data;
+}
+}
+
+struct Station {
+  int id;
+  double lat;
+  double lon;
+  double height;
+  Eigen::Vector3d ecef;
+
+  bool operator==(const Station &rhs) const {
+    return (ecef == rhs.ecef);
+  }
+
+  template <typename Archive>
+  void serialize(Archive &archive) {
+    archive(id, lat, lon, height, ecef);
+  }
+
 };
 
 /*
- * The noise free function we're attempting to estimate.
+ * Provides an interface which maps the PiercePoint.ecef
+ * field to an arbitrary DistanceMetric defined on Eigen
+ * vectors.
  */
-double truth(const Eigen::VectorXd &x) {
-  return sin(x.norm()) / x.norm();
-}
+template <typename DistanceMetricType>
+class StationDistance : public DistanceMetricType {
+ public:
+  StationDistance(){};
+
+  std::string get_name() const {
+    std::ostringstream oss;
+    oss << "station_" << DistanceMetricType::get_name();
+    return oss.str();
+  };
+
+  ~StationDistance(){};
+
+  double operator()(const Station& x, const Station& y) const {
+    return DistanceMetricType::operator()(x.ecef, y.ecef);
+  };
+};
 
 
-albatross::RegressionDataset<Eigen::VectorXd> create_circular_data(const int n,
-                                                                   const double meas_noise) {
-  std::random_device rd{};
-  std::mt19937 gen{rd()};
-  gen.seed(3);
-
-  std::uniform_readl_distribution<double> rand_angle(0., 2 * M_PI);
-  std::uniform_readl_distribution<double> rand_radius(0., 1.);
-
-  std::normal_distribution<> d{0., meas_noise};
-
-  std::vector<Eigen::VectorXd> features;
-  Eigen::VectorXd targets(n);
-
-  for (int i = 0; i < n; i++) {
-    double theta = rand_angle(gen);
-    double radius = rand_radius(gen);
-    Eigen::VectorXd x(2);
-    x << cos(theta) * radius, sin(theta) * radius;
-    features.push_back(x);
-    targets[i] = truth(x) + d(gen);
-  }
-
-  return albatross::RegressionDataset<Eigen::VectorXd>(features, targets);
-}
-
-
-albatross::RegressionDataset<Eigen::VectorXd> read_csv_input(std::string file_path) {
-  std::vector<Eigen::VectorXd> features;
+albatross::RegressionDataset<Station> read_temperature_csv_input(std::string file_path) {
+  std::vector<Station> features;
   std::vector<double> targets;
 
-  io::CSVReader<2> file_in(file_path);
+  io::CSVReader<8> file_in(file_path);
 
-  file_in.read_header(io::ignore_extra_column, "x", "y", "target");
-  double x, y, target;
+  file_in.read_header(io::ignore_extra_column, "STATION", "LAT", "LON", "ELEV(M)", "X", "Y", "Z", "TEMP");
+
   bool more_to_parse = true;
+  int count = 0;
   while (more_to_parse) {
-    more_to_parse = file_in.read_row(x, y, target);
-    if (more_to_parse) {
-      Eigen::VectorXd f;
-      f << x, y;
-      features.push_back(f);
-      targets.push_back(target);
+    double temperature;
+    Station station;
+    more_to_parse = file_in.read_row(station.id,
+                                     station.lat, station.lon, station.height,
+                                     station.ecef[0],
+                                     station.ecef[1],
+                                     station.ecef[2],
+                                     temperature);
+    if (more_to_parse && count % 5 == 0) {
+      features.push_back(station);
+      targets.push_back(temperature);
     }
+    count++;
   }
   Eigen::Map<Eigen::VectorXd> eigen_targets(&targets[0], static_cast<int>(targets.size()));
-  return albatross::RegressionDataset<double>(features, eigen_targets);
+  return albatross::RegressionDataset<Station>(features, eigen_targets);
 }
 
 inline bool file_exists(const std::string &name) {
@@ -110,49 +130,96 @@ inline bool file_exists(const std::string &name) {
   return f.good();
 }
 
-void maybe_create_training_data(std::string input_path, const int n,
-                                const double low, const double high,
-                                const double meas_noise) {
-  /*
-   * Either read the input data from file, or if it doesn't exist
-   * generate new input data and write it to file.
-   */
-  if (file_exists(input_path)) {
-    std::cout << "reading data from : " << input_path << std::endl;
-  } else {
-    std::cout << "creating training data and writing it to : " << input_path
-              << std::endl;
-    auto data = create_circular_data(n, meas_noise);
-    std::ofstream train;
-    train.open(input_path);
-    train << "x,y" << std::endl;
-    for (int i = 0; i < static_cast<int>(data.features.size()); i++) {
-      train << data.features[i] << ", " << data.targets.mean[i] << std::endl;
-    }
-  }
+
+/** Semi-major axis of the Earth, \f$ a \f$, in meters.
+ * This is a defining parameter of the WGS84 ellipsoid. */
+#define WGS84_A 6378137.0
+/** Inverse flattening of the Earth, \f$ 1/f \f$.
+ * This is a defining parameter of the WGS84 ellipsoid. */
+#define WGS84_IF 298.257223563
+/** The flattening of the Earth, \f$ f \f$. */
+#define WGS84_F (1 / WGS84_IF)
+/** Semi-minor axis of the Earth in meters, \f$ b = a(1-f) \f$. */
+#define WGS84_B (WGS84_A * (1 - WGS84_F))
+/** Eccentricity of the Earth, \f$ e \f$ where \f$ e^2 = 2f - f^2 \f$ */
+#define WGS84_E (sqrt(2 * WGS84_F - WGS84_F * WGS84_F))
+
+Eigen::Vector3d lat_lon_to_ecef(const double lat,
+                                const double lon,
+                                const double height) {
+  double d = WGS84_E * sin(lat);
+  double N = WGS84_A / sqrt(1. - d * d);
+
+  Eigen::Vector3d ecef;
+  ecef[0] = (N + height) * cos(lat) * cos(lon);
+  ecef[1] = (N + height) * cos(lat) * sin(lon);
+  ecef[2] = ((1 - WGS84_E * WGS84_E) * N + height) * sin(lat);
+  return ecef;
 }
 
-void write_predictions_to_csv(const std::string output_path,
-                              const albatross::RegressionModel<Eigen::VectorXd> &model,
-                              const double low, const double high) {
-  std::ofstream output;
-  output.open(output_path);
+std::vector<Station> build_prediction_grid() {
+//  double lon_low = -125.;
+//  double lon_high = -60;
+//  double lat_low = 25.;
+//  double lat_high = 50.;
 
-  const int k = 161;
-  auto grid_xs = uniform_points_on_line(k, low - 2., high + 2.);
+    double lon_low = -100.;
+    double lon_high = -80;
+    double lat_low = 25.;
+    double lat_high = 45.;
+  double spacing = 1.;
 
-  auto predictions = model.predict(grid_xs);
+  int lon_count = ceil((lon_high - lon_low) / spacing);
+  int lat_count = ceil((lat_high - lat_low) / spacing);
 
-  std::cout << "writing predictions to : " << output_path << std::endl;
-  output << "x,y,variance,truth" << std::endl;
-  for (int i = 0; i < k; i++) {
-    output << grid_xs[i];
-    output << "," << predictions.mean[i];
-    output << "," << predictions.covariance(i, i);
-    output << "," << truth(grid_xs[i]);
-    output << std::endl;
+  double lon_stride = (lon_high - lon_low) / (lon_count);
+  double lat_stride = (lat_high - lat_low) / (lat_count);
+
+  std::vector<Station> features;
+  for (int lon_i = 0; lon_i < lon_count; lon_i++) {
+    for (int lat_i = 0; lat_i < lat_count; lat_i++) {
+      Station grid_location;
+      grid_location.lat = lat_low + lat_i * lat_stride;
+      grid_location.lon = lon_low + lon_i * lon_stride;
+      grid_location.ecef = lat_lon_to_ecef(grid_location.lat * M_PI / 180.,
+                                           grid_location.lon * M_PI / 180.,
+                                           0.);
+      grid_location.id = lon_i * 10000 + lat_i;
+      features.push_back(grid_location);
+    }
   }
-  output.close();
+  return features;
+}
+
+void write_predictions(const std::string output_path,
+                       const std::vector<Station> features,
+                       const albatross::RegressionModel<Station> &model) {
+
+  std::ofstream ostream;
+  ostream.open(output_path);
+  ostream << "STATION,LAT,LON,ELEV(M),X,Y,Z,TEMP,VARIANCE" << std::endl;
+
+  std::size_t n = features.size();
+  std::size_t count = 0;
+  for (const auto &f : features) {
+    ostream << std::to_string(f.id);
+    ostream << ", " << std::to_string(f.lat);
+    ostream << ", " << std::to_string(f.lon);
+    ostream << ", " << std::to_string(f.height);
+    ostream << ", " << std::to_string(f.ecef[0]);
+    ostream << ", " << std::to_string(f.ecef[1]);
+    ostream << ", " << std::to_string(f.ecef[2]);
+
+    std::vector<Station> one_feature = {f};
+    const auto pred = model.predict(one_feature);
+
+    ostream << ", " << std::to_string(pred.mean[0]);
+    ostream << ", " << std::to_string(std::sqrt(pred.covariance(0, 0)));
+    ostream << std::endl;
+    std::cout << count << "/" << n << std::endl;
+    count++;
+  }
+
 }
 
 #endif

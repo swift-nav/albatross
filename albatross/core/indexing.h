@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_CORE_INDEXING_H
 #define ALBATROSS_CORE_INDEXING_H
 
+#include "core/model.h"
 #include <Eigen/Core>
 #include <iostream>
 #include <vector>
@@ -24,7 +25,7 @@ namespace albatross {
  */
 
 template <typename SizeType, typename X>
-std::vector<X> subset(const std::vector<SizeType> &indices,
+inline std::vector<X> subset(const std::vector<SizeType> &indices,
                       const std::vector<X> &v) {
   std::vector<X> out(indices.size());
   for (std::size_t i = 0; i < static_cast<std::size_t>(indices.size()); i++) {
@@ -37,7 +38,7 @@ std::vector<X> subset(const std::vector<SizeType> &indices,
  * Extract a subset of an Eigen::Vector
  */
 template <typename SizeType>
-Eigen::VectorXd subset(const std::vector<SizeType> &indices,
+inline Eigen::VectorXd subset(const std::vector<SizeType> &indices,
                        const Eigen::VectorXd &v) {
   Eigen::VectorXd out(static_cast<Eigen::Index>(indices.size()));
   for (std::size_t i = 0; i < indices.size(); i++) {
@@ -52,7 +53,7 @@ Eigen::VectorXd subset(const std::vector<SizeType> &indices,
  * indices.
  */
 template <typename SizeType>
-Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
+inline Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
                        const std::vector<SizeType> &col_indices,
                        const Eigen::MatrixXd &v) {
   Eigen::MatrixXd out(row_indices.size(), col_indices.size());
@@ -74,7 +75,7 @@ Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
  * columns.
  */
 template <typename SizeType>
-Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
+inline Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
                                  const Eigen::MatrixXd &v) {
   assert(v.rows() == v.cols());
   return subset(indices, indices, v);
@@ -84,11 +85,20 @@ Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
  * Extract a subset of an Eigen::DiagonalMatrix
  */
 template <typename SizeType, typename Scalar, int Size>
-Eigen::DiagonalMatrix<Scalar, Size>
+inline Eigen::DiagonalMatrix<Scalar, Size>
 symmetric_subset(const std::vector<SizeType> &indices,
                  const Eigen::DiagonalMatrix<Scalar, Size> &v) {
   return subset(indices, v.diagonal()).asDiagonal();
 }
+
+//template <typename SizeType, typename FeatureType>
+//RegressionDataset<FeatureType> subset(const std::vector<SizeType> &indices,
+//                                             const RegressionDataset<FeatureType> &dataset) {
+//  std::vector<FeatureType> feature_subset = subset(indices, dataset.features);
+//  TargetDistribution target_subset = subset(indices, dataset.targets);
+//  return RegressionDataset<FeatureType>(feature_subset, target_subset);
+//}
+
 } // namespace albatross
 
 #endif
