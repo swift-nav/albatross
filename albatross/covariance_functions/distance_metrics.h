@@ -57,7 +57,16 @@ public:
   std::string get_name() const override { return "angular_distance"; };
 
   double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
-    return acos(x.dot(y) / (x.norm() * y.norm()));
+    // The acos operator doesn't behave well near |1|.  acos(1.), for example,
+    // returns NaN.
+    double dot_product = x.dot(y) / (x.norm() * y.norm());
+    if (dot_product > 1. - 1e-16) {
+      return 0.;
+    } else if (dot_product < -1. + 1e-16) {
+      return M_PI;
+    } else {
+      return acos(dot_product);
+    }
   }
 };
 
@@ -70,6 +79,26 @@ public:
     return fabs(x - y);
   }
 };
+
+template <typename Feature, typename DistanceMetrixType>
+Eigen::MatrixXd distance_matrix(const DistanceMetrixType &distance_metric,
+                                const std::vector<Feature> &xs) {
+  int n = static_cast<int>(xs.size());
+  Eigen::MatrixXd D(n, n);
+
+  int i, j;
+  std::size_t si, sj;
+  for (i = 0; i < n; i++) {
+    si = static_cast<std::size_t>(i);
+    for (j = 0; j <= i; j++) {
+      sj = static_cast<std::size_t>(j);
+      D(i, j) = distance_metric(xs[si], xs[sj]);
+      D(j, i) = D(i, j);
+    }
+  }
+  return D;
+}
+
 } // namespace albatross
 
 #endif

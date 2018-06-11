@@ -17,7 +17,9 @@
 #include "temperature_example_utils.h"
 
 DEFINE_string(input, "", "path to csv containing input data.");
+DEFINE_string(predict, "", "path to csv containing prediction locations.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
+DEFINE_string(thin, "", "path where predictions will be written in csv.");
 
 
 int main(int argc, char *argv[]) {
@@ -26,43 +28,76 @@ int main(int argc, char *argv[]) {
   using namespace albatross;
 
   std::cout << "Reading the input data." << std::endl;
-  const auto data = read_temperature_csv_input(FLAGS_input);
+  auto data = read_temperature_csv_input(FLAGS_input, 1);
   std::cout << "Using " << data.features.size() << " data points" << std::endl;
 
   std::cout << "Defining the model." << std::endl;
   using Noise = IndependentNoise<Station>;
-  using SqrExp = SquaredExponential<StationDistance<EuclideanDistance>>;
+  CovarianceFunction<Constant> mean = {Constant(1.5)};
+  CovarianceFunction<Noise> noise = {Noise(2.0)};
 
-  CovarianceFunction<Constant> mean = {Constant(5000.)};
-  CovarianceFunction<Noise> noise = {Noise(2.)};
-  CovarianceFunction<SqrExp> sqrexp = {SqrExp(350000, 13.)};
-  auto covariance = mean + noise + sqrexp;
+//  using EuclideanSqrExp = SquaredExponential<StationDistance<EuclideanDistance>>;
+//  CovarianceFunction<EuclideanSqrExp> euclidean_sqrexp = {EuclideanSqrExp(200000., 8.)};
+//  auto spatial_cov = euclidean_sqrexp;
 
-  std::cout << "Training the model." << std::endl;
+  using RadialExp = Exponential<StationDistance<RadialDistance>>;
+  CovarianceFunction<RadialExp> radial_exp = {RadialExp(15000., 2.5)};
+
+  using AngularSqrExp = SquaredExponential<StationDistance<AngularDistance>>;
+  CovarianceFunction<AngularSqrExp> angular_sqrexp = {AngularSqrExp(9e-2, 3.5)};
+  auto spatial_cov = angular_sqrexp * radial_exp;
+
+  using ElevationScalar = ScalingTerm<ElevationScalingFunction>;
+  CovarianceFunction<ElevationScalar> elevation_scalar = {ElevationScalar()};
+  auto elevation_scaled_mean = elevation_scalar * mean;
+
+  auto covariance = elevation_scaled_mean + noise + spatial_cov;
   auto model = gp_from_covariance<Station>(covariance);
-  auto trimmed_data = albatross::trim_outliers(data, &model);
-  model.fit(trimmed_data);
 
+  ParameterStore params = {
+      {"elevation_scaling_center", 3965.98},
+      {"elevation_scaling_factor", 0.000810492},
+      {"exponential_length_scale", 28197.6},
+      {"length_scale", 0.0753042},
+      {"sigma_constant", 1.66872},
+      {"sigma_exponential", 2.07548},
+      {"sigma_independent_noise", 1.8288},
+      {"sigma_squared_exponential", 3.77329},
+  };
 
-  auto predict_features = build_prediction_grid();
-  std::cout << "Going to predict at " << predict_features.size() << " locations" << std::endl;
-  write_predictions("./predictions.csv", predict_features, model);
+  model.set_params(params);
 
-//  RegressionModelCreator<Station> model_creator = [covariance]() {
-//    return gp_pointer_from_covariance<Station>(covariance);
+//  data = albatross::trim_outliers(data, &model);
+
+  /*
+   * TUNING
+   */
+//  RegressionModelCreator<Station> model_creator = [covariance, params]() {
+//    auto model_ptr = gp_pointer_from_covariance<Station>(covariance);
+//    model_ptr->set_params(params);
+//    return model_ptr;
 //  };
 //
 //  albatross::TuningMetric<Station> metric =
 //      albatross::gp_fast_loo_nll<Station>;
 //
-//  std::vector<RegressionDataset<Station>> datasets = {trimmed_data};
+//  std::vector<RegressionDataset<Station>> datasets = {data};
 //  albatross::TuneModelConfg<Station> tune_config(
 //      model_creator, datasets, metric);
 //
 //  auto tuned_params =
 //      albatross::tune_regression_model<Station>(tune_config);
+//  model.set_params(tuned_params);
 
+  std::cout << "Training the model." << std::endl;
+  model.fit(data);
 
+  const auto nll = gp_fast_loo_nll(data, &model);
+  std::cout << nll << std::endl;
+
+  auto predict_features = read_temperature_csv_input(FLAGS_predict, 1).features;
+  std::cout << "Going to predict at " << predict_features.size() << " locations" << std::endl;
+  write_predictions(FLAGS_output, predict_features, model);
 
 //
 //  /*
@@ -84,9 +119,4 @@ int main(int argc, char *argv[]) {
 //    archive(cereal::make_nvp(model.get_name(), deserialized));
 //  }
 
-  /*
-   * Make predictions at a bunch of locations which we can then
-   * visualize if desired.
-   */
-//  write_predictions_to_csv(FLAGS_output, model);
 }

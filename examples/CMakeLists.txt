@@ -88,7 +88,7 @@ target_link_libraries(temperature_example m gflags pthread nlopt)
 add_custom_target(
     run_temperature_example ALL
     DEPENDS ${example_HEADERS}
-    COMMAND temperature_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/gsod.csv -output ./temperature_predictions.csv
+    COMMAND temperature_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/gsod.csv -predict ${PROJECT_SOURCE_DIR}/examples/temperature_example/prediction_locations.csv -output ./temperature_predictions.csv
     COMMENT "Running temperature_example"
 )
 

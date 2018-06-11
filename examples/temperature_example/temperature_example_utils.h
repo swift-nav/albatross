@@ -96,7 +96,31 @@ class StationDistance : public DistanceMetricType {
 };
 
 
-albatross::RegressionDataset<Station> read_temperature_csv_input(std::string file_path) {
+class ElevationScalingFunction : public albatross::ScalingFunction {
+ public:
+
+  ElevationScalingFunction(double center = 1000., double factor = 3.5 / 300) {
+    this->params_["elevation_scaling_center"] = center;
+    this->params_["elevation_scaling_factor"] = factor;
+  };
+
+
+  std::string get_name() const {
+    return "elevation_scaled";
+  }
+
+  double operator() (const Station &x) const {
+    // This is the negative orientation rectifier function which
+    // allows lower elevations to have a higher variance.
+    double center = this->params_.at("elevation_scaling_center");
+    return 1. + this->params_.at("elevation_scaling_factor") * fmax(0., (center - x.height));
+  }
+
+};
+
+
+albatross::RegressionDataset<Station> read_temperature_csv_input(std::string file_path,
+                                                                 int thin = 5) {
   std::vector<Station> features;
   std::vector<double> targets;
 
@@ -115,7 +139,7 @@ albatross::RegressionDataset<Station> read_temperature_csv_input(std::string fil
                                      station.ecef[1],
                                      station.ecef[2],
                                      temperature);
-    if (more_to_parse && count % 5 == 0) {
+    if (more_to_parse && count % thin == 0) {
       features.push_back(station);
       targets.push_back(temperature);
     }
@@ -158,16 +182,16 @@ Eigen::Vector3d lat_lon_to_ecef(const double lat,
 }
 
 std::vector<Station> build_prediction_grid() {
-//  double lon_low = -125.;
-//  double lon_high = -60;
-//  double lat_low = 25.;
-//  double lat_high = 50.;
+  double lon_low = -125.;
+  double lon_high = -60;
+  double lat_low = 25.;
+  double lat_high = 50.;
 
-    double lon_low = -100.;
-    double lon_high = -80;
-    double lat_low = 25.;
-    double lat_high = 45.;
-  double spacing = 1.;
+//    double lon_low = -100.;
+//    double lon_high = -80;
+//    double lat_low = 25.;
+//    double lat_high = 45.;
+  double spacing = 0.5;
 
   int lon_count = ceil((lon_high - lon_low) / spacing);
   int lat_count = ceil((lat_high - lat_low) / spacing);
@@ -216,7 +240,9 @@ void write_predictions(const std::string output_path,
     ostream << ", " << std::to_string(pred.mean[0]);
     ostream << ", " << std::to_string(std::sqrt(pred.covariance(0, 0)));
     ostream << std::endl;
-    std::cout << count << "/" << n << std::endl;
+    if (count % 100 == 0) {
+      std::cout << count + 1 << "/" << n << std::endl;
+    }
     count++;
   }
 

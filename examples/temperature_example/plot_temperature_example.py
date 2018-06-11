@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from mpl_toolkits import basemap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 sns.set_style('darkgrid')
 
@@ -94,10 +95,6 @@ if __name__ == "__main__":
     p = create_parser()
     args = p.parse_args()
 
-    fig, axes = plt.subplots(1, 2)
-    axes = np.array(axes).reshape(-1)
-    norm = plt.Normalize(vmin=-20, vmax=85)
-
     # read in the training and prediction data
     preds = pd.read_csv(args.predictions)
     pred_lons = preds['LON'].values
@@ -107,32 +104,48 @@ if __name__ == "__main__":
     lons = df['LON'].values
     lats = df['LAT'].values
 
-    bm = get_basemap(pred_lons, pred_lats, pad=0.05, ax=axes[0])
-    x, y = bm(lons, lats)
-    values = df['TEMP'].values
-    sc = bm.scatter(x, y,
-                    c=values,
-                    s=10, cmap=plt.get_cmap('coolwarm'),
-                    norm=norm, linewidths=0, zorder=10000)
-    plt.colorbar(sc, ax=axes[0])
+    norm = plt.Normalize(vmin=df['TEMP'].values.min(), vmax=df['TEMP'].values.max())
 
+    ncols = np.nonzero(np.diff(preds['LAT'].values) != 0)[0][0] + 1
+    nrows = float(preds.shape[0]) / ncols
+    if not (nrows - int(nrows) == 0.):
+        raise ValueError("Couldn't infer data shape")
+    nrows = int(nrows)
 
-    nrows = np.nonzero(np.diff(preds['LAT'].values) < 0)[0][0] + 1
-    ncols = preds.shape[0] / nrows
-    bm = get_basemap(pred_lons, pred_lats, pad=0.05, ax=axes[1])
-    pred_x, pred_y = bm(pred_lons, pred_lats)
-    pred_values = preds['TEMP'].values
-    pm = bm.pcolormesh(pred_x.reshape(nrows, ncols),
-                  pred_y.reshape(nrows, ncols),
-                  pred_values.reshape(nrows, ncols),
-                  alpha=0.7,
-                    cmap=plt.get_cmap('coolwarm'),
-                    norm=norm, linewidths=0, zorder=10000)
-#     sc = bm.scatter(pred_x, pred_y,
-#                     c=pred_values,
-#                     s=10,
-#                     cmap=plt.get_cmap('coolwarm'),
-#                     norm=norm, linewidths=0, zorder=10000)
-    plt.colorbar(pm, ax=axes[1])
+    def plot_field(field_name, units, **kwdargs):
+
+        fig, axes = plt.subplots(1, 1, figsize=(16, 6))
+        axes = np.array(axes).reshape(-1)
+
+        bm = get_basemap(pred_lons, pred_lats, pad=0.05, ax=axes[0])
+        pred_x, pred_y = bm(pred_lons, pred_lats)
+        pred_values = preds[field_name].values
+        land_values = basemap.maskoceans(pred_lons, pred_lats, pred_values, inlands=False)
+        pm = bm.pcolormesh(pred_x.reshape(nrows, ncols),
+                      pred_y.reshape(nrows, ncols),
+                      land_values.reshape(nrows, ncols),
+                      alpha=0.7,
+                      cmap=plt.get_cmap('coolwarm'),
+                      linewidths=0, zorder=10000, **kwdargs)
+
+        x, y = bm(lons, lats)
+        values = df['TEMP'].values
+        sc = bm.scatter(x, y,
+                        c='k',
+                        edgecolor='k',
+                        alpha=0.5,
+                        s=5, cmap=plt.get_cmap('coolwarm'),
+                        norm=norm, linewidths=0, zorder=10000)
+
+        fig.tight_layout()
+
+        divider = make_axes_locatable(axes[0])
+
+        cax = fig.add_axes([0.92, 0.05, 0.02, 0.7])
+
+        plt.colorbar(pm, ax=axes[0], cax=cax, label=units)
+
+    plot_field('TEMP', "Degrees F")
+#     plot_field('VARIANCE', "Standard Deviation (F)", vmax=3.5)
 
     plt.show()

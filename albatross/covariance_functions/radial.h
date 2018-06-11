@@ -93,7 +93,7 @@ template <class DistanceMetricImpl>
 class Exponential : public RadialCovariance<DistanceMetricImpl> {
 public:
   Exponential(double length_scale = 100000., double sigma_exponential = 10.) {
-    this->params_["length_scale"] = length_scale;
+    this->params_["exponential_length_scale"] = length_scale;
     this->params_["sigma_exponential"] = sigma_exponential;
   };
 
@@ -112,7 +112,7 @@ public:
                 int>::type = 0>
   double operator()(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
-    double length_scale = this->params_.at("length_scale");
+    double length_scale = this->params_.at("exponential_length_scale");
     distance /= length_scale;
     double sigma = this->params_.at("sigma_exponential");
     return sigma * sigma * exp(-fabs(distance));

@@ -92,7 +92,8 @@ template <typename Term> struct CovarianceFunction {
 /*
  * Creates a covariance matrix given a single vector of
  * predictors.  Element i, j of the resulting covariance
- * matrix will hold
+ * matrix will hold the covariance between quantities
+ * derived from feature i and feature j.
  */
 template <typename Covariance, typename Feature>
 Eigen::MatrixXd symmetric_covariance(const CovarianceFunction<Covariance> &f,
