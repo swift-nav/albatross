@@ -1,0 +1,16 @@
+name: albatross
+dependencies:
+- python=3.6
+- numpy
+- scipy
+- matplotlib
+- pandas
+- seaborn
+- jupyter
+- xarray
+- pyproj
+- basemap
+- sphinx
+- pip:
+  - sphinx-autobuild
+  - sphinx_rtd_theme
