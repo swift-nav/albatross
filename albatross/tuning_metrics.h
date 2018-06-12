@@ -49,21 +49,19 @@ inline double gp_fast_loo_nll(const RegressionDataset<FeatureType> &dataset,
   return negative_log_likelihood(deviations, predictions.covariance);
 }
 
-inline double loo_nll(const albatross::RegressionDataset<double> &dataset,
-                      albatross::RegressionModel<double> *model) {
-  auto loo_folds = albatross::leave_one_out(dataset);
-  return albatross::cross_validated_scores(
-             albatross::evaluation_metrics::negative_log_likelihood, loo_folds,
-             model)
+inline double loo_nll(const RegressionDataset<double> &dataset,
+                      RegressionModel<double> *model) {
+  auto loo_folds = leave_one_out(dataset);
+  return cross_validated_scores(evaluation_metrics::negative_log_likelihood,
+                                loo_folds, model)
       .sum();
 }
 
-inline double loo_rmse(const albatross::RegressionDataset<double> &dataset,
-                       albatross::RegressionModel<double> *model) {
-  auto loo_folds = albatross::leave_one_out(dataset);
-  return albatross::cross_validated_scores(
-             albatross::evaluation_metrics::root_mean_square_error, loo_folds,
-             model)
+inline double loo_rmse(const RegressionDataset<double> &dataset,
+                       RegressionModel<double> *model) {
+  auto loo_folds = leave_one_out(dataset);
+  return cross_validated_scores(evaluation_metrics::root_mean_square_error,
+                                loo_folds, model)
       .mean();
 }
 

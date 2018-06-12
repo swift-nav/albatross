@@ -1,5 +1,4 @@
 #!/bin/bash
 
-conda create -n albatross python=3.6
+conda env create --file ./albatross_environment.yml
 source activate albatross
-pip install -U -r ./requirements.txt

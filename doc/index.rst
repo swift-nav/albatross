@@ -20,6 +20,17 @@ Features
 .. _`Gaussian Process Regression`: http://www.gaussianprocess.org/gpml/chapters/RW2.pdf
 
 **********
+Examples
+**********
+
+- :ref:`A One dimensional example using a sinc function. <1d-example>`
+- :ref:`An example spatial model for temperature estimation. <temperature-example>`
+
+.. image:: https://github.com/swift-nav/albatross/raw/akleeman/temperature-example/examples/temperature_example/mean_temperature.png
+   :align: center
+   :target: temperature-example.html
+
+**********
 Install
 **********
 
@@ -63,6 +74,7 @@ and plot the results (though this'll require a numerical python environment),
     :maxdepth: 1
 
     1d-example
+    temperature-example
 
 
 #########

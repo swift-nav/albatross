@@ -241,7 +241,8 @@ public:
   RepresentationType create() const override {
     auto gp =
         std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
-    gp->set_param("length_scale", log(2.));
+    const auto keys = map_keys(gp->get_params());
+    gp->set_param(keys[0], log(2.));
     return std::move(gp);
   }
 
@@ -260,7 +261,8 @@ public:
     auto dataset = make_toy_linear_data();
     auto gp =
         std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
-    gp->set_param("length_scale", log(2.));
+    const auto keys = map_keys(gp->get_params());
+    gp->set_param(keys[0], log(2.));
     gp->fit(dataset);
     return std::move(gp);
   }

@@ -78,7 +78,7 @@ public:
     scaling_function_.set_params(params);
   }
 
-  virtual ParameterStore get_params() const {
+  virtual ParameterStore get_params() const override {
     return scaling_function_.get_params();
   }
 

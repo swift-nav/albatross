@@ -72,3 +72,26 @@ add_custom_target(
 add_dependencies(run_inspection_example
     inspection_example
 )
+
+
+add_executable(temperature_example
+    EXCLUDE_FROM_ALL
+    temperature_example/temperature_example.cc
+)
+
+add_dependencies(temperature_example
+    albatross
+)
+
+target_link_libraries(temperature_example m gflags pthread nlopt)
+
+add_custom_target(
+    run_temperature_example ALL
+    DEPENDS ${example_HEADERS}
+    COMMAND temperature_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/gsod.csv -predict ${PROJECT_SOURCE_DIR}/examples/temperature_example/prediction_locations.csv -output ./test_temperature_predictions.csv -thin 5
+    COMMENT "Running temperature_example"
+)
+
+add_dependencies(run_temperature_example
+    temperature_example
+)
