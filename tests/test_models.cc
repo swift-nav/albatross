@@ -29,7 +29,7 @@ public:
 class MakeGaussianProcess : public AbstractTestModel {
 public:
   std::unique_ptr<RegressionModel<double>> create() const override {
-    using SqrExp = SquaredExponential<ScalarDistance>;
+    using SqrExp = SquaredExponential<EuclideanDistance>;
     using Noise = IndependentNoise<double>;
     CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
     CovarianceFunction<Noise> noise = {Noise(0.1)};

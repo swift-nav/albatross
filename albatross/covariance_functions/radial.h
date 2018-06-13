@@ -57,6 +57,14 @@ protected:
 template <class DistanceMetricImpl>
 class SquaredExponential : public RadialCovariance<DistanceMetricImpl> {
 public:
+  // The SquaredExponential radial function is not positive definite
+  // when the distance is an angular (or great circle) distance.
+  // See:
+  // Gneiting, Strictly and non-strictly positive definite functions on spheres
+  static_assert(
+      !std::is_base_of<AngularDistance, DistanceMetricImpl>::value,
+      "SquaredExponential covariance with AngularDistance is not PSD.");
+
   SquaredExponential(double length_scale = 100000.,
                      double sigma_squared_exponential = 10.) {
     this->params_["squared_exponential_length_scale"] = length_scale;

@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   using namespace albatross;
 
   using Noise = IndependentNoise<double>;
-  using SqrExp = SquaredExponential<ScalarDistance>;
+  using SqrExp = SquaredExponential<EuclideanDistance>;
 
   auto constant_term = Constant(100.);
   CovarianceFunction<Constant> constant = {constant_term};
