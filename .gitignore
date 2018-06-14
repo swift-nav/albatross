@@ -1,3 +1,8 @@
+# Data
+*.csv
+*.tar
+*.nc
+
 # Prerequisites
 *.d
 
