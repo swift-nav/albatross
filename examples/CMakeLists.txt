@@ -2,6 +2,7 @@ include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parse
 
 set(example_HEADERS
     example_utils.h
+    sinc_example_utils.h
     CACHE INTERNAL ""
 )
 

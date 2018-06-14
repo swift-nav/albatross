@@ -66,11 +66,8 @@ std::vector<double> random_points_on_line(const int n, const double low,
  */
 std::vector<double> uniform_points_on_line(const int n, const double low,
                                            const double high) {
-  std::vector<double> xs;
-  for (int i = 0; i < n; i++) {
-    double ratio = (double)i / (double)(n - 1);
-    xs.push_back(low + ratio * (high - low));
-  }
+  const auto line = Eigen::VectorXd::LinSpaced(n, low, high);
+  std::vector<double> xs(line.data(), line.data() + line.rows() * line.cols());
   return xs;
 };
 
