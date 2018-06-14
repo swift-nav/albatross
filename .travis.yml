@@ -43,8 +43,18 @@ matrix:
           - libnlopt-dev
     env:
       - C_COMPILER=clang-3.8 CXX_COMPILER=clang++-3.8 COVERAGE=''
+  - compiler: sphinx
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - realpath
+    env:
+      - BUILD_DOCS=true
 
 
 script:
-  bash ./ci/run_tests.sh || exit 1;
+  if [[ -z $BUILD_DOCS ]]; then bash ./ci/run_tests.sh || exit 1; else ./ci/build_docs.sh || exit 1; fi;
+
 
