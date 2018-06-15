@@ -11,6 +11,7 @@
  */
 
 #include "covariance_functions/distance_metrics.h"
+#include "test_utils.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -74,6 +75,17 @@ TEST(test_distance_metrics, test_angular_distance) {
   x << 0., 0., 1.;
   y << 0., 1., 0.;
   EXPECT_DOUBLE_EQ(dist(x, y), M_PI / 2.);
+}
+
+TEST(test_distance_metrics, test_distance_matrix) {
+
+  const auto points = random_spherical_points(10);
+
+  EuclideanDistance dist;
+
+  const auto dist_matrix = distance_matrix(dist, points);
+  EXPECT_EQ(dist_matrix.rows(), points.size());
+  EXPECT_EQ(dist_matrix.cols(), points.size());
 }
 
 } // namespace albatross

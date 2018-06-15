@@ -25,7 +25,7 @@ CEREAL_REGISTER_TYPE_WITH_NAME(albatross::MockModel, "mock_model_name");
 
 namespace albatross {
 
-using SqrExp = SquaredExponential<ScalarDistance>;
+using SqrExp = SquaredExponential<EuclideanDistance>;
 using Noise = IndependentNoise<double>;
 using SqrExpAndNoise = SumOfCovarianceTerms<SqrExp, Noise>;
 using CovFunc = CovarianceFunction<SqrExpAndNoise>;

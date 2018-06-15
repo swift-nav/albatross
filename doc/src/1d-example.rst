@@ -64,7 +64,7 @@ Using ``albatross`` this would look like,
 .. code-block:: c
 
   using Noise = IndependentNoise<double>;
-  using SqrExp = SquaredExponential<ScalarDistance>;
+  using SqrExp = SquaredExponential<EuclideanDistance>;
 
   CovarianceFunction<Constant> mean = {Constant(100.)};
   CovarianceFunction<SlopeTerm> slope = {SlopeTerm(100.)};

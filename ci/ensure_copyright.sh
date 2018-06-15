@@ -8,6 +8,9 @@ has_swift_copyright() {
   false
 }
 
+THIS_DIRECTORY=`dirname $0`
+cd $THIS_DIRECTORY
+
 for f in `find ../albatross ../tests ../examples -type f \( -iname \*.h -o -iname \*.cc \)`; do
   if ! has_swift_copyright $f; then
     echo "bad copyright header in $f"

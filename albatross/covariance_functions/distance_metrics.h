@@ -34,7 +34,13 @@ public:
 
   std::string get_name() const override { return "euclidean_distance"; };
 
-  double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
+  double operator()(const double &x, const double &y) const {
+    return fabs(x - y);
+  }
+
+  template <typename _Scalar, int _Rows>
+  double operator()(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
+                    const Eigen::Matrix<_Scalar, _Rows, 1> &y) const {
     return (x - y).norm();
   }
 };
@@ -56,7 +62,9 @@ public:
 
   std::string get_name() const override { return "angular_distance"; };
 
-  double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
+  template <typename _Scalar, int _Rows>
+  double operator()(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
+                    const Eigen::Matrix<_Scalar, _Rows, 1> &y) const {
     // The acos operator doesn't behave well near |1|.  acos(1.), for example,
     // returns NaN, so here we do some special casing,
     double dot_product = x.dot(y) / (x.norm() * y.norm());
@@ -67,16 +75,6 @@ public:
     } else {
       return acos(dot_product);
     }
-  }
-};
-
-class ScalarDistance : public DistanceMetric {
-public:
-  ~ScalarDistance(){};
-  std::string get_name() const { return "scalar_distance"; }
-
-  double operator()(const double &x, const double &y) const {
-    return fabs(x - y);
   }
 };
 

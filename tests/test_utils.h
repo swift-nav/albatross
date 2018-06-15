@@ -196,7 +196,7 @@ make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
 }
 
 static inline auto toy_covariance_function() {
-  using SqrExp = SquaredExponential<ScalarDistance>;
+  using SqrExp = SquaredExponential<EuclideanDistance>;
   using Noise = IndependentNoise<double>;
   CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
   CovarianceFunction<Noise> noise = {Noise(0.1)};
@@ -260,6 +260,29 @@ public:
   std::unique_ptr<LinearRegression> model_ptr_;
   RegressionDataset<double> dataset_;
 };
+
+inline auto random_spherical_points(s32 n = 10, double radius = 1.,
+                                    int seed = 5) {
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  gen.seed(seed);
+
+  std::uniform_real_distribution<double> rand_lon(0., 2 * M_PI);
+  std::uniform_real_distribution<double> rand_lat(-M_PI / 2., M_PI / 2.);
+
+  std::vector<Eigen::VectorXd> points;
+
+  for (s32 i = 0; i < n; i++) {
+    const double lon = rand_lon(gen);
+    const double lat = rand_lat(gen);
+    Eigen::VectorXd x(3);
+    // Convert the spherical coordinates to X,Y,Z
+    x << cos(lat) * cos(lon) * radius, cos(lat) * sin(lon) * radius,
+        sin(lat) * radius;
+    points.push_back(x);
+  }
+  return points;
+}
 
 } // namespace albatross
 
