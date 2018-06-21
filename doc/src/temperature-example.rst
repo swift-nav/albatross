@@ -22,7 +22,7 @@ For this example we'll use the `Global Summary of the Day`_ (GSOD) data to produ
 
 Here are the GSOD observation of average temperature for May 1st, 2018,
 
-.. image:: https://github.com/swift-nav/albatross/raw/akleeman/temperature-example/examples/temperature_example/observations.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/temperature_example/observations.png
    :align: center
 
 ------------------
@@ -100,7 +100,7 @@ These can be combined to get our final covariance function,
 
 For the full implementation details see the `example code`_.
 
-.. _`example code` : https://github.com/swift-nav/albatross/blob/akleeman/temperature-example/examples/temperature_example/temperature_example.cc
+.. _`example code` : https://github.com/swift-nav/albatross/blob/master/examples/temperature_example/temperature_example.cc
 
 -------------------
 Gridded Predictions
@@ -116,12 +116,12 @@ Now that we've defined the covariance function we can let ``albatross`` do the r
 
 The ``predictions`` hold information about the mean and variance of the resulting estimates.  We can look at the mean of the estimates,
 
-.. image:: https://github.com/swift-nav/albatross/raw/akleeman/temperature-example/examples/temperature_example/mean_temperature.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/temperature_example/mean_temperature.png
    :align: center
 
 and perhaps more interestingly we can also get out the variance, or how confident the model is about its predictions,
 
-.. image:: https://github.com/swift-nav/albatross/raw/akleeman/temperature-example/examples/temperature_example/sd_temperature.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/temperature_example/sd_temperature.png
    :align: center
 
 Notice that the model is capable of realizing that it's estimates should be trusted less in mountainous regions!

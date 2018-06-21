@@ -26,7 +26,7 @@ Examples
 - :ref:`A One dimensional example using a sinc function. <1d-example>`
 - :ref:`An example spatial model for temperature estimation. <temperature-example>`
 
-.. image:: https://github.com/swift-nav/albatross/raw/akleeman/temperature-example/examples/temperature_example/mean_temperature.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/temperature_example/mean_temperature.png
    :align: center
    :target: temperature-example.html
 
