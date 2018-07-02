@@ -168,6 +168,27 @@ public:
     return predict(features);
   }
 
+  DiagonalDistribution
+  predict_marginal(const std::vector<FeatureType> &features) const {
+    assert(has_been_fit());
+    DiagonalDistribution preds = predict_marginal_(features);
+    assert(static_cast<s32>(preds.mean.size()) ==
+           static_cast<s32>(features.size()));
+    return preds;
+  }
+
+  Eigen::VectorXd predict_mean(const std::vector<FeatureType> &features) const {
+    assert(has_been_fit());
+    Eigen::VectorXd preds = predict_mean_(features);
+    assert(static_cast<s32>(preds.size()) == static_cast<s32>(features.size()));
+    return preds;
+  }
+
+  double predict_mean(const FeatureType &feature) const {
+    std::vector<FeatureType> features = {feature};
+    return predict_mean(features)[0];
+  }
+
   /*
    * Computes predictions for the test features given set of training
    * features and targets. In the general case this is simply a call to fit,
@@ -232,6 +253,24 @@ protected:
 
   virtual PredictDistribution
   predict_(const std::vector<FeatureType> &features) const = 0;
+
+  virtual DiagonalDistribution
+  predict_marginal_(const std::vector<FeatureType> &features) const {
+    std::cout << "WARNING: A marginal prediction is being made, but in a "
+                 "horribly inefficient way.";
+    const auto full_distribution = predict_(features);
+    return DiagonalDistribution(
+        full_distribution.mean,
+        full_distribution.covariance.diagonal().asDiagonal());
+  }
+
+  virtual Eigen::VectorXd
+  predict_mean_(const std::vector<FeatureType> &features) const {
+    std::cout << "WARNING: A mean prediction is being made, but in a horribly "
+                 "inefficient way.";
+    const auto full_distribution = predict_(features);
+    return full_distribution.mean;
+  }
 
   bool has_been_fit_;
 };

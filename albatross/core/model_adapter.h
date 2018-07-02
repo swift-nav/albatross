@@ -142,6 +142,16 @@ protected:
     return sub_model_.predict(convert_features(features));
   }
 
+  virtual DiagonalDistribution
+  predict_marginal_(const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict_marginal(convert_features(features));
+  }
+
+  virtual Eigen::VectorXd
+  predict_mean_(const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict_mean(convert_features(features));
+  }
+
   const std::vector<SubFeature>
   convert_features(const std::vector<FeatureType> &parent_features) const {
     std::vector<SubFeature> converted;

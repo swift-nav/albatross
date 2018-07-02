@@ -154,6 +154,33 @@ protected:
     return PredictDistribution(pred, pred_cov);
   }
 
+  virtual DiagonalDistribution
+  predict_marginal_(const std::vector<FeatureType> &features) const override {
+    const auto cross_cov = asymmetric_covariance(
+        covariance_function_, features, this->model_fit_.train_features);
+    // Then we can use the information vector to determine the posterior
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
+
+    auto ldlt = this->model_fit_.train_ldlt;
+    Eigen::MatrixXd explained = ldlt.solve(cross_cov.transpose());
+    Eigen::VectorXd marginal_variance =
+        -explained.cwiseProduct(cross_cov.transpose()).array().colwise().sum();
+    for (Eigen::Index i = 0; i < pred.size(); i++) {
+      marginal_variance[i] += covariance_function_(features[i], features[i]);
+    }
+
+    return DiagonalDistribution(pred, marginal_variance.asDiagonal());
+  }
+
+  virtual Eigen::VectorXd
+  predict_mean_(const std::vector<FeatureType> &features) const override {
+    const auto cross_cov = asymmetric_covariance(
+        covariance_function_, features, this->model_fit_.train_features);
+    // Then we can use the information vector to determine the posterior
+    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
+    return pred;
+  }
+
 private:
   CovarianceFunction covariance_function_;
   std::string model_name_;
