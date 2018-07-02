@@ -24,9 +24,25 @@
 
 namespace albatross {
 
-using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
-using TargetDistribution = Distribution<DiagonalMatrixXd>;
-using PredictDistribution = Distribution<Eigen::MatrixXd>;
+using TargetDistribution = DiagonalDistribution;
+using PredictDistribution = DenseDistribution;
+
+template <class Archive>
+void save(Archive &archive, const TargetDistribution &distribution) {
+  archive(cereal::make_nvp("mean", distribution.mean));
+  archive(cereal::make_nvp("diagonal", distribution.covariance.diagonal()));
+}
+
+template <class Archive>
+void load(Archive &archive, TargetDistribution &distribution) {
+  Eigen::VectorXd mean;
+  archive(cereal::make_nvp("mean", mean));
+  distribution.mean = mean;
+
+  Eigen::VectorXd diagonal;
+  archive(cereal::make_nvp("diagonal", diagonal));
+  distribution.covariance = diagonal.asDiagonal();
+}
 
 /*
  * A RegressionDataset holds two vectors of data, the features
@@ -53,6 +69,11 @@ template <typename FeatureType> struct RegressionDataset {
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
       : RegressionDataset(features_, TargetDistribution(targets_)) {}
+
+  template <class Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("features", features));
+    archive(cereal::make_nvp("targets", targets));
+  }
 };
 
 typedef int32_t s32;

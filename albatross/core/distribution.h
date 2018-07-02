@@ -54,9 +54,9 @@ template <typename CovarianceType> struct Distribution {
       : mean(mean_), covariance(covariance_){};
 };
 
+using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
 using DenseDistribution = Distribution<Eigen::MatrixXd>;
-using DiagonalDistribution =
-    Distribution<Eigen::DiagonalMatrix<double, Eigen::Dynamic>>;
+using DiagonalDistribution = Distribution<DiagonalMatrixXd>;
 
 template <typename CovarianceType, typename SizeType>
 Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
@@ -69,6 +69,7 @@ Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
     return Distribution<CovarianceType>(mean);
   }
 }
+
 } // namespace albatross
 
 #endif
