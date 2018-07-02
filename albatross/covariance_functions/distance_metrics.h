@@ -45,6 +45,12 @@ public:
   }
 };
 
+template <typename _Scalar, int _Rows>
+double radial_distance(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
+                       const Eigen::Matrix<_Scalar, _Rows, 1> &y) {
+  return fabs(x.norm() - y.norm());
+}
+
 class RadialDistance : public DistanceMetric {
 public:
   ~RadialDistance(){};
@@ -52,9 +58,24 @@ public:
   std::string get_name() const override { return "radial_distance"; };
 
   double operator()(const Eigen::VectorXd &x, const Eigen::VectorXd &y) const {
-    return fabs(x.norm() - y.norm());
+    return radial_distance(x, y);
   }
 };
+
+template <typename _Scalar, int _Rows>
+double angular_distance(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
+                        const Eigen::Matrix<_Scalar, _Rows, 1> &y) {
+  // The acos operator doesn't behave well near |1|.  acos(1.), for example,
+  // returns NaN, so here we do some special casing,
+  double dot_product = x.dot(y) / (x.norm() * y.norm());
+  if (dot_product > 1. - 1e-16) {
+    return 0.;
+  } else if (dot_product < -1. + 1e-16) {
+    return M_PI;
+  } else {
+    return acos(dot_product);
+  }
+}
 
 class AngularDistance : public DistanceMetric {
 public:
@@ -65,16 +86,7 @@ public:
   template <typename _Scalar, int _Rows>
   double operator()(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
                     const Eigen::Matrix<_Scalar, _Rows, 1> &y) const {
-    // The acos operator doesn't behave well near |1|.  acos(1.), for example,
-    // returns NaN, so here we do some special casing,
-    double dot_product = x.dot(y) / (x.norm() * y.norm());
-    if (dot_product > 1. - 1e-16) {
-      return 0.;
-    } else if (dot_product < -1. + 1e-16) {
-      return M_PI;
-    } else {
-      return acos(dot_product);
-    }
+    return angular_distance(x, y);
   }
 };
 
