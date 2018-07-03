@@ -90,4 +90,22 @@ TEST(test_models, test_with_target_distribution) {
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }
+
+TEST(test_models, test_predict_variants) {
+  auto dataset = make_heteroscedastic_toy_linear_data();
+
+  auto model = MakeGaussianProcess().create();
+  model->fit(dataset);
+  const auto joint_predictions = model->predict(dataset.features);
+  const auto marginal_predictions = model->predict_marginal(dataset.features);
+  const auto mean_predictions = model->predict_mean(dataset.features);
+
+  for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
+    EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
+    EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i], 1e-6);
+    EXPECT_NEAR(joint_predictions.covariance(i, i),
+                marginal_predictions.covariance.diagonal()[i], 1e-6);
+  }
+}
+
 } // namespace albatross

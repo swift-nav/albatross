@@ -73,8 +73,9 @@ public:
 
 protected:
   // builds the map from int to value
-  MockFit serializable_fit_(const std::vector<MockPredictor> &features,
-                            const MarginalDistribution &targets) const override {
+  MockFit
+  serializable_fit_(const std::vector<MockPredictor> &features,
+                    const MarginalDistribution &targets) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 

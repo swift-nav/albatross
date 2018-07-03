@@ -105,9 +105,8 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
  */
 namespace evaluation_metrics {
 
-static inline double
-root_mean_square_error(const JointDistribution &prediction,
-                       const MarginalDistribution &truth) {
+static inline double root_mean_square_error(const JointDistribution &prediction,
+                                            const MarginalDistribution &truth) {
   const Eigen::VectorXd error = prediction.mean - truth.mean;
   double mse = error.dot(error) / static_cast<double>(error.size());
   return sqrt(mse);

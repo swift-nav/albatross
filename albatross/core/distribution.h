@@ -85,9 +85,17 @@ template <typename CovarianceType> struct Distribution {
   }
 };
 
+// A JointDistribution has a dense covariance matrix, which
+// contains the covariance between each variable and all others.
+using JointDistribution = Distribution<Eigen::MatrixXd>;
+
+// We use a wrapper around DiagonalMatrix in order to make
+// the resulting distribution serializable
 using DiagonalMatrixXd =
     Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
-using JointDistribution = Distribution<Eigen::MatrixXd>;
+// A MarginalDistribution has only a digaonal covariance
+// matrix, so in turn only describes the variance of each
+// variable independent of all others.
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 template <typename CovarianceType, typename SizeType>
