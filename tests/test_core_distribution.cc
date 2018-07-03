@@ -76,7 +76,7 @@ void expect_subset_equal(const Eigen::DiagonalMatrix<Scalar, Size> &original,
 template <typename DistributionType>
 class PolymorphicDistributionTest : public ::testing::Test {};
 
-typedef ::testing::Types<TargetDistribution, PredictDistribution>
+typedef ::testing::Types<MarginalDistribution, JointDistribution>
     DistributionsToTest;
 TYPED_TEST_CASE(PolymorphicDistributionTest, DistributionsToTest);
 

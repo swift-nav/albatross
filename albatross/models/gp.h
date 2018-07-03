@@ -25,7 +25,7 @@
 
 namespace albatross {
 
-using InspectionDistribution = PredictDistribution;
+using InspectionDistribution = JointDistribution;
 
 template <typename FeatureType> struct GaussianProcessFit {
   std::vector<FeatureType> train_features;
@@ -128,7 +128,7 @@ public:
 
 protected:
   FitType serializable_fit_(const std::vector<FeatureType> &features,
-                            const TargetDistribution &targets) const override {
+                            const MarginalDistribution &targets) const override {
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
     FitType model_fit;
     model_fit.train_features = features;
@@ -141,7 +141,7 @@ protected:
     return model_fit;
   }
 
-  PredictDistribution
+  JointDistribution
   predict_(const std::vector<FeatureType> &features) const override {
     const auto cross_cov = asymmetric_covariance(
         covariance_function_, features, this->model_fit_.train_features);
@@ -151,10 +151,10 @@ protected:
         symmetric_covariance(covariance_function_, features);
     auto ldlt = this->model_fit_.train_ldlt;
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    return PredictDistribution(pred, pred_cov);
+    return JointDistribution(pred, pred_cov);
   }
 
-  virtual DiagonalDistribution
+  virtual MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const override {
     const auto cross_cov = asymmetric_covariance(
         covariance_function_, features, this->model_fit_.train_features);
@@ -169,7 +169,7 @@ protected:
       marginal_variance[i] += covariance_function_(features[i], features[i]);
     }
 
-    return DiagonalDistribution(pred, marginal_variance.asDiagonal());
+    return MarginalDistribution(pred, marginal_variance.asDiagonal());
   }
 
   virtual Eigen::VectorXd

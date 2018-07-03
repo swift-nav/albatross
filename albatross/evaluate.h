@@ -106,8 +106,8 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
 namespace evaluation_metrics {
 
 static inline double
-root_mean_square_error(const PredictDistribution &prediction,
-                       const TargetDistribution &truth) {
+root_mean_square_error(const JointDistribution &prediction,
+                       const MarginalDistribution &truth) {
   const Eigen::VectorXd error = prediction.mean - truth.mean;
   double mse = error.dot(error) / static_cast<double>(error.size());
   return sqrt(mse);
@@ -117,8 +117,8 @@ root_mean_square_error(const PredictDistribution &prediction,
  * Takes output from a model (PredictionDistribution)
  * and the corresponding truth and uses them to compute the stddev.
  */
-static inline double standard_deviation(const PredictDistribution &prediction,
-                                        const TargetDistribution &truth) {
+static inline double standard_deviation(const JointDistribution &prediction,
+                                        const MarginalDistribution &truth) {
   Eigen::VectorXd error = prediction.mean - truth.mean;
   const auto n_elements = static_cast<double>(error.size());
   const double mean_error = error.sum() / n_elements;
@@ -131,8 +131,8 @@ static inline double standard_deviation(const PredictDistribution &prediction,
  * distribution is multivariate normal.
  */
 static inline double
-negative_log_likelihood(const PredictDistribution &prediction,
-                        const TargetDistribution &truth) {
+negative_log_likelihood(const JointDistribution &prediction,
+                        const MarginalDistribution &truth) {
   const Eigen::VectorXd mean = prediction.mean - truth.mean;
   Eigen::MatrixXd covariance(prediction.covariance);
   if (truth.has_covariance()) {

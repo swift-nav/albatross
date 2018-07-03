@@ -89,13 +89,13 @@ public:
 
 protected:
   void fit_(const std::vector<FeatureType> &features,
-            const TargetDistribution &targets) {
+            const MarginalDistribution &targets) {
     model_fit_ = serializable_fit_(features, targets);
   }
 
   virtual ModelFit
   serializable_fit_(const std::vector<FeatureType> &features,
-                    const TargetDistribution &targets) const = 0;
+                    const MarginalDistribution &targets) const = 0;
 
   ModelFit model_fit_;
 };

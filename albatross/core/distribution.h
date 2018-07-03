@@ -87,8 +87,8 @@ template <typename CovarianceType> struct Distribution {
 
 using DiagonalMatrixXd =
     Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
-using DenseDistribution = Distribution<Eigen::MatrixXd>;
-using DiagonalDistribution = Distribution<DiagonalMatrixXd>;
+using JointDistribution = Distribution<Eigen::MatrixXd>;
+using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 template <typename CovarianceType, typename SizeType>
 Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,

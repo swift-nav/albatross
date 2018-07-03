@@ -74,7 +74,7 @@ public:
 protected:
   // builds the map from int to value
   MockFit serializable_fit_(const std::vector<MockPredictor> &features,
-                            const TargetDistribution &targets) const override {
+                            const MarginalDistribution &targets) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
@@ -87,7 +87,7 @@ protected:
   }
 
   // looks up the prediction in the map
-  PredictDistribution
+  JointDistribution
   predict_(const std::vector<MockPredictor> &features) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
@@ -97,7 +97,7 @@ protected:
       predictions[i] = this->model_fit_.train_data.find(index)->second;
     }
 
-    return PredictDistribution(predictions);
+    return JointDistribution(predictions);
   }
 };
 
@@ -190,7 +190,7 @@ make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
 
   auto diag_matrix = variance.asDiagonal();
 
-  TargetDistribution target_dist(targets, diag_matrix);
+  MarginalDistribution target_dist(targets, diag_matrix);
 
   return RegressionDataset<double>(dataset.features, target_dist);
 }

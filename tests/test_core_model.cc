@@ -25,7 +25,7 @@ TEST(test_core_model, test_fit_predict) {
   MockModel m;
   m.fit(dataset);
   // We should be able to perfectly predict in this case.
-  PredictDistribution predictions = m.predict(dataset.features);
+  JointDistribution predictions = m.predict(dataset.features);
   EXPECT_LT((predictions.mean - dataset.targets.mean).norm(), 1e-10);
 }
 

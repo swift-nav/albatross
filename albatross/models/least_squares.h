@@ -51,7 +51,7 @@ public:
 
   LeastSquaresFit
   serializable_fit_(const std::vector<Eigen::VectorXd> &features,
-                    const TargetDistribution &targets) const override {
+                    const MarginalDistribution &targets) const override {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -68,7 +68,7 @@ public:
   }
 
 protected:
-  PredictDistribution
+  JointDistribution
   predict_(const std::vector<Eigen::VectorXd> &features) const override {
     int n = static_cast<s32>(features.size());
     Eigen::VectorXd predictions(n);
@@ -77,7 +77,7 @@ protected:
           features[static_cast<std::size_t>(i)].dot(this->model_fit_.coefs);
     }
 
-    return PredictDistribution(predictions);
+    return JointDistribution(predictions);
   }
 
   /*

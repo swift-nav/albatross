@@ -24,9 +24,6 @@
 
 namespace albatross {
 
-using TargetDistribution = DiagonalDistribution;
-using PredictDistribution = DenseDistribution;
-
 /*
  * A RegressionDataset holds two vectors of data, the features
  * where a single feature can be any class that contains the information used
@@ -36,12 +33,12 @@ using PredictDistribution = DenseDistribution;
  */
 template <typename FeatureType> struct RegressionDataset {
   std::vector<FeatureType> features;
-  TargetDistribution targets;
+  MarginalDistribution targets;
 
   RegressionDataset(){};
 
   RegressionDataset(const std::vector<FeatureType> &features_,
-                    const TargetDistribution &targets_)
+                    const MarginalDistribution &targets_)
       : features(features_), targets(targets_) {
     // If the two inputs aren't the same size they clearly aren't
     // consistent.
@@ -51,7 +48,7 @@ template <typename FeatureType> struct RegressionDataset {
 
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
-      : RegressionDataset(features_, TargetDistribution(targets_)) {}
+      : RegressionDataset(features_, MarginalDistribution(targets_)) {}
 
   template <class Archive>
   typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
@@ -127,7 +124,7 @@ public:
    * predict.
    */
   void fit(const std::vector<FeatureType> &features,
-           const TargetDistribution &targets) {
+           const MarginalDistribution &targets) {
     assert(features.size() > 0);
     assert(static_cast<s32>(features.size()) ==
            static_cast<s32>(targets.size()));
@@ -140,7 +137,7 @@ public:
    */
   void fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
-    fit(features, TargetDistribution(targets));
+    fit(features, MarginalDistribution(targets));
   }
 
   /*
@@ -155,23 +152,23 @@ public:
    * and makes simple checks to confirm the implementation is returning
    * properly sized Distribution.
    */
-  PredictDistribution predict(const std::vector<FeatureType> &features) const {
+  JointDistribution predict(const std::vector<FeatureType> &features) const {
     assert(has_been_fit());
-    PredictDistribution preds = predict_(features);
+    JointDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
     return preds;
   }
 
-  PredictDistribution predict(const FeatureType &feature) const {
+  JointDistribution predict(const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
     return predict(features);
   }
 
-  DiagonalDistribution
+  MarginalDistribution
   predict_marginal(const std::vector<FeatureType> &features) const {
     assert(has_been_fit());
-    DiagonalDistribution preds = predict_marginal_(features);
+    MarginalDistribution preds = predict_marginal_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
            static_cast<s32>(features.size()));
     return preds;
@@ -195,9 +192,9 @@ public:
    * follwed by predict but overriding this method may speed up computation for
    * some models.
    */
-  PredictDistribution
+  JointDistribution
   fit_and_predict(const std::vector<FeatureType> &train_features,
-                  const TargetDistribution &train_targets,
+                  const MarginalDistribution &train_targets,
                   const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
@@ -208,7 +205,7 @@ public:
    * A convenience wrapper around fit_and_predict which uses the entries
    * in a RegressionFold struct
    */
-  PredictDistribution fit_and_predict(const RegressionFold<FeatureType> &fold) {
+  JointDistribution fit_and_predict(const RegressionFold<FeatureType> &fold) {
     return fit_and_predict(fold.train.features, fold.train.targets,
                            fold.test.features);
   }
@@ -249,17 +246,17 @@ public:
 
 protected:
   virtual void fit_(const std::vector<FeatureType> &features,
-                    const TargetDistribution &targets) = 0;
+                    const MarginalDistribution &targets) = 0;
 
-  virtual PredictDistribution
+  virtual JointDistribution
   predict_(const std::vector<FeatureType> &features) const = 0;
 
-  virtual DiagonalDistribution
+  virtual MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const {
     std::cout << "WARNING: A marginal prediction is being made, but in a "
                  "horribly inefficient way.";
     const auto full_distribution = predict_(features);
-    return DiagonalDistribution(
+    return MarginalDistribution(
         full_distribution.mean,
         full_distribution.covariance.diagonal().asDiagonal());
   }
