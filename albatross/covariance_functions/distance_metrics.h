@@ -18,6 +18,8 @@
 
 namespace albatross {
 
+constexpr double EPSILON = 1e-16;
+
 class DistanceMetric : public ParameterHandlingMixin {
 public:
   DistanceMetric(){};
@@ -68,9 +70,9 @@ double angular_distance(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
   // The acos operator doesn't behave well near |1|.  acos(1.), for example,
   // returns NaN, so here we do some special casing,
   double dot_product = x.dot(y) / (x.norm() * y.norm());
-  if (dot_product > 1. - 1e-16) {
+  if (dot_product > 1. - EPSILON) {
     return 0.;
-  } else if (dot_product < -1. + 1e-16) {
+  } else if (dot_product < -1. + EPSILON) {
     return M_PI;
   } else {
     return acos(dot_product);
