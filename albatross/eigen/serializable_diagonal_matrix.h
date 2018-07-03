@@ -36,10 +36,6 @@ class SerializableDiagonalMatrix
 public:
   SerializableDiagonalMatrix() : BaseClass(){};
 
-  SerializableDiagonalMatrix(const BaseClass &other)
-      // Can we get around copying here?
-      : BaseClass(other){};
-
   template <typename OtherDerived>
   inline SerializableDiagonalMatrix(const DiagonalBase<OtherDerived> &other)
       : BaseClass(other){};
