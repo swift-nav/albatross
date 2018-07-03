@@ -13,6 +13,9 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
+#include "cereal/cereal.hpp"
+#include "core/traits.h"
+#include "eigen/serializable_diagonal_matrix.h"
 #include "indexing.h"
 #include <Eigen/Core>
 #include <iostream>
@@ -52,11 +55,40 @@ template <typename CovarianceType> struct Distribution {
   Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(){};
   Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
       : mean(mean_), covariance(covariance_){};
+
+  /*
+   * If the CovarianceType is serializable, add a serialize method.
+   */
+  template <class Archive>
+  typename std::enable_if<
+      valid_in_out_serializer<CovarianceType, Archive>::value, void>::type
+  serialize(Archive &archive) {
+    archive(cereal::make_nvp("mean", mean));
+    archive(cereal::make_nvp("covariance", covariance));
+  }
+
+  /*
+   * If you try to serialize a Distribution for which the covariance
+   * type is not serializable you'll get an error.
+   */
+  template <class Archive>
+  typename std::enable_if<
+      !valid_in_out_serializer<CovarianceType, Archive>::value, void>::type
+  save(Archive &archive) {
+    static_assert(delay_static_assert<Archive>::value,
+                  "In order to serialize a Distribution the corresponding "
+                  "CovarianceType must be serializable.");
+  }
+
+  bool operator==(const Distribution &other) const {
+    return (mean == other.mean && covariance == other.covariance);
+  }
 };
 
+using DiagonalMatrixXd =
+    Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
 using DenseDistribution = Distribution<Eigen::MatrixXd>;
-using DiagonalDistribution =
-    Distribution<Eigen::DiagonalMatrix<double, Eigen::Dynamic>>;
+using DiagonalDistribution = Distribution<DiagonalMatrixXd>;
 
 template <typename CovarianceType, typename SizeType>
 Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
@@ -69,6 +101,7 @@ Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
     return Distribution<CovarianceType>(mean);
   }
 }
+
 } // namespace albatross
 
 #endif

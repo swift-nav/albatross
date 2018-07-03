@@ -13,9 +13,19 @@
 #ifndef ALBATROSS_CORE_MAGIC_H
 #define ALBATROSS_CORE_MAGIC_H
 
+#include "cereal/details/traits.hpp"
 #include <utility>
 
 namespace albatross {
+
+/*
+ * This little trick was borrowed from cereal, you an think of it as
+ * a function that will always return false ... but that doesn't
+ * get resolved until template instantiation, which when combined
+ * with a static assert let's you include a static assert that
+ * only triggers with a particular template parameter is used.
+ */
+template <class T> struct delay_static_assert : std::false_type {};
 
 /*
  * This determines whether or not a class has a method defined for,
@@ -81,6 +91,47 @@ template <typename X>
 using fit_type_if_serializable =
     typename enable_if_serializable<X,
                                     typename fit_type_or_void<X>::type>::type;
+
+/*
+ * The following helper functions let you inspect a type and cereal Archive
+ * and determine if the type has a valid serialization method for that Archive
+ * type.
+ */
+template <typename X, typename Archive> class valid_output_serializer {
+  template <typename T>
+  static typename std::enable_if<
+      1 == cereal::traits::detail::count_output_serializers<T, Archive>::value,
+      std::true_type>::type
+  test(int);
+  template <typename T> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<X>(0))::value;
+};
+
+template <typename X, typename Archive> class valid_input_serializer {
+  template <typename T>
+  static typename std::enable_if<
+      1 == cereal::traits::detail::count_input_serializers<T, Archive>::value,
+      std::true_type>::type
+  test(int);
+  template <typename T> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<X>(0))::value;
+};
+
+template <typename X, typename Archive> class valid_in_out_serializer {
+  template <typename T>
+  static typename std::enable_if<valid_input_serializer<T, Archive>::value &&
+                                     valid_output_serializer<T, Archive>::value,
+                                 std::true_type>::type
+  test(int);
+  template <typename T> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<X>(0))::value;
+};
 
 } // namespace albatross
 
