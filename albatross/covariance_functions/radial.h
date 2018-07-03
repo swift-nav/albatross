@@ -50,6 +50,12 @@ protected:
   DistanceMetricImpl distance_metric_;
 };
 
+inline double squared_exponential_covariance(double distance,
+                                             double length_scale,
+                                             double sigma = 1.) {
+  return sigma * sigma * exp(-pow(distance / length_scale, 2));
+}
+
 /*
  * SquaredExponential distance
  *  - c(d) = -exp((d/length_scale)^2)
@@ -87,11 +93,15 @@ public:
   double operator()(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->params_.at("squared_exponential_length_scale");
-    distance /= length_scale;
     double sigma = this->params_.at("sigma_squared_exponential");
-    return sigma * sigma * exp(-distance * distance);
+    return squared_exponential_covariance(distance, length_scale, sigma);
   }
 };
+
+inline double exponential_covariance(double distance, double length_scale,
+                                     double sigma = 1.) {
+  return sigma * sigma * exp(-fabs(distance / length_scale));
+}
 
 /*
  * Exponential distance
@@ -121,9 +131,8 @@ public:
   double operator()(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->params_.at("exponential_length_scale");
-    distance /= length_scale;
     double sigma = this->params_.at("sigma_exponential");
-    return sigma * sigma * exp(-fabs(distance));
+    return exponential_covariance(distance, length_scale, sigma);
   }
 };
 
