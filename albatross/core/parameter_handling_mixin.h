@@ -60,19 +60,27 @@ public:
 
   virtual ~ParameterHandlingMixin(){};
 
+  void check_param_key(const ParameterKey &key) {
+    const ParameterStore current_params = get_params();
+    if (!map_contains(current_params, key)) {
+      std::cerr << "Error: Key `" << key << "` not found in parameters: "
+                << pretty_params(current_params);
+      exit(EXIT_FAILURE);
+    }
+  }
+
   /*
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
-    const ParameterStore current_params = get_params();
     for (const auto &pair : params) {
-      assert(map_contains(current_params, pair.first));
+      check_param_key(pair.first);
       unchecked_set_param(pair.first, pair.second);
     }
   }
 
   void set_param(const ParameterKey &key, const ParameterValue &value) {
-    assert(map_contains(get_params(), key));
+    check_param_key(key);
     unchecked_set_param(key, value);
   }
 
