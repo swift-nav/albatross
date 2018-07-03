@@ -99,6 +99,39 @@ struct EigenMatrixXd : public SerializableType<Eigen::MatrixXd> {
   }
 };
 
+struct FullDenseDistribution : public SerializableType<DenseDistribution> {
+  DenseDistribution create() const override {
+    Eigen::MatrixXd cov(3, 3);
+    cov << 1., 2., 3., 4., 5., 6., 7, 8, 9;
+    Eigen::VectorXd mean = Eigen::VectorXd::Ones(3);
+    return DenseDistribution(mean, cov);
+  }
+};
+
+struct MeanOnlyDenseDistribution : public SerializableType<DenseDistribution> {
+  DenseDistribution create() const override {
+    Eigen::MatrixXd mean = Eigen::VectorXd::Ones(3);
+    return DenseDistribution(mean);
+  }
+};
+
+struct FullDiagonalDistribution
+    : public SerializableType<DiagonalDistribution> {
+  DiagonalDistribution create() const override {
+    Eigen::VectorXd diag = Eigen::VectorXd::Ones(3);
+    Eigen::VectorXd mean = Eigen::VectorXd::Ones(3);
+    return DiagonalDistribution(mean, diag.asDiagonal());
+  }
+};
+
+struct MeanOnlyDiagonalDistribution
+    : public SerializableType<DiagonalDistribution> {
+  DiagonalDistribution create() const override {
+    Eigen::MatrixXd mean = Eigen::VectorXd::Ones(3);
+    return DiagonalDistribution(mean);
+  }
+};
+
 struct LDLT : public SerializableType<Eigen::SerializableLDLT> {
   Eigen::Index n = 3;
 
@@ -281,10 +314,12 @@ struct PolymorphicSerializeTest : public ::testing::Test {
 typedef ::testing::Types<
     LDLT, SerializableType<Eigen::Matrix3d>, SerializableType<Eigen::Matrix2i>,
     EmptyEigenVectorXd, EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
-    ParameterStoreType, SerializableType<MockModel>, UnfitSerializableModel,
-    FitSerializableModel, FitDirectModel, UnfitDirectModel,
-    UnfitRegressionModel, FitLinearRegressionModel,
-    FitLinearSerializablePointer, UnfitGaussianProcess, FitGaussianProcess>
+    FullDenseDistribution, MeanOnlyDenseDistribution, FullDiagonalDistribution,
+    MeanOnlyDiagonalDistribution, ParameterStoreType,
+    SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
+    FitDirectModel, UnfitDirectModel, UnfitRegressionModel,
+    FitLinearRegressionModel, FitLinearSerializablePointer,
+    UnfitGaussianProcess, FitGaussianProcess>
     ToTest;
 
 TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);

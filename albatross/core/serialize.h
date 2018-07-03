@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_CORE_SERIALIZE_H
 #define ALBATROSS_CORE_SERIALIZE_H
 
+#include "core/traits.h"
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <iostream>
@@ -38,19 +39,50 @@ public:
             model_fit_ == other.get_fit());
   }
 
-  // todo: enable if ModelFit is serializable.
-  template <class Archive> void save(Archive &archive) const {
+  /*
+   * Include save/load methods conditional on the ability to serialize
+   * ModelFit.
+   */
+  template <class Archive>
+  typename std::enable_if<valid_output_serializer<ModelFit, Archive>::value,
+                          void>::type
+  save(Archive &archive) const {
     archive(cereal::make_nvp(
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
   }
 
-  template <class Archive> void load(Archive &archive) {
+  template <class Archive>
+  typename std::enable_if<valid_input_serializer<ModelFit, Archive>::value,
+                          void>::type
+  load(Archive &archive) {
     archive(cereal::make_nvp(
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
+  }
+
+  /*
+   * If ModelFit does not have valid serialization methods and you attempt to
+   * (de)serialize a SerializableRegressionModel you'll get an error.
+   */
+  template <class Archive>
+  typename std::enable_if<!valid_output_serializer<ModelFit, Archive>::value,
+                          void>::type
+  save(Archive &archive) const {
+    static_assert(delay_static_assert<Archive>::value,
+                  "SerializableRegressionModel requires a ModelFit type which "
+                  "is serializable.");
+  }
+
+  template <class Archive>
+  typename std::enable_if<!valid_input_serializer<ModelFit, Archive>::value,
+                          void>::type
+  load(Archive &archive) const {
+    static_assert(delay_static_assert<Archive>::value,
+                  "SerializableRegressionModel requires a ModelFit type which "
+                  "is serializable.");
   }
 
   virtual ModelFit get_fit() const { return model_fit_; }

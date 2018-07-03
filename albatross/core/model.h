@@ -27,23 +27,6 @@ namespace albatross {
 using TargetDistribution = DiagonalDistribution;
 using PredictDistribution = DenseDistribution;
 
-template <class Archive>
-void save(Archive &archive, const TargetDistribution &distribution) {
-  archive(cereal::make_nvp("mean", distribution.mean));
-  archive(cereal::make_nvp("diagonal", distribution.covariance.diagonal()));
-}
-
-template <class Archive>
-void load(Archive &archive, TargetDistribution &distribution) {
-  Eigen::VectorXd mean;
-  archive(cereal::make_nvp("mean", mean));
-  distribution.mean = mean;
-
-  Eigen::VectorXd diagonal;
-  archive(cereal::make_nvp("diagonal", diagonal));
-  distribution.covariance = diagonal.asDiagonal();
-}
-
 /*
  * A RegressionDataset holds two vectors of data, the features
  * where a single feature can be any class that contains the information used
@@ -70,9 +53,21 @@ template <typename FeatureType> struct RegressionDataset {
                     const Eigen::VectorXd &targets_)
       : RegressionDataset(features_, TargetDistribution(targets_)) {}
 
-  template <class Archive> void serialize(Archive &archive) {
+  template <class Archive>
+  typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
+                          void>::type
+  serialize(Archive &archive) {
     archive(cereal::make_nvp("features", features));
     archive(cereal::make_nvp("targets", targets));
+  }
+
+  template <class Archive>
+  typename std::enable_if<!valid_in_out_serializer<FeatureType, Archive>::value,
+                          void>::type
+  serialize(Archive &archive) {
+    static_assert(delay_static_assert<Archive>::value,
+                  "In order to serialize a RegressionDataset the corresponding "
+                  "FeatureType must be serializable.");
   }
 };
 
