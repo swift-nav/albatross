@@ -51,7 +51,7 @@ TEST(test_evaluate, test_negative_log_likelihood) {
 }
 
 TEST_F(LinearRegressionTest, test_leave_one_out) {
-  PredictDistribution preds = model_ptr_->fit_and_predict(
+  JointDistribution preds = model_ptr_->fit_and_predict(
       dataset_.features, dataset_.targets, dataset_.features);
   double in_sample_rmse = root_mean_square_error(preds, dataset_.targets);
   const auto folds = leave_one_out(dataset_);
@@ -90,7 +90,7 @@ bool is_monotonic_increasing(Eigen::VectorXd &x) {
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
 
-  PredictDistribution preds = cross_validated_predict(folds, model_ptr_.get());
+  JointDistribution preds = cross_validated_predict(folds, model_ptr_.get());
 
   // Make sure the group cross validation resulted in folds that
   // are out of order

@@ -119,7 +119,7 @@ public:
 
 protected:
   void fit_(const std::vector<FeatureType> &features,
-            const TargetDistribution &targets) override {
+            const MarginalDistribution &targets) override {
     this->sub_model_.fit(convert_features(features), targets);
   }
 
@@ -130,16 +130,26 @@ protected:
    */
   fit_type_if_serializable<RegressionModelImplementation>
   serializable_fit_(const std::vector<FeatureType> &features,
-                    const TargetDistribution &targets) const override {
+                    const MarginalDistribution &targets) const override {
     assert(false &&
            "serializable_fit_ for an adapted model should never be called");
     typename fit_type_or_void<RegressionModelImplementation>::type dummy;
     return dummy;
   }
 
-  PredictDistribution
+  JointDistribution
   predict_(const std::vector<FeatureType> &features) const override {
     return sub_model_.predict(convert_features(features));
+  }
+
+  virtual MarginalDistribution
+  predict_marginal_(const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict_marginal(convert_features(features));
+  }
+
+  virtual Eigen::VectorXd
+  predict_mean_(const std::vector<FeatureType> &features) const override {
+    return sub_model_.predict_mean(convert_features(features));
   }
 
   const std::vector<SubFeature>

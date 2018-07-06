@@ -26,7 +26,7 @@ namespace albatross {
  * the quality of the prediction.
  */
 using EvaluationMetric = std::function<double(
-    const PredictDistribution &prediction, const TargetDistribution &targets)>;
+    const JointDistribution &prediction, const MarginalDistribution &targets)>;
 
 inline FoldIndices get_train_indices(const FoldIndices &test_indices,
                                      const int n) {
@@ -68,11 +68,11 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
 
     std::vector<FeatureType> train_features =
         subset(train_indices, dataset.features);
-    TargetDistribution train_targets = subset(train_indices, dataset.targets);
+    MarginalDistribution train_targets = subset(train_indices, dataset.targets);
 
     std::vector<FeatureType> test_features =
         subset(test_indices, dataset.features);
-    TargetDistribution test_targets = subset(test_indices, dataset.targets);
+    MarginalDistribution test_targets = subset(test_indices, dataset.targets);
 
     assert(train_features.size() == train_targets.size());
     assert(test_features.size() == test_targets.size());
@@ -151,17 +151,17 @@ static inline std::vector<RegressionFold<FeatureType>> leave_one_group_out(
 }
 
 /*
- * Computes a PredictDistribution for each fold in set of cross validation
- * folds.  The resulting vector of PredictDistributions can then be used
+ * Computes a JointDistribution for each fold in set of cross validation
+ * folds.  The resulting vector of JointDistributions can then be used
  * for things like computing an EvaluationMetric for each fold, or assembling
  * all the predictions into a single cross validated PredictionDistribution.
  */
 template <typename FeatureType>
-static inline std::vector<PredictDistribution> cross_validated_predictions(
+static inline std::vector<JointDistribution> cross_validated_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
     RegressionModel<FeatureType> *model) {
   // Iteratively make predictions and assemble the output vector
-  std::vector<PredictDistribution> predictions;
+  std::vector<JointDistribution> predictions;
   for (std::size_t i = 0; i < folds.size(); i++) {
     predictions.push_back(model->fit_and_predict(
         folds[i].train_dataset.features, folds[i].train_dataset.targets,
@@ -178,7 +178,7 @@ template <class FeatureType>
 static inline Eigen::VectorXd
 compute_scores(const EvaluationMetric &metric,
                const std::vector<RegressionFold<FeatureType>> &folds,
-               const std::vector<PredictDistribution> &predictions) {
+               const std::vector<JointDistribution> &predictions) {
   // Create a vector of metrics, one for each fold.
   Eigen::VectorXd metrics(static_cast<s32>(folds.size()));
   // Loop over each fold, making predictions then evaluating them
@@ -200,7 +200,7 @@ cross_validated_scores(const EvaluationMetric &metric,
                        const std::vector<RegressionFold<FeatureType>> &folds,
                        RegressionModel<FeatureType> *model) {
   // Create a vector of predictions.
-  std::vector<PredictDistribution> predictions =
+  std::vector<JointDistribution> predictions =
       cross_validated_predictions<FeatureType>(folds, model);
   return compute_scores(metric, folds, predictions);
 }
@@ -216,13 +216,13 @@ cross_validated_scores(const EvaluationMetric &metric,
  * unknown.
  */
 template <typename FeatureType>
-static inline PredictDistribution
+static inline JointDistribution
 cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
                         RegressionModel<FeatureType> *model) {
   // Get the cross validated predictions, note however that
   // depending on the type of folds, these predictions may
   // be shuffled.
-  const std::vector<PredictDistribution> predictions =
+  const std::vector<JointDistribution> predictions =
       cross_validated_predictions<FeatureType>(folds, model);
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
@@ -240,7 +240,7 @@ cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
           pred.mean[i];
     }
   }
-  return PredictDistribution(mean);
+  return JointDistribution(mean);
 }
 
 } // namespace albatross
