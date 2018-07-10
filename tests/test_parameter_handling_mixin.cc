@@ -25,7 +25,7 @@ TEST(test_parameter_handler, test_get_set) {
   auto p = TestParameterHandler();
   auto params = p.get_params();
   for (auto &pair : params) {
-    pair.second += 1.;
+    pair.second.value += 1.;
   }
   // Make sure modifying the returned map doesn't modify the original;
   auto unmodified_params = p.get_params();
@@ -56,8 +56,7 @@ TEST(test_parameter_handler, test_is_ordered) {
     const auto unordered_pair = *p.second;
     EXPECT_EQ(ordered_pair.first, unordered_pair.first);
   }
-
-  expect_params_equal(ordered, unordered);
+  EXPECT_EQ(ordered, unordered);
 }
 
 /*
@@ -82,4 +81,50 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
   expect_parameter_vector_equal(expected_param_vector,
                                 original_handler.get_params_as_vector());
 }
+
+TEST(test_parameter_handler, test_prior_log_likelihood) {
+  auto p = TestParameterHandler();
+
+  auto params = p.get_params();
+
+  double expected;
+  {
+    ParameterPrior gaussian_prior = std::make_shared<GaussianPrior>(3., 5.);
+    ParameterPrior uninformative_prior = std::make_shared<UninformativePrior>();
+    expected = gaussian_prior->log_pdf(p.get_params().at("A").value) +
+               uninformative_prior->log_pdf(p.get_params().at("B").value);
+    p.set_prior("A", gaussian_prior);
+    p.set_prior("B", uninformative_prior);
+  }
+  EXPECT_DOUBLE_EQ(expected, p.prior_log_likelihood());
+};
+
+TEST(test_parameter_handler, test_set_prior) {
+  auto p = TestParameterHandler();
+
+  const auto orig_params = p.get_params();
+  const auto orig_param_vector = p.get_params_as_vector();
+
+  for (const auto &pair : orig_params) {
+    ParameterPrior gaussian_prior =
+        std::make_shared<GaussianPrior>(pair.second.value + 1., 1.);
+    p.set_prior(pair.first, gaussian_prior);
+  }
+
+  const auto params_with_priors = p.get_params();
+  // The actual parameters now have priors, so they shouldn't be the
+  // same.
+  EXPECT_NE(orig_params, params_with_priors);
+  // But the parameter values shouldn't have changed.
+  expect_parameter_vector_equal(orig_param_vector, p.get_params_as_vector());
+
+  // We should also be able to change the parameter values without
+  // modifying the prior.
+  for (const auto &pair : orig_params) {
+    p.set_param(pair.first, pair.second.value + 3.14159);
+    EXPECT_EQ(p.get_params().at(pair.first).prior,
+              params_with_priors.at(pair.first).prior);
+  }
+};
+
 } // namespace albatross

@@ -54,7 +54,8 @@ public:
 class MockModel : public SerializableRegressionModel<MockPredictor, MockFit> {
 public:
   MockModel(double parameter = 3.14159) {
-    this->params_["parameter"] = parameter;
+    this->params_["parameter"] = {parameter,
+                                  std::make_shared<GaussianPrior>(3., 2.)};
   };
 
   std::string get_name() const override { return "mock_model"; };
@@ -124,20 +125,6 @@ mock_training_data(const int n = 10) {
     targets[i] = static_cast<double>(i + n);
   }
   return RegressionDataset<MockPredictor>(features, targets);
-}
-
-static inline void expect_params_equal(const ParameterStore &x,
-                                       const ParameterStore &y) {
-  // Make sure all pairs in x are in y.
-  for (const auto &x_pair : x) {
-    const auto y_value = y.at(x_pair.first);
-    EXPECT_DOUBLE_EQ(x_pair.second, y_value);
-  }
-  // And all pairs in y are in x.
-  for (const auto &y_pair : y) {
-    const auto x_value = x.at(y_pair.first);
-    EXPECT_DOUBLE_EQ(y_pair.second, x_value);
-  }
 }
 
 static inline void

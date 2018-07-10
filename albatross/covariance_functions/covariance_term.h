@@ -72,11 +72,11 @@ public:
   }
 
   void unchecked_set_param(const std::string &name,
-                           const double value) override {
+                           const Parameter &param) override {
     if (map_contains(lhs_.get_params(), name)) {
-      lhs_.set_param(name, value);
+      lhs_.set_param(name, param);
     } else {
-      rhs_.set_param(name, value);
+      rhs_.set_param(name, param);
     }
   }
 

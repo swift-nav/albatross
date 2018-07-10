@@ -61,7 +61,11 @@ int main(int argc, char *argv[]) {
    * using lambdas.
    */
   RegressionModelCreator<double> model_creator = [linear_model]() {
-    return gp_pointer_from_covariance<double>(linear_model);
+    auto m = gp_pointer_from_covariance<double>(linear_model);
+    // We can place a prior on the length scale.
+    ParameterPrior prior = std::make_shared<GaussianPrior>(5., 1.);
+    m->set_prior("squared_exponential_length_scale", prior);
+    return m;
   };
 
   /*

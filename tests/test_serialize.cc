@@ -162,14 +162,16 @@ struct LDLT : public SerializableType<Eigen::SerializableLDLT> {
 struct ParameterStoreType : public SerializableType<ParameterStore> {
 
   RepresentationType create() const override {
-    ParameterStore original = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
+    ParameterStore original = {
+        {"2", {2., std::make_shared<PositivePrior>()}},
+        {"1", {1., std::make_shared<GaussianPrior>(1., 2.)}},
+        {"3", 3.}};
     return original;
   }
 
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
-    expect_params_equal(lhs, rhs);
-    return true;
+    return lhs == rhs;
   };
 };
 
@@ -207,6 +209,8 @@ public:
     auto dataset = mock_training_data();
     auto model = MockModel(log(2.));
     model.fit(dataset);
+    ParameterPrior prior = std::make_shared<GaussianPrior>(4., 3.);
+    model.set_prior("parameter", prior);
     return model;
   }
 

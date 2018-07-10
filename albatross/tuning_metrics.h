@@ -46,7 +46,8 @@ inline double gp_fast_loo_nll(const RegressionDataset<FeatureType> &dataset,
   const auto predictions =
       fast_gp_loo_cross_validated_predict(dataset, gp_model);
   const auto deviations = dataset.targets.mean - predictions.mean;
-  return negative_log_likelihood(deviations, predictions.covariance);
+  return negative_log_likelihood(deviations, predictions.covariance) -
+         model->prior_log_likelihood();
 }
 
 inline double loo_nll(const RegressionDataset<double> &dataset,
@@ -54,7 +55,8 @@ inline double loo_nll(const RegressionDataset<double> &dataset,
   auto loo_folds = leave_one_out(dataset);
   return cross_validated_scores(evaluation_metrics::negative_log_likelihood,
                                 loo_folds, model)
-      .sum();
+             .sum() -
+         model->prior_log_likelihood();
 }
 
 inline double loo_rmse(const RegressionDataset<double> &dataset,

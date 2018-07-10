@@ -40,7 +40,7 @@ public:
   std::string get_name() const { return "slope_term"; }
 
   double operator()(const double &x, const double &y) const {
-    double sigma_slope = this->params_.at("sigma_slope");
+    double sigma_slope = this->get_param_value("sigma_slope");
     return sigma_slope * sigma_slope * x * y;
   }
 };
