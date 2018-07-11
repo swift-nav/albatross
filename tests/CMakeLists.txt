@@ -25,7 +25,7 @@ add_dependencies(albatross_unit_tests
     clang-format-all
 )
 
-target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt)
+target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt_cxx)
 
 add_custom_target(
 run_albatross_unit_tests ALL

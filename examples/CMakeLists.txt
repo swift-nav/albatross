@@ -38,7 +38,7 @@ add_dependencies(tune_example
     albatross
 )
 
-target_link_libraries(tune_example m gflags pthread nlopt)
+target_link_libraries(tune_example m gflags pthread nlopt_cxx)
 
 add_custom_target(
     run_tune_example ALL
@@ -84,7 +84,7 @@ add_dependencies(temperature_example
     albatross
 )
 
-target_link_libraries(temperature_example m gflags pthread nlopt)
+target_link_libraries(temperature_example m gflags pthread nlopt_cxx)
 
 add_custom_target(
     run_temperature_example ALL
