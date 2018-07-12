@@ -209,7 +209,7 @@ public:
     auto dataset = mock_training_data();
     auto model = MockModel(log(2.));
     model.fit(dataset);
-    ParameterPrior prior = std::make_shared<GaussianPrior>(4., 3.);
+    ParameterPrior prior = std::make_shared<UniformPrior>(3., 4.);
     model.set_prior("parameter", prior);
     return model;
   }

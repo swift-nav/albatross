@@ -69,7 +69,7 @@ class UniformPrior : public Prior {
 public:
   UniformPrior(double lower = 0., double upper = 1.)
       : lower_(lower), upper_(upper) {
-    assert(upper_ < lower_);
+    assert(upper_ > lower_);
   };
 
   std::string get_name() const override {
