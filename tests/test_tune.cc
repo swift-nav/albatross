@@ -54,7 +54,6 @@ TEST(test_tune, test_with_prior_bounds) {
                                 albatross::mean_aggregator, output_stream);
   config.optimizer.set_maxeval(20);
   auto params = tune_regression_model(config);
-  EXPECT_NE(output_stream.str().find("Invalid Parameters"), std::string::npos);
   auto m = model_with_prior();
   m->set_params(params);
   EXPECT_TRUE(m->params_are_valid());

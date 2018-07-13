@@ -21,6 +21,7 @@
 namespace albatross {
 
 constexpr double LOG_2PI_ = 1.8378770664093453;
+constexpr double LARGE_VAL = HUGE_VAL;
 
 /*
  * To add a new prior you'll need to implement the Prior abstract
@@ -34,8 +35,8 @@ public:
   virtual ~Prior(){};
   virtual double log_pdf(double x) const = 0;
   virtual std::string get_name() const = 0;
-  virtual double lower_bound() const { return -INFINITY; }
-  virtual double upper_bound() const { return INFINITY; }
+  virtual double lower_bound() const { return -LARGE_VAL; }
+  virtual double upper_bound() const { return LARGE_VAL; }
   virtual bool operator==(const Prior &other) const {
     return typeid(*this) == typeid(other);
   }
@@ -56,9 +57,10 @@ public:
 
 class PositivePrior : public Prior {
 public:
-  double log_pdf(double x) const override { return x > 0. ? 0. : -INFINITY; }
+  double log_pdf(double x) const override { return x > 0. ? 0. : -LARGE_VAL; }
   std::string get_name() const override { return "positive"; };
   double lower_bound() const override { return 0.; }
+  double upper_bound() const override { return LARGE_VAL; }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::base_class<Prior>(this));

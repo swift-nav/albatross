@@ -98,7 +98,7 @@ inline std::string pretty_params(const ParameterStore &params) {
 
 inline std::string pretty_priors(const ParameterStore &params) {
   std::ostringstream ss;
-  ss << "{" << std::endl;
+  ss << "PRIORS:" << std::endl;
   for (const auto &pair : params) {
     std::string prior_name;
     if (pair.second.has_prior()) {
@@ -106,9 +106,28 @@ inline std::string pretty_priors(const ParameterStore &params) {
     } else {
       prior_name = "none";
     }
-    ss << "    {\"" << pair.first << "\", " << prior_name << "}," << std::endl;
+    ss << "    \"" << pair.first << "\": " << prior_name << std::endl;
   }
-  ss << "};" << std::endl;
+  return ss.str();
+}
+
+inline std::string pretty_param_details(const ParameterStore &params) {
+  std::ostringstream ss;
+  for (const auto &pair : params) {
+    std::string prior_name;
+    if (pair.second.has_prior()) {
+      prior_name = pair.second.prior->get_name();
+    } else {
+      prior_name = "none";
+    }
+    ss << "    " << pair.first << " value: " << pair.second.value
+       << ", prior: " << prior_name << ", bounds: ["
+       << (pair.second.has_prior() ? pair.second.prior->lower_bound()
+                                   : -INFINITY)
+       << ", " << (pair.second.has_prior() ? pair.second.prior->upper_bound()
+                                           : INFINITY)
+       << "]" << std::endl;
+  }
   return ss.str();
 }
 
@@ -188,6 +207,28 @@ public:
       x.push_back(pair.second.value);
     }
     return x;
+  }
+
+  std::vector<double> get_param_lower_bounds() const {
+    std::vector<double> lb;
+    const auto params = get_params();
+    for (const auto &pair : params) {
+      double bound = pair.second.has_prior() ? pair.second.prior->lower_bound()
+                                             : -LARGE_VAL;
+      lb.push_back(fmax(bound, -LARGE_VAL));
+    }
+    return lb;
+  }
+
+  std::vector<double> get_param_upper_bounds() const {
+    std::vector<double> ub;
+    const auto params = get_params();
+    for (const auto &pair : params) {
+      double bound = pair.second.has_prior() ? pair.second.prior->upper_bound()
+                                             : LARGE_VAL;
+      ub.push_back(fmin(bound, LARGE_VAL));
+    }
+    return ub;
   }
 
   void set_params_from_vector(const std::vector<ParameterValue> &x) {
