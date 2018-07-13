@@ -31,7 +31,8 @@ struct ConstantTerm {};
 class Constant : public CovarianceTerm {
 public:
   Constant(double sigma_constant = 10.) {
-    this->params_["sigma_constant"] = sigma_constant;
+    this->params_["sigma_constant"] = {sigma_constant,
+                                       std::make_shared<PositivePrior>()};
   };
 
   ~Constant(){};
@@ -54,7 +55,7 @@ public:
   template <typename X, typename Y>
   double operator()(const X &x __attribute__((unused)),
                     const Y &y __attribute__((unused))) const {
-    double sigma_constant = this->params_.at("sigma_constant");
+    double sigma_constant = this->get_param_value("sigma_constant");
     return sigma_constant * sigma_constant;
   }
 };

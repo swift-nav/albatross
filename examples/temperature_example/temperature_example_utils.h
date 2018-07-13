@@ -70,8 +70,10 @@ public:
 class ElevationScalingFunction : public albatross::ScalingFunction {
 public:
   ElevationScalingFunction(double center = 1000., double factor = 3.5 / 300) {
-    this->params_["elevation_scaling_center"] = center;
-    this->params_["elevation_scaling_factor"] = factor;
+    this->params_["elevation_scaling_center"] = {
+        center, std::make_shared<UniformPrior>(0., 5000.)};
+    this->params_["elevation_scaling_factor"] = {
+        factor, std::make_shared<PositivePrior>()};
   };
 
   std::string get_name() const { return "elevation_scaled"; }
@@ -79,10 +81,9 @@ public:
   double operator()(const Station &x) const {
     // This is the negative orientation rectifier function which
     // allows lower elevations to have a higher variance.
-    double center = this->params_.at("elevation_scaling_center");
-    return 1. +
-           this->params_.at("elevation_scaling_factor") *
-               fmax(0., (center - x.height));
+    double center = this->get_param_value("elevation_scaling_center");
+    double factor = this->get_param_value("elevation_scaling_factor");
+    return 1. + factor * fmax(0., (center - x.height));
   }
 };
 

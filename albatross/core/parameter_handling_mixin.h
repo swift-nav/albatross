@@ -14,25 +14,72 @@
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
 #include <assert.h>
-#include <fstream>
-#include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <vector>
 
 #include "cereal/cereal.hpp"
 #include "keys.h"
 #include "map_utils.h"
+#include "priors.h"
 #include <cereal/types/map.hpp>
 
 namespace albatross {
 
 using ParameterKey = std::string;
-using ParameterValue = double;
 // If you change the way these are stored, be sure there's
 // a corresponding cereal type included or you'll get some
 // really impressive compilation errors.
-using ParameterStore = std::map<ParameterKey, ParameterValue>;
+using ParameterPrior = std::shared_ptr<Prior>;
+using ParameterValue = double;
+
+struct Parameter {
+  ParameterValue value;
+  ParameterPrior prior;
+
+  Parameter() : value(), prior(nullptr){};
+  Parameter(ParameterValue value_) : value(value_) {}
+  Parameter(ParameterValue value_, const ParameterPrior &prior_)
+      : value(value_), prior(prior_){};
+  /*
+   * For serialization through cereal.
+   */
+  template <class Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("value", value));
+    archive(cereal::make_nvp("prior", prior));
+  };
+
+  bool operator==(const ParameterValue &other_value) const {
+    return (value == other_value);
+  }
+
+  bool operator==(const Parameter &other) const {
+    return (value == other.value && has_prior() == other.has_prior() &&
+            (!has_prior() || *prior == *other.prior));
+  }
+
+  bool operator!=(const Parameter &other) const { return !operator==(other); }
+
+  bool has_prior() const { return prior != nullptr; }
+
+  bool within_bounds() const {
+    return (!has_prior() ||
+            (value >= prior->lower_bound() && value <= prior->upper_bound()));
+  }
+
+  bool is_valid() const { return within_bounds(); }
+
+  double prior_log_likelihood() const {
+    if (has_prior()) {
+      return prior->log_pdf(value);
+    } else {
+      return 0.;
+    }
+  }
+};
+
+using ParameterStore = std::map<ParameterKey, Parameter>;
 
 /*
  * Prints out a set of parameters in a way that is both
@@ -42,7 +89,24 @@ inline std::string pretty_params(const ParameterStore &params) {
   std::ostringstream ss;
   ss << "{" << std::endl;
   for (const auto &pair : params) {
-    ss << "    {\"" << pair.first << "\", " << pair.second << "}," << std::endl;
+    ss << "    {\"" << pair.first << "\", " << pair.second.value << "},"
+       << std::endl;
+  }
+  ss << "};" << std::endl;
+  return ss.str();
+}
+
+inline std::string pretty_priors(const ParameterStore &params) {
+  std::ostringstream ss;
+  ss << "{" << std::endl;
+  for (const auto &pair : params) {
+    std::string prior_name;
+    if (pair.second.has_prior()) {
+      prior_name = pair.second.prior->get_name();
+    } else {
+      prior_name = "none";
+    }
+    ss << "    {\"" << pair.first << "\", " << prior_name << "}," << std::endl;
   }
   ss << "};" << std::endl;
   return ss.str();
@@ -60,7 +124,7 @@ public:
 
   virtual ~ParameterHandlingMixin(){};
 
-  void check_param_key(const ParameterKey &key) {
+  void check_param_key(const ParameterKey &key) const {
     const ParameterStore current_params = get_params();
     if (!map_contains(current_params, key)) {
       std::cerr << "Error: Key `" << key << "` not found in parameters: "
@@ -84,6 +148,33 @@ public:
     unchecked_set_param(key, value);
   }
 
+  void set_param(const ParameterKey &key, const Parameter &param) {
+    check_param_key(key);
+    unchecked_set_param(key, param);
+  }
+
+  void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
+    check_param_key(key);
+    unchecked_set_prior(key, prior);
+  }
+
+  bool params_are_valid() const {
+    for (const auto &pair : get_params()) {
+      if (!pair.second.is_valid()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  double prior_log_likelihood() const {
+    double sum = 0.;
+    for (const auto &pair : get_params()) {
+      sum += pair.second.prior_log_likelihood();
+    }
+    return sum;
+  }
+
   /*
    * These methods which collapse a set of vectors to a vector, and
    * set them from a vector facilitate things like tuning in which
@@ -94,7 +185,7 @@ public:
     std::vector<ParameterValue> x;
     const ParameterStore params = get_params();
     for (const auto &pair : params) {
-      x.push_back(pair.second);
+      x.push_back(pair.second.value);
     }
     return x;
   }
@@ -110,11 +201,27 @@ public:
     }
   }
 
+  ParameterValue get_param_value(const std::string &name) const {
+    return get_params().at(name).value;
+  }
+
+  void unchecked_set_param(const std::string &name,
+                           const ParameterValue value) {
+    Parameter param = {value, get_params()[name].prior};
+    unchecked_set_param(name, param);
+  }
+
+  void unchecked_set_prior(const std::string &name,
+                           const ParameterPrior &prior) {
+    Parameter param = {get_params()[name].value, prior};
+    unchecked_set_param(name, param);
+  }
+
   /*
    * For serialization through cereal.
    */
   template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("parameter_store", params_));
+    archive(cereal::make_nvp("parameters", params_));
   };
 
   template <class Archive> void load(Archive &archive) {
@@ -134,13 +241,14 @@ public:
   virtual ParameterStore get_params() const { return params_; }
 
   virtual void unchecked_set_param(const std::string &name,
-                                   const double value) {
-    params_[name] = value;
+                                   const Parameter &param) {
+    params_[name] = param;
   }
 
 protected:
   ParameterStore params_;
 };
+
 } // namespace albatross
 
 #endif

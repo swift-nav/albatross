@@ -104,12 +104,12 @@ public:
   }
 
   void unchecked_set_param(const std::string &name,
-                           const double value) override {
+                           const Parameter &param) override {
 
     if (map_contains(this->params_, name)) {
-      this->params_[name] = value;
+      this->params_[name] = param;
     } else {
-      sub_model_.set_param(name, value);
+      sub_model_.set_param(name, param);
     }
   }
 

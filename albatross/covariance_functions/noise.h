@@ -20,7 +20,8 @@ namespace albatross {
 template <typename Observed> class IndependentNoise : public CovarianceTerm {
 public:
   IndependentNoise(double sigma_noise = 0.1) {
-    this->params_["sigma_independent_noise"] = sigma_noise;
+    this->params_["sigma_independent_noise"] = {
+        sigma_noise, std::make_shared<PositivePrior>()};
   };
 
   ~IndependentNoise(){};
@@ -33,7 +34,7 @@ public:
    */
   double operator()(const Observed &x, const Observed &y) const {
     if (x == y) {
-      double sigma_noise = this->params_.at("sigma_independent_noise");
+      double sigma_noise = this->get_param_value("sigma_independent_noise");
       return sigma_noise * sigma_noise;
     } else {
       return 0.;

@@ -77,15 +77,18 @@ template <typename Term> struct CovarianceFunction {
   inline auto set_param(const ParameterKey &key, const ParameterValue &value) {
     return term.set_param(key, value);
   };
+  inline auto set_param(const ParameterKey &key, const Parameter &param) {
+    return term.set_param(key, param);
+  };
+  inline auto set_prior(const ParameterKey &key, const ParameterPrior &prior) {
+    return term.set_prior(key, prior);
+  };
   inline auto pretty_string() const { return term.pretty_string(); };
   inline auto get_params_as_vector() const {
     return term.get_params_as_vector();
   };
   inline auto set_params_from_vector(const std::vector<ParameterValue> &x) {
     return term.set_params_from_vector(x);
-  };
-  inline auto unchecked_set_param(const std::string &name, const double value) {
-    return term.unchecked_set_param(name, value);
   };
 };
 

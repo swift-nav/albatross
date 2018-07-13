@@ -114,8 +114,8 @@ public:
   }
 
   void unchecked_set_param(const std::string &name,
-                           const double value) override {
-    covariance_function_.set_param(name, value);
+                           const Parameter &param) override {
+    covariance_function_.set_param(name, param);
   }
 
   std::string pretty_string() const {
