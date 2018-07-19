@@ -34,6 +34,7 @@ namespace albatross {
 template <typename FeatureType> struct RegressionDataset {
   std::vector<FeatureType> features;
   MarginalDistribution targets;
+  std::map<std::string, std::string> metadata;
 
   RegressionDataset(){};
 
@@ -50,12 +51,18 @@ template <typename FeatureType> struct RegressionDataset {
                     const Eigen::VectorXd &targets_)
       : RegressionDataset(features_, MarginalDistribution(targets_)) {}
 
+  bool operator==(const RegressionDataset &other) const {
+    return (features == other.features && targets == other.targets &&
+            metadata == other.metadata);
+  }
+
   template <class Archive>
   typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
   serialize(Archive &archive) {
     archive(cereal::make_nvp("features", features));
     archive(cereal::make_nvp("targets", targets));
+    archive(cereal::make_nvp("metadata", metadata));
   }
 
   template <class Archive>
