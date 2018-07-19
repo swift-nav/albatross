@@ -39,7 +39,7 @@ struct Parameter {
   ParameterPrior prior;
 
   Parameter() : value(), prior(nullptr){};
-  Parameter(ParameterValue value_) : value(value_) {}
+  Parameter(ParameterValue value_) : value(value_), prior(nullptr) {}
   Parameter(ParameterValue value_, const ParameterPrior &prior_)
       : value(value_), prior(prior_){};
   /*
@@ -156,6 +156,13 @@ public:
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
+    for (const auto &pair : params) {
+      check_param_key(pair.first);
+      unchecked_set_param(pair.first, pair.second);
+    }
+  }
+
+  void set_param_values(const std::map<std::string, ParameterValue> &params) {
     for (const auto &pair : params) {
       check_param_key(pair.first);
       unchecked_set_param(pair.first, pair.second);

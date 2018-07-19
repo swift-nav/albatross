@@ -127,4 +127,26 @@ TEST(test_parameter_handler, test_set_prior) {
   }
 };
 
+TEST(test_parameter_handler, test_set_param_values_doesnt_overwrite_prior) {
+  auto p = TestParameterHandler();
+
+  const auto orig_params = p.get_params();
+
+  std::map<std::string, double> new_params;
+  for (const auto &pair : orig_params) {
+    new_params[pair.first] = pair.second.value + 1.;
+  }
+
+  p.set_param_values(new_params);
+
+  for (const auto &pair : orig_params) {
+    // Make sure we changed the parameter value
+    const auto new_param = p.get_params().at(pair.first);
+    EXPECT_NE(new_param.value, pair.second.value);
+    // but not the prior.
+    EXPECT_TRUE(!pair.second.has_prior() ||
+                (pair.second.prior == new_param.prior));
+  }
+};
+
 } // namespace albatross
