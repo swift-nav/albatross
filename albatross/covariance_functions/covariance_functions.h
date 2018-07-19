@@ -74,8 +74,13 @@ template <typename Term> struct CovarianceFunction {
   inline auto set_params(const ParameterStore &params) {
     return term.set_params(params);
   };
-  inline auto set_param(const ParameterKey &key, const ParameterValue &value) {
-    return term.set_param(key, value);
+  inline auto
+  set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
+    return term.set_param_values(values);
+  };
+  inline auto set_param_value(const ParameterKey &key,
+                              const ParameterValue &value) {
+    return term.set_param_value(key, value);
   };
   inline auto set_param(const ParameterKey &key, const Parameter &param) {
     return term.set_param(key, param);

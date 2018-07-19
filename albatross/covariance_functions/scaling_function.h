@@ -78,6 +78,10 @@ public:
     scaling_function_.set_params(params);
   }
 
+  void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
+    scaling_function_.set_param_values(values);
+  }
+
   virtual ParameterStore get_params() const override {
     return scaling_function_.get_params();
   }
@@ -94,7 +98,7 @@ public:
     archive(cereal::make_nvp("scaling_function", scaling_function_));
   }
 
-  void unchecked_set_param(const std::string &name,
+  void unchecked_set_param(const ParameterKey &name,
                            const Parameter &param) override {
     scaling_function_.set_param(name, param);
   }

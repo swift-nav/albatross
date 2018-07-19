@@ -71,7 +71,7 @@ public:
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const std::string &name,
+  void unchecked_set_param(const ParameterKey &name,
                            const Parameter &param) override {
     if (map_contains(lhs_.get_params(), name)) {
       lhs_.set_param(name, param);
