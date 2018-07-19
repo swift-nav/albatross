@@ -22,6 +22,7 @@
 
 #include "core/model.h"
 #include "covariance_functions/covariance_functions.h"
+#include "csv_utils.h"
 #include "models/gp.h"
 
 #define EXAMPLE_SLOPE_VALUE sqrt(2.)
@@ -64,13 +65,14 @@ std::vector<double> random_points_on_line(const int n, const double low,
 /*
  * Creates a grid of n points between low and high.
  */
-std::vector<double> uniform_points_on_line(const int n, const double low,
+std::vector<double> uniform_points_on_line(const std::size_t n,
+                                           const double low,
                                            const double high) {
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(low, high);
 
   std::vector<double> xs;
-  for (int i = 0; i < n; i++) {
+  for (std::size_t i = 0; i < n; i++) {
     double ratio = (double)i / (double)(n - 1);
     xs.push_back(low + ratio * (high - low));
   }
@@ -81,7 +83,8 @@ std::vector<double> uniform_points_on_line(const int n, const double low,
  * The noise free function we're attempting to estimate.
  */
 double truth(double x) {
-  return x * EXAMPLE_SLOPE_VALUE + EXAMPLE_CONSTANT_VALUE + 10. * sin(x) / x;
+  double sinx_x = x == 0 ? 1. : sin(x) / x;
+  return x * EXAMPLE_SLOPE_VALUE + EXAMPLE_CONSTANT_VALUE + 10. * sinx_x;
 }
 
 /*
@@ -158,20 +161,20 @@ void write_predictions_to_csv(const std::string output_path,
   std::ofstream output;
   output.open(output_path);
 
-  const int k = 161;
+  const std::size_t k = 161;
   auto grid_xs = uniform_points_on_line(k, low - 2., high + 2.);
 
   auto predictions = model.predict(grid_xs);
 
-  std::cout << "writing predictions to : " << output_path << std::endl;
-  output << "x,y,variance,truth" << std::endl;
-  for (int i = 0; i < k; i++) {
-    output << grid_xs[i];
-    output << "," << predictions.mean[i];
-    output << "," << predictions.covariance(i, i);
-    output << "," << truth(grid_xs[i]);
-    output << std::endl;
+  Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
+  for (std::size_t i = 0; i < k; i++) {
+    targets[static_cast<Eigen::Index>(i)] = truth(grid_xs[i]);
   }
+
+  const albatross::RegressionDataset<double> dataset(grid_xs, targets);
+
+  albatross::write_to_csv(output, dataset, predictions);
+
   output.close();
 }
 

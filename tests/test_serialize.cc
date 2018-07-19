@@ -33,8 +33,8 @@ using SquaredExponentialGaussianProcess =
     GaussianProcessRegression<double, CovFunc>;
 
 using SerializableMockPointer =
-    std::unique_ptr<SerializableRegressionModel<MockPredictor, MockFit>>;
-using RegressionMockPointer = std::unique_ptr<RegressionModel<MockPredictor>>;
+    std::unique_ptr<SerializableRegressionModel<MockFeature, MockFit>>;
+using RegressionMockPointer = std::unique_ptr<RegressionModel<MockFeature>>;
 using SerializableLeastSquaresPointer =
     std::unique_ptr<SerializableRegressionModel<double, LeastSquaresFit>>;
 using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
@@ -167,6 +167,46 @@ struct ParameterStoreType : public SerializableType<ParameterStore> {
         {"1", {1., std::make_shared<GaussianPrior>(1., 2.)}},
         {"3", 3.}};
     return original;
+  }
+
+  bool are_equal(const RepresentationType &lhs,
+                 const RepresentationType &rhs) const override {
+    return lhs == rhs;
+  };
+};
+
+struct Dataset : public SerializableType<RegressionDataset<MockFeature>> {
+
+  RepresentationType create() const override {
+
+    std::vector<MockFeature> features = {{1}, {3}, {-2}};
+    Eigen::VectorXd targets(3);
+    targets << 5., 3., 9.;
+
+    RegressionDataset<MockFeature> dataset(features, targets);
+
+    return dataset;
+  }
+
+  bool are_equal(const RepresentationType &lhs,
+                 const RepresentationType &rhs) const override {
+    return lhs == rhs;
+  };
+};
+
+struct DatasetWithMetadata
+    : public SerializableType<RegressionDataset<MockFeature>> {
+
+  RepresentationType create() const override {
+
+    std::vector<MockFeature> features = {{1}, {3}, {-2}};
+    Eigen::VectorXd targets(3);
+    targets << 5., 3., 9.;
+
+    RegressionDataset<MockFeature> dataset(features, targets);
+    dataset.metadata["time"] = "1";
+
+    return dataset;
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -321,9 +361,9 @@ typedef ::testing::Types<
     FullJointDistribution, MeanOnlyJointDistribution, FullMarginalDistribution,
     MeanOnlyMarginalDistribution, ParameterStoreType,
     SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
-    FitDirectModel, UnfitDirectModel, UnfitRegressionModel,
-    FitLinearRegressionModel, FitLinearSerializablePointer,
-    UnfitGaussianProcess, FitGaussianProcess>
+    Dataset, DatasetWithMetadata, FitDirectModel, UnfitDirectModel,
+    UnfitRegressionModel, FitLinearRegressionModel,
+    FitLinearSerializablePointer, UnfitGaussianProcess, FitGaussianProcess>
     ToTest;
 
 TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);

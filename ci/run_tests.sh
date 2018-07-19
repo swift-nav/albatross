@@ -6,7 +6,7 @@ run_tests() {
     # Run the long integration tests in release mode so they're fast.
     cmake -DENABLE_AUTOLINT=ON \
       -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$C_COMPILER" -DCMAKE_CXX_COMPILER="$CXX_COMPILER" ../
-    make run_albatross_unit_tests run_inspection_example run_sinc_example run_tune_example run_temperature_example -j4
+    make run_albatross_unit_tests run_inspection_example run_sinc_example run_tune_example run_temperature_example -j2
     cd ..
 }
 

@@ -22,6 +22,7 @@
 
 #include "core/model.h"
 #include "covariance_functions/covariance_functions.h"
+#include "csv_utils.h"
 #include "models/gp.h"
 
 namespace albatross {
@@ -40,7 +41,11 @@ struct Station {
   bool operator==(const Station &rhs) const { return (ecef == rhs.ecef); }
 
   template <typename Archive> void serialize(Archive &archive) {
-    archive(id, lat, lon, height, ecef);
+    archive(cereal::make_nvp("id", id), cereal::make_nvp("lat", lat),
+            cereal::make_nvp("lon", lon), cereal::make_nvp("height", height),
+            cereal::make_nvp("ecef_x", ecef[0]),
+            cereal::make_nvp("ecef_y", ecef[1]),
+            cereal::make_nvp("ecef_z", ecef[2]));
   }
 };
 
@@ -127,30 +132,14 @@ void write_predictions(const std::string output_path,
 
   std::ofstream ostream;
   ostream.open(output_path);
-  ostream << "STATION,LAT,LON,ELEV(M),X,Y,Z,TEMP,VARIANCE" << std::endl;
 
-  std::size_t n = features.size();
-  std::size_t count = 0;
-  for (const auto &f : features) {
-    ostream << std::to_string(f.id);
-    ostream << ", " << std::to_string(f.lat);
-    ostream << ", " << std::to_string(f.lon);
-    ostream << ", " << std::to_string(f.height);
-    ostream << ", " << std::to_string(f.ecef[0]);
-    ostream << ", " << std::to_string(f.ecef[1]);
-    ostream << ", " << std::to_string(f.ecef[2]);
+  Eigen::VectorXd targets =
+      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
 
-    std::vector<Station> one_feature = {f};
-    const auto pred = model.predict(one_feature);
+  albatross::RegressionDataset<Station> dataset(features, targets);
 
-    ostream << ", " << std::to_string(pred.mean[0]);
-    ostream << ", " << std::to_string(std::sqrt(pred.covariance(0, 0)));
-    ostream << std::endl;
-    if (count % 1000 == 0) {
-      std::cout << count + 1 << "/" << n << std::endl;
-    }
-    count++;
-  }
+  const auto predictions = model.predict_marginal(features);
+  albatross::write_to_csv(ostream, dataset, predictions);
 }
 
 } // namespace albatross

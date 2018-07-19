@@ -32,7 +32,7 @@ TEST(test_core_model, test_fit_predict) {
 TEST(test_core_model, test_regression_model_abstraction) {
   // This just tests to make sure that an implementation of a RegressionModel
   // can be passed around as a pointer to the abstract class.
-  std::unique_ptr<RegressionModel<MockPredictor>> m_ptr =
+  std::unique_ptr<RegressionModel<MockFeature>> m_ptr =
       std::make_unique<MockModel>();
 }
 } // namespace albatross

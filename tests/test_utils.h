@@ -29,9 +29,19 @@
 namespace albatross {
 
 // A simple predictor which is effectively just an integer.
-struct MockPredictor {
+struct MockFeature {
   int value;
-  MockPredictor(int v) : value(v){};
+
+  MockFeature() : value(){};
+  MockFeature(int v) : value(v){};
+
+  bool operator==(const MockFeature &other) const {
+    return value == other.value;
+  };
+
+  template <class Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("value", value));
+  }
 };
 
 struct MockFit {
@@ -51,7 +61,7 @@ public:
  * A simple model which builds a map from MockPredict (aka, int)
  * to a double value.
  */
-class MockModel : public SerializableRegressionModel<MockPredictor, MockFit> {
+class MockModel : public SerializableRegressionModel<MockFeature, MockFit> {
 public:
   MockModel(double parameter = 3.14159) {
     this->params_["parameter"] = {parameter,
@@ -62,20 +72,20 @@ public:
 
   template <typename Archive> void save(Archive &archive) const {
     archive(
-        cereal::base_class<SerializableRegressionModel<MockPredictor, MockFit>>(
+        cereal::base_class<SerializableRegressionModel<MockFeature, MockFit>>(
             this));
   }
 
   template <typename Archive> void load(Archive &archive) {
     archive(
-        cereal::base_class<SerializableRegressionModel<MockPredictor, MockFit>>(
+        cereal::base_class<SerializableRegressionModel<MockFeature, MockFit>>(
             this));
   }
 
 protected:
   // builds the map from int to value
   MockFit
-  serializable_fit_(const std::vector<MockPredictor> &features,
+  serializable_fit_(const std::vector<MockFeature> &features,
                     const MarginalDistribution &targets) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
@@ -90,7 +100,7 @@ protected:
 
   // looks up the prediction in the map
   JointDistribution
-  predict_(const std::vector<MockPredictor> &features) const override {
+  predict_(const std::vector<MockFeature> &features) const override {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
@@ -116,15 +126,15 @@ public:
   };
 };
 
-static inline RegressionDataset<MockPredictor>
+static inline RegressionDataset<MockFeature>
 mock_training_data(const int n = 10) {
-  std::vector<MockPredictor> features;
+  std::vector<MockFeature> features;
   Eigen::VectorXd targets(n);
   for (int i = 0; i < n; i++) {
-    features.push_back(MockPredictor(i));
+    features.push_back(MockFeature(i));
     targets[i] = static_cast<double>(i + n);
   }
-  return RegressionDataset<MockPredictor>(features, targets);
+  return RegressionDataset<MockFeature>(features, targets);
 }
 
 static inline void
