@@ -19,6 +19,7 @@
 #include "indexing.h"
 #include <Eigen/Core>
 #include <iostream>
+#include <map>
 #include <vector>
 
 namespace albatross {
@@ -31,6 +32,10 @@ namespace albatross {
 template <typename CovarianceType> struct Distribution {
   Eigen::VectorXd mean;
   CovarianceType covariance;
+  // Sometimes it can be helpful to keep track of some
+  // auxillary information regarding how a distribution was
+  // derived, that can be stored in this map.
+  std::map<std::string, std::string> metadata;
 
   std::size_t size() const {
     // If the covariance is defined it must have the same number
@@ -56,6 +61,10 @@ template <typename CovarianceType> struct Distribution {
   Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
       : mean(mean_), covariance(covariance_){};
 
+  double get_diagonal(Eigen::Index i) const {
+    return has_covariance() ? covariance.diagonal()[i] : NAN;
+  }
+
   /*
    * If the CovarianceType is serializable, add a serialize method.
    */
@@ -65,6 +74,7 @@ template <typename CovarianceType> struct Distribution {
   serialize(Archive &archive) {
     archive(cereal::make_nvp("mean", mean));
     archive(cereal::make_nvp("covariance", covariance));
+    archive(cereal::make_nvp("metadata", metadata));
   }
 
   /*
@@ -81,7 +91,8 @@ template <typename CovarianceType> struct Distribution {
   }
 
   bool operator==(const Distribution &other) const {
-    return (mean == other.mean && covariance == other.covariance);
+    return (mean == other.mean && covariance == other.covariance &&
+            metadata == other.metadata);
   }
 };
 

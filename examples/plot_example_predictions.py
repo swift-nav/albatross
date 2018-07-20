@@ -26,27 +26,30 @@ if __name__ == "__main__":
     predictions_path = args.predictions
     print train_path
     train_data = pd.read_csv(train_path)
+    x_name = 'feature'
+    y_name = 'prediction'
+
     predictions_data = pd.read_csv(predictions_path)
-    std = np.sqrt(predictions_data['variance'].values)
+    std = np.sqrt(predictions_data['prediction_variance'].values)
 
     fig = plt.figure(figsize=(8, 8))
     # create +/- 3 sigma shading
-    plt.fill_between(predictions_data['x'],
-                     predictions_data['y'] - 3 * std,
-                     predictions_data['y'] + 3 * std, color='steelblue', alpha=0.1,
+    plt.fill_between(predictions_data[x_name],
+                     predictions_data[y_name] - 3 * std,
+                     predictions_data[y_name] + 3 * std, color='steelblue', alpha=0.1,
                      label='+/- 3 sigma')
     # and +/- 1 sigma shading
-    plt.fill_between(predictions_data['x'],
-                     predictions_data['y'] - std,
-                     predictions_data['y'] + std, color='steelblue',
+    plt.fill_between(predictions_data[x_name],
+                     predictions_data[y_name] - std,
+                     predictions_data[y_name] + std, color='steelblue',
                      alpha=0.5, label='+/- sigma')
     # Plot the mean
-    plt.plot(predictions_data['x'],
-             predictions_data['y'], color='steelblue',
+    plt.plot(predictions_data[x_name],
+             predictions_data[y_name], color='steelblue',
              label='mean')
     # Plot the truth
-    plt.plot(predictions_data['x'],
-             predictions_data['truth'].astype('float'), color='black',
+    plt.plot(predictions_data[x_name],
+             predictions_data['target'].astype('float'), color='black',
              label='truth')
     # Show the training points
     plt.scatter(train_data['x'],

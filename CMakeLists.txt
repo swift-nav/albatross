@@ -39,6 +39,7 @@ set(albatross_HEADERS
     albatross/crossvalidation.h
     albatross/tuning_metrics.h
     albatross/map_utils.h
+    albatross/csv_utils.h
     albatross/core/keys.h
     albatross/core/model.h
     albatross/core/model_adapter.h

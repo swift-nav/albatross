@@ -63,6 +63,18 @@ int main(int argc, char *argv[]) {
    */
   std::cout << "Instantiating the model." << std::endl;
   auto model = gp_from_covariance<double>(linear_model);
+
+  /*
+   * These parameters came from the tune_example.
+   */
+  model.set_params({
+      {"sigma_constant", 121.565},
+      {"sigma_independent_noise", 0.719013},
+      {"sigma_slope", 110.902},
+      {"sigma_squared_exponential", 5.73097},
+      {"squared_exponential_length_scale", 3.55464},
+  });
+
   model.fit(data);
 
   /*

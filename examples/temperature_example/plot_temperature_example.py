@@ -97,8 +97,8 @@ if __name__ == "__main__":
 
     # read in the training and prediction data
     preds = pd.read_csv(args.predictions)
-    pred_lons = preds['LON'].values
-    pred_lats = preds['LAT'].values
+    pred_lons = preds['lon'].values
+    pred_lats = preds['lat'].values
 
     df = pd.read_csv(args.train)
     lons = df['LON'].values
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     norm = plt.Normalize(vmin=df['TEMP'].values.min(), vmax=df['TEMP'].values.max())
 
-    ncols = np.nonzero(np.diff(preds['LAT'].values) != 0)[0][0] + 1
+    ncols = np.nonzero(np.diff(preds['lat'].values) != 0)[0][0] + 1
     nrows = float(preds.shape[0]) / ncols
     if not (nrows - int(nrows) == 0.):
         raise ValueError("Couldn't infer data shape")
@@ -149,8 +149,7 @@ if __name__ == "__main__":
 
         plt.colorbar(pm, ax=axes[0], cax=cax, label=units)
 
-
-    plot_variable('TEMP', "Degrees F")
+    plot_variable('prediction', "Degrees F")
     plt.savefig("mean_temperature.png", norm=norm)
-    plot_variable('VARIANCE', "Standard Deviation (F)", vmax=3.0)
+    plot_variable('prediction_variance', "Standard Deviation (F)", vmax=3.0)
     plt.savefig("sd_temperature.png")
