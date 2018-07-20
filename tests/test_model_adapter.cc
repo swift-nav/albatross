@@ -31,9 +31,9 @@ public:
 
   std::string get_name() const override { return "test_adapted"; };
 
-  const Eigen::VectorXd convert_feature(const double &x) const {
+  const Eigen::VectorXd convert_feature(const double &x) const override {
     Eigen::VectorXd converted(2);
-    converted << 1., (x - this->params_.at("center"));
+    converted << 1., (x - this->get_param_value("center"));
     return converted;
   }
 
@@ -59,7 +59,7 @@ void test_get_set(albatross::RegressionModel<double> &model,
                   const std::string &key) {
   // Make sure a key exists, then modify it and make sure it
   // takes on the new value.
-  const auto orig = model.get_params().at(key);
+  const auto orig = model.get_param_value(key);
   model.set_param(key, orig + 1.);
   EXPECT_EQ(model.get_params().at(key), orig + 1.);
 }

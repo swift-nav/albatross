@@ -39,7 +39,7 @@ struct Parameter {
   ParameterPrior prior;
 
   Parameter() : value(), prior(nullptr){};
-  Parameter(ParameterValue value_) : value(value_) {}
+  Parameter(ParameterValue value_) : value(value_), prior(nullptr) {}
   Parameter(ParameterValue value_, const ParameterPrior &prior_)
       : value(value_), prior(prior_){};
   /*
@@ -162,7 +162,14 @@ public:
     }
   }
 
-  void set_param(const ParameterKey &key, const ParameterValue &value) {
+  void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
+    for (const auto &pair : values) {
+      check_param_key(pair.first);
+      unchecked_set_param(pair.first, pair.second);
+    }
+  }
+
+  void set_param_value(const ParameterKey &key, const ParameterValue &value) {
     check_param_key(key);
     unchecked_set_param(key, value);
   }
@@ -170,6 +177,14 @@ public:
   void set_param(const ParameterKey &key, const Parameter &param) {
     check_param_key(key);
     unchecked_set_param(key, param);
+  }
+
+  // This just avoids the situation where a user would call `set_param`
+  // with a double, which may then be viewed by the compiler as the
+  // initialization argument for a `Parameter` which would then
+  // inadvertently overwrite the prior.
+  void set_param(const ParameterKey &key, const ParameterValue &value) {
+    set_param_value(key, value);
   }
 
   void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
@@ -242,17 +257,17 @@ public:
     }
   }
 
-  ParameterValue get_param_value(const std::string &name) const {
+  ParameterValue get_param_value(const ParameterKey &name) const {
     return get_params().at(name).value;
   }
 
-  void unchecked_set_param(const std::string &name,
+  void unchecked_set_param(const ParameterKey &name,
                            const ParameterValue value) {
     Parameter param = {value, get_params()[name].prior};
     unchecked_set_param(name, param);
   }
 
-  void unchecked_set_prior(const std::string &name,
+  void unchecked_set_prior(const ParameterKey &name,
                            const ParameterPrior &prior) {
     Parameter param = {get_params()[name].value, prior};
     unchecked_set_param(name, param);
@@ -281,7 +296,7 @@ public:
 
   virtual ParameterStore get_params() const { return params_; }
 
-  virtual void unchecked_set_param(const std::string &name,
+  virtual void unchecked_set_param(const ParameterKey &name,
                                    const Parameter &param) {
     params_[name] = param;
   }

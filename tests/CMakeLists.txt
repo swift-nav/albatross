@@ -5,19 +5,21 @@ set(CMAKE_CXX_FLAGS "-Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wuninitial
 
 add_executable(albatross_unit_tests
 EXCLUDE_FROM_ALL
+test_core_distribution.cc
 test_core_model.cc
 test_covariance_functions.cc
 test_distance_metrics.cc
 test_evaluate.cc
 test_map_utils.cc
-test_serialize.cc
-test_parameter_handling_mixin.cc
+test_model_adapter.cc
 test_models.cc
-test_core_distribution.cc
+test_parameter_handling_mixin.cc
+test_radial.cc
+test_scaling_function.cc
+test_serializable_ldlt.cc
+test_serialize.cc
 test_tune.cc
 test_tuning_metrics.cc
-test_serializable_ldlt.cc
-test_radial.cc
 )
 
 add_dependencies(albatross_unit_tests
