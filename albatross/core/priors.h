@@ -37,6 +37,7 @@ public:
   virtual std::string get_name() const = 0;
   virtual double lower_bound() const { return -LARGE_VAL; }
   virtual double upper_bound() const { return LARGE_VAL; }
+  virtual bool is_fixed() const { return false; }
   virtual bool operator==(const Prior &other) const {
     return typeid(*this) == typeid(other);
   }
@@ -55,10 +56,34 @@ public:
   }
 };
 
+class FixedPrior : public Prior {
+public:
+  std::string get_name() const override { return "fixed"; };
+  double log_pdf(double x) const override { return 0.; }
+
+  bool is_fixed() const override { return true; }
+
+  template <typename Archive> void serialize(Archive &archive) {
+    archive(cereal::base_class<Prior>(this));
+  }
+};
+
 class PositivePrior : public Prior {
 public:
   double log_pdf(double x) const override { return x > 0. ? 0. : -LARGE_VAL; }
   std::string get_name() const override { return "positive"; };
+  double lower_bound() const override { return 0.; }
+  double upper_bound() const override { return LARGE_VAL; }
+
+  template <typename Archive> void serialize(Archive &archive) {
+    archive(cereal::base_class<Prior>(this));
+  }
+};
+
+class NonNegativePrior : public Prior {
+public:
+  double log_pdf(double x) const override { return x >= 0. ? 0. : -LARGE_VAL; }
+  std::string get_name() const override { return "non_negative"; };
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
 
@@ -168,6 +193,8 @@ private:
 
 CEREAL_REGISTER_TYPE(albatross::UninformativePrior);
 CEREAL_REGISTER_TYPE(albatross::PositivePrior);
+CEREAL_REGISTER_TYPE(albatross::NonNegativePrior);
+CEREAL_REGISTER_TYPE(albatross::FixedPrior);
 CEREAL_REGISTER_TYPE(albatross::UniformPrior);
 CEREAL_REGISTER_TYPE(albatross::GaussianPrior);
 CEREAL_REGISTER_TYPE(albatross::LogNormalPrior);

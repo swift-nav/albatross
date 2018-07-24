@@ -53,7 +53,6 @@ static inline double
 negative_log_likelihood(const Eigen::VectorXd &deviation,
                         const Eigen::LDLT<_MatrixType, _UpLo> &ldlt) {
   const auto diag = ldlt.vectorD();
-  const auto L = ldlt.matrixL();
   const double rank = static_cast<double>(diag.size());
   const double mahalanobis = deviation.dot(ldlt.solve(deviation));
   const double log_det = log_sum(diag);

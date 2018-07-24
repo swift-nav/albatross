@@ -50,6 +50,22 @@ inline double gp_fast_loo_nll(const RegressionDataset<FeatureType> &dataset,
          model->prior_log_likelihood();
 }
 
+template <typename FeatureType, typename SubFeatureType = FeatureType>
+inline double gp_nll(const RegressionDataset<FeatureType> &dataset,
+                     RegressionModel<FeatureType> *model) {
+  using SerializableGP =
+      SerializableRegressionModel<FeatureType,
+                                  GaussianProcessFit<SubFeatureType>>;
+  SerializableGP *gp_model = static_cast<SerializableGP *>(model);
+  gp_model->fit(dataset);
+  GaussianProcessFit<SubFeatureType> model_fit = gp_model->get_fit();
+
+  double nll =
+      negative_log_likelihood(dataset.targets.mean, model_fit.train_ldlt);
+  nll -= model->prior_log_likelihood();
+  return nll;
+}
+
 inline double loo_nll(const RegressionDataset<double> &dataset,
                       RegressionModel<double> *model) {
   auto loo_folds = leave_one_out(dataset);

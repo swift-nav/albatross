@@ -82,6 +82,37 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
                                 original_handler.get_params_as_vector());
 }
 
+/*
+ * Test the helper functions that let you get and set parameters from
+ * a vector of values.
+ */
+TEST(test_parameter_handler, test_get_set_from_vector_with_fixed) {
+  const ParameterStore expected = {
+      {"1", 4.},
+      {"2", 5.},
+      {"foo", {1., std::make_shared<FixedPrior>()}},
+      {"3", 6.}};
+  const std::vector<ParameterValue> expected_param_vector = {4., 5., 6.};
+
+  ParameterStore original(expected);
+  original["1"] = 1.;
+  original["2"] = 2.;
+  original["foo"] = {-2., std::make_shared<FixedPrior>()};
+  original["3"] = 3.;
+  const std::vector<ParameterValue> original_param_vector = {1., 2., 3.};
+  MockParameterHandler original_handler(original);
+
+  // Make sure we start with the parameter vector we'd expect, even though
+  // it was initialized out of order.
+  expect_parameter_vector_equal(original_param_vector,
+                                original_handler.get_params_as_vector());
+
+  // Now set the parameters using a new vector and make sure they stick
+  original_handler.set_params_from_vector(expected_param_vector);
+  expect_parameter_vector_equal(expected_param_vector,
+                                original_handler.get_params_as_vector());
+}
+
 TEST(test_parameter_handler, test_prior_log_likelihood) {
   auto p = TestParameterHandler();
 
