@@ -108,11 +108,6 @@ public:
   RegressionModel() : ParameterHandlingMixin(), has_been_fit_(){};
   virtual ~RegressionModel(){};
 
-  template <typename OtherFeatureType>
-  bool operator==(const RegressionModel<FeatureType> &other) const {
-    return false;
-  }
-
   virtual bool operator==(const RegressionModel<FeatureType> &other) const {
     // If the fit method has been called it's possible that some unknown
     // class members may have been modified.  As such, if a model has been
