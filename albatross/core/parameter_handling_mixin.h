@@ -14,6 +14,7 @@
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
 #include <assert.h>
+#include <iomanip>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -115,6 +116,12 @@ inline std::string pretty_priors(const ParameterStore &params) {
 
 inline std::string pretty_param_details(const ParameterStore &params) {
   std::ostringstream ss;
+
+  std::size_t max_name_length = 0;
+  for (const auto &pair : params) {
+    max_name_length = std::max(max_name_length, pair.first.size());
+  }
+
   for (const auto &pair : params) {
     std::string prior_name;
     if (pair.second.has_prior()) {
@@ -122,8 +129,9 @@ inline std::string pretty_param_details(const ParameterStore &params) {
     } else {
       prior_name = "none";
     }
-    ss << "    " << pair.first << " value: " << pair.second.value
-       << ", prior: " << prior_name << ", bounds: ["
+    ss << "    " << std::left << std::setw(max_name_length + 1) << pair.first
+       << " value: " << std::left << std::setw(10) << pair.second.value
+       << " prior: " << std::setw(15) << prior_name << " bounds: ["
        << (pair.second.has_prior() ? pair.second.prior->lower_bound()
                                    : -INFINITY)
        << ", " << (pair.second.has_prior() ? pair.second.prior->upper_bound()

@@ -64,10 +64,12 @@ int main(int argc, char *argv[]) {
   std::cout << "Instantiating the model." << std::endl;
   auto model = gp_from_covariance<double>(linear_model);
 
+  std::cout << pretty_param_details(model.get_params()) << std::endl;
+
   /*
    * These parameters came from the tune_example.
    */
-  model.set_params({
+  model.set_param_values({
       {"sigma_constant", 121.565},
       {"sigma_independent_noise", 0.719013},
       {"sigma_slope", 110.902},
