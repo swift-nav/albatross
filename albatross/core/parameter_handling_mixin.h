@@ -70,6 +70,8 @@ struct Parameter {
 
   bool is_valid() const { return within_bounds(); }
 
+  bool is_fixed() const { return has_prior() && prior->is_fixed(); }
+
   double prior_log_likelihood() const {
     if (has_prior()) {
       return prior->log_pdf(value);
@@ -219,7 +221,9 @@ public:
     std::vector<ParameterValue> x;
     const ParameterStore params = get_params();
     for (const auto &pair : params) {
-      x.push_back(pair.second.value);
+      if (!pair.second.is_fixed()) {
+        x.push_back(pair.second.value);
+      }
     }
     return x;
   }
@@ -247,14 +251,16 @@ public:
   }
 
   void set_params_from_vector(const std::vector<ParameterValue> &x) {
-    const std::size_t n = x.size();
     const ParameterStore params = get_params();
-    assert(n == static_cast<std::size_t>(params.size()));
-
-    const std::vector<ParameterKey> param_names = map_keys(params);
-    for (std::size_t i = 0; i < n; i++) {
-      unchecked_set_param(param_names[i], x[i]);
+    std::size_t i = 0;
+    for (const auto &pair : params) {
+      if (!pair.second.is_fixed()) {
+        unchecked_set_param(pair.first, x[i]);
+        i++;
+      }
     }
+    // Make sure we used all the parameters that were passed in.
+    assert(x.size() == i);
   }
 
   ParameterValue get_param_value(const ParameterKey &name) const {
