@@ -199,10 +199,10 @@ private:
 static inline Distribution<DiagonalMatrixXd>
 fast_gp_loo_cross_validated_predict(
     const Eigen::VectorXd &targets,
-    const Eigen::SerializableLDLT &train_covariance_ldlt) {
+    const Eigen::SerializableLDLT &train_covariance_ldlt,
+    const Eigen::VectorXd &information) {
   assert(targets.size() == train_covariance_ldlt.rows());
   assert(train_covariance_ldlt.rows() == train_covariance_ldlt.cols());
-  Eigen::VectorXd information = train_covariance_ldlt.solve(targets);
   const auto inverse_diag = train_covariance_ldlt.inverse_diagonal();
   Eigen::VectorXd loo_mean(targets);
   Eigen::VectorXd loo_variance(targets.size());
@@ -220,8 +220,8 @@ fast_gp_loo_cross_validated_predict(
     SerializableGaussianProcess<FeatureType, SubFeatureType> *model) {
   model->fit(dataset);
   const auto model_fit = model->get_fit();
-  return fast_gp_loo_cross_validated_predict(dataset.targets.mean,
-                                             model_fit.train_ldlt);
+  return fast_gp_loo_cross_validated_predict(
+      dataset.targets.mean, model_fit.train_ldlt, model_fit.information);
 }
 
 template <typename FeatureType, typename CovFunc>
