@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
   // These parameters are that came from tuning the model to the leave
   // one out negative log likelihood.
-  ParameterStore params = {
+  model.set_param_values({
       {"elevation_scaling_center", 3965.98},
       {"elevation_scaling_factor", 0.000810492},
       {"exponential_length_scale", 28197.6},
@@ -75,8 +75,7 @@ int main(int argc, char *argv[]) {
       {"sigma_exponential", 2.07548},
       {"sigma_independent_noise", 1.8288},
       {"sigma_squared_exponential", 3.77329},
-  };
-  model.set_params(params);
+  });
 
   std::cout << "Training the model." << std::endl;
   model.fit(data);

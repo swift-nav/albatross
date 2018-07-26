@@ -101,7 +101,7 @@ public:
 
   std::string get_name() const override {
     std::ostringstream oss;
-    oss << "gaussian[" << lower_ << "," << upper_ << "]";
+    oss << "uniform[" << lower_ << "," << upper_ << "]";
     return oss.str();
   };
 
