@@ -19,6 +19,9 @@
 #include "tuning_metrics.h"
 #include <map>
 #include <vector>
+#include <iostream>
+#include <chrono>
+#include <future>
 
 namespace albatross {
 
@@ -91,10 +94,23 @@ double objective_function(const std::vector<double> &x,
     return NAN;
   }
 
+  // TODO: make this parallel -MTS
   std::vector<double> metrics;
+  std::vector<std::future<double>> futures;
+  auto start = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < config.datasets.size(); i++) {
-    metrics.push_back(config.metric(config.datasets[i], model.get()));
+    futures.push_back(std::async(std::launch::async, config.metric,
+                                 config.datasets[i], model.get()));
+    std::cout << "Made thread " << i << std::endl;
+    //    metrics.push_back(config.metric(config.datasets[i], model.get()));
   }
+  for(auto &f : futures) {
+    metrics.push_back(f.get());
+  }
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double, std::milli> diff = end - start;
+  std::cout << "Code took " << diff.count()/1000.0 << " seconds to execute."
+            << std::endl;
   double metric = config.aggregator(metrics);
 
   config.output_stream << "-------------------" << std::endl;
