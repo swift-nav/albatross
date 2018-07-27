@@ -243,9 +243,11 @@ public:
     std::vector<double> lb;
     const auto params = get_params();
     for (const auto &pair : params) {
-      double bound = pair.second.has_prior() ? pair.second.prior->lower_bound()
-                                             : -LARGE_VAL;
-      lb.push_back(fmax(bound, -LARGE_VAL));
+      if (!pair.second.is_fixed()) {
+        double bound = pair.second.has_prior() ? pair.second.prior->lower_bound()
+                                               : -LARGE_VAL;
+        lb.push_back(fmax(bound, -LARGE_VAL));
+      }
     }
     return lb;
   }
@@ -254,9 +256,11 @@ public:
     std::vector<double> ub;
     const auto params = get_params();
     for (const auto &pair : params) {
-      double bound = pair.second.has_prior() ? pair.second.prior->upper_bound()
-                                             : LARGE_VAL;
-      ub.push_back(fmin(bound, LARGE_VAL));
+      if (!pair.second.is_fixed()) {
+        double bound = pair.second.has_prior() ? pair.second.prior->upper_bound()
+                                               : LARGE_VAL;
+        ub.push_back(fmin(bound, LARGE_VAL));
+      }
     }
     return ub;
   }
