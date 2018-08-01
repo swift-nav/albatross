@@ -28,25 +28,6 @@
 #define EXAMPLE_SLOPE_VALUE sqrt(2.)
 #define EXAMPLE_CONSTANT_VALUE 3.14159
 
-namespace albatross {
-
-class SlopeTerm : public CovarianceTerm {
-public:
-  SlopeTerm(double sigma_slope = 0.1) {
-    this->params_["sigma_slope"] = sigma_slope;
-  };
-
-  ~SlopeTerm(){};
-
-  std::string get_name() const { return "slope_term"; }
-
-  double operator()(const double &x, const double &y) const {
-    double sigma_slope = this->get_param_value("sigma_slope");
-    return sigma_slope * sigma_slope * x * y;
-  }
-};
-} // namespace albatross
-
 /*
  * Randomly samples n points between low and high.
  */

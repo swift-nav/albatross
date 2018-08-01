@@ -20,37 +20,13 @@ target_link_libraries(sinc_example m gflags pthread nlopt)
 add_custom_target(
     run_sinc_example ALL
     DEPENDS ${example_HEADERS}
-    COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv
+    COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
     COMMENT "Running sinc_example"
 )
 
 add_dependencies(run_sinc_example
     sinc_example
 )
-
-
-add_executable(tune_example
-    EXCLUDE_FROM_ALL
-    tune_example.cc
-)
-
-add_dependencies(tune_example
-    albatross
-)
-
-target_link_libraries(tune_example m gflags pthread nlopt)
-
-add_custom_target(
-    run_tune_example ALL
-    DEPENDS ${example_HEADERS}
-    COMMAND tune_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv
-    COMMENT "Running tune_example"
-)
-
-add_dependencies(run_sinc_example
-    sinc_example
-)
-
 
 add_executable(inspection_example
     EXCLUDE_FROM_ALL
