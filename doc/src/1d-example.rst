@@ -66,12 +66,11 @@ Using ``albatross`` this would look like,
   using Noise = IndependentNoise<double>;
   using SqrExp = SquaredExponential<EuclideanDistance>;
 
-  CovarianceFunction<Constant> mean = {Constant(100.)};
-  CovarianceFunction<SlopeTerm> slope = {SlopeTerm(100.)};
+  CovarianceFunction<Polynomial<1>> linear = {Polynomial<1>()};
   CovarianceFunction<Noise> noise = {Noise(meas_noise)};
   CovarianceFunction<SqrExp> sqrexp = {SqrExp(2., 5.)};
 
-  auto covariance = mean + slope + noise + sqrexp;
+  auto covariance = linear + noise + sqrexp;
 
 which incorporates prior knowledge that the function consists of a mean offset, a linear term, measurement noise and an unknown smooth compontent (which we captures using a squared exponential covariance function).
 
@@ -79,19 +78,20 @@ We can inspect the model and its parameters,
 
 .. code-block:: c
 
-    std::cout << covariance.to_string() << std::endl;
+    std::cout << covariance.pretty_string() << std::endl;
 
 Which shows us,
 
 .. code-block:: bash
 
-    model_name: (((constant+slope_term)+independent_noise)+squared_exponential[scalar_distance])
-    model_params:
-      length_scale: 2
-      sigma_constant: 100
-      sigma_independent_noise: 1
-      sigma_slope: 100
-      sigma_squared_exponential: 5
+    ((polynomal_1+independent_noise)+squared_exponential[euclidean_distance])
+    {
+        {"sigma_independent_noise", 1},
+        {"sigma_polynomial_0", 100},
+        {"sigma_polynomial_1", 100},
+        {"sigma_squared_exponential", 5.7},
+        {"squared_exponential_length_scale", 3.5},
+    };
 
 then condition the model on random observations, which we stored in ``data``,
 

@@ -156,7 +156,7 @@ void maybe_create_training_data(std::string input_path, const int n,
 }
 
 void write_predictions_to_csv(const std::string output_path,
-                              const albatross::RegressionModel<double> &model,
+                              const albatross::RegressionModel<double> *model,
                               const double low, const double high) {
   std::ofstream output;
   output.open(output_path);
@@ -164,7 +164,7 @@ void write_predictions_to_csv(const std::string output_path,
   const std::size_t k = 161;
   auto grid_xs = uniform_points_on_line(k, low - 2., high + 2.);
 
-  auto predictions = model.predict(grid_xs);
+  auto predictions = model->predict(grid_xs);
 
   Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
   for (std::size_t i = 0; i < k; i++) {
