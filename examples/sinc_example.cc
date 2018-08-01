@@ -19,17 +19,32 @@
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
+DEFINE_bool(tune, false, "a flag indication parameters should be tuned first.");
 
-double loo_nll(const albatross::RegressionDataset<double> &dataset,
-               albatross::RegressionModel<double> *model) {
-  auto loo_folds = albatross::leave_one_out(dataset);
-  return albatross::cross_validated_scores(
-             albatross::evaluation_metrics::negative_log_likelihood, loo_folds,
-             model)
-      .mean();
+using albatross::ParameterStore;
+using albatross::RegressionDataset;
+using albatross::RegressionModelCreator;
+using albatross::TuningMetric;
+using albatross::TuneModelConfg;
+using albatross::tune_regression_model;
+
+albatross::ParameterStore
+tune_model(RegressionModelCreator<double> &model_creator,
+           RegressionDataset<double> &data) {
+  /*
+   * Now we tune the model by finding the hyper parameters that
+   * maximize the likelihood (or minimize the negative log likelihood).
+   */
+  std::cout << "Tuning the model." << std::endl;
+
+  TuningMetric<double> metric = albatross::gp_fast_loo_nll<double>;
+
+  TuneModelConfg<double> config(model_creator, data, metric);
+  return tune_regression_model<double>(config);
 }
 
 int main(int argc, char *argv[]) {
+
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = std::stoi(FLAGS_n);
@@ -46,60 +61,40 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Defining the model." << std::endl;
   using Noise = IndependentNoise<double>;
-  using SqrExp = SquaredExponential<EuclideanDistance>;
+  using SquaredExp = SquaredExponential<EuclideanDistance>;
+  using PolynomialTerm = Polynomial<1>;
 
-  CovarianceFunction<Constant> mean = {Constant(100.)};
-  CovarianceFunction<SlopeTerm> slope = {SlopeTerm(100.)};
-  CovarianceFunction<Noise> noise = {Noise(10.)};
-  CovarianceFunction<SqrExp> sqrexp = {SqrExp(1.5, 100.)};
-  auto linear_model = mean + slope + noise + sqrexp;
+  CovarianceFunction<Polynomial<1>> polynomial = {Polynomial<1>(100.)};
+  CovarianceFunction<Noise> noise = {Noise(meas_noise)};
+  CovarianceFunction<SquaredExp> squared_exponential = {SquaredExp(3.5, 5.7)};
+  auto cov = polynomial + noise + squared_exponential;
 
-  /*
-   * A side effect of having statically composable covariance
-   * functions is that we don't explicitly know the type of the
-   * resulting Gaussian process, so to instantiate the model
-   * we need to ride off of template inferrence using a helper
-   * function.
-   */
-  std::cout << "Instantiating the model." << std::endl;
-  auto model = gp_from_covariance<double>(linear_model);
+  std::cout << cov.pretty_string() << std::endl;
 
-  std::cout << pretty_param_details(model.get_params()) << std::endl;
+  RegressionModelCreator<double> model_creator = [&]() {
+    /*
+     * A side effect of having statically composable covariance
+     * functions is that we don't explicitly know the type of the
+     * resulting Gaussian process, so to instantiate the model
+     * we need to ride off of template inferrence using a helper
+     * function.
+     */
+    auto model = gp_pointer_from_covariance<double>(cov);
+    return model;
+  };
 
-  /*
-   * These parameters came from the tune_example.
-   */
-  model.set_param_values({
-      {"sigma_constant", 121.565},
-      {"sigma_independent_noise", 0.719013},
-      {"sigma_slope", 110.902},
-      {"sigma_squared_exponential", 5.73097},
-      {"squared_exponential_length_scale", 3.55464},
-  });
+  auto model = model_creator();
 
-  model.fit(data);
-
-  /*
-   * This step could be skipped but both tests and illustrates how a
-   * Gaussian process can be serialized, then deserialized.
-   */
-  std::ostringstream oss;
-  std::cout << "Serializing the model." << std::endl;
-  {
-    cereal::JSONOutputArchive archive(oss);
-    archive(cereal::make_nvp(model.get_name(), model));
+  if (FLAGS_tune) {
+    model->set_params(tune_model(model_creator, data));
   }
-  std::istringstream iss(oss.str());
-  auto deserialized = gp_from_covariance<double>(linear_model);
-  std::cout << "Deserializing the model." << std::endl;
-  {
-    cereal::JSONInputArchive archive(iss);
-    archive(cereal::make_nvp(model.get_name(), deserialized));
-  }
+
+  std::cout << pretty_param_details(model->get_params()) << std::endl;
+  model->fit(data);
 
   /*
    * Make predictions at a bunch of locations which we can then
    * visualize if desired.
    */
-  write_predictions_to_csv(FLAGS_output, deserialized, low, high);
+  write_predictions_to_csv(FLAGS_output, model.get(), low, high);
 }

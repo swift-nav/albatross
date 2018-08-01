@@ -32,7 +32,7 @@ class Constant : public CovarianceTerm {
 public:
   Constant(double sigma_constant = 10.) {
     this->params_["sigma_constant"] = {sigma_constant,
-                                       std::make_shared<PositivePrior>()};
+                                       std::make_shared<NonNegativePrior>()};
   };
 
   ~Constant(){};
@@ -59,6 +59,36 @@ public:
     return sigma_constant * sigma_constant;
   }
 };
+
+template <int order> class Polynomial : public CovarianceTerm {
+public:
+  Polynomial(double sigma = 100.) {
+    for (int i = 0; i < order + 1; i++) {
+      std::string param_name = "sigma_polynomial_" + std::to_string(i);
+      param_names_[i] = param_name;
+      this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
+    }
+  };
+
+  ~Polynomial(){};
+
+  std::string get_name() const { return "polynomal_" + std::to_string(order); }
+
+  double operator()(const double &x, const double &y) const {
+
+    double cov = 0.;
+    for (int i = 0; i < order + 1; i++) {
+      const double sigma = this->get_param_value(param_names_.at(i));
+      const double p = static_cast<double>(i);
+      cov += sigma * sigma * pow(x, p) * pow(y, p);
+    }
+    return cov;
+  }
+
+private:
+  std::map<int, std::string> param_names_;
+};
+
 } // namespace albatross
 
 #endif
