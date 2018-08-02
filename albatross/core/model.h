@@ -24,6 +24,16 @@
 
 namespace albatross {
 
+namespace detail {
+// This is effectively just a container that allows us to develop methods
+// which behave different conditional on the type of predictions desired.
+template <typename T> struct PredictTypeIdentity { typedef T type; };
+}
+
+// This can be used to make intentions more obvious when calling
+// predict variants for which you only want the mean.
+using PredictMeanOnly = Eigen::VectorXd;
+
 /*
  * A RegressionDataset holds two vectors of data, the features
  * where a single feature can be any class that contains the information used
@@ -150,11 +160,22 @@ public:
   }
 
   /*
-   * Similar to fit, this predict method wraps the implementation `predict_`
+   * Similar to fit, this predict methods wrap the implementation `predict_*_`
    * and makes simple checks to confirm the implementation is returning
    * properly sized Distribution.
    */
-  JointDistribution predict(const std::vector<FeatureType> &features) const {
+  template <typename PredictType = JointDistribution>
+  PredictType predict(const std::vector<FeatureType> &features) const {
+    return predict(features, detail::PredictTypeIdentity<PredictType>());
+  }
+
+  /*
+   * Predict specializations
+   */
+
+  JointDistribution
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<JointDistribution> &&identity) const {
     assert(has_been_fit());
     JointDistribution preds = predict_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
@@ -162,13 +183,9 @@ public:
     return preds;
   }
 
-  JointDistribution predict(const FeatureType &feature) const {
-    std::vector<FeatureType> features = {feature};
-    return predict(features);
-  }
-
   MarginalDistribution
-  predict_marginal(const std::vector<FeatureType> &features) const {
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<MarginalDistribution> &&identity) const {
     assert(has_been_fit());
     MarginalDistribution preds = predict_marginal_(features);
     assert(static_cast<s32>(preds.mean.size()) ==
@@ -176,16 +193,19 @@ public:
     return preds;
   }
 
-  Eigen::VectorXd predict_mean(const std::vector<FeatureType> &features) const {
+  Eigen::VectorXd
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<Eigen::VectorXd> &&identity) const {
     assert(has_been_fit());
     Eigen::VectorXd preds = predict_mean_(features);
     assert(static_cast<s32>(preds.size()) == static_cast<s32>(features.size()));
     return preds;
   }
 
-  double predict_mean(const FeatureType &feature) const {
+  template <typename PredictType>
+  PredictType predict(const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
-    return predict_mean(features)[0];
+    return predict<PredictType>(features);
   }
 
   /*
@@ -194,22 +214,23 @@ public:
    * follwed by predict but overriding this method may speed up computation for
    * some models.
    */
-  JointDistribution
-  fit_and_predict(const std::vector<FeatureType> &train_features,
-                  const MarginalDistribution &train_targets,
-                  const std::vector<FeatureType> &test_features) {
+  template <typename PredictType = JointDistribution>
+  PredictType fit_and_predict(const std::vector<FeatureType> &train_features,
+                              const MarginalDistribution &train_targets,
+                              const std::vector<FeatureType> &test_features) {
     // Fit using the training data, then predict with the test.
     fit(train_features, train_targets);
-    return predict(test_features);
+    return predict<PredictType>(test_features);
   }
 
   /*
    * A convenience wrapper around fit_and_predict which uses the entries
    * in a RegressionFold struct
    */
-  JointDistribution fit_and_predict(const RegressionFold<FeatureType> &fold) {
-    return fit_and_predict(fold.train.features, fold.train.targets,
-                           fold.test.features);
+  template <typename PredictType = JointDistribution>
+  PredictType fit_and_predict(const RegressionFold<FeatureType> &fold) {
+    return fit_and_predict<PredictType>(fold.train.features, fold.train.targets,
+                                        fold.test.features);
   }
 
   std::string pretty_string() const {

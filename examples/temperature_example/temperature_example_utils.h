@@ -138,7 +138,7 @@ void write_predictions(const std::string output_path,
 
   albatross::RegressionDataset<Station> dataset(features, targets);
 
-  const auto predictions = model.predict_marginal(features);
+  const auto predictions = model.predict<MarginalDistribution>(features);
   albatross::write_to_csv(ostream, dataset, predictions);
 }
 
