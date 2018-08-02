@@ -25,7 +25,7 @@ using albatross::ParameterStore;
 using albatross::RegressionDataset;
 using albatross::RegressionModelCreator;
 using albatross::TuningMetric;
-using albatross::TuneModelConfg;
+using albatross::TuneModelConfig;
 using albatross::tune_regression_model;
 
 albatross::ParameterStore
@@ -39,7 +39,7 @@ tune_model(RegressionModelCreator<double> &model_creator,
 
   TuningMetric<double> metric = albatross::gp_fast_loo_nll<double>;
 
-  TuneModelConfg<double> config(model_creator, data, metric);
+  TuneModelConfig<double> config(model_creator, data, metric);
   return tune_regression_model<double>(config);
 }
 

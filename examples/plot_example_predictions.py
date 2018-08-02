@@ -55,6 +55,12 @@ if __name__ == "__main__":
     plt.scatter(train_data['x'],
                 train_data['y'], color='k',
                 label='training points')
+
+    y_min = np.min(predictions_data['target'].astype('float'))
+    y_max = np.max(predictions_data['target'].astype('float'))
+    y_range = y_max - y_min
+    plt.ylim([y_min - 0.1 * y_range, y_max + 0.1 * y_range])
+
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")

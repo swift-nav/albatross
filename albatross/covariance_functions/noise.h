@@ -21,7 +21,7 @@ template <typename Observed> class IndependentNoise : public CovarianceTerm {
 public:
   IndependentNoise(double sigma_noise = 0.1) {
     this->params_["sigma_independent_noise"] = {
-        sigma_noise, std::make_shared<PositivePrior>()};
+        sigma_noise, std::make_shared<NonNegativePrior>()};
   };
 
   ~IndependentNoise(){};

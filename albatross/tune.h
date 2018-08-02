@@ -38,7 +38,7 @@ inline std::string to_string(const nlopt::result result) {
   return result_strings[result];
 }
 
-template <class FeatureType> struct TuneModelConfg {
+template <class FeatureType> struct TuneModelConfig {
   RegressionModelCreator<FeatureType> model_creator;
   std::vector<RegressionDataset<FeatureType>> datasets;
   TuningMetric<FeatureType> metric;
@@ -46,21 +46,21 @@ template <class FeatureType> struct TuneModelConfg {
   std::ostream &output_stream;
   nlopt::opt optimizer;
 
-  TuneModelConfg(const RegressionModelCreator<FeatureType> &model_creator_,
-                 const RegressionDataset<FeatureType> &dataset_,
-                 const TuningMetric<FeatureType> &metric_,
-                 const TuningMetricAggregator &aggregator_ = mean_aggregator,
-                 std::ostream &output_stream_ = std::cout)
+  TuneModelConfig(const RegressionModelCreator<FeatureType> &model_creator_,
+                  const RegressionDataset<FeatureType> &dataset_,
+                  const TuningMetric<FeatureType> &metric_,
+                  const TuningMetricAggregator &aggregator_ = mean_aggregator,
+                  std::ostream &output_stream_ = std::cout)
       : model_creator(model_creator_), datasets({dataset_}), metric(metric_),
         aggregator(aggregator_), output_stream(output_stream_), optimizer() {
     set_default_optimizer();
   };
 
-  TuneModelConfg(const RegressionModelCreator<FeatureType> &model_creator_,
-                 const std::vector<RegressionDataset<FeatureType>> &datasets_,
-                 const TuningMetric<FeatureType> &metric_,
-                 const TuningMetricAggregator &aggregator_ = mean_aggregator,
-                 std::ostream &output_stream_ = std::cout)
+  TuneModelConfig(const RegressionModelCreator<FeatureType> &model_creator_,
+                  const std::vector<RegressionDataset<FeatureType>> &datasets_,
+                  const TuningMetric<FeatureType> &metric_,
+                  const TuningMetricAggregator &aggregator_ = mean_aggregator,
+                  std::ostream &output_stream_ = std::cout)
       : model_creator(model_creator_), datasets(datasets_), metric(metric_),
         aggregator(aggregator_), output_stream(output_stream_), optimizer() {
     set_default_optimizer();
@@ -103,8 +103,8 @@ double objective_function(const std::vector<double> &x,
                                 "a gradient but one isn't available.");
   }
 
-  const TuneModelConfg<FeatureType> config =
-      *static_cast<TuneModelConfg<FeatureType> *>(void_tune_config);
+  const TuneModelConfig<FeatureType> config =
+      *static_cast<TuneModelConfig<FeatureType> *>(void_tune_config);
 
   const auto model = config.model_creator();
 
@@ -135,7 +135,7 @@ double objective_function(const std::vector<double> &x,
 
 template <class FeatureType>
 ParameterStore
-tune_regression_model(const TuneModelConfg<FeatureType> &config) {
+tune_regression_model(const TuneModelConfig<FeatureType> &config) {
 
   const auto example_model = config.model_creator();
   auto x = example_model->get_params_as_vector();

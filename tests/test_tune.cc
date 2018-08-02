@@ -26,8 +26,8 @@ TEST(test_tune, test_single_dataset) {
 
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
-  TuneModelConfg<double> config(model_creator, dataset, metric,
-                                albatross::mean_aggregator, output_stream);
+  TuneModelConfig<double> config(model_creator, dataset, metric,
+                                 albatross::mean_aggregator, output_stream);
   config.optimizer.set_maxeval(20);
   auto params = tune_regression_model(config);
 }
@@ -50,8 +50,8 @@ TEST(test_tune, test_with_prior_bounds) {
 
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
-  TuneModelConfg<double> config(model_with_prior, dataset, metric,
-                                albatross::mean_aggregator, output_stream);
+  TuneModelConfig<double> config(model_with_prior, dataset, metric,
+                                 albatross::mean_aggregator, output_stream);
   config.optimizer.set_maxeval(20);
   auto params = tune_regression_model(config);
   auto m = model_with_prior();
@@ -78,15 +78,15 @@ TEST(test_tune, test_with_prior) {
   // Tune with a prior
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
-  TuneModelConfg<double> config(model_with_prior, dataset, metric,
-                                albatross::mean_aggregator, output_stream);
+  TuneModelConfig<double> config(model_with_prior, dataset, metric,
+                                 albatross::mean_aggregator, output_stream);
   config.optimizer.set_maxeval(20);
   auto params = tune_regression_model(config);
 
   // Tune without a prior
-  TuneModelConfg<double> config_no_prior(toy_gaussian_process, dataset, metric,
-                                         albatross::mean_aggregator,
-                                         output_stream);
+  TuneModelConfig<double> config_no_prior(toy_gaussian_process, dataset, metric,
+                                          albatross::mean_aggregator,
+                                          output_stream);
   config_no_prior.optimizer.set_maxeval(20);
   auto params_no_prior = tune_regression_model(config_no_prior);
 
@@ -110,8 +110,8 @@ TEST(test_tune, test_multiple_datasets) {
   auto model_creator = toy_gaussian_process;
   TuningMetric<double> metric = loo_nll;
   std::ostringstream output_stream;
-  TuneModelConfg<double> config(model_creator, datasets, metric,
-                                albatross::mean_aggregator, output_stream);
+  TuneModelConfig<double> config(model_creator, datasets, metric,
+                                 albatross::mean_aggregator, output_stream);
   config.optimizer.set_maxeval(20);
   auto params = tune_regression_model(config);
 }

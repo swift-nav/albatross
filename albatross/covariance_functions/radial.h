@@ -76,7 +76,7 @@ public:
     this->params_["squared_exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};
     this->params_["sigma_squared_exponential"] = {
-        sigma_squared_exponential, std::make_shared<PositivePrior>()};
+        sigma_squared_exponential, std::make_shared<NonNegativePrior>()};
   };
 
   ~SquaredExponential(){};
@@ -117,7 +117,7 @@ public:
     this->params_["exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};
     this->params_["sigma_exponential"] = {sigma_exponential,
-                                          std::make_shared<PositivePrior>()};
+                                          std::make_shared<NonNegativePrior>()};
   };
 
   ~Exponential(){};
