@@ -139,17 +139,20 @@ protected:
 
   JointDistribution
   predict_(const std::vector<FeatureType> &features) const override {
-    return sub_model_.predict(convert_features(features));
+    return sub_model_.template predict<JointDistribution>(
+        convert_features(features));
   }
 
-  virtual MarginalDistribution
+  MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const override {
-    return sub_model_.predict_marginal(convert_features(features));
+    return sub_model_.template predict<MarginalDistribution>(
+        convert_features(features));
   }
 
-  virtual Eigen::VectorXd
+  Eigen::VectorXd
   predict_mean_(const std::vector<FeatureType> &features) const override {
-    return sub_model_.predict_mean(convert_features(features));
+    return sub_model_.template predict<Eigen::VectorXd>(
+        convert_features(features));
   }
 
   const std::vector<SubFeature>

@@ -96,15 +96,47 @@ TEST(test_models, test_predict_variants) {
 
   auto model = MakeGaussianProcess().create();
   model->fit(dataset);
+
   const auto joint_predictions = model->predict(dataset.features);
-  const auto marginal_predictions = model->predict_marginal(dataset.features);
-  const auto mean_predictions = model->predict_mean(dataset.features);
+  const auto marginal_predictions =
+      model->predict<MarginalDistribution>(dataset.features);
+  const auto mean_predictions =
+      model->predict<Eigen::VectorXd>(dataset.features);
+
+  const auto single_pred_joint =
+      model->predict<JointDistribution>(dataset.features[0]);
+  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
+  EXPECT_NEAR(single_pred_joint.get_diagonal(0),
+              joint_predictions.get_diagonal(0), 1e-6);
+
+  const auto single_pred_marginal =
+      model->predict<MarginalDistribution>(dataset.features[0]);
+  EXPECT_NEAR(single_pred_marginal.mean[0], mean_predictions[0], 1e-6);
+  EXPECT_NEAR(single_pred_marginal.get_diagonal(0),
+              joint_predictions.get_diagonal(0), 1e-6);
+
+  const auto single_pred_mean =
+      model->predict<Eigen::VectorXd>(dataset.features[0]);
+  EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
+
+  model = MakeGaussianProcess().create();
+  const auto fit_predict_joint = model->fit_and_predict(
+      dataset.features, dataset.targets, dataset.features);
+  const auto fit_predict_marginal =
+      model->fit_and_predict<MarginalDistribution>(
+          dataset.features, dataset.targets, dataset.features);
+  const auto fit_predict_mean = model->fit_and_predict<Eigen::VectorXd>(
+      dataset.features, dataset.targets, dataset.features);
 
   for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
     EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
     EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i], 1e-6);
     EXPECT_NEAR(joint_predictions.covariance(i, i),
                 marginal_predictions.covariance.diagonal()[i], 1e-6);
+
+    EXPECT_NEAR(fit_predict_joint.mean[i], mean_predictions[i], 1e-6);
+    EXPECT_NEAR(fit_predict_marginal.mean[i], mean_predictions[i], 1e-6);
+    EXPECT_NEAR(fit_predict_mean[i], mean_predictions[i], 1e-6);
   }
 }
 
