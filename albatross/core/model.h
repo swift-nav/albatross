@@ -13,9 +13,10 @@
 #ifndef ALBATROSS_CORE_MODEL_H
 #define ALBATROSS_CORE_MODEL_H
 
-#include "distribution.h"
+#include "core/dataset.h"
+#include "core/indexing.h"
+#include "core/parameter_handling_mixin.h"
 #include "map_utils.h"
-#include "parameter_handling_mixin.h"
 #include "traits.h"
 #include <Eigen/Core>
 #include <cereal/archives/json.hpp>
@@ -33,79 +34,6 @@ template <typename T> struct PredictTypeIdentity { typedef T type; };
 // This can be used to make intentions more obvious when calling
 // predict variants for which you only want the mean.
 using PredictMeanOnly = Eigen::VectorXd;
-
-/*
- * A RegressionDataset holds two vectors of data, the features
- * where a single feature can be any class that contains the information used
- * to make predictions of the target.  This is called a RegressionDataset since
- * it is assumed that each feature is regressed to a single double typed
- * target.
- */
-template <typename FeatureType> struct RegressionDataset {
-  std::vector<FeatureType> features;
-  MarginalDistribution targets;
-  std::map<std::string, std::string> metadata;
-
-  RegressionDataset(){};
-
-  RegressionDataset(const std::vector<FeatureType> &features_,
-                    const MarginalDistribution &targets_)
-      : features(features_), targets(targets_) {
-    // If the two inputs aren't the same size they clearly aren't
-    // consistent.
-    assert(static_cast<int>(features.size()) ==
-           static_cast<int>(targets.size()));
-  }
-
-  RegressionDataset(const std::vector<FeatureType> &features_,
-                    const Eigen::VectorXd &targets_)
-      : RegressionDataset(features_, MarginalDistribution(targets_)) {}
-
-  bool operator==(const RegressionDataset &other) const {
-    return (features == other.features && targets == other.targets &&
-            metadata == other.metadata);
-  }
-
-  template <class Archive>
-  typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
-                          void>::type
-  serialize(Archive &archive) {
-    archive(cereal::make_nvp("features", features));
-    archive(cereal::make_nvp("targets", targets));
-    archive(cereal::make_nvp("metadata", metadata));
-  }
-
-  template <class Archive>
-  typename std::enable_if<!valid_in_out_serializer<FeatureType, Archive>::value,
-                          void>::type
-  serialize(Archive &archive) {
-    static_assert(delay_static_assert<Archive>::value,
-                  "In order to serialize a RegressionDataset the corresponding "
-                  "FeatureType must be serializable.");
-  }
-};
-
-typedef int32_t s32;
-using FoldIndices = std::vector<s32>;
-using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, FoldIndices>;
-
-/*
- * A combination of training and testing datasets, typically used in cross
- * validation.
- */
-template <typename FeatureType> struct RegressionFold {
-  RegressionDataset<FeatureType> train_dataset;
-  RegressionDataset<FeatureType> test_dataset;
-  FoldName name;
-  FoldIndices test_indices;
-
-  RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
-                 const RegressionDataset<FeatureType> &test_dataset_,
-                 const FoldName &name_, const FoldIndices &test_indices_)
-      : train_dataset(train_dataset_), test_dataset(test_dataset_), name(name_),
-        test_indices(test_indices_){};
-};
 
 /*
  * A model that uses a single Feature to estimate the value of a double typed

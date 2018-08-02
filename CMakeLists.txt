@@ -41,6 +41,7 @@ set(albatross_HEADERS
     albatross/map_utils.h
     albatross/csv_utils.h
     albatross/core/keys.h
+    albatross/core/dataset.h
     albatross/core/model.h
     albatross/core/model_adapter.h
     albatross/core/traits.h
