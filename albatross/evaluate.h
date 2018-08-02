@@ -104,9 +104,9 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
  */
 namespace evaluation_metrics {
 
-static inline double root_mean_square_error(const JointDistribution &prediction,
+static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
                                             const MarginalDistribution &truth) {
-  const Eigen::VectorXd error = prediction.mean - truth.mean;
+  const Eigen::VectorXd error = prediction - truth.mean;
   double mse = error.dot(error) / static_cast<double>(error.size());
   return sqrt(mse);
 }
@@ -115,9 +115,9 @@ static inline double root_mean_square_error(const JointDistribution &prediction,
  * Takes output from a model (PredictionDistribution)
  * and the corresponding truth and uses them to compute the stddev.
  */
-static inline double standard_deviation(const JointDistribution &prediction,
+static inline double standard_deviation(const Eigen::VectorXd &prediction,
                                         const MarginalDistribution &truth) {
-  Eigen::VectorXd error = prediction.mean - truth.mean;
+  Eigen::VectorXd error = prediction - truth.mean;
   const auto n_elements = static_cast<double>(error.size());
   const double mean_error = error.sum() / n_elements;
   error.array() -= mean_error;
@@ -140,6 +140,7 @@ negative_log_likelihood(const JointDistribution &prediction,
 }
 
 } // namespace evaluation_metrics
+
 } // namespace albatross
 
 #endif

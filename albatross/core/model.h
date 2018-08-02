@@ -97,68 +97,34 @@ public:
     return predict(features, detail::PredictTypeIdentity<PredictType>());
   }
 
-  /*
-   * Predict specializations
-   */
-
-  JointDistribution
-  predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<JointDistribution> &&identity) const {
-    assert(has_been_fit());
-    JointDistribution preds = predict_(features);
-    assert(static_cast<s32>(preds.mean.size()) ==
-           static_cast<s32>(features.size()));
-    return preds;
-  }
-
-  MarginalDistribution
-  predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<MarginalDistribution> &&identity) const {
-    assert(has_been_fit());
-    MarginalDistribution preds = predict_marginal_(features);
-    assert(static_cast<s32>(preds.mean.size()) ==
-           static_cast<s32>(features.size()));
-    return preds;
-  }
-
-  Eigen::VectorXd
-  predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<Eigen::VectorXd> &&identity) const {
-    assert(has_been_fit());
-    Eigen::VectorXd preds = predict_mean_(features);
-    assert(static_cast<s32>(preds.size()) == static_cast<s32>(features.size()));
-    return preds;
-  }
-
   template <typename PredictType>
   PredictType predict(const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
     return predict<PredictType>(features);
   }
 
-  /*
-   * Computes predictions for the test features given set of training
-   * features and targets. In the general case this is simply a call to fit,
-   * follwed by predict but overriding this method may speed up computation for
-   * some models.
-   */
-  template <typename PredictType = JointDistribution>
-  PredictType fit_and_predict(const std::vector<FeatureType> &train_features,
-                              const MarginalDistribution &train_targets,
-                              const std::vector<FeatureType> &test_features) {
-    // Fit using the training data, then predict with the test.
-    fit(train_features, train_targets);
-    return predict<PredictType>(test_features);
+  template <typename PredictType = MarginalDistribution>
+  std::vector<PredictType>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                              const FoldIndexer &fold_indexer) {
+    return cross_validated_predictions(
+        dataset, fold_indexer, detail::PredictTypeIdentity<PredictType>());
   }
 
-  /*
-   * A convenience wrapper around fit_and_predict which uses the entries
-   * in a RegressionFold struct
-   */
-  template <typename PredictType = JointDistribution>
-  PredictType fit_and_predict(const RegressionFold<FeatureType> &fold) {
-    return fit_and_predict<PredictType>(fold.train.features, fold.train.targets,
-                                        fold.test.features);
+  // Because cross validation can never properly produce a full
+  // joint distribution it is common to only use the marginal
+  // predictions, hence the different default from predict.
+  template <typename PredictType = MarginalDistribution>
+  std::vector<PredictType> cross_validated_predictions(
+      const std::vector<RegressionFold<FeatureType>> &folds) {
+    // Iteratively make predictions and assemble the output vector
+    std::vector<PredictType> predictions;
+    for (std::size_t i = 0; i < folds.size(); i++) {
+      fit(folds[i].train_dataset);
+      predictions.push_back(
+          predict<PredictType>(folds[i].test_dataset.features));
+    }
+    return predictions;
   }
 
   std::string pretty_string() const {
@@ -199,13 +165,71 @@ protected:
   virtual void fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) = 0;
 
+  /*
+   * Predict specializations
+   */
+
+  JointDistribution
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<JointDistribution> &&identity) const {
+    assert(has_been_fit());
+    JointDistribution preds = predict_(features);
+    assert(static_cast<s32>(preds.mean.size()) ==
+           static_cast<s32>(features.size()));
+    return preds;
+  }
+
+  MarginalDistribution
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<MarginalDistribution> &&identity) const {
+    assert(has_been_fit());
+    MarginalDistribution preds = predict_marginal_(features);
+    assert(static_cast<s32>(preds.mean.size()) ==
+           static_cast<s32>(features.size()));
+    return preds;
+  }
+
+  Eigen::VectorXd
+  predict(const std::vector<FeatureType> &features,
+          detail::PredictTypeIdentity<Eigen::VectorXd> &&identity) const {
+    assert(has_been_fit());
+    Eigen::VectorXd preds = predict_mean_(features);
+    assert(static_cast<s32>(preds.size()) == static_cast<s32>(features.size()));
+    return preds;
+  }
+
+  /*
+   * Cross validation specializations
+   */
+  virtual std::vector<JointDistribution> cross_validated_predictions(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<JointDistribution> &identity) {
+    const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
+    return cross_validated_predictions<JointDistribution>(folds);
+  }
+
+  virtual std::vector<MarginalDistribution> cross_validated_predictions(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<MarginalDistribution> &identity) {
+    const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
+    return cross_validated_predictions<MarginalDistribution>(folds);
+  }
+
+  virtual std::vector<Eigen::VectorXd> cross_validated_predictions(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) {
+    const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
+    return cross_validated_predictions<PredictMeanOnly>(folds);
+  }
+
   virtual JointDistribution
   predict_(const std::vector<FeatureType> &features) const = 0;
 
   virtual MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const {
-    std::cout << "WARNING: A marginal prediction is being made, but in a "
-                 "horribly inefficient way.";
     const auto full_distribution = predict_(features);
     return MarginalDistribution(
         full_distribution.mean,
@@ -214,10 +238,8 @@ protected:
 
   virtual Eigen::VectorXd
   predict_mean_(const std::vector<FeatureType> &features) const {
-    std::cout << "WARNING: A mean prediction is being made, but in a horribly "
-                 "inefficient way.";
-    const auto full_distribution = predict_(features);
-    return full_distribution.mean;
+    const auto marginal_distribution = predict_marginal_(features);
+    return marginal_distribution.mean;
   }
 
   bool has_been_fit_;

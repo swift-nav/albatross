@@ -55,6 +55,21 @@ inline Eigen::VectorXd subset(const std::vector<SizeType> &indices,
 }
 
 /*
+ * Extracts a subset of columns from an Eigen::Matrix
+ */
+template <typename SizeType>
+inline Eigen::MatrixXd subset_cols(const std::vector<SizeType> &col_indices,
+                                   const Eigen::MatrixXd &v) {
+  Eigen::MatrixXd out(v.rows(), col_indices.size());
+  for (std::size_t i = 0; i < col_indices.size(); i++) {
+    auto ii = static_cast<Eigen::Index>(i);
+    auto col_index = static_cast<Eigen::Index>(col_indices[i]);
+    out.col(ii) = v.col(col_index);
+  }
+  return out;
+}
+
+/*
  * Extracts a subset of an Eigen::Matrix for the given row and column
  * indices.
  */

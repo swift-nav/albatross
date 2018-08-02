@@ -51,13 +51,14 @@ TEST(test_evaluate, test_negative_log_likelihood) {
 }
 
 TEST_F(LinearRegressionTest, test_leave_one_out) {
-  JointDistribution preds = model_ptr_->fit_and_predict(
-      dataset_.features, dataset_.targets, dataset_.features);
+  model_ptr_->fit(dataset_);
+  Eigen::VectorXd preds =
+      model_ptr_->predict<Eigen::VectorXd>(dataset_.features);
   double in_sample_rmse = root_mean_square_error(preds, dataset_.targets);
   const auto folds = leave_one_out(dataset_);
 
-  Eigen::VectorXd rmses =
-      cross_validated_scores(root_mean_square_error, folds, model_ptr_.get());
+  EvaluationMetric<Eigen::VectorXd> rmse = root_mean_square_error;
+  Eigen::VectorXd rmses = cross_validated_scores(rmse, folds, model_ptr_.get());
   double out_of_sample_rmse = rmses.mean();
 
   // Make sure the RMSE computed doing leave one out cross validation is larger
@@ -78,7 +79,7 @@ std::string group_by_interval(const double &x) {
   }
 }
 
-bool is_monotonic_increasing(Eigen::VectorXd &x) {
+bool is_monotonic_increasing(const Eigen::VectorXd &x) {
   for (s32 i = 0; i < static_cast<s32>(x.size()) - 1; i++) {
     if (x[i + 1] - x[i] <= 0.) {
       return false;
@@ -90,7 +91,7 @@ bool is_monotonic_increasing(Eigen::VectorXd &x) {
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
 
-  JointDistribution preds = cross_validated_predict(folds, model_ptr_.get());
+  const auto preds = cross_validated_predict(folds, model_ptr_.get());
 
   // Make sure the group cross validation resulted in folds that
   // are out of order
@@ -101,8 +102,8 @@ TEST_F(LinearRegressionTest, test_cross_validated_predict) {
 
 TEST_F(LinearRegressionTest, test_leave_one_group_out) {
   const auto folds = leave_one_group_out<double>(dataset_, group_by_interval);
-  Eigen::VectorXd rmses =
-      cross_validated_scores(root_mean_square_error, folds, model_ptr_.get());
+  EvaluationMetric<Eigen::VectorXd> rmse = root_mean_square_error;
+  Eigen::VectorXd rmses = cross_validated_scores(rmse, folds, model_ptr_.get());
 
   // Make sure we get a single RMSE for each of the three groups.
   EXPECT_EQ(rmses.size(), 3);

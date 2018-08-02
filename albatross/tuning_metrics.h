@@ -69,18 +69,18 @@ inline double gp_nll(const RegressionDataset<FeatureType> &dataset,
 inline double loo_nll(const RegressionDataset<double> &dataset,
                       RegressionModel<double> *model) {
   auto loo_folds = leave_one_out(dataset);
-  return cross_validated_scores(evaluation_metrics::negative_log_likelihood,
-                                loo_folds, model)
-             .sum() -
-         model->prior_log_likelihood();
+  EvaluationMetric<JointDistribution> nll =
+      evaluation_metrics::negative_log_likelihood;
+  double prior_nll = model->prior_log_likelihood();
+  return cross_validated_scores(nll, loo_folds, model).sum() - prior_nll;
 }
 
 inline double loo_rmse(const RegressionDataset<double> &dataset,
                        RegressionModel<double> *model) {
   auto loo_folds = leave_one_out(dataset);
-  return cross_validated_scores(evaluation_metrics::root_mean_square_error,
-                                loo_folds, model)
-      .mean();
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+  return cross_validated_scores(rmse, loo_folds, model).mean();
 }
 
 using TuningMetricAggregator =
