@@ -22,7 +22,7 @@
 
 namespace albatross {
 
-typedef int32_t s32;
+using s32 = int32_t;
 using FoldIndices = std::vector<s32>;
 using FoldName = std::string;
 using FoldIndexer = std::map<FoldName, FoldIndices>;
