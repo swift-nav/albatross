@@ -65,6 +65,24 @@ cross_validated_scores(const EvaluationMetric<PredictType> &metric,
 }
 
 /*
+ * Iterates over each fold in a cross validation set and fits/predicts and
+ * scores the fold, returning a vector of scores for each fold.
+ */
+template <typename FeatureType, typename PredictType = JointDistribution>
+static inline Eigen::VectorXd
+cross_validated_scores(const EvaluationMetric<PredictType> &metric,
+                       const RegressionDataset<FeatureType> &dataset,
+                       const FoldIndexer &fold_indexer,
+                       RegressionModel<FeatureType> *model) {
+  // Create a vector of predictions.
+  std::vector<PredictType> predictions =
+      model->template cross_validated_predictions<PredictType>(dataset,
+                                                               fold_indexer);
+  const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
+  return compute_scores<FeatureType, PredictType>(metric, folds, predictions);
+}
+
+/*
  * Returns a single cross validated prediction distribution
  * for some cross validation folds, taking into account the
  * fact that each fold may contain reordered data.

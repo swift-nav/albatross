@@ -107,7 +107,7 @@ public:
   std::vector<PredictType>
   cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
                               const FoldIndexer &fold_indexer) {
-    return cross_validated_predictions(
+    return cross_validated_predictions_(
         dataset, fold_indexer, detail::PredictTypeIdentity<PredictType>());
   }
 
@@ -201,7 +201,7 @@ protected:
   /*
    * Cross validation specializations
    */
-  virtual std::vector<JointDistribution> cross_validated_predictions(
+  virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
       const detail::PredictTypeIdentity<JointDistribution> &identity) {
@@ -209,7 +209,7 @@ protected:
     return cross_validated_predictions<JointDistribution>(folds);
   }
 
-  virtual std::vector<MarginalDistribution> cross_validated_predictions(
+  virtual std::vector<MarginalDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
       const detail::PredictTypeIdentity<MarginalDistribution> &identity) {
@@ -217,7 +217,7 @@ protected:
     return cross_validated_predictions<MarginalDistribution>(folds);
   }
 
-  virtual std::vector<Eigen::VectorXd> cross_validated_predictions(
+  virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
       const detail::PredictTypeIdentity<PredictMeanOnly> &identity) {

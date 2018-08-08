@@ -26,30 +26,6 @@ template <typename FeatureType>
 using TuningMetric = std::function<double(
     const RegressionDataset<FeatureType> &, RegressionModel<FeatureType> *)>;
 
-/*
- * Use caution with this metric!  You'll have to manually ensure that
- * the template parameters are correct for the specific model you wish
- * to tune as internally it assumes that the RegressionModel<T>
- * is actually a SerializableRegressionModel<X, GaussianProcessFit<Y>>
- * and if that is not the case at run time a segfault will surely follow.
- *
- * BUT if you do in fact know your regression model is a GP this will
- * result in n^3 versus n^4 complexity.
- */
-template <typename FeatureType, typename SubFeatureType = FeatureType>
-inline double gp_fast_loo_nll(const RegressionDataset<FeatureType> &dataset,
-                              RegressionModel<FeatureType> *model) {
-  using SerializableGP =
-      SerializableRegressionModel<FeatureType,
-                                  GaussianProcessFit<SubFeatureType>>;
-  SerializableGP *gp_model = static_cast<SerializableGP *>(model);
-  const auto predictions =
-      fast_gp_loo_cross_validated_predict(dataset, gp_model);
-  const auto deviations = dataset.targets.mean - predictions.mean;
-  return negative_log_likelihood(deviations, predictions.covariance) -
-         model->prior_log_likelihood();
-}
-
 template <typename FeatureType, typename SubFeatureType = FeatureType>
 inline double gp_nll(const RegressionDataset<FeatureType> &dataset,
                      RegressionModel<FeatureType> *model) {
@@ -68,19 +44,20 @@ inline double gp_nll(const RegressionDataset<FeatureType> &dataset,
 
 inline double loo_nll(const RegressionDataset<double> &dataset,
                       RegressionModel<double> *model) {
-  auto loo_folds = leave_one_out(dataset);
+  auto loo_indexer = leave_one_out_indexer(dataset);
   EvaluationMetric<JointDistribution> nll =
       evaluation_metrics::negative_log_likelihood;
   double prior_nll = model->prior_log_likelihood();
-  return cross_validated_scores(nll, loo_folds, model).sum() - prior_nll;
+  return cross_validated_scores(nll, dataset, loo_indexer, model).sum() -
+         prior_nll;
 }
 
 inline double loo_rmse(const RegressionDataset<double> &dataset,
                        RegressionModel<double> *model) {
-  auto loo_folds = leave_one_out(dataset);
+  auto loo_indexer = leave_one_out_indexer(dataset);
   EvaluationMetric<Eigen::VectorXd> rmse =
       evaluation_metrics::root_mean_square_error;
-  return cross_validated_scores(rmse, loo_folds, model).mean();
+  return cross_validated_scores(rmse, dataset, loo_indexer, model).mean();
 }
 
 using TuningMetricAggregator =

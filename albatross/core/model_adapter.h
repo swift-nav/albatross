@@ -117,6 +117,38 @@ public:
     return sub_model_.get_fit();
   }
 
+  /*
+   * Cross validation specializations
+   */
+  virtual std::vector<JointDistribution> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<JointDistribution> &identity) override {
+    const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
+    return sub_model_.template cross_validated_predictions<JointDistribution>(
+        converted, fold_indexer);
+  }
+
+  virtual std::vector<MarginalDistribution> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<MarginalDistribution> &identity)
+      override {
+    const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
+    return sub_model_
+        .template cross_validated_predictions<MarginalDistribution>(
+            converted, fold_indexer);
+  }
+
+  virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) override {
+    const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
+    return sub_model_.template cross_validated_predictions<Eigen::VectorXd>(
+        converted, fold_indexer);
+  }
+
 protected:
   void fit_(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) override {
@@ -161,6 +193,15 @@ protected:
     for (const auto &f : parent_features) {
       converted.push_back(convert_feature(f));
     }
+    return converted;
+  }
+
+  const RegressionDataset<SubFeature>
+  convert_dataset(const RegressionDataset<FeatureType> &parent_dataset) const {
+    const auto converted_features = convert_features(parent_dataset.features);
+    RegressionDataset<SubFeature> converted(converted_features,
+                                            parent_dataset.targets);
+    converted.metadata = parent_dataset.metadata;
     return converted;
   }
 
