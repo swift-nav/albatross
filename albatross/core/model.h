@@ -200,6 +200,12 @@ protected:
 
   /*
    * Cross validation specializations
+   *
+   * Note the naming here uses a trailing underscore.  This is to avoid
+   * name hiding when implementing one of these methods in a derived
+   * class:
+   *
+   * https://stackoverflow.com/questions/1628768/why-does-an-overridden-function-in-the-derived-class-hide-other-overloads-of-the
    */
   virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,

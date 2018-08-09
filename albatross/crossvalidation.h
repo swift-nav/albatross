@@ -49,6 +49,18 @@ compute_scores(const EvaluationMetric<PredictType> &metric,
   return metrics;
 }
 
+template <typename FeatureType, typename CovarianceType>
+static inline Eigen::VectorXd
+compute_scores(const EvaluationMetric<Eigen::VectorXd> &metric,
+               const std::vector<RegressionFold<FeatureType>> &folds,
+               const std::vector<Distribution<CovarianceType>> &predictions) {
+  std::vector<Eigen::VectorXd> converted;
+  for (const auto &pred : predictions) {
+    converted.push_back(pred.mean);
+  }
+  return compute_scores(metric, folds, converted);
+}
+
 /*
  * Iterates over each fold in a cross validation set and fits/predicts and
  * scores the fold, returning a vector of scores for each fold.
@@ -86,21 +98,11 @@ cross_validated_scores(const EvaluationMetric<PredictType> &metric,
  * Returns a single cross validated prediction distribution
  * for some cross validation folds, taking into account the
  * fact that each fold may contain reordered data.
- *
- * Note that the prediction covariance is not returned
- * which is a result of having made predictions one fold at
- * a time, so the full dense prediction covariance is
- * unknown.
  */
 template <typename FeatureType>
-static inline MarginalDistribution
-cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
-                        RegressionModel<FeatureType> *model) {
-  // Get the cross validated predictions, note however that
-  // depending on the type of folds, these predictions may
-  // be shuffled.
-  const std::vector<MarginalDistribution> predictions =
-      model->template cross_validated_predictions<MarginalDistribution>(folds);
+static inline MarginalDistribution concatenate_fold_predictions(
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::vector<MarginalDistribution> &predictions) {
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
   Eigen::Index n = 0;
@@ -115,6 +117,7 @@ cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
   for (std::size_t j = 0; j < predictions.size(); j++) {
     const auto pred = predictions[j];
     const auto fold = folds[j];
+    assert(pred.mean.size() == fold.test_dataset.features.size());
     for (Eigen::Index i = 0; i < pred.mean.size(); i++) {
       // The test indices map each element in the current fold back
       // to the original order of the parent dataset.
@@ -125,6 +128,18 @@ cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
     }
   }
   return MarginalDistribution(mean, diagonal.asDiagonal());
+}
+
+template <typename FeatureType>
+static inline MarginalDistribution
+cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
+                        RegressionModel<FeatureType> *model) {
+  // Get the cross validated predictions, note however that
+  // depending on the type of folds, these predictions may
+  // be shuffled.
+  const std::vector<MarginalDistribution> predictions =
+      model->template cross_validated_predictions<MarginalDistribution>(folds);
+  return concatenate_fold_predictions(folds, predictions);
 }
 
 } // namespace albatross
