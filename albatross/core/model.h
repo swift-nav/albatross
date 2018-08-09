@@ -97,7 +97,7 @@ public:
     return predict(features, detail::PredictTypeIdentity<PredictType>());
   }
 
-  template <typename PredictType>
+  template <typename PredictType = JointDistribution>
   PredictType predict(const FeatureType &feature) const {
     std::vector<FeatureType> features = {feature};
     return predict<PredictType>(features);
