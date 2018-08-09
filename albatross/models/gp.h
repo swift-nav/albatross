@@ -127,6 +127,87 @@ public:
   }
 
 protected:
+  /*
+   * Cross validation specializations
+   *
+   * The leave one out cross validated predictions for a Gaussian Process
+   * can be efficiently computed by dropping rows and columns from the
+   * covariance and obtaining the prediction for the dropped index.  This
+   * results in something like,
+   *
+   *     mean[group] = y[group] - A^{-1} (C^{-1} y)[group]
+   *     variance[group] = A^{-1}
+   *
+   * with group the set of indices for the held out group and
+   *     A = C^{-1}[group, group]
+   * is the block of the inverse of the covariance that corresponds
+   * to the group in question.
+   *
+   * See section 5.4.2 Rasmussen Gaussian Processes
+   */
+  virtual std::vector<JointDistribution> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<JointDistribution> &identity) override {
+
+    this->fit(dataset);
+    const FitType model_fit = this->get_fit();
+    const std::vector<FoldIndices> indices = map_values(fold_indexer);
+    const auto inverse_blocks = model_fit.train_ldlt.inverse_blocks(indices);
+
+    std::vector<JointDistribution> output;
+    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
+      Eigen::VectorXd vi = subset(indices[i], model_fit.information);
+      const auto A_inv = inverse_blocks[i].inverse();
+      output.push_back(JointDistribution(yi - A_inv * vi, A_inv));
+    }
+    return output;
+  }
+
+  virtual std::vector<MarginalDistribution> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<MarginalDistribution> &identity)
+      override {
+    this->fit(dataset);
+    const FitType model_fit = this->get_fit();
+
+    const std::vector<FoldIndices> indices = map_values(fold_indexer);
+    const auto inverse_blocks = model_fit.train_ldlt.inverse_blocks(indices);
+
+    std::vector<MarginalDistribution> output;
+    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
+      Eigen::VectorXd vi = subset(indices[i], model_fit.information);
+      const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
+
+      output.push_back(MarginalDistribution(
+          yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal()));
+    }
+    return output;
+  }
+
+  virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
+      const RegressionDataset<FeatureType> &dataset,
+      const FoldIndexer &fold_indexer,
+      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) override {
+    this->fit(dataset);
+    const FitType model_fit = this->get_fit();
+
+    const std::vector<FoldIndices> indices = map_values(fold_indexer);
+    const auto inverse_blocks = model_fit.train_ldlt.inverse_blocks(indices);
+
+    std::vector<Eigen::VectorXd> output;
+    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
+      Eigen::VectorXd vi = subset(indices[i], model_fit.information);
+      const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
+      output.push_back(yi - A_ldlt.solve(vi));
+    }
+    return output;
+  }
+
   FitType
   serializable_fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const override {
@@ -184,45 +265,6 @@ private:
   CovarianceFunction covariance_function_;
   std::string model_name_;
 };
-
-/*
- * The leave one out cross validated predictions for a Gaussian Process
- * can be efficiently computed by dropping a row and column from the
- * covariance and obtaining the prediction for the dropped index.  This
- * results in,
- *
- * mean[i] = y[i] - cov^{-1} y)/cov^{-1}[i, i]
- * variance[i] = 1. / cov^{-1}[i, i]
- *
- * See section 5.4.2 Rasmussen Gaussian Processes
- */
-static inline Distribution<DiagonalMatrixXd>
-fast_gp_loo_cross_validated_predict(
-    const Eigen::VectorXd &targets,
-    const Eigen::SerializableLDLT &train_covariance_ldlt,
-    const Eigen::VectorXd &information) {
-  assert(targets.size() == train_covariance_ldlt.rows());
-  assert(train_covariance_ldlt.rows() == train_covariance_ldlt.cols());
-  const auto inverse_diag = train_covariance_ldlt.inverse_diagonal();
-  Eigen::VectorXd loo_mean(targets);
-  Eigen::VectorXd loo_variance(targets.size());
-  for (Eigen::Index i = 0; i < targets.size(); i++) {
-    loo_mean[i] -= information[i] / inverse_diag(i);
-    loo_variance[i] = 1. / inverse_diag(i);
-  }
-  return Distribution<DiagonalMatrixXd>(loo_mean, loo_variance.asDiagonal());
-}
-
-template <typename FeatureType, typename SubFeatureType = FeatureType>
-static inline Distribution<DiagonalMatrixXd>
-fast_gp_loo_cross_validated_predict(
-    const RegressionDataset<FeatureType> &dataset,
-    SerializableGaussianProcess<FeatureType, SubFeatureType> *model) {
-  model->fit(dataset);
-  const auto model_fit = model->get_fit();
-  return fast_gp_loo_cross_validated_predict(
-      dataset.targets.mean, model_fit.train_ldlt, model_fit.information);
-}
 
 template <typename FeatureType, typename CovFunc>
 GaussianProcessRegression<FeatureType, CovFunc>

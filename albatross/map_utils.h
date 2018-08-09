@@ -62,6 +62,18 @@ std::vector<K> map_keys(const std::map<K, V> m) {
   return keys;
 }
 
+/*
+ * Returns a vector consisting of all the values in a map.
+ */
+template <typename K, typename V>
+std::vector<V> map_values(const std::map<K, V> m) {
+  std::vector<V> values;
+  for (const auto &pair : m) {
+    values.push_back(pair.second);
+  }
+  return values;
+}
+
 template <typename K, typename V>
 std::map<K, V> map_join(const std::map<K, V> m, const std::map<K, V> other) {
   std::map<K, V> join;

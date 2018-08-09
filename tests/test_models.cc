@@ -10,38 +10,66 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include "core/model_adapter.h"
 #include "covariance_functions/covariance_functions.h"
 #include "evaluate.h"
 #include "models/gp.h"
 #include "models/least_squares.h"
 #include "test_utils.h"
 #include <cereal/archives/json.hpp>
+#include <chrono>
 #include <gtest/gtest.h>
 
 namespace albatross {
 
-class AbstractTestModel {
+template <typename FeatureType = double> class AbstractTestModel {
 public:
   virtual ~AbstractTestModel(){};
-  virtual std::unique_ptr<RegressionModel<double>> create() const = 0;
+  virtual std::unique_ptr<RegressionModel<FeatureType>> create() const = 0;
+  virtual RegressionDataset<FeatureType> get_dataset() const = 0;
 };
 
-class MakeGaussianProcess : public AbstractTestModel {
+auto make_simple_covariance_function() {
+  using SqrExp = SquaredExponential<EuclideanDistance>;
+  using Noise = IndependentNoise<double>;
+  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
+  CovarianceFunction<Noise> noise = {Noise(0.1)};
+  return squared_exponential + noise;
+}
+
+class MakeGaussianProcess : public AbstractTestModel<double> {
 public:
   std::unique_ptr<RegressionModel<double>> create() const override {
-    using SqrExp = SquaredExponential<EuclideanDistance>;
-    using Noise = IndependentNoise<double>;
-    CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
-    CovarianceFunction<Noise> noise = {Noise(0.1)};
-    auto covariance = squared_exponential + noise;
+    auto covariance = make_simple_covariance_function();
     return gp_pointer_from_covariance<double>(covariance);
+  }
+
+  RegressionDataset<double> get_dataset() const override {
+    return make_toy_linear_data();
   }
 };
 
-class MakeLinearRegression : public AbstractTestModel {
+class MakeAdaptedGaussianProcess : public AbstractTestModel<AdaptedFeature> {
+public:
+  std::unique_ptr<RegressionModel<AdaptedFeature>> create() const override {
+    auto covariance = make_simple_covariance_function();
+    auto gp = gp_from_covariance<double>(covariance);
+    return std::make_unique<AdaptedExample<decltype(gp)>>(gp);
+  }
+
+  RegressionDataset<AdaptedFeature> get_dataset() const override {
+    return make_adapted_toy_linear_data();
+  }
+};
+
+class MakeLinearRegression : public AbstractTestModel<double> {
 public:
   std::unique_ptr<RegressionModel<double>> create() const override {
     return std::make_unique<LinearRegression>();
+  }
+
+  RegressionDataset<double> get_dataset() const override {
+    return make_toy_linear_data();
   }
 };
 
@@ -51,12 +79,13 @@ public:
   ModelCreator creator;
 };
 
-typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess>
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
+                         MakeAdaptedGaussianProcess>
     ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
-  auto dataset = make_toy_linear_data();
+  auto dataset = this->creator.get_dataset();
   auto folds = leave_one_out(dataset);
   auto model = this->creator.create();
   EvaluationMetric<Eigen::VectorXd> rmse =
@@ -66,6 +95,51 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
   EXPECT_LE(cv_scores.mean(), 0.1);
+}
+
+TYPED_TEST(RegressionModelTester, test_predict_variants) {
+  auto dataset = this->creator.get_dataset();
+  auto model = this->creator.create();
+  model->fit(dataset);
+
+  const auto joint_predictions = model->predict(dataset.features);
+  const auto marginal_predictions =
+      model->template predict<MarginalDistribution>(dataset.features);
+  const auto mean_predictions =
+      model->template predict<Eigen::VectorXd>(dataset.features);
+
+  const auto single_pred_joint =
+      model->template predict<JointDistribution>(dataset.features[0]);
+
+  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
+  if (joint_predictions.has_covariance()) {
+    EXPECT_NEAR(single_pred_joint.get_diagonal(0),
+                joint_predictions.get_diagonal(0), 1e-6);
+  } else {
+    EXPECT_FALSE(single_pred_joint.has_covariance());
+  }
+
+  const auto single_pred_marginal =
+      model->template predict<MarginalDistribution>(dataset.features[0]);
+  EXPECT_NEAR(single_pred_marginal.mean[0], mean_predictions[0], 1e-6);
+
+  if (joint_predictions.has_covariance()) {
+    EXPECT_NEAR(single_pred_marginal.get_diagonal(0),
+                joint_predictions.get_diagonal(0), 1e-6);
+  }
+
+  const auto single_pred_mean =
+      model->template predict<Eigen::VectorXd>(dataset.features[0]);
+  EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
+
+  for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
+    EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
+    EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i], 1e-6);
+    if (joint_predictions.has_covariance()) {
+      EXPECT_NEAR(joint_predictions.covariance(i, i),
+                  marginal_predictions.covariance.diagonal()[i], 1e-6);
+    }
+  }
 }
 
 /*
@@ -93,40 +167,66 @@ TEST(test_models, test_with_target_distribution) {
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }
 
-TEST(test_models, test_predict_variants) {
-  auto dataset = make_heteroscedastic_toy_linear_data();
+TYPED_TEST(RegressionModelTester, cross_validation_variants) {
+  auto dataset = this->creator.get_dataset();
+  auto folds = leave_one_out(dataset);
+  auto model = this->creator.create();
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+  auto cv_scores = cross_validated_scores(rmse, folds, model.get());
 
-  auto model = MakeGaussianProcess().create();
-  model->fit(dataset);
+  auto loo_indexers = leave_one_out_indexer(dataset);
+  auto loo_predictions =
+      model->template cross_validated_predictions<MarginalDistribution>(
+          dataset, loo_indexers);
 
-  const auto joint_predictions = model->predict(dataset.features);
-  const auto marginal_predictions =
-      model->predict<MarginalDistribution>(dataset.features);
-  const auto mean_predictions =
-      model->predict<Eigen::VectorXd>(dataset.features);
+  auto cv_fast_scores =
+      cross_validated_scores(rmse, dataset, loo_indexers, model.get());
 
-  const auto single_pred_joint =
-      model->predict<JointDistribution>(dataset.features[0]);
-  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
-  EXPECT_NEAR(single_pred_joint.get_diagonal(0),
-              joint_predictions.get_diagonal(0), 1e-6);
+  // Here we make sure the cross validated mean absolute error is reasonable.
+  // Note that because we are running leave one out cross validation, the
+  // RMSE for each fold is just the absolute value of the error.
+  EXPECT_LE(cv_scores.mean(), 0.1);
+}
 
-  const auto single_pred_marginal =
-      model->predict<MarginalDistribution>(dataset.features[0]);
-  EXPECT_NEAR(single_pred_marginal.mean[0], mean_predictions[0], 1e-6);
-  EXPECT_NEAR(single_pred_marginal.get_diagonal(0),
-              joint_predictions.get_diagonal(0), 1e-6);
+template <typename ModelCreator>
+class SpecializedRegressionModelTester : public ::testing::Test {
+public:
+  ModelCreator creator;
+};
 
-  const auto single_pred_mean =
-      model->predict<Eigen::VectorXd>(dataset.features[0]);
-  EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
+typedef ::testing::Types<MakeGaussianProcess, MakeAdaptedGaussianProcess>
+    SpecializedModelCreators;
+TYPED_TEST_CASE(SpecializedRegressionModelTester, SpecializedModelCreators);
 
-  for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
-    EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
-    EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i], 1e-6);
-    EXPECT_NEAR(joint_predictions.covariance(i, i),
-                marginal_predictions.covariance.diagonal()[i], 1e-6);
-  }
+TYPED_TEST(SpecializedRegressionModelTester,
+           test_uses_specialized_cross_validation_functions) {
+  auto dataset = this->creator.get_dataset();
+  auto model = this->creator.create();
+
+  auto loo_indexers = leave_one_out_indexer(dataset);
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+
+  // time the computation of RMSE using the fast LOO variant.
+  using namespace std::chrono;
+  high_resolution_clock::time_point start = high_resolution_clock::now();
+  auto cv_fast_scores =
+      cross_validated_scores(rmse, dataset, loo_indexers, model.get());
+  high_resolution_clock::time_point end = high_resolution_clock::now();
+  auto fast_duration = duration_cast<microseconds>(end - start).count();
+
+  // time RMSE using the default method.
+  const auto folds = folds_from_fold_indexer(dataset, loo_indexers);
+  start = high_resolution_clock::now();
+  const auto cv_slow_scores = cross_validated_scores(rmse, folds, model.get());
+  end = high_resolution_clock::now();
+  auto slow_duration = duration_cast<microseconds>(end - start).count();
+
+  // Make sure the faster variant is actually faster and that the results
+  // are the same.
+  EXPECT_LT(fast_duration, slow_duration);
+  EXPECT_NEAR((cv_fast_scores - cv_slow_scores).norm(), 0., 1e-8);
 }
 
 } // namespace albatross

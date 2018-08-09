@@ -37,7 +37,7 @@ tune_model(RegressionModelCreator<double> &model_creator,
    */
   std::cout << "Tuning the model." << std::endl;
 
-  TuningMetric<double> metric = albatross::gp_fast_loo_nll<double>;
+  TuningMetric<double> metric = albatross::loo_nll;
 
   TuneModelConfig<double> config(model_creator, data, metric);
   return tune_regression_model<double>(config);

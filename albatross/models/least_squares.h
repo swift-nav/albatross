@@ -68,16 +68,20 @@ public:
   }
 
 protected:
-  JointDistribution
-  predict_(const std::vector<Eigen::VectorXd> &features) const override {
+  Eigen::VectorXd
+  predict_mean_(const std::vector<Eigen::VectorXd> &features) const override {
     int n = static_cast<s32>(features.size());
-    Eigen::VectorXd predictions(n);
+    Eigen::VectorXd mean(n);
     for (s32 i = 0; i < n; i++) {
-      predictions(i) =
+      mean(i) =
           features[static_cast<std::size_t>(i)].dot(this->model_fit_.coefs);
     }
+    return mean;
+  }
 
-    return JointDistribution(predictions);
+  JointDistribution
+  predict_(const std::vector<Eigen::VectorXd> &features) const override {
+    return JointDistribution(predict_mean_(features));
   }
 
   /*
