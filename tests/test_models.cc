@@ -59,8 +59,9 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   auto dataset = make_toy_linear_data();
   auto folds = leave_one_out(dataset);
   auto model = this->creator.create();
-  auto cv_scores = cross_validated_scores(
-      evaluation_metrics::root_mean_square_error, folds, model.get());
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+  auto cv_scores = cross_validated_scores(rmse, folds, model.get());
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
@@ -79,14 +80,15 @@ TEST(test_models, test_with_target_distribution) {
 
   auto folds = leave_one_out(dataset);
   auto model = MakeGaussianProcess().create();
-  auto scores = cross_validated_scores(
-      evaluation_metrics::root_mean_square_error, folds, model.get());
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+  auto scores = cross_validated_scores(rmse, folds, model.get());
   RegressionDataset<double> dataset_without_variance(dataset.features,
                                                      dataset.targets.mean);
   auto folds_without_variance = leave_one_out(dataset_without_variance);
+
   auto scores_without_variance =
-      cross_validated_scores(evaluation_metrics::root_mean_square_error,
-                             folds_without_variance, model.get());
+      cross_validated_scores(rmse, folds_without_variance, model.get());
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }
@@ -119,24 +121,11 @@ TEST(test_models, test_predict_variants) {
       model->predict<Eigen::VectorXd>(dataset.features[0]);
   EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
 
-  model = MakeGaussianProcess().create();
-  const auto fit_predict_joint = model->fit_and_predict(
-      dataset.features, dataset.targets, dataset.features);
-  const auto fit_predict_marginal =
-      model->fit_and_predict<MarginalDistribution>(
-          dataset.features, dataset.targets, dataset.features);
-  const auto fit_predict_mean = model->fit_and_predict<Eigen::VectorXd>(
-      dataset.features, dataset.targets, dataset.features);
-
   for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
     EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
     EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i], 1e-6);
     EXPECT_NEAR(joint_predictions.covariance(i, i),
                 marginal_predictions.covariance.diagonal()[i], 1e-6);
-
-    EXPECT_NEAR(fit_predict_joint.mean[i], mean_predictions[i], 1e-6);
-    EXPECT_NEAR(fit_predict_marginal.mean[i], mean_predictions[i], 1e-6);
-    EXPECT_NEAR(fit_predict_mean[i], mean_predictions[i], 1e-6);
   }
 }
 

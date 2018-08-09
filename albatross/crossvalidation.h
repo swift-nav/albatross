@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_CROSSVALIDATION_H
 #define ALBATROSS_CROSSVALIDATION_H
 
+#include "core/indexing.h"
 #include "core/model.h"
 #include <functional>
 #include <map>
@@ -25,167 +26,25 @@ namespace albatross {
  * corresponding targets and returns a single real value that summarizes
  * the quality of the prediction.
  */
+template <typename PredictType>
 using EvaluationMetric = std::function<double(
-    const JointDistribution &prediction, const MarginalDistribution &targets)>;
-
-inline FoldIndices get_train_indices(const FoldIndices &test_indices,
-                                     const int n) {
-  const s32 k = static_cast<s32>(test_indices.size());
-  // The train indices are all the indices that are not test indices.
-  FoldIndices train_indices(n - k);
-  s32 train_cnt = 0;
-  for (s32 j = 0; j < n; j++) {
-    if (std::find(test_indices.begin(), test_indices.end(), j) ==
-        test_indices.end()) {
-      train_indices[train_cnt] = j;
-      train_cnt++;
-    }
-  }
-  return train_indices;
-}
-
-/*
- * Each flavor of cross validation can be described by a set of
- * FoldIndices, which store which indices should be used for the
- * test cases.  This function takes a map from FoldName to
- * FoldIndices and a dataset and creates the resulting folds.
- */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>>
-folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
-                        const FoldIndexer &groups) {
-  // For a dataset with n features, we'll have n folds.
-  const s32 n = static_cast<s32>(dataset.features.size());
-  std::vector<RegressionFold<FeatureType>> folds;
-  // For each fold, partition into train and test sets.
-  for (const auto &pair : groups) {
-    // These get exposed inside the returned RegressionFold and because
-    // we'd like to prevent modification of the output from this function
-    // from changing the input FoldIndexer we perform a copy here.
-    const FoldName group_name(pair.first);
-    const FoldIndices test_indices(pair.second);
-    const auto train_indices = get_train_indices(test_indices, n);
-
-    std::vector<FeatureType> train_features =
-        subset(train_indices, dataset.features);
-    MarginalDistribution train_targets = subset(train_indices, dataset.targets);
-
-    std::vector<FeatureType> test_features =
-        subset(test_indices, dataset.features);
-    MarginalDistribution test_targets = subset(test_indices, dataset.targets);
-
-    assert(train_features.size() == train_targets.size());
-    assert(test_features.size() == test_targets.size());
-    assert(test_targets.size() + train_targets.size() == n);
-
-    const RegressionDataset<FeatureType> train_split(train_features,
-                                                     train_targets);
-    const RegressionDataset<FeatureType> test_split(test_features,
-                                                    test_targets);
-    folds.push_back(RegressionFold<FeatureType>(train_split, test_split,
-                                                group_name, test_indices));
-  }
-  return folds;
-}
-
-template <typename FeatureType>
-static inline FoldIndexer
-leave_one_out_indexer(const RegressionDataset<FeatureType> &dataset) {
-  FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
-    FoldName group_name = std::to_string(i);
-    groups[group_name] = {i};
-  }
-  return groups;
-}
-
-/*
- * Splits a dataset into cross validation folds where each fold contains all but
- * one predictor/target pair.
- */
-template <typename FeatureType>
-static inline FoldIndexer leave_one_group_out_indexer(
-    const RegressionDataset<FeatureType> &dataset,
-    const std::function<FoldName(const FeatureType &)> &get_group_name) {
-  FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
-    const std::string k =
-        get_group_name(dataset.features[static_cast<std::size_t>(i)]);
-    // Get the existing indices if we've already encountered this group_name
-    // otherwise initialize a new one.
-    FoldIndices indices;
-    if (groups.find(k) == groups.end()) {
-      indices = FoldIndices();
-    } else {
-      indices = groups[k];
-    }
-    // Add the current index.
-    indices.push_back(i);
-    groups[k] = indices;
-  }
-  return groups;
-}
-
-/*
- * Generates cross validation folds which represent leave one out
- * cross validation.
- */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>>
-leave_one_out(const RegressionDataset<FeatureType> &dataset) {
-  return folds_from_fold_indexer<FeatureType>(
-      dataset, leave_one_out_indexer<FeatureType>(dataset));
-}
-
-/*
- * Uses a `get_group_name` function to bucket each FeatureType into
- * a group, then holds out one group at a time.
- */
-template <typename FeatureType>
-static inline std::vector<RegressionFold<FeatureType>> leave_one_group_out(
-    const RegressionDataset<FeatureType> &dataset,
-    const std::function<FoldName(const FeatureType &)> &get_group_name) {
-  const FoldIndexer indexer =
-      leave_one_group_out_indexer<FeatureType>(dataset, get_group_name);
-  return folds_from_fold_indexer<FeatureType>(dataset, indexer);
-}
-
-/*
- * Computes a JointDistribution for each fold in set of cross validation
- * folds.  The resulting vector of JointDistributions can then be used
- * for things like computing an EvaluationMetric for each fold, or assembling
- * all the predictions into a single cross validated PredictionDistribution.
- */
-template <typename FeatureType>
-static inline std::vector<JointDistribution> cross_validated_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    RegressionModel<FeatureType> *model) {
-  // Iteratively make predictions and assemble the output vector
-  std::vector<JointDistribution> predictions;
-  for (std::size_t i = 0; i < folds.size(); i++) {
-    predictions.push_back(model->fit_and_predict(
-        folds[i].train_dataset.features, folds[i].train_dataset.targets,
-        folds[i].test_dataset.features));
-  }
-  return predictions;
-}
+    const PredictType &prediction, const MarginalDistribution &targets)>;
 
 /*
  * Iterates over previously computed predictions for each fold and
  * returns a vector of scores for each fold.
  */
-template <class FeatureType>
+template <typename FeatureType, typename PredictType = JointDistribution>
 static inline Eigen::VectorXd
-compute_scores(const EvaluationMetric &metric,
+compute_scores(const EvaluationMetric<PredictType> &metric,
                const std::vector<RegressionFold<FeatureType>> &folds,
-               const std::vector<JointDistribution> &predictions) {
+               const std::vector<PredictType> &predictions) {
   // Create a vector of metrics, one for each fold.
-  Eigen::VectorXd metrics(static_cast<s32>(folds.size()));
+  Eigen::VectorXd metrics(static_cast<Eigen::Index>(folds.size()));
   // Loop over each fold, making predictions then evaluating them
   // to create the final output.
-  for (std::size_t i = 0; i < folds.size(); i++) {
-    metrics[static_cast<s32>(i)] =
-        metric(predictions[i], folds[i].test_dataset.targets);
+  for (Eigen::Index i = 0; i < metrics.size(); i++) {
+    metrics[i] = metric(predictions[i], folds[i].test_dataset.targets);
   }
   return metrics;
 }
@@ -194,15 +53,15 @@ compute_scores(const EvaluationMetric &metric,
  * Iterates over each fold in a cross validation set and fits/predicts and
  * scores the fold, returning a vector of scores for each fold.
  */
-template <class FeatureType>
+template <typename FeatureType, typename PredictType = JointDistribution>
 static inline Eigen::VectorXd
-cross_validated_scores(const EvaluationMetric &metric,
+cross_validated_scores(const EvaluationMetric<PredictType> &metric,
                        const std::vector<RegressionFold<FeatureType>> &folds,
                        RegressionModel<FeatureType> *model) {
   // Create a vector of predictions.
-  std::vector<JointDistribution> predictions =
-      cross_validated_predictions<FeatureType>(folds, model);
-  return compute_scores(metric, folds, predictions);
+  std::vector<PredictType> predictions =
+      model->template cross_validated_predictions<PredictType>(folds);
+  return compute_scores<FeatureType, PredictType>(metric, folds, predictions);
 }
 
 /*
@@ -216,31 +75,38 @@ cross_validated_scores(const EvaluationMetric &metric,
  * unknown.
  */
 template <typename FeatureType>
-static inline JointDistribution
+static inline MarginalDistribution
 cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
                         RegressionModel<FeatureType> *model) {
   // Get the cross validated predictions, note however that
   // depending on the type of folds, these predictions may
   // be shuffled.
-  const std::vector<JointDistribution> predictions =
-      cross_validated_predictions<FeatureType>(folds, model);
+  const std::vector<MarginalDistribution> predictions =
+      model->template cross_validated_predictions<MarginalDistribution>(folds);
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
-  s32 n = 0;
+  Eigen::Index n = 0;
   for (const auto &pred : predictions) {
-    n += static_cast<s32>(pred.mean.size());
+    n += static_cast<decltype(n)>(pred.size());
   }
+
   Eigen::VectorXd mean(n);
+  Eigen::VectorXd diagonal(n);
+
   // Put all the predicted means back in order.
-  for (s32 j = 0; j < static_cast<s32>(predictions.size()); j++) {
+  for (std::size_t j = 0; j < predictions.size(); j++) {
     const auto pred = predictions[j];
     const auto fold = folds[j];
-    for (s32 i = 0; i < static_cast<s32>(pred.mean.size()); i++) {
-      mean[static_cast<s32>(fold.test_indices[static_cast<std::size_t>(i)])] =
-          pred.mean[i];
+    for (Eigen::Index i = 0; i < pred.mean.size(); i++) {
+      // The test indices map each element in the current fold back
+      // to the original order of the parent dataset.
+      auto test_ind = static_cast<Eigen::Index>(fold.test_indices[i]);
+      assert(test_ind < n);
+      mean[test_ind] = pred.mean[i];
+      diagonal[test_ind] = pred.get_diagonal(i);
     }
   }
-  return JointDistribution(mean);
+  return MarginalDistribution(mean, diagonal.asDiagonal());
 }
 
 } // namespace albatross

@@ -16,7 +16,6 @@
 #include "cereal/cereal.hpp"
 #include "core/traits.h"
 #include "eigen/serializable_diagonal_matrix.h"
-#include "indexing.h"
 #include <Eigen/Core>
 #include <iostream>
 #include <map>
@@ -108,18 +107,6 @@ using DiagonalMatrixXd =
 // matrix, so in turn only describes the variance of each
 // variable independent of all others.
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
-
-template <typename CovarianceType, typename SizeType>
-Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
-                                    const Distribution<CovarianceType> &dist) {
-  auto mean = subset(indices, Eigen::VectorXd(dist.mean));
-  if (dist.has_covariance()) {
-    auto cov = symmetric_subset(indices, dist.covariance);
-    return Distribution<CovarianceType>(mean, cov);
-  } else {
-    return Distribution<CovarianceType>(mean);
-  }
-}
 
 } // namespace albatross
 

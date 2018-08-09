@@ -111,8 +111,9 @@ TEST(test_scaling_functions, test_predicts) {
   auto model = gp_from_covariance<double>(covariance_function);
 
   auto folds = leave_one_out(dataset);
-  auto cv_scores = cross_validated_scores(
-      evaluation_metrics::root_mean_square_error, folds, &model);
+  EvaluationMetric<Eigen::VectorXd> rmse =
+      evaluation_metrics::root_mean_square_error;
+  auto cv_scores = cross_validated_scores(rmse, folds, &model);
 
   EXPECT_LE(cv_scores.mean(), 0.01);
 }
