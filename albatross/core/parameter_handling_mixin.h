@@ -36,6 +36,12 @@ using ParameterKey = std::string;
 using ParameterPrior = std::shared_ptr<Prior>;
 using ParameterValue = double;
 
+struct TunableParameters {
+  std::vector<double> values;
+  std::vector<double> lower_bounds;
+  std::vector<double> upper_bounds;
+};
+
 struct Parameter {
   ParameterValue value;
   ParameterPrior prior;
@@ -228,46 +234,28 @@ public:
    * some function doesn't actually care what any of the parameters
    * correspond to.
    */
-  std::vector<ParameterValue> get_params_as_vector() const {
-    std::vector<ParameterValue> x;
+
+  TunableParameters get_tunable_parameters() const {
+    TunableParameters output;
+
     const ParameterStore params = get_params();
     for (const auto &pair : params) {
       if (!pair.second.is_fixed()) {
-        x.push_back(pair.second.value);
+        output.values.push_back(pair.second.value);
+
+        double lb = pair.second.has_prior() ? pair.second.prior->lower_bound()
+                                            : -LARGE_VAL;
+        output.lower_bounds.push_back(lb);
+
+        double ub = pair.second.has_prior() ? pair.second.prior->upper_bound()
+                                            : -LARGE_VAL;
+        output.upper_bounds.push_back(ub);
       }
     }
-    return x;
+    return output;
   }
 
-  std::vector<double> get_param_lower_bounds() const {
-    std::vector<double> lb;
-    const auto params = get_params();
-    for (const auto &pair : params) {
-      if (!pair.second.is_fixed()) {
-        double bound = pair.second.has_prior()
-                           ? pair.second.prior->lower_bound()
-                           : -LARGE_VAL;
-        lb.push_back(fmax(bound, -LARGE_VAL));
-      }
-    }
-    return lb;
-  }
-
-  std::vector<double> get_param_upper_bounds() const {
-    std::vector<double> ub;
-    const auto params = get_params();
-    for (const auto &pair : params) {
-      if (!pair.second.is_fixed()) {
-        double bound = pair.second.has_prior()
-                           ? pair.second.prior->upper_bound()
-                           : LARGE_VAL;
-        ub.push_back(fmin(bound, LARGE_VAL));
-      }
-    }
-    return ub;
-  }
-
-  void set_params_from_vector(const std::vector<ParameterValue> &x) {
+  void set_tunable_params_values(const std::vector<ParameterValue> &x) {
     const ParameterStore params = get_params();
     std::size_t i = 0;
     for (const auto &pair : params) {

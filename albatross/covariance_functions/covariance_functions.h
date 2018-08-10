@@ -89,11 +89,11 @@ template <typename Term> struct CovarianceFunction {
     return term.set_prior(key, prior);
   };
   inline auto pretty_string() const { return term.pretty_string(); };
-  inline auto get_params_as_vector() const {
-    return term.get_params_as_vector();
+  inline auto get_tunable_parameters() const {
+    return term.get_tunable_parameters();
   };
-  inline auto set_params_from_vector(const std::vector<ParameterValue> &x) {
-    return term.set_params_from_vector(x);
+  inline auto set_tunable_params_values(const std::vector<ParameterValue> &x) {
+    return term.set_tunable_params_values(x);
   };
 };
 

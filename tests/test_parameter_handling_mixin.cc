@@ -73,13 +73,13 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
 
   // Make sure we start with the parameter vector we'd expect, even though
   // it was initialized out of order.
-  expect_parameter_vector_equal(original_param_vector,
-                                original_handler.get_params_as_vector());
+  expect_parameter_vector_equal(
+      original_param_vector, original_handler.get_tunable_parameters().values);
 
   // Now set the parameters using a new vector and make sure they stick
-  original_handler.set_params_from_vector(expected_param_vector);
-  expect_parameter_vector_equal(expected_param_vector,
-                                original_handler.get_params_as_vector());
+  original_handler.set_tunable_params_values(expected_param_vector);
+  expect_parameter_vector_equal(
+      expected_param_vector, original_handler.get_tunable_parameters().values);
 }
 
 /*
@@ -104,13 +104,13 @@ TEST(test_parameter_handler, test_get_set_from_vector_with_fixed) {
 
   // Make sure we start with the parameter vector we'd expect, even though
   // it was initialized out of order.
-  expect_parameter_vector_equal(original_param_vector,
-                                original_handler.get_params_as_vector());
+  expect_parameter_vector_equal(
+      original_param_vector, original_handler.get_tunable_parameters().values);
 
   // Now set the parameters using a new vector and make sure they stick
-  original_handler.set_params_from_vector(expected_param_vector);
-  expect_parameter_vector_equal(expected_param_vector,
-                                original_handler.get_params_as_vector());
+  original_handler.set_tunable_params_values(expected_param_vector);
+  expect_parameter_vector_equal(
+      expected_param_vector, original_handler.get_tunable_parameters().values);
 }
 
 TEST(test_parameter_handler, test_prior_log_likelihood) {
@@ -134,7 +134,7 @@ TEST(test_parameter_handler, test_set_prior) {
   auto p = TestParameterHandler();
 
   const auto orig_params = p.get_params();
-  const auto orig_param_vector = p.get_params_as_vector();
+  const auto orig_param_vector = p.get_tunable_parameters().values;
 
   for (const auto &pair : orig_params) {
     ParameterPrior gaussian_prior =
@@ -147,7 +147,8 @@ TEST(test_parameter_handler, test_set_prior) {
   // same.
   EXPECT_NE(orig_params, params_with_priors);
   // But the parameter values shouldn't have changed.
-  expect_parameter_vector_equal(orig_param_vector, p.get_params_as_vector());
+  expect_parameter_vector_equal(orig_param_vector,
+                                p.get_tunable_parameters().values);
 
   // We should also be able to change the parameter values without
   // modifying the prior.
