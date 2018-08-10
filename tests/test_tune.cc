@@ -72,6 +72,8 @@ TEST(test_tune, test_with_prior) {
       model->set_prior(pair.first, std::make_shared<GaussianPrior>(
                                        pair.second.value + 0.1, 0.001));
     }
+    auto param_names = map_keys(model->get_params());
+    model->set_prior(param_names[0], std::make_shared<FixedPrior>());
     return model;
   };
 
