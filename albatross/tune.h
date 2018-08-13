@@ -70,16 +70,14 @@ template <class FeatureType> struct TuneModelConfig {
     // The various algorithms in nlopt are coded by the first two characters.
     // In this case LN stands for local, gradient free.
     auto m = model_creator();
-    auto x = m->get_params_as_vector();
-    optimizer = nlopt::opt(nlopt::LN_PRAXIS, (unsigned)x.size());
+
+    auto tunable_params = m->get_tunable_parameters();
+    optimizer =
+        nlopt::opt(nlopt::LN_PRAXIS, (unsigned)tunable_params.values.size());
     optimizer.set_ftol_abs(1e-8);
     optimizer.set_ftol_rel(1e-6);
-
-    const auto lb = m->get_param_lower_bounds();
-    optimizer.set_lower_bounds(lb);
-
-    const auto ub = m->get_param_upper_bounds();
-    optimizer.set_upper_bounds(ub);
+    optimizer.set_lower_bounds(tunable_params.lower_bounds);
+    optimizer.set_upper_bounds(tunable_params.upper_bounds);
     // the sensitivity to parameters varies greatly between parameters so
     // terminating based on change in x isn't a great criteria, we only
     // terminate based on xtol if the change is super small.
@@ -108,7 +106,7 @@ double objective_function(const std::vector<double> &x,
 
   const auto model = config.model_creator();
 
-  model->set_params_from_vector(x);
+  model->set_tunable_params_values(x);
 
   if (!model->params_are_valid()) {
     config.output_stream << "Invalid Parameters:" << std::endl;
@@ -138,7 +136,7 @@ ParameterStore
 tune_regression_model(const TuneModelConfig<FeatureType> &config) {
 
   const auto example_model = config.model_creator();
-  auto x = example_model->get_params_as_vector();
+  auto x = example_model->get_tunable_parameters().values;
 
   assert(x.size());
   nlopt::opt opt = config.optimizer;
@@ -147,7 +145,7 @@ tune_regression_model(const TuneModelConfig<FeatureType> &config) {
   nlopt::result result = opt.optimize(x, minf);
 
   // Tell the user what the final parameters were.
-  example_model->set_params_from_vector(x);
+  example_model->set_tunable_params_values(x);
   config.output_stream << "==================" << std::endl;
   config.output_stream << "TUNED MODEL PARAMS" << std::endl;
   config.output_stream << "nlopt termination code: " << to_string(result)
