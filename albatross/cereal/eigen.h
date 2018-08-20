@@ -47,7 +47,6 @@ inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
   archive(cereal::make_size_tag(rows_plus_two));
   archive(rows);
   archive(cols);
-  assert(rows == rows_plus_two - 2);
   /*
    * In order to determine the size of a matrix, we have to first determine
    * how many rows, then inspect the size of the first row to get the

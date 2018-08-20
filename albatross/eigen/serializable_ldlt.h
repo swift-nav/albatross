@@ -34,13 +34,25 @@ inline void save_lower_triangle(Archive &archive,
   }
 }
 
+inline void adjust_storage_size(__attribute__((unused))
+                                cereal::JSONInputArchive &archive,
+                                cereal::size_type *storage_size) {
+  // TODO: understand why the storage size upon load is always augmented by two
+  // when using a JSON archive.
+  *storage_size -= 2;
+}
+
+template <class Archive>
+inline void adjust_storage_size(
+        __attribute__((unused)) Archive &archive,
+        __attribute__((unused)) cereal::size_type *storage_size) {}
+
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void load_lower_triangle(Archive &archive,
                                 Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
   cereal::size_type storage_size;
   archive(cereal::make_size_tag(storage_size));
-  // TODO: understand why the storage size upon load is always augmented by two.
-  storage_size -= 2;
+  adjust_storage_size(archive, &storage_size);
   // We assume the matrix is square and compute the number of rows from the
   // storage size using the quadratic formula.
   //     rows^2 + rows - 2 * storage_size = 0
