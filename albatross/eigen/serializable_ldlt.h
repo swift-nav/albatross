@@ -43,9 +43,9 @@ inline void adjust_storage_size(__attribute__((unused))
 }
 
 template <class Archive>
-inline void adjust_storage_size(
-        __attribute__((unused)) Archive &archive,
-        __attribute__((unused)) cereal::size_type *storage_size) {}
+inline void adjust_storage_size(__attribute__((unused)) Archive &archive,
+                                __attribute__((unused))
+                                cereal::size_type *storage_size) {}
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void load_lower_triangle(Archive &archive,
