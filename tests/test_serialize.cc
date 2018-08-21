@@ -99,6 +99,14 @@ struct EigenMatrixXd : public SerializableType<Eigen::MatrixXd> {
   }
 };
 
+struct EigenMatrix3d : public SerializableType<Eigen::Matrix3d> {
+  Eigen::Matrix3d create() const override {
+    Eigen::Matrix3d x;
+    x << 1., 2., 3., 4., 5., 6., 7., 8., 9.;
+    return x;
+  }
+};
+
 struct FullJointDistribution : public SerializableType<JointDistribution> {
   JointDistribution create() const override {
     Eigen::MatrixXd cov(3, 3);
@@ -356,9 +364,9 @@ struct PolymorphicSerializeTest : public ::testing::Test {
 };
 
 typedef ::testing::Types<
-    LDLT, SerializableType<Eigen::Matrix3d>, SerializableType<Eigen::Matrix2i>,
-    EmptyEigenVectorXd, EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
-    FullJointDistribution, MeanOnlyJointDistribution, FullMarginalDistribution,
+    LDLT, EigenMatrix3d, SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
+    EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd, FullJointDistribution,
+    MeanOnlyJointDistribution, FullMarginalDistribution,
     MeanOnlyMarginalDistribution, ParameterStoreType,
     SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
     Dataset, DatasetWithMetadata, FitDirectModel, UnfitDirectModel,
