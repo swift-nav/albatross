@@ -70,11 +70,11 @@ public:
 protected:
   Eigen::VectorXd
   predict_mean_(const std::vector<Eigen::VectorXd> &features) const override {
-    int n = static_cast<s32>(features.size());
+    std::size_t n = features.size();
     Eigen::VectorXd mean(n);
-    for (s32 i = 0; i < n; i++) {
-      mean(i) =
-          features[static_cast<std::size_t>(i)].dot(this->model_fit_.coefs);
+    for (std::size_t i = 0; i < n; i++) {
+      mean(static_cast<Eigen::Index>(i)) =
+          features[i].dot(this->model_fit_.coefs);
     }
     return mean;
   }

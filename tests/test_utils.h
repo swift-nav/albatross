@@ -149,7 +149,7 @@ expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
 static inline auto make_toy_linear_data(const double a = 5.,
                                         const double b = 1.,
                                         const double sigma = 0.1,
-                                        const s32 n = 10) {
+                                        const std::size_t n = 10) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(3);
@@ -157,7 +157,7 @@ static inline auto make_toy_linear_data(const double a = 5.,
   std::vector<double> features;
   Eigen::VectorXd targets(n);
 
-  for (s32 i = 0; i < n; i++) {
+  for (std::size_t i = 0; i < n; i++) {
     double x = static_cast<double>(i);
     features.push_back(x);
     targets[i] = a + x * b + d(gen);
@@ -259,7 +259,7 @@ public:
   RegressionDataset<double> dataset_;
 };
 
-inline auto random_spherical_points(s32 n = 10, double radius = 1.,
+inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
                                     int seed = 5) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
@@ -270,7 +270,7 @@ inline auto random_spherical_points(s32 n = 10, double radius = 1.,
 
   std::vector<Eigen::VectorXd> points;
 
-  for (s32 i = 0; i < n; i++) {
+  for (std::size_t i = 0; i < n; i++) {
     const double lon = rand_lon(gen);
     const double lat = rand_lat(gen);
     Eigen::VectorXd x(3);

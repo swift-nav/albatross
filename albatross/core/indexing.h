@@ -15,15 +15,17 @@
 
 #include "core/dataset.h"
 #include <Eigen/Core>
+#include <algorithm>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <map>
+#include <numeric>
 #include <vector>
 
 namespace albatross {
 
-using s32 = int32_t;
-using FoldIndices = std::vector<s32>;
+using FoldIndices = std::vector<std::size_t>;
 using FoldName = std::string;
 using FoldIndexer = std::map<FoldName, FoldIndices>;
 
@@ -83,7 +85,7 @@ inline Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
       auto ii = static_cast<Eigen::Index>(i);
       auto jj = static_cast<Eigen::Index>(j);
       auto row_index = static_cast<Eigen::Index>(row_indices[i]);
-      auto col_index = static_cast<Eigen::Index>(col_indices[i]);
+      auto col_index = static_cast<Eigen::Index>(col_indices[j]);
       out(ii, jj) = v(row_index, col_index);
     }
   }
@@ -141,20 +143,26 @@ template <typename FeatureType> struct RegressionFold {
         test_indices(test_indices_){};
 };
 
-inline FoldIndices get_train_indices(const FoldIndices &test_indices,
-                                     const int n) {
-  const s32 k = static_cast<s32>(test_indices.size());
-  // The train indices are all the indices that are not test indices.
-  FoldIndices train_indices(n - k);
-  s32 train_cnt = 0;
-  for (s32 j = 0; j < n; j++) {
-    if (std::find(test_indices.begin(), test_indices.end(), j) ==
-        test_indices.end()) {
-      train_indices[train_cnt] = j;
-      train_cnt++;
-    }
-  }
-  return train_indices;
+template <typename X>
+inline std::vector<X> vector_set_difference(const std::vector<X> &x,
+                                            const std::vector<X> &y) {
+  std::vector<X> diff;
+  std::set_difference(x.begin(), x.end(), y.begin(), y.end(),
+                      std::inserter(diff, diff.begin()));
+  return diff;
+}
+
+/*
+ * Computes the indices between 0 and n - 1 which are NOT contained
+ * in `indices`.  Here complement is the mathematical interpretation
+ * of the word meaning "the part required to make something whole".
+ * In other words, indices and indices_complement(indices) should
+ * contain all the numbers between 0 and n-1
+ */
+inline FoldIndices indices_complement(const FoldIndices &indices, const int n) {
+  FoldIndices all_indices(n);
+  std::iota(all_indices.begin(), all_indices.end(), 0);
+  return vector_set_difference(all_indices, indices);
 }
 
 /*
@@ -168,7 +176,7 @@ static inline std::vector<RegressionFold<FeatureType>>
 folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
                         const FoldIndexer &groups) {
   // For a dataset with n features, we'll have n folds.
-  const s32 n = static_cast<s32>(dataset.features.size());
+  const std::size_t n = dataset.features.size();
   std::vector<RegressionFold<FeatureType>> folds;
   // For each fold, partition into train and test sets.
   for (const auto &pair : groups) {
@@ -177,7 +185,7 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
     // from changing the input FoldIndexer we perform a copy here.
     const FoldName group_name(pair.first);
     const FoldIndices test_indices(pair.second);
-    const auto train_indices = get_train_indices(test_indices, n);
+    const auto train_indices = indices_complement(test_indices, n);
 
     std::vector<FeatureType> train_features =
         subset(train_indices, dataset.features);
@@ -205,7 +213,7 @@ template <typename FeatureType>
 static inline FoldIndexer
 leave_one_out_indexer(const RegressionDataset<FeatureType> &dataset) {
   FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
+  for (std::size_t i = 0; i < dataset.features.size(); i++) {
     FoldName group_name = std::to_string(i);
     groups[group_name] = {i};
   }
@@ -221,9 +229,8 @@ static inline FoldIndexer leave_one_group_out_indexer(
     const RegressionDataset<FeatureType> &dataset,
     const std::function<FoldName(const FeatureType &)> &get_group_name) {
   FoldIndexer groups;
-  for (s32 i = 0; i < static_cast<s32>(dataset.features.size()); i++) {
-    const std::string k =
-        get_group_name(dataset.features[static_cast<std::size_t>(i)]);
+  for (std::size_t i = 0; i < dataset.features.size(); i++) {
+    const std::string k = get_group_name(dataset.features[i]);
     // Get the existing indices if we've already encountered this group_name
     // otherwise initialize a new one.
     FoldIndices indices;

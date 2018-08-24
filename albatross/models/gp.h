@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_GP_GP_H
-#define ALBATROSS_GP_GP_H
+#ifndef ALBATROSS_MODELS_GP_H
+#define ALBATROSS_MODELS_GP_H
 
 #include "evaluate.h"
 #include "stdio.h"
@@ -45,6 +45,35 @@ template <typename FeatureType> struct GaussianProcessFit {
             train_ldlt == other.train_ldlt && information == other.information);
   }
 };
+
+template <typename FeatureType>
+inline JointDistribution predict_from_covariance_and_fit(
+    const Eigen::MatrixXd &cross_cov, const Eigen::MatrixXd &pred_cov,
+    const GaussianProcessFit<FeatureType> &model_fit) {
+  const Eigen::VectorXd pred = cross_cov.transpose() * model_fit.information;
+  auto ldlt = model_fit.train_ldlt;
+  Eigen::MatrixXd posterior_cov = ldlt.solve(cross_cov);
+  posterior_cov = cross_cov.transpose() * posterior_cov;
+  posterior_cov = pred_cov - posterior_cov;
+  return JointDistribution(pred, posterior_cov);
+}
+
+template <typename FeatureType>
+inline GaussianProcessFit<FeatureType>
+fit_from_covariance(const std::vector<FeatureType> &features,
+                    const Eigen::MatrixXd &train_cov,
+                    const MarginalDistribution &targets) {
+  GaussianProcessFit<FeatureType> model_fit;
+  model_fit.train_features = features;
+  Eigen::MatrixXd cov(train_cov);
+  if (targets.has_covariance()) {
+    cov += targets.covariance;
+  }
+  model_fit.train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+  // Precompute the information vector
+  model_fit.information = model_fit.train_ldlt.solve(targets.mean);
+  return model_fit;
+}
 
 template <typename FeatureType, typename SubFeatureType = FeatureType>
 using SerializableGaussianProcess =
@@ -101,7 +130,7 @@ public:
         symmetric_covariance(covariance_function_, features);
     auto ldlt = this->model_fit_.train_ldlt;
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    assert(static_cast<s32>(pred.size()) == static_cast<s32>(features.size()));
+    assert(static_cast<std::size_t>(pred.size()) == features.size());
     return InspectionDistribution(pred, pred_cov);
   }
 
@@ -212,27 +241,17 @@ protected:
   serializable_fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const override {
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
-    FitType model_fit;
-    model_fit.train_features = features;
-    if (targets.has_covariance()) {
-      cov += targets.covariance;
-    }
-    model_fit.train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
-    // Precompute the information vector
-    model_fit.information = model_fit.train_ldlt.solve(targets.mean);
-    return model_fit;
+    return fit_from_covariance(features, cov, targets);
   }
 
   JointDistribution
   predict_(const std::vector<FeatureType> &features) const override {
     const auto cross_cov = asymmetric_covariance(
-        covariance_function_, features, this->model_fit_.train_features);
-    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
+        covariance_function_, this->model_fit_.train_features, features);
     Eigen::MatrixXd pred_cov =
         symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_ldlt;
-    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    return JointDistribution(pred, pred_cov);
+    return predict_from_covariance_and_fit(cross_cov, pred_cov,
+                                           this->model_fit_);
   }
 
   virtual MarginalDistribution
@@ -261,7 +280,6 @@ protected:
     return pred;
   }
 
-private:
   CovarianceFunction covariance_function_;
   std::string model_name_;
 };
