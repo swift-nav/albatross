@@ -99,10 +99,10 @@ cross_validated_scores(const EvaluationMetric<PredictType> &metric,
  * for some cross validation folds, taking into account the
  * fact that each fold may contain reordered data.
  */
-template <typename FeatureType>
+template <typename FeatureType, typename PredictType>
 static inline MarginalDistribution concatenate_fold_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<MarginalDistribution> &predictions) {
+    const std::vector<PredictType> &predictions) {
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
   Eigen::Index n = 0;
