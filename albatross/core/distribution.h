@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
+#include <libswiftnav/gnss_time.h>
 #include "cereal/cereal.hpp"
 #include "core/traits.h"
 #include "eigen/serializable_diagonal_matrix.h"
@@ -30,7 +31,8 @@ namespace albatross {
  */
 template <typename CovarianceType> struct Distribution {
   Eigen::VectorXd mean;
-  CovarianceType covariance;
+        CovarianceType covariance;
+        gps_time_t gps_time;
   // Sometimes it can be helpful to keep track of some
   // auxillary information regarding how a distribution was
   // derived, that can be stored in this map.
@@ -55,10 +57,10 @@ template <typename CovarianceType> struct Distribution {
     return covariance.size() > 0;
   }
 
-  Distribution() : mean(), covariance(){};
-  Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(){};
-  Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
-      : mean(mean_), covariance(covariance_){};
+  Distribution() : mean(), covariance(), gps_time(){};
+  Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(), gps_time(){};
+  Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_, const gps_time_t& gps_time_)
+      : mean(mean_), covariance(covariance_), gps_time(gps_time_){};
 
   double get_diagonal(Eigen::Index i) const {
     return has_covariance() ? covariance.diagonal()[i] : NAN;
