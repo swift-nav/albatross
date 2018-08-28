@@ -118,7 +118,7 @@ Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
   auto mean = subset(indices, Eigen::VectorXd(dist.mean));
   if (dist.has_covariance()) {
     auto cov = symmetric_subset(indices, dist.covariance);
-    return Distribution<CovarianceType>(mean, cov);
+    return Distribution<CovarianceType>(mean, cov, dist.gps_time);
   } else {
     return Distribution<CovarianceType>(mean);
   }

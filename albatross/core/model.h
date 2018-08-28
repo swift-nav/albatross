@@ -239,7 +239,7 @@ protected:
     const auto full_distribution = predict_(features);
     return MarginalDistribution(
         full_distribution.mean,
-        full_distribution.covariance.diagonal().asDiagonal());
+        full_distribution.covariance.diagonal().asDiagonal(), full_distribution.gps_time);
   }
 
   virtual Eigen::VectorXd

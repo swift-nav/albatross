@@ -22,6 +22,8 @@
 #include "core/model.h"
 #include "core/serialize.h"
 #include "eigen/serializable_ldlt.h"
+#include "orion/multi_shell_signal_arc.h"
+#include "orion/station.h"
 
 namespace albatross {
 
@@ -160,7 +162,7 @@ protected:
       Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
       Eigen::VectorXd vi = subset(indices[i], model_fit.information);
       const auto A_inv = inverse_blocks[i].inverse();
-      output.push_back(JointDistribution(yi - A_inv * vi, A_inv));
+      output.push_back(JointDistribution(yi - A_inv * vi, A_inv, dataset.targets.gps_time));
     }
     return output;
   }
@@ -183,7 +185,7 @@ protected:
       const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
 
       output.push_back(MarginalDistribution(
-          yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal()));
+          yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal(), dataset.targets.gps_time));
     }
     return output;
   }
@@ -223,19 +225,56 @@ protected:
     return model_fit;
   }
 
-  JointDistribution
-  predict_(const std::vector<FeatureType> &features) const override {
-    const auto cross_cov = asymmetric_covariance(
-        covariance_function_, features, this->model_fit_.train_features);
-    const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
-    Eigen::MatrixXd pred_cov =
-        symmetric_covariance(covariance_function_, features);
-    auto ldlt = this->model_fit_.train_ldlt;
-    pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
-    return JointDistribution(pred, pred_cov);
-  }
+    JointDistribution
+    predict_(const std::vector<FeatureType> &features) const override {
+        const auto cross_cov = asymmetric_covariance(
+                covariance_function_, features, this->model_fit_.train_features);
+        Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
+        Eigen::MatrixXd pred_cov =
+                symmetric_covariance(covariance_function_, features);
+        auto ldlt = this->model_fit_.train_ldlt;
+        pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
+        const Eigen::VectorXd network_obs = ldlt.reconstructedMatrix() * this->model_fit_.information;
+        s32 rover_index = 0;
+      gps_time_t time(GPS_TIME_UNKNOWN);
+        for (const auto &desired_feature : features) {
+            s32 network_index = 0;
+            for (const auto &feature : this->model_fit_.train_features) {
+              const orion::MultiShellSignalArc *iono_ref = dynamic_cast<const orion::MultiShellSignalArc *>( &feature );
+              const orion::MultiShellSignalArc *iono_rover = dynamic_cast<const orion::MultiShellSignalArc *>( &desired_feature );
+              if (iono_ref && iono_rover && (!strcmp(iono_ref->signal_arc.station_id.c_str(), "monb") ||
+                                   !strcmp(iono_ref->signal_arc.station_id.c_str(), "MONB")) &&
+                      iono_ref->signal_arc.satellite_id == iono_rover->signal_arc.satellite_id) {
+                pred[rover_index] = network_obs[network_index];
+                assert( time.wn == WN_UNKNOWN || fabs(gpsdifftime(&time,&iono_ref->signal_arc.gps_time)) <FLOAT_EQUALITY_EPS);
+                time = iono_ref->signal_arc.gps_time;
+                break;
+              }
+              const orion::Station *tropo_ref = dynamic_cast<const orion::Station *>( &feature );
+              const orion::Station *tropo_rover = dynamic_cast<const orion::Station *>( &desired_feature );
+              if (tropo_ref && tropo_rover && (!strcmp(tropo_ref->station_id.c_str(), "monb") ||
+                                   !strcmp(tropo_ref->station_id.c_str(), "MONB"))) {
+                pred[rover_index] = network_obs[network_index];
+                assert( time.wn == WN_UNKNOWN || fabs(gpsdifftime(&time,&iono_ref->signal_arc.gps_time)) <FLOAT_EQUALITY_EPS );
+                time = tropo_ref->gps_time;
+                break;
+              }
+                ++network_index;
+            }
+          const orion::MultiShellSignalArc *iono_rover = dynamic_cast<const orion::MultiShellSignalArc *>( &desired_feature );
+          if (iono_rover && network_index == this->model_fit_.train_features.size()) {
+            pred_cov(rover_index, rover_index) = 1e12;
+          }
+          const orion::Station *tropo_rover = dynamic_cast<const orion::Station *>( &desired_feature );
+          if (tropo_rover && network_index == this->model_fit_.train_features.size()) {
+            pred_cov(rover_index, rover_index) = 1e12;
+          }
+            ++rover_index;
+        }
+        return JointDistribution(pred, pred_cov, time);
+    }
 
-  virtual MarginalDistribution
+    virtual MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const override {
     const auto cross_cov = asymmetric_covariance(
         covariance_function_, features, this->model_fit_.train_features);
@@ -250,7 +289,7 @@ protected:
       marginal_variance[i] += covariance_function_(features[i], features[i]);
     }
 
-    return MarginalDistribution(pred, marginal_variance.asDiagonal());
+    return MarginalDistribution(pred, marginal_variance.asDiagonal(), gps_time_t());
   }
 
   virtual Eigen::VectorXd
