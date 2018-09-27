@@ -28,16 +28,17 @@ public:
   using FitType = GaussianProcessFit<FeatureType>;
 
   RansacGaussianProcessRegression(CovarianceFunction &covariance_function,
-                                  double threshold_, std::size_t min_inliers_,
+                                  double inlier_threshold_,
+                                  std::size_t min_inliers_,
                                   std::size_t min_features_,
                                   std::size_t max_iterations_)
-      : BaseModel(covariance_function), threshold(threshold_),
+      : BaseModel(covariance_function), inlier_threshold(inlier_threshold_),
         min_inliers(min_inliers_), min_features(min_features_),
         max_iterations(max_iterations_){};
 
   template <typename Archive> void save(Archive &archive) const {
     archive(cereal::base_class<BaseModel>(this),
-            cereal::make_nvp("threshold", threshold),
+            cereal::make_nvp("inlier_threshold", inlier_threshold),
             cereal::make_nvp("min_inliers", min_inliers),
             cereal::make_nvp("min_features", min_features),
             cereal::make_nvp("max_iterations", max_iterations));
@@ -45,16 +46,13 @@ public:
 
   template <typename Archive> void load(Archive &archive) {
     archive(cereal::base_class<BaseModel>(this),
-            cereal::make_nvp("threshold", threshold),
+            cereal::make_nvp("inlier_threshold", inlier_threshold),
             cereal::make_nvp("min_inliers", min_inliers),
             cereal::make_nvp("min_features", min_features),
             cereal::make_nvp("max_iterations", max_iterations));
   }
 
 protected:
-  /*
-   *
-   */
   virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
@@ -94,7 +92,7 @@ protected:
         symmetric_covariance(this->covariance_function_, features);
 
     if (max_iterations < 1) {
-      return fit_from_covariance(features, cov, targets);
+      return GaussianProcessFit<FeatureType>(features, cov, targets);
     }
 
     struct FitAndIndices {
@@ -108,7 +106,8 @@ protected:
           const auto train_targets = subset(indexer, targets);
           auto train_cov = symmetric_subset(indexer, cov);
           const FitAndIndices fit_and_indices = {
-              fit_from_covariance(train_features, train_cov, train_targets),
+              GaussianProcessFit<FeatureType>(train_features, train_cov,
+                                              train_targets),
               indexer};
           return fit_and_indices;
         };
@@ -147,16 +146,17 @@ protected:
 
     auto inliers = ransac<FitAndIndices>(
         fitter, outlier_metric, model_metric, map_values(loo_indexer),
-        threshold, min_features, min_inliers, max_iterations);
+        inlier_threshold, min_features, min_inliers, max_iterations);
 
     const auto inlier_features = subset(inliers, features);
     const auto inlier_targets = subset(inliers, targets);
     const auto inlier_cov = symmetric_subset(inliers, cov);
 
-    return fit_from_covariance(inlier_features, inlier_cov, inlier_targets);
+    return GaussianProcessFit<FeatureType>(inlier_features, inlier_cov,
+                                           inlier_targets);
   }
 
-  double threshold;
+  double inlier_threshold;
   std::size_t min_inliers;
   std::size_t min_features;
   std::size_t max_iterations;
@@ -167,13 +167,13 @@ protected:
 template <typename FeatureType, typename CovFunc>
 std::unique_ptr<RansacGaussianProcessRegression<FeatureType, CovFunc>>
 ransac_gp_pointer_from_covariance(CovFunc covariance_function,
-                                  double threshold = 1.,
+                                  double inlier_threshold = 1.,
                                   std::size_t min_inliers = 3,
                                   std::size_t min_features = 3,
                                   std::size_t max_iterations = 20) {
   return std::make_unique<
       RansacGaussianProcessRegression<FeatureType, CovFunc>>(
-      covariance_function, threshold, min_inliers, min_features,
+      covariance_function, inlier_threshold, min_inliers, min_features,
       max_iterations);
 };
 

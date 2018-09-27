@@ -163,7 +163,6 @@ public:
 protected:
   virtual void fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) = 0;
-
   /*
    * Predict specializations
    */

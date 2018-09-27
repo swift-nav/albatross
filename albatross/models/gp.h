@@ -32,6 +32,12 @@ template <typename FeatureType> struct GaussianProcessFit {
   Eigen::SerializableLDLT train_ldlt;
   Eigen::VectorXd information;
 
+  GaussianProcessFit(){};
+
+  GaussianProcessFit(const std::vector<FeatureType> &features,
+                     const Eigen::MatrixXd &train_cov,
+                     const MarginalDistribution &targets);
+
   template <typename Archive>
   // todo: enable if FeatureType is serializable
   void serialize(Archive &archive) {
@@ -47,6 +53,20 @@ template <typename FeatureType> struct GaussianProcessFit {
 };
 
 template <typename FeatureType>
+GaussianProcessFit<FeatureType>::GaussianProcessFit(
+    const std::vector<FeatureType> &features, const Eigen::MatrixXd &train_cov,
+    const MarginalDistribution &targets) {
+  train_features = features;
+  Eigen::MatrixXd cov(train_cov);
+  if (targets.has_covariance()) {
+    cov += targets.covariance;
+  }
+  train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+  // Precompute the information vector
+  information = train_ldlt.solve(targets.mean);
+}
+
+template <typename FeatureType>
 inline JointDistribution predict_from_covariance_and_fit(
     const Eigen::MatrixXd &cross_cov, const Eigen::MatrixXd &pred_cov,
     const GaussianProcessFit<FeatureType> &model_fit) {
@@ -56,23 +76,6 @@ inline JointDistribution predict_from_covariance_and_fit(
   posterior_cov = cross_cov.transpose() * posterior_cov;
   posterior_cov = pred_cov - posterior_cov;
   return JointDistribution(pred, posterior_cov);
-}
-
-template <typename FeatureType>
-inline GaussianProcessFit<FeatureType>
-fit_from_covariance(const std::vector<FeatureType> &features,
-                    const Eigen::MatrixXd &train_cov,
-                    const MarginalDistribution &targets) {
-  GaussianProcessFit<FeatureType> model_fit;
-  model_fit.train_features = features;
-  Eigen::MatrixXd cov(train_cov);
-  if (targets.has_covariance()) {
-    cov += targets.covariance;
-  }
-  model_fit.train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
-  // Precompute the information vector
-  model_fit.information = model_fit.train_ldlt.solve(targets.mean);
-  return model_fit;
 }
 
 template <typename FeatureType, typename SubFeatureType = FeatureType>
@@ -241,7 +244,7 @@ protected:
   serializable_fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const override {
     Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
-    return fit_from_covariance(features, cov, targets);
+    return GaussianProcessFit<FeatureType>(features, cov, targets);
   }
 
   JointDistribution

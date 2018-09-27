@@ -31,7 +31,7 @@ Indexer concatenate_subset_of_groups(const Indexer &subset_indices,
                                      const GroupIndexer &indexer) {
 
   Indexer output;
-  for (const auto i : subset_indices) {
+  for (const auto &i : subset_indices) {
     assert(i < static_cast<std::size_t>(indexer.size()));
     output.insert(output.end(), indexer[i].begin(), indexer[i].end());
   }
@@ -61,8 +61,9 @@ Indexer
 ransac(std::function<FitType(const Indexer &)> &fitter,
        std::function<double(const Indexer &, const FitType &)> &outlier_metric,
        std::function<double(const Indexer &)> &model_metric,
-       const GroupIndexer &indexer, double threshold, std::size_t min_features,
-       std::size_t min_inliers, std::size_t max_iterations) {
+       const GroupIndexer &indexer, double inlier_threshold,
+       std::size_t min_features, std::size_t min_inliers,
+       std::size_t max_iterations) {
 
   std::default_random_engine gen;
 
@@ -82,7 +83,7 @@ ransac(std::function<FitType(const Indexer &)> &fitter,
     Indexer inliers;
     for (const auto &test_ind : test_groups) {
       double metric_value = outlier_metric(indexer[test_ind], fit);
-      if (metric_value < threshold) {
+      if (metric_value < inlier_threshold) {
         inliers.push_back(test_ind);
       }
     }
@@ -108,7 +109,7 @@ template <typename FeatureType, typename PredictType>
 RegressionDataset<FeatureType>
 ransac(const RegressionDataset<FeatureType> &dataset,
        const FoldIndexer &fold_indexer, RegressionModel<FeatureType> *model,
-       EvaluationMetric<PredictType> &metric, double threshold,
+       EvaluationMetric<PredictType> &metric, double inlier_threshold,
        std::size_t min_features, std::size_t min_inliers, int max_iterations) {
 
   using FitType = RegressionModel<FeatureType> *;
@@ -144,8 +145,8 @@ ransac(const RegressionDataset<FeatureType> &dataset,
   };
 
   const auto best_inds = ransac<FitType>(
-      fitter, outlier_metric, model_metric, map_values(fold_indexer), threshold,
-      min_features, min_inliers, max_iterations);
+      fitter, outlier_metric, model_metric, map_values(fold_indexer),
+      inlier_threshold, min_features, min_inliers, max_iterations);
   RegressionDataset<FeatureType> best_dataset(
       subset(best_inds, dataset.features), subset(best_inds, dataset.targets));
   return best_dataset;
