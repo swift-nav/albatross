@@ -80,7 +80,7 @@ std::string group_by_interval(const double &x) {
 }
 
 bool is_monotonic_increasing(const Eigen::VectorXd &x) {
-  for (s32 i = 0; i < static_cast<s32>(x.size()) - 1; i++) {
+  for (Eigen::Index i = 0; i < x.size() - 1; i++) {
     if (x[i + 1] - x[i] <= 0.) {
       return false;
     }

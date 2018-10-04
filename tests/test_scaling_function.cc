@@ -74,11 +74,11 @@ auto make_attenuation_data(const double attenuation = 3.14159,
   gen.seed(3);
   std::normal_distribution<> d{0., sigma_noise};
 
-  s32 n = 10;
+  std::size_t n = 10;
   std::vector<double> features;
   Eigen::VectorXd targets(n);
 
-  for (s32 i = 0; i < n; i++) {
+  for (std::size_t i = 0; i < n; i++) {
     // x ranges from 0 to 2
     double x = static_cast<double>(i) * (2. / static_cast<double>(n));
     features.push_back(x);

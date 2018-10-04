@@ -66,8 +66,7 @@ public:
   void fit(const std::vector<FeatureType> &features,
            const MarginalDistribution &targets) {
     assert(features.size() > 0);
-    assert(static_cast<s32>(features.size()) ==
-           static_cast<s32>(targets.size()));
+    assert(features.size() == static_cast<std::size_t>(targets.size()));
     fit_(features, targets);
     has_been_fit_ = true;
   }
@@ -164,7 +163,6 @@ public:
 protected:
   virtual void fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) = 0;
-
   /*
    * Predict specializations
    */
@@ -174,8 +172,7 @@ protected:
           detail::PredictTypeIdentity<JointDistribution> &&identity) const {
     assert(has_been_fit());
     JointDistribution preds = predict_(features);
-    assert(static_cast<s32>(preds.mean.size()) ==
-           static_cast<s32>(features.size()));
+    assert(static_cast<std::size_t>(preds.mean.size()) == features.size());
     return preds;
   }
 
@@ -184,8 +181,7 @@ protected:
           detail::PredictTypeIdentity<MarginalDistribution> &&identity) const {
     assert(has_been_fit());
     MarginalDistribution preds = predict_marginal_(features);
-    assert(static_cast<s32>(preds.mean.size()) ==
-           static_cast<s32>(features.size()));
+    assert(static_cast<std::size_t>(preds.mean.size()) == features.size());
     return preds;
   }
 
@@ -194,7 +190,7 @@ protected:
           detail::PredictTypeIdentity<Eigen::VectorXd> &&identity) const {
     assert(has_been_fit());
     Eigen::VectorXd preds = predict_mean_(features);
-    assert(static_cast<s32>(preds.size()) == static_cast<s32>(features.size()));
+    assert(static_cast<std::size_t>(preds.size()) == features.size());
     return preds;
   }
 

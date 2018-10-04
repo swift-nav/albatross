@@ -21,6 +21,8 @@ test_serializable_ldlt.cc
 test_serialize.cc
 test_tune.cc
 test_tuning_metrics.cc
+test_random_utils.cc
+test_outlier.cc
 )
 
 add_dependencies(albatross_unit_tests

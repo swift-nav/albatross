@@ -40,6 +40,7 @@ set(albatross_HEADERS
     albatross/tuning_metrics.h
     albatross/map_utils.h
     albatross/csv_utils.h
+    albatross/outlier.h
     albatross/core/keys.h
     albatross/core/dataset.h
     albatross/core/model.h
