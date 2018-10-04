@@ -29,6 +29,10 @@ using FoldIndices = std::vector<std::size_t>;
 using FoldName = std::string;
 using FoldIndexer = std::map<FoldName, FoldIndices>;
 
+template <typename FeatureType>
+using IndexerFunction =
+    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+
 /*
  * Extract a subset of a standard vector.
  */

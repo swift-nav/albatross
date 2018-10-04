@@ -10,10 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_MAGIC_H
-#define ALBATROSS_CORE_MAGIC_H
+#ifndef ALBATROSS_CORE_TRAITS_H
+#define ALBATROSS_CORE_TRAITS_H
 
 #include "cereal/details/traits.hpp"
+#include "core/declarations.h"
 #include <utility>
 
 namespace albatross {
@@ -132,6 +133,32 @@ template <typename X, typename Archive> class valid_in_out_serializer {
 public:
   static constexpr bool value = decltype(test<X>(0))::value;
 };
+
+/*
+ * This helper function takes a model and decides which base class it extends
+ * by inspecting whether or not the ModelType has a FitType.
+ */
+template <typename FeatureType, typename ModelType>
+class choose_regression_model_implementation {
+  template <typename C, typename = typename C::FitType>
+  static SerializableRegressionModel<FeatureType, typename C::FitType> *
+  test(int);
+
+  template <typename C> static RegressionModel<FeatureType> *test(...);
+
+public:
+  typedef typename std::remove_pointer<decltype(test<ModelType>(0))>::type type;
+};
+
+/*
+ * https://stackoverflow.com/questions/25796126/static-assert-that-template-typename-t-is-not-complete
+ */
+template <typename T>
+constexpr auto is_complete(int = 0) -> decltype(!sizeof(T)) {
+  return true;
+}
+
+template <typename T> constexpr bool is_complete(...) { return false; }
 
 } // namespace albatross
 
