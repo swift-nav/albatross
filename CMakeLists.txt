@@ -40,10 +40,10 @@ set(albatross_HEADERS
     albatross/tuning_metrics.h
     albatross/map_utils.h
     albatross/csv_utils.h
-    albatross/outlier.h
     albatross/core/keys.h
     albatross/core/dataset.h
     albatross/core/model.h
+    albatross/core/functional_model.h
     albatross/core/model_adapter.h
     albatross/core/traits.h
     albatross/core/serialize.h
@@ -51,6 +51,8 @@ set(albatross_HEADERS
     albatross/cereal/eigen.h
     albatross/eigen/serializable_ldlt.h
     albatross/models/gp.h
+    albatross/models/ransac.h
+    albatross/models/ransac_gp.h
     albatross/models/least_squares.h
     albatross/covariance_functions/covariance_term.h
     albatross/covariance_functions/covariance_functions.h

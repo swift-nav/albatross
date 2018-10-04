@@ -23,7 +23,7 @@
 #include "core/model.h"
 #include "covariance_functions/covariance_functions.h"
 #include "csv_utils.h"
-#include "models/gp.h"
+#include "models/ransac_gp.h"
 
 namespace albatross {
 
