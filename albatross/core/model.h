@@ -137,6 +137,17 @@ public:
 
   virtual std::string get_name() const = 0;
 
+  virtual std::unique_ptr<RegressionModel<FeatureType>>
+  ransac_model(double inlier_threshold, std::size_t min_inliers,
+               std::size_t random_sample_size, std::size_t max_iterations) {
+    static_assert(
+        is_complete<GenericRansac<void, FeatureType>>(0),
+        "ransac methods aren't complete yet, be sure you've included ransac.h");
+    return make_generic_ransac_model<FeatureType>(
+        this, inlier_threshold, min_inliers, random_sample_size, max_iterations,
+        leave_one_out_indexer<FeatureType>);
+  }
+
   /*
    * Here we define the serialization routines.  Note that while in most
    * cases we could use the cereal method `serialize`, in this case we don't

@@ -27,6 +27,19 @@ namespace albatross {
 
 using InspectionDistribution = JointDistribution;
 
+/* Forward Declarations */
+template <typename FeatureType, typename CovarianceType>
+class GaussianProcessRansac;
+template <typename FeatureType, typename CovarianceType>
+class GaussianProcessRegression;
+template <typename FeatureType, typename CovarianceType>
+inline std::unique_ptr<GaussianProcessRansac<FeatureType, CovarianceType>>
+make_gp_ransac_model(
+    GaussianProcessRegression<FeatureType, CovarianceType> *model,
+    double inlier_threshold, std::size_t min_inliers,
+    std::size_t random_sample_size, std::size_t max_iterations,
+    const IndexerFunction<FeatureType> &indexer_function);
+
 template <typename FeatureType> struct GaussianProcessFit {
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_ldlt;
@@ -137,6 +150,16 @@ public:
     return InspectionDistribution(pred, pred_cov);
   }
 
+  Eigen::MatrixXd
+  compute_covariance(const std::vector<FeatureType> &features) const {
+    return symmetric_covariance(covariance_function_, features);
+  }
+
+  void set_fit(const FitType &fit) {
+    this->model_fit_ = fit;
+    this->has_been_fit_ = true;
+  }
+
   /*
    * The Gaussian Process Regression model derives its parameters from
    * the covariance functions.
@@ -156,6 +179,19 @@ public:
     ss << covariance_function_.pretty_string();
     ss << "has_been_fit: " << this->has_been_fit() << std::endl;
     return ss.str();
+  }
+
+  virtual std::unique_ptr<RegressionModel<FeatureType>>
+  ransac_model(double inlier_threshold, std::size_t min_inliers,
+               std::size_t random_sample_size,
+               std::size_t max_iterations) override {
+    static_assert(
+        is_complete<GaussianProcessRansac<FeatureType, CovarianceFunction>>(0),
+        "ransac methods aren't complete yet, be sure you've included "
+        "ransac_gp.h");
+    return make_gp_ransac_model<FeatureType, CovarianceFunction>(
+        this, inlier_threshold, min_inliers, random_sample_size, max_iterations,
+        leave_one_out_indexer<FeatureType>);
   }
 
 protected:

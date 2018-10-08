@@ -10,7 +10,6 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 #include "models/ransac_gp.h"
-#include "outlier.h"
 #include "test_utils.h"
 #include <gtest/gtest.h>
 
@@ -41,17 +40,20 @@ TEST(test_outlier, test_ransac) {
             modified.features.end());
 }
 
-static inline std::unique_ptr<RegressionModel<double>>
-toy_ransac_gaussian_process() {
-  return ransac_gp_pointer_from_covariance<double>(toy_covariance_function());
-}
-
 TEST(test_outlier, test_ransac_gp) {
   auto dataset = make_toy_linear_data();
 
   const auto fold_indexer = leave_one_out_indexer(dataset);
 
-  const auto model_ptr = toy_ransac_gaussian_process();
+  const auto model_ptr = toy_gaussian_process();
+
+  double inlier_threshold = 1.;
+  std::size_t min_inliers = 2;
+  std::size_t min_features = 3;
+  std::size_t max_iterations = 20;
+
+  auto ransac_model = model_ptr->ransac_model(inlier_threshold, min_inliers,
+                                              min_features, max_iterations);
 
   EvaluationMetric<JointDistribution> nll =
       albatross::evaluation_metrics::negative_log_likelihood;
@@ -59,17 +61,27 @@ TEST(test_outlier, test_ransac_gp) {
   dataset.targets.mean[3] = 400.;
   dataset.targets.mean[5] = -300.;
 
+  ransac_model->fit(dataset);
+
   const auto scores =
-      cross_validated_scores(nll, dataset, fold_indexer, model_ptr.get());
+      cross_validated_scores(nll, dataset, fold_indexer, ransac_model.get());
+
+  // Here we use the original model_ptr and make sure it also was fit after
+  // we called `model_ptr->ransac_model.fit()`
+  const auto in_sample_preds =
+      model_ptr->template predict<Eigen::VectorXd>(dataset.features);
 
   // Here we make sure the leave one out likelihoods for inliers are all
   // reasonable, and for the known outliers we assert the likelihood is
   // really really really small.
   for (Eigen::Index i = 0; i < scores.size(); i++) {
+    double in_sample_error = fabs(in_sample_preds[i] - dataset.targets.mean[i]);
     if (i == 3 || i == 5) {
       EXPECT_GE(scores[i], 1.e5);
+      EXPECT_GE(in_sample_error, 100.);
     } else {
       EXPECT_LE(scores[i], 0.);
+      EXPECT_LE(in_sample_error, 0.1);
     }
   }
 }

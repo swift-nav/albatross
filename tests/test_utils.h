@@ -16,8 +16,8 @@
 #include "core/serialize.h"
 #include "covariance_functions/covariance_functions.h"
 #include "evaluate.h"
-#include "models/gp.h"
 #include "models/least_squares.h"
+#include "models/ransac_gp.h"
 #include <Eigen/Dense>
 #include <cereal/types/map.hpp>
 #include <cmath>

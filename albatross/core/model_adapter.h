@@ -13,29 +13,12 @@
 #ifndef ALBATROSS_CORE_MODEL_ADAPTER_H
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
+#include "functional_model.h"
 #include "model.h"
 #include "serialize.h"
 #include "traits.h"
 
 namespace albatross {
-
-/*
- * This helper function takes a model which is being adapted (SubModelType)
- * and decides which base class to extend by inspecting whether or not the
- * SubModelType is a pure RegressionModel or a SerializableRegressionModel.
- */
-template <typename FeatureType, typename SubModelType>
-class choose_regression_model_implementation {
-  template <typename C, typename = typename C::FitType>
-  static SerializableRegressionModel<FeatureType, typename C::FitType> *
-  test(int);
-
-  template <typename C> static RegressionModel<FeatureType> *test(...);
-
-public:
-  typedef
-      typename std::remove_pointer<decltype(test<SubModelType>(0))>::type type;
-};
 
 /*
  * This provides a way of creating a RegressionModel<X> which
@@ -149,6 +132,35 @@ public:
         converted, fold_indexer);
   }
 
+  virtual std::unique_ptr<RegressionModel<FeatureType>>
+  ransac_model(double inlier_threshold, std::size_t min_inliers,
+               std::size_t random_sample_size,
+               std::size_t max_iterations) override {
+
+    using FitType = std::unique_ptr<RegressionModel<SubFeature>>;
+    GenericModelFunctions<FeatureType, FitType> funcs;
+
+    decltype(funcs.fitter) fitter =
+        [&](const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) {
+          std::unique_ptr<RegressionModel<SubFeature>> sub_ransac =
+              sub_model_.ransac_model(inlier_threshold, min_inliers,
+                                      random_sample_size, max_iterations);
+          sub_ransac->fit(convert_features(features), targets);
+          return std::move(sub_ransac);
+        };
+
+    decltype(funcs.predictor) predictor =
+        [&](const std::vector<FeatureType> &features, const FitType &model_) {
+          return model_->predict(convert_features(features));
+        };
+
+    std::unique_ptr<RegressionModel<FeatureType>> adapted_ransac =
+        std::make_unique<FunctionalRegressionModel<FeatureType, FitType>>(
+            fitter, predictor);
+    return adapted_ransac;
+  }
+
 protected:
   void fit_(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) override {
@@ -207,6 +219,7 @@ protected:
 
   SubModelType sub_model_;
 };
+
 } // namespace albatross
 
 #endif
