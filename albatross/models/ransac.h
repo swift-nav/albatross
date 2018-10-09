@@ -101,10 +101,9 @@ ransac(const typename RansacFunctions<FitType>::Fitter &fitter,
         inliers.push_back(test_ind);
       }
     }
-
     // If there is enough agreement, consider this random set of inliers
     // as a candidate model.
-    if (inliers.size() > min_inliers) {
+    if (inliers.size() + random_sample_size >= min_inliers) {
       const auto inlier_inds = concatenate_subset_of_groups(inliers, indexer);
       ref_inds.insert(ref_inds.end(), inlier_inds.begin(), inlier_inds.end());
       std::sort(ref_inds.begin(), ref_inds.end());

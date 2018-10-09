@@ -44,10 +44,17 @@ TEST(test_evaluate, test_negative_log_likelihood) {
   cov << 1., 0.9, 0.8, 0.9, 1., 0.9, 0.8, 0.9, 1.;
 
   const auto nll = albatross::negative_log_likelihood(x, cov);
-  EXPECT_NEAR(nll, -6.0946974293510134, 1e-6);
+  EXPECT_NEAR(nll, 6.0946974293510134, 1e-6);
 
   const auto ldlt_nll = albatross::negative_log_likelihood(x, cov.ldlt());
   EXPECT_NEAR(nll, ldlt_nll, 1e-6);
+
+  const DiagonalMatrixXd diagonal_matrix = cov.diagonal().asDiagonal();
+  const Eigen::MatrixXd dense_diagonal = diagonal_matrix.toDenseMatrix();
+  const auto diag_nll = albatross::negative_log_likelihood(x, diagonal_matrix);
+  const auto dense_diag_nll =
+      albatross::negative_log_likelihood(x, dense_diagonal);
+  EXPECT_NEAR(diag_nll, dense_diag_nll, 1e-6);
 }
 
 TEST_F(LinearRegressionTest, test_leave_one_out) {
@@ -65,27 +72,6 @@ TEST_F(LinearRegressionTest, test_leave_one_out) {
   // than the in sample version.  This should always be true as the in sample
   // version has already seen the values we're trying to predict.
   EXPECT_LT(in_sample_rmse, out_of_sample_rmse);
-}
-
-// Group values by interval, but return keys that once sorted won't be
-// in order
-std::string group_by_interval(const double &x) {
-  if (x <= 3) {
-    return "2";
-  } else if (x <= 6) {
-    return "3";
-  } else {
-    return "1";
-  }
-}
-
-bool is_monotonic_increasing(const Eigen::VectorXd &x) {
-  for (Eigen::Index i = 0; i < x.size() - 1; i++) {
-    if (x[i + 1] - x[i] <= 0.) {
-      return false;
-    }
-  }
-  return true;
 }
 
 TEST_F(LinearRegressionTest, test_cross_validated_predict) {

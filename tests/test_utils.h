@@ -282,6 +282,27 @@ inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
   return points;
 }
 
+// Group values by interval, but return keys that once sorted won't be
+// in order
+inline std::string group_by_interval(const double &x) {
+  if (x <= 3) {
+    return "2";
+  } else if (x <= 6) {
+    return "3";
+  } else {
+    return "1";
+  }
+}
+
+inline bool is_monotonic_increasing(const Eigen::VectorXd &x) {
+  for (Eigen::Index i = 0; i < x.size() - 1; i++) {
+    if (x[i + 1] - x[i] <= 0.) {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace albatross
 
 #endif
