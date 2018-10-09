@@ -56,7 +56,7 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
   const double rank = static_cast<double>(diag.size());
   const double mahalanobis = deviation.dot(ldlt.solve(deviation));
   const double log_det = log_sum(diag);
-  return -0.5 * (log_det + mahalanobis + rank * log(2 * M_PI));
+  return 0.5 * (log_det + mahalanobis + rank * log(2 * M_PI));
 }
 
 /*

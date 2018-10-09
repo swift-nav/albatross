@@ -40,6 +40,30 @@ TEST(test_outlier, test_ransac) {
             modified.features.end());
 }
 
+// Group values by interval, but return keys that once sorted won't be
+// in order
+std::string group_by_modulo(const double &x) {
+  const int x_int = static_cast<int>(x);
+  return std::to_string(x_int % 4);
+}
+
+TEST(test_outlier, test_ransac_groups) {
+  auto dataset = make_toy_linear_data();
+  const auto model_ptr = toy_gaussian_process();
+
+  EvaluationMetric<JointDistribution> nll =
+      albatross::evaluation_metrics::negative_log_likelihood;
+
+  dataset.targets.mean[5] = -300.;
+
+  const auto fold_indexer =
+      leave_one_group_out_indexer<double>(dataset, group_by_modulo);
+  const auto modified =
+      ransac(dataset, fold_indexer, model_ptr.get(), nll, 0., 1, 1, 20);
+
+  EXPECT_LE(modified.features.size(), dataset.features.size());
+}
+
 TEST(test_outlier, test_ransac_gp) {
   auto dataset = make_toy_linear_data();
 
