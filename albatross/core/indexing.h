@@ -230,11 +230,11 @@ leave_one_out_indexer(const RegressionDataset<FeatureType> &dataset) {
  */
 template <typename FeatureType>
 static inline FoldIndexer leave_one_group_out_indexer(
-    const RegressionDataset<FeatureType> &dataset,
+    const std::vector<FeatureType> &features,
     const std::function<FoldName(const FeatureType &)> &get_group_name) {
   FoldIndexer groups;
-  for (std::size_t i = 0; i < dataset.features.size(); i++) {
-    const std::string k = get_group_name(dataset.features[i]);
+  for (std::size_t i = 0; i < features.size(); i++) {
+    const std::string k = get_group_name(features[i]);
     // Get the existing indices if we've already encountered this group_name
     // otherwise initialize a new one.
     FoldIndices indices;
@@ -248,6 +248,17 @@ static inline FoldIndexer leave_one_group_out_indexer(
     groups[k] = indices;
   }
   return groups;
+}
+
+/*
+ * Splits a dataset into cross validation folds where each fold contains all but
+ * one predictor/target pair.
+ */
+template <typename FeatureType>
+static inline FoldIndexer leave_one_group_out_indexer(
+    const RegressionDataset<FeatureType> &dataset,
+    const std::function<FoldName(const FeatureType &)> &get_group_name) {
+  return leave_one_group_out_indexer(dataset.features, get_group_name);
 }
 
 /*

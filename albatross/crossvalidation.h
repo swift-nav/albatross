@@ -99,35 +99,59 @@ cross_validated_scores(const EvaluationMetric<PredictType> &metric,
  * for some cross validation folds, taking into account the
  * fact that each fold may contain reordered data.
  */
-template <typename FeatureType, typename PredictType>
+template <typename PredictType>
 static inline MarginalDistribution concatenate_fold_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<PredictType> &predictions) {
+    const FoldIndexer &fold_indexer,
+    const std::map<FoldName, PredictType> &predictions) {
   // Create a new prediction mean that will eventually contain
   // the ordered concatenation of each fold's predictions.
   Eigen::Index n = 0;
-  for (const auto &pred : predictions) {
-    n += static_cast<decltype(n)>(pred.size());
+  for (const auto &pair : predictions) {
+    n += static_cast<decltype(n)>(pair.second.size());
   }
 
   Eigen::VectorXd mean(n);
   Eigen::VectorXd diagonal(n);
 
+  Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
-  for (std::size_t j = 0; j < predictions.size(); j++) {
-    const auto pred = predictions[j];
-    const auto fold = folds[j];
-    assert(pred.mean.size() == fold.test_dataset.features.size());
+  for (const auto &pair : predictions) {
+    const auto pred = pair.second;
+    const auto fold_indices = fold_indexer.at(pair.first);
+    assert(pred.mean.size() == fold_indices.size());
     for (Eigen::Index i = 0; i < pred.mean.size(); i++) {
       // The test indices map each element in the current fold back
       // to the original order of the parent dataset.
-      auto test_ind = static_cast<Eigen::Index>(fold.test_indices[i]);
+      auto test_ind = static_cast<Eigen::Index>(fold_indices[i]);
       assert(test_ind < n);
       mean[test_ind] = pred.mean[i];
       diagonal[test_ind] = pred.get_diagonal(i);
+      number_filled++;
     }
   }
+  assert(number_filled == n);
   return MarginalDistribution(mean, diagonal.asDiagonal());
+}
+
+/*
+ * Returns a single cross validated prediction distribution
+ * for some cross validation folds, taking into account the
+ * fact that each fold may contain reordered data.
+ */
+template <typename FeatureType, typename PredictType>
+static inline MarginalDistribution concatenate_fold_predictions(
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::vector<PredictType> &predictions) {
+
+  // Convert to map variants of the inputs.
+  FoldIndexer fold_indexer;
+  std::map<FoldName, PredictType> prediction_map;
+  for (std::size_t j = 0; j < predictions.size(); j++) {
+    prediction_map[folds[j].name] = predictions[j];
+    fold_indexer[folds[j].name] = folds[j].test_indices;
+  }
+
+  return concatenate_fold_predictions(fold_indexer, prediction_map);
 }
 
 template <typename FeatureType>
