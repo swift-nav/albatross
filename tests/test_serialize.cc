@@ -15,11 +15,10 @@
 #include <functional>
 #include <gtest/gtest.h>
 
+#include "test_serialize.h"
 #include "test_utils.h"
 
 #include "models/gp.h"
-#include <cereal/archives/json.hpp>
-#include <cereal/types/polymorphic.hpp>
 
 CEREAL_REGISTER_TYPE_WITH_NAME(albatross::MockModel, "mock_model_name");
 
@@ -57,17 +56,6 @@ using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
  * and create Specific variants of it, then run the same tests on all
  * the variants using TYPED_TEST.
  */
-
-template <typename X> struct SerializableType {
-  using RepresentationType = X;
-  virtual RepresentationType create() const {
-    RepresentationType obj;
-    return obj;
-  }
-  virtual bool are_equal(const X &lhs, const X &rhs) const {
-    return lhs == rhs;
-  };
-};
 
 struct EmptyEigenVectorXd : public SerializableType<Eigen::VectorXd> {
   Eigen::VectorXd create() const override {
@@ -358,10 +346,8 @@ public:
   };
 };
 
-template <typename Serializable>
-struct PolymorphicSerializeTest : public ::testing::Test {
-  typedef typename Serializable::RepresentationType Representation;
-};
+REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
+                           test_roundtrip_serialize_binary);
 
 typedef ::testing::Types<
     LDLT, EigenMatrix3d, SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
@@ -374,68 +360,6 @@ typedef ::testing::Types<
     FitLinearSerializablePointer, UnfitGaussianProcess, FitGaussianProcess>
     ToTest;
 
-TYPED_TEST_CASE(PolymorphicSerializeTest, ToTest);
-
-TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize_json) {
-  TypeParam model_and_rep;
-  using X = typename TypeParam::RepresentationType;
-  const X original = model_and_rep.create();
-
-  // Serialize it
-  std::ostringstream os;
-  {
-    cereal::JSONOutputArchive oarchive(os);
-    oarchive(original);
-  }
-  // Deserialize it.
-  std::istringstream is(os.str());
-  X deserialized;
-  {
-    cereal::JSONInputArchive iarchive(is);
-    iarchive(deserialized);
-  }
-  // Make sure the original and deserialized representations are
-  // equivalent.
-  EXPECT_TRUE(model_and_rep.are_equal(original, deserialized));
-  // Reserialize the deserialized object
-  std::ostringstream os_again;
-  {
-    cereal::JSONOutputArchive oarchive(os_again);
-    oarchive(deserialized);
-  }
-  // And make sure the serialized strings are the same,
-  EXPECT_EQ(os_again.str(), os.str());
-}
-
-TYPED_TEST(PolymorphicSerializeTest, test_roundtrip_serialize_binary) {
-  TypeParam model_and_rep;
-  using X = typename TypeParam::RepresentationType;
-  const X original = model_and_rep.create();
-
-  // Serialize it
-  std::ostringstream os;
-  {
-    cereal::BinaryOutputArchive oarchive(os);
-    oarchive(original);
-  }
-  // Deserialize it.
-  std::istringstream is(os.str());
-  X deserialized;
-  {
-    cereal::BinaryInputArchive iarchive(is);
-    iarchive(deserialized);
-  }
-  // Make sure the original and deserialized representations are
-  // equivalent.
-  EXPECT_TRUE(model_and_rep.are_equal(original, deserialized));
-  // Reserialize the deserialized object
-  std::ostringstream os_again;
-  {
-    cereal::BinaryOutputArchive oarchive(os_again);
-    oarchive(deserialized);
-  }
-  // And make sure the serialized strings are the same,
-  EXPECT_EQ(os_again.str(), os.str());
-}
+INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
 
 } // namespace albatross
