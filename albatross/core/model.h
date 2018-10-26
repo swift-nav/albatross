@@ -67,8 +67,9 @@ public:
            const MarginalDistribution &targets) {
     assert(features.size() > 0);
     assert(features.size() == static_cast<std::size_t>(targets.size()));
-    fit_(features, targets);
     has_been_fit_ = true;
+    metadata_["input_feature_count"] = std::to_string(features.size());
+    fit_(features, targets);
   }
 
   /*
@@ -76,14 +77,14 @@ public:
    */
   void fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
-    fit(features, MarginalDistribution(targets));
+    return fit(features, MarginalDistribution(targets));
   }
 
   /*
    * Convenience function which unpacks a dataset into features and targets.
    */
   void fit(const RegressionDataset<FeatureType> &dataset) {
-    fit(dataset.features, dataset.targets);
+    return fit(dataset.features, dataset.targets);
   }
 
   /*
@@ -136,6 +137,8 @@ public:
   virtual bool has_been_fit() const { return has_been_fit_; }
 
   virtual std::string get_name() const = 0;
+
+  std::map<std::string, std::string> get_metadata() const { return metadata_; }
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
   ransac_model(double inlier_threshold, std::size_t min_inliers,
@@ -256,6 +259,7 @@ protected:
   }
 
   bool has_been_fit_;
+  std::map<std::string, std::string> metadata_;
 };
 
 template <typename FeatureType>

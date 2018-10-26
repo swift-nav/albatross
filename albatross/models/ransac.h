@@ -229,6 +229,8 @@ protected:
     RegressionDataset<FeatureType> inliers =
         ransac(dataset, fold_indexer, sub_model_, metric_, inlier_threshold_,
                random_sample_size_, min_inliers_, max_iterations_);
+    this->metadata_["post_ransac_feature_count"] =
+        std::to_string(inliers.features.size());
     this->sub_model_->fit(inliers);
   }
 
