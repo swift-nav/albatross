@@ -66,14 +66,14 @@ template <class FeatureType> struct TuneModelConfig {
     set_default_optimizer();
   };
 
-  void set_default_optimizer() {
+  void
+  set_default_optimizer(const nlopt::algorithm &algorithm = nlopt::LN_PRAXIS) {
     // The various algorithms in nlopt are coded by the first two characters.
     // In this case LN stands for local, gradient free.
     auto m = model_creator();
 
     auto tunable_params = m->get_tunable_parameters();
-    optimizer =
-        nlopt::opt(nlopt::LN_PRAXIS, (unsigned)tunable_params.values.size());
+    optimizer = nlopt::opt(algorithm, (unsigned)tunable_params.values.size());
     optimizer.set_ftol_abs(1e-8);
     optimizer.set_ftol_rel(1e-6);
     optimizer.set_lower_bounds(tunable_params.lower_bounds);
