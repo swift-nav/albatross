@@ -35,6 +35,8 @@ template <typename T> struct PredictTypeIdentity { typedef T type; };
 // predict variants for which you only want the mean.
 using PredictMeanOnly = Eigen::VectorXd;
 
+using Insights = std::map<std::string, std::string>;
+
 /*
  * A model that uses a single Feature to estimate the value of a double typed
  * target.
@@ -68,7 +70,7 @@ public:
     assert(features.size() > 0);
     assert(features.size() == static_cast<std::size_t>(targets.size()));
     has_been_fit_ = true;
-    metadata_["input_feature_count"] = std::to_string(features.size());
+    insights_["input_feature_count"] = std::to_string(features.size());
     fit_(features, targets);
   }
 
@@ -138,7 +140,7 @@ public:
 
   virtual std::string get_name() const = 0;
 
-  std::map<std::string, std::string> get_metadata() const { return metadata_; }
+  Insights get_insights() const { return insights_; }
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
   ransac_model(double inlier_threshold, std::size_t min_inliers,
@@ -259,7 +261,7 @@ protected:
   }
 
   bool has_been_fit_;
-  std::map<std::string, std::string> metadata_;
+  Insights insights_;
 };
 
 template <typename FeatureType>
