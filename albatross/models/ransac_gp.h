@@ -160,6 +160,8 @@ protected:
 
     const GaussianProcessFit<FeatureType> fit(inlier_features, inlier_cov,
                                               inlier_targets);
+    this->insights_["post_ransac_feature_count"] =
+        std::to_string(inliers.size());
     this->sub_model_->set_fit(fit);
   }
 

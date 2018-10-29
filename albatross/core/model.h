@@ -35,6 +35,8 @@ template <typename T> struct PredictTypeIdentity { typedef T type; };
 // predict variants for which you only want the mean.
 using PredictMeanOnly = Eigen::VectorXd;
 
+using Insights = std::map<std::string, std::string>;
+
 /*
  * A model that uses a single Feature to estimate the value of a double typed
  * target.
@@ -67,8 +69,9 @@ public:
            const MarginalDistribution &targets) {
     assert(features.size() > 0);
     assert(features.size() == static_cast<std::size_t>(targets.size()));
-    fit_(features, targets);
     has_been_fit_ = true;
+    insights_["input_feature_count"] = std::to_string(features.size());
+    fit_(features, targets);
   }
 
   /*
@@ -76,14 +79,14 @@ public:
    */
   void fit(const std::vector<FeatureType> &features,
            const Eigen::VectorXd &targets) {
-    fit(features, MarginalDistribution(targets));
+    return fit(features, MarginalDistribution(targets));
   }
 
   /*
    * Convenience function which unpacks a dataset into features and targets.
    */
   void fit(const RegressionDataset<FeatureType> &dataset) {
-    fit(dataset.features, dataset.targets);
+    return fit(dataset.features, dataset.targets);
   }
 
   /*
@@ -136,6 +139,8 @@ public:
   virtual bool has_been_fit() const { return has_been_fit_; }
 
   virtual std::string get_name() const = 0;
+
+  Insights get_insights() const { return insights_; }
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
   ransac_model(double inlier_threshold, std::size_t min_inliers,
@@ -256,6 +261,7 @@ protected:
   }
 
   bool has_been_fit_;
+  Insights insights_;
 };
 
 template <typename FeatureType>
