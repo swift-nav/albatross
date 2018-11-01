@@ -141,7 +141,7 @@ public:
   ransac_model(double inlier_threshold, std::size_t min_inliers,
                std::size_t random_sample_size, std::size_t max_iterations) {
     static_assert(
-        is_complete<GenericRansac<void, FeatureType>>(0),
+        is_complete<GenericRansac<void, FeatureType>>::value,
         "ransac methods aren't complete yet, be sure you've included ransac.h");
     return make_generic_ransac_model<FeatureType>(
         this, inlier_threshold, min_inliers, random_sample_size, max_iterations,

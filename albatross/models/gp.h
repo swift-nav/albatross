@@ -186,7 +186,8 @@ public:
                std::size_t random_sample_size,
                std::size_t max_iterations) override {
     static_assert(
-        is_complete<GaussianProcessRansac<FeatureType, CovarianceFunction>>(0),
+        is_complete<
+            GaussianProcessRansac<FeatureType, CovarianceFunction>>::value,
         "ransac methods aren't complete yet, be sure you've included "
         "ransac_gp.h");
     return make_gp_ransac_model<FeatureType, CovarianceFunction>(

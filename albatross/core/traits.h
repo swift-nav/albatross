@@ -151,14 +151,18 @@ public:
 };
 
 /*
+ * Checks if a class type is complete by using sizeof.
+ *
  * https://stackoverflow.com/questions/25796126/static-assert-that-template-typename-t-is-not-complete
  */
-template <typename T>
-constexpr auto is_complete(int = 0) -> decltype(!sizeof(T)) {
-  return true;
-}
+template <typename X> class is_complete {
+  template <typename T, typename = decltype(!sizeof(T))>
+  static std::true_type test(int);
+  template <typename T> static std::false_type test(...);
 
-template <typename T> constexpr bool is_complete(...) { return false; }
+public:
+  static constexpr bool value = decltype(test<X>(0))::value;
+};
 
 } // namespace albatross
 
