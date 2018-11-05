@@ -20,6 +20,7 @@ test_radial.cc
 test_scaling_function.cc
 test_serializable_ldlt.cc
 test_serialize.cc
+test_traits.cc
 test_tune.cc
 test_tuning_metrics.cc
 test_random_utils.cc
