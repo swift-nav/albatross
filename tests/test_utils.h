@@ -57,6 +57,15 @@ public:
   };
 };
 
+class IdentityScaling : public ScalingFunction {
+public:
+  IdentityScaling() : ScalingFunction(){};
+
+  std::string get_name() const { return "identity_scaling"; }
+
+  double call_impl_(const double &x) const { return 1.; }
+};
+
 /*
  * A simple model which builds a map from MockPredict (aka, int)
  * to a double value.
@@ -194,10 +203,9 @@ make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
 }
 
 static inline auto toy_covariance_function() {
-  using SqrExp = SquaredExponential<EuclideanDistance>;
   using Noise = IndependentNoise<double>;
-  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
-  CovarianceFunction<Noise> noise = {Noise(0.1)};
+  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+  IndependentNoise<double> noise = Noise(0.1);
   auto covariance = squared_exponential + noise;
   return covariance;
 }

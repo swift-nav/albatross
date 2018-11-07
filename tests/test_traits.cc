@@ -41,6 +41,29 @@ TEST(test_traits, test_has_call_operator) {
   EXPECT_FALSE(bool(has_call_operator<HasNoCallOperator, X, Y>::value));
 }
 
+class HasPublicCallImpl {
+public:
+  double call_impl_(const X &x, const Y &y) const { return 1.; };
+};
+
+class HasProtectedCallImpl {
+protected:
+  double call_impl_(const X &x, const Y &y) const { return 1.; };
+};
+
+class HasPrivateCallImpl {
+  double call_impl_(const X &x, const Y &y) const { return 1.; };
+};
+
+class HasNoCallImpl {};
+
+TEST(test_traits, test_has_any_call_impl_) {
+  EXPECT_TRUE(bool(has_any_call_impl<HasPublicCallImpl>::value));
+  EXPECT_TRUE(bool(has_any_call_impl<HasProtectedCallImpl>::value));
+  EXPECT_TRUE(bool(has_any_call_impl<HasPrivateCallImpl>::value));
+  EXPECT_FALSE(bool(has_any_call_impl<HasNoCallImpl>::value));
+}
+
 class ValidInOutSerializer {
 public:
   template <typename Archive> void serialize(Archive &archive){};
@@ -96,6 +119,18 @@ class Incomplete;
 TEST(test_traits, test_is_complete) {
   EXPECT_TRUE(bool(is_complete<Complete>::value));
   EXPECT_FALSE(bool(is_complete<Incomplete>::value));
+}
+
+class HasName {
+public:
+  std::string name_;
+};
+
+class HasNoName {};
+
+TEST(test_traits, test_has_name) {
+  EXPECT_TRUE(bool(has_name_<HasName>::value));
+  EXPECT_FALSE(bool(has_name_<HasNoName>::value));
 }
 
 } // namespace albatross
