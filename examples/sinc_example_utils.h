@@ -29,7 +29,7 @@
 
 namespace albatross {
 
-class SlopeTerm : public CovarianceTerm {
+class SlopeTerm : public CovarianceFunction<SlopeTerm> {
 public:
   SlopeTerm(double sigma_slope = 0.1) {
     this->params_["sigma_slope"] = sigma_slope;
@@ -39,7 +39,7 @@ public:
 
   std::string get_name() const { return "slope_term"; }
 
-  double operator()(const double &x, const double &y) const {
+  double call_impl_(const double &x, const double &y) const {
     double sigma_slope = this->params_.at("sigma_slope");
     return sigma_slope * sigma_slope * x * y;
   }

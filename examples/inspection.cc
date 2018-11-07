@@ -31,18 +31,14 @@ int main(int argc, char *argv[]) {
 
   using namespace albatross;
 
-  using Noise = IndependentNoise<double>;
-  using SqrExp = SquaredExponential<EuclideanDistance>;
-
   std::cout << "Defining the model." << std::endl;
   using Noise = IndependentNoise<double>;
   using SquaredExp = SquaredExponential<EuclideanDistance>;
   using PolynomialTerm = Polynomial<1>;
 
-  auto constant_term = Constant(100.);
-  CovarianceFunction<Constant> constant = {constant_term};
-  CovarianceFunction<Noise> noise = {Noise(meas_noise)};
-  CovarianceFunction<SquaredExp> squared_exponential = {SquaredExp(3.5, 5.7)};
+  Constant constant(100.);
+  Noise noise(meas_noise);
+  SquaredExp squared_exponential(3.5, 5.7);
   auto cov = constant + noise + squared_exponential;
 
   auto model = gp_from_covariance<double>(cov);
@@ -53,7 +49,7 @@ int main(int argc, char *argv[]) {
   model.fit(data);
 
   const auto constant_state =
-      constant_term.get_state_space_representation(data.features);
+      constant.get_state_space_representation(data.features);
 
   auto posterior_state = model.inspect(constant_state);
   std::cout << "The posterior estimate of the constant term is: ";
