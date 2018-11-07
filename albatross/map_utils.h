@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_MAP_UTILS_H
 #define ALBATROSS_MAP_UTILS_H
 
+#include <assert.h>
 #include <functional>
 #include <map>
 #include <unordered_map>
@@ -76,13 +77,30 @@ std::vector<V> map_values(const std::map<K, V> m) {
 
 template <typename K, typename V>
 std::map<K, V> map_join(const std::map<K, V> m, const std::map<K, V> other) {
-  std::map<K, V> join;
+  std::map<K, V> join(other);
   // Note the order here is reversed since insert will not insert if a key
   // already exists, in this case we want the result to contain all elements of
   // m overwritten by any elements in other.
-  join.insert(other.begin(), other.end());
   join.insert(m.begin(), m.end());
   return join;
 }
+
+template <typename K, typename V>
+std::map<K, V> map_join_strict(const std::map<K, V> m,
+                               const std::map<K, V> other) {
+  std::map<K, V> join(other);
+  // Note the order here is reversed since insert will not insert if a key
+  // already exists, in this case we want the result to contain all elements of
+  // m overwritten by any elements in other.
+  for (const auto &pair : m) {
+    if (join.find(pair.first) != join.end()) {
+      // duplicate key found in map_join.
+      assert(false && "duplicate key found");
+    }
+    join[pair.first] = pair.second;
+  }
+  return join;
+}
+
 } // namespace albatross
 #endif

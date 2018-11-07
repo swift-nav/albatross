@@ -138,12 +138,11 @@ public:
   InspectionDistribution
   inspect(const std::vector<OtherFeatureType> &features) const {
     assert(this->has_been_fit());
-    const auto cross_cov = asymmetric_covariance(
-        covariance_function_, features, this->model_fit_.train_features);
+    const auto cross_cov =
+        covariance_function_(features, this->model_fit_.train_features);
     // Then we can use the information vector to determine the posterior
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
-    Eigen::MatrixXd pred_cov =
-        symmetric_covariance(covariance_function_, features);
+    Eigen::MatrixXd pred_cov = covariance_function_(features);
     auto ldlt = this->model_fit_.train_ldlt;
     pred_cov -= cross_cov * ldlt.solve(cross_cov.transpose());
     assert(static_cast<std::size_t>(pred.size()) == features.size());
@@ -152,7 +151,7 @@ public:
 
   Eigen::MatrixXd
   compute_covariance(const std::vector<FeatureType> &features) const {
-    return symmetric_covariance(covariance_function_, features);
+    return covariance_function_(features);
   }
 
   void set_fit(const FitType &fit) {
@@ -175,8 +174,8 @@ public:
 
   std::string pretty_string() const {
     std::ostringstream ss;
-    ss << get_name() << std::endl;
-    ss << covariance_function_.pretty_string();
+    ss << "model_name: " << get_name() << std::endl;
+    ss << "covariance_name: " << covariance_function_.pretty_string();
     ss << "has_been_fit: " << this->has_been_fit() << std::endl;
     return ss.str();
   }
@@ -280,24 +279,23 @@ protected:
   FitType
   serializable_fit_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const override {
-    Eigen::MatrixXd cov = symmetric_covariance(covariance_function_, features);
+    Eigen::MatrixXd cov = covariance_function_(features);
     return GaussianProcessFit<FeatureType>(features, cov, targets);
   }
 
   JointDistribution
   predict_(const std::vector<FeatureType> &features) const override {
-    const auto cross_cov = asymmetric_covariance(
-        covariance_function_, this->model_fit_.train_features, features);
-    Eigen::MatrixXd pred_cov =
-        symmetric_covariance(covariance_function_, features);
+    const auto cross_cov =
+        covariance_function_(this->model_fit_.train_features, features);
+    Eigen::MatrixXd pred_cov = covariance_function_(features);
     return predict_from_covariance_and_fit(cross_cov, pred_cov,
                                            this->model_fit_);
   }
 
   virtual MarginalDistribution
   predict_marginal_(const std::vector<FeatureType> &features) const override {
-    const auto cross_cov = asymmetric_covariance(
-        covariance_function_, features, this->model_fit_.train_features);
+    const auto cross_cov =
+        covariance_function_(features, this->model_fit_.train_features);
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
     // Here we efficiently only compute the diagonal of the posterior
     // covariance matrix.
@@ -314,8 +312,8 @@ protected:
 
   virtual Eigen::VectorXd
   predict_mean_(const std::vector<FeatureType> &features) const override {
-    const auto cross_cov = asymmetric_covariance(
-        covariance_function_, features, this->model_fit_.train_features);
+    const auto cross_cov =
+        covariance_function_(features, this->model_fit_.train_features);
     const Eigen::VectorXd pred = cross_cov * this->model_fit_.information;
     return pred;
   }
