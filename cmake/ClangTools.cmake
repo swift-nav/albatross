@@ -29,6 +29,7 @@ if("${CLANG_FORMAT_PATH}" STREQUAL "NOTSET")
         clang-format35 clang-format-3.5
         clang-format34 clang-format-3.4
         clang-format)
+    message(STATUS "Using clang format: ${CLANG_FORMAT}")
     if("${CLANG_FORMAT}" STREQUAL "CLANG_FORMAT-NOTFOUND")
         message(WARNING "Could not find 'clang-format' please set CLANG_FORMAT_PATH:STRING")
     else()
