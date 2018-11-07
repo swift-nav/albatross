@@ -10,31 +10,96 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
-#define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_TERM_H
+#ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
+#define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 
 #include "../core/traits.h"
 #include "core/parameter_handling_mixin.h"
 #include "map_utils.h"
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <iostream>
 
 namespace albatross {
 
-/*
- * An abstract class which holds anything all Covariance
- * terms should have in common.
- *
- * In addition to these abstract methods one or many
- * methods with signature,
- *     operator ()(const X &x, const Y &y)
- * should be defined.
- */
-class CovarianceTerm : public ParameterHandlingMixin {
-public:
-  CovarianceTerm() : ParameterHandlingMixin(){};
-  virtual ~CovarianceTerm(){};
+template <typename X, typename Y> class SumOfCovarianceFunctions;
 
-  virtual std::string get_name() const = 0;
+template <typename X, typename Y> class ProductOfCovarianceFunctions;
+
+/*
+ * CovarianceFunction is a CRTP base class which can be used in a
+ * way similar to a polymorphic abstract class.  For example if
+ * you want to implement a new covariance function you'll need to
+ * do something like:
+ *
+ *   class MyCovFunc : public CovarianceFunction<MyCovFunc> {
+ *
+ *     std::string get_name() const {return "my_cov_func";}
+ *
+ *     double call_impl_(const X &x, const X &y) const {
+ *       return covariance_between_x_and_y(x, y);
+ *     }
+ *
+ *   }
+ *
+ * so in a way you can think of CovarianceFunction as an abstract
+ * base class with API,
+ *
+ *   class CovarianceFunction {
+ *
+ *     virtual std::string get_name() const = 0;
+ *
+ *     template <typename X, typename Y=X>
+ *     double call_impl_(const X &x, const Y &y) const = 0;
+ *
+ *     template <typename X, typename Y=X>
+ *     double operator()(const X &x, const Y &y) const {
+ *       return this->call_impl_(x, y);
+ *     }
+ *
+ *   }
+ *
+ * But note that you can't actually have an abstract type with virtual methods
+ * which are templated, so the abstract class approach in that example would
+ * never compile.
+ *
+ * This is where CRTP comes in handy.  To write a new CovarianceFunction you
+ * need to provide `call_impl_` functions for any pair of types you'd like to
+ * have defined.  The CovarianceFunction CRTP base class is then capable of
+ * detecting which methods are required at compile time and creating the
+ * corresponding operator() methods.  This also makes it possible to compose
+ * CovarianceFunctions (see operator* and operator+).
+ *
+ */
+template <typename Derived>
+class CovarianceFunction : public ParameterHandlingMixin {
+
+private:
+  // Declaring these private makes it impossible to accidentally do things like:
+  //     class A : public CovarianceFunction<B> {}
+  // or
+  //     using A = CovarianceFunction<B>;
+  //
+  // which if unchecked can lead to some very strange behavior.
+  CovarianceFunction() : ParameterHandlingMixin(){};
+  friend Derived;
+
+public:
+  static_assert(!is_complete<Derived>::value,
+                "\n\nPassing a complete type in as template parameter "
+                "implies you aren't using CRTP.  Implementations "
+                "of a CovarianceFunction should look something like:\n"
+                "\n\tclass Foo : public CovarianceFunction<Foo> {"
+                "\n\t\tdouble call_impl_(const X &x, const Y &y) const;"
+                "\n\t\t..."
+                "\n\t}\n");
+
+  std::string get_name() const {
+    static_assert(has_name_<Derived>::value, "A public member `std::string "
+                                             "name_` must be defined for all "
+                                             "covariance functions");
+    return derived().name_;
+  };
 
   std::string pretty_string() const {
     std::ostringstream ss;
@@ -42,57 +107,151 @@ public:
     ss << ParameterHandlingMixin::pretty_string();
     return ss.str();
   }
+
+  /*
+   * We only allow the covariance function for argument types X and Y
+   * to be defined if the corresponding term is defined for these
+   * types.  This allows us to distinguish between covariance functions which
+   * are 0. and ones that are just not defined (read: possibly bugs).
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                has_defined_call_impl<Derived, X &, Y &>::value, int>::type = 0>
+  auto operator()(const X &x, const Y &y) const {
+    return derived().call_impl_(x, y);
+  }
+
+  /*
+   * Use the symmetric property of covariance functions to find C(X, Y)
+   * when only C(Y, X) is defined.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_defined_call_impl<Derived, Y &, X &>::value &&
+                 !has_defined_call_impl<Derived, X &, Y &>::value),
+                int>::type = 0>
+  auto operator()(const X &x, const Y &y) const {
+    return derived().call_impl_(y, x);
+  }
+
+  /*
+   * Covariance between each element and every other in a vector.
+   */
+  template <typename X,
+            typename std::enable_if<
+                has_defined_call_impl<Derived, X &, X &>::value, int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
+    int n = static_cast<int>(xs.size());
+    Eigen::MatrixXd C(n, n);
+
+    int i, j;
+    std::size_t si, sj;
+    for (i = 0; i < n; i++) {
+      si = static_cast<std::size_t>(i);
+      for (j = 0; j <= i; j++) {
+        sj = static_cast<std::size_t>(j);
+        C(i, j) = this->operator()(xs[si], xs[sj]);
+        C(j, i) = C(i, j);
+      }
+    }
+    return C;
+  }
+
+  /*
+   * Cross covariance between two vectors of (possibly) different types.
+   */
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_defined_call_impl<Derived, X &, Y &>::value),
+                              int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<X> &xs,
+                             const std::vector<Y> &ys) const {
+    int m = static_cast<int>(xs.size());
+    int n = static_cast<int>(ys.size());
+    Eigen::MatrixXd C(m, n);
+
+    int i, j;
+    std::size_t si, sj;
+    for (i = 0; i < m; i++) {
+      si = static_cast<std::size_t>(i);
+      for (j = 0; j < n; j++) {
+        sj = static_cast<std::size_t>(j);
+        C(i, j) = this->operator()(xs[si], ys[sj]);
+      }
+    }
+    return C;
+  }
+
+  /*
+   * Use the symmetric property to compute the cross covariance.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_defined_call_impl<Derived, Y &, X &>::value &&
+                 !has_defined_call_impl<Derived, X &, Y &>::value),
+                int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<X> &xs,
+                             const std::vector<Y> &ys) const {
+    return this->operator()(ys, xs).transpose();
+  }
+
+  /*
+   * A stub to catch the case where a covariance function was called
+   * with arguments that aren't supported.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_defined_call_impl<Derived, X &, Y &>::value &&
+                 !has_defined_call_impl<Derived, Y &, X &>::value),
+                int>::type = 0>
+  double operator()(X &x, Y &y) const = delete; // see below for help debugging.
+                                                /*
+                                                 * If you encounter a deleted function error here ^ it implies that you've
+                                                 * attempted to call a covariance function with arguments X, Y that are
+                                                 * undefined for the corresponding CovarianceFunction(s).  The subsequent
+                                                 * compiler
+                                                 * errors should give you an indication of which types were attempted.
+                                                 */
+
+  template <typename Other>
+  const SumOfCovarianceFunctions<Derived, Other>
+  operator+(const CovarianceFunction<Other> &other) const;
+
+  template <typename Other>
+  const ProductOfCovarianceFunctions<Derived, Other>
+  operator*(const CovarianceFunction<Other> &other) const;
+
+  Derived &derived() { return *static_cast<Derived *>(this); }
+
+  const Derived &derived() const { return *static_cast<const Derived *>(this); }
 };
 
 /*
- * As we start composing CovarianceTerms we want to keep track of
- * their parameters and names in a friendly way.  This class deals with
- * any of those operations that are shared for all composition operations.
- * The details of the operation (sum, product, etc ...) are left to implementing
- * classes.
+ * SUM
  */
 template <class LHS, class RHS>
-class CombinationOfCovarianceTerms : public CovarianceTerm {
+class SumOfCovarianceFunctions
+    : public CovarianceFunction<SumOfCovarianceFunctions<LHS, RHS>> {
 public:
-  CombinationOfCovarianceTerms() : lhs_(), rhs_(){};
-  CombinationOfCovarianceTerms(LHS &lhs, RHS &rhs) : lhs_(lhs), rhs_(rhs){};
-  virtual ~CombinationOfCovarianceTerms(){};
+  SumOfCovarianceFunctions() : lhs_(), rhs_() {
+    name_ = "(" + lhs_.name_ + "+" + rhs_.name_ + ")";
+  };
+  SumOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
+      : lhs_(lhs), rhs_(rhs) {
+    SumOfCovarianceFunctions();
+  };
 
-  virtual std::string get_operation_symbol() const = 0;
-
-  std::string get_name() const override {
-    std::ostringstream oss;
-    oss << "(" << lhs_.get_name() << get_operation_symbol() << rhs_.get_name()
-        << ")";
-    return oss.str();
-  }
-
-  ParameterStore get_params() const override {
+  ParameterStore get_params() const {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const ParameterKey &name,
-                           const Parameter &param) override {
+  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
     if (map_contains(lhs_.get_params(), name)) {
       lhs_.set_param(name, param);
     } else {
       rhs_.set_param(name, param);
     }
   }
-
-protected:
-  LHS lhs_;
-  RHS rhs_;
-};
-
-template <class LHS, class RHS>
-class SumOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
-public:
-  SumOfCovarianceTerms() : CombinationOfCovarianceTerms<LHS, RHS>(){};
-  SumOfCovarianceTerms(LHS &lhs, RHS &rhs)
-      : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
-
-  std::string get_operation_symbol() const { return "+"; }
 
   /*
    * If both LHS and RHS have a valid call method for the types X and Y
@@ -102,7 +261,7 @@ public:
             typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
                                      has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
 
@@ -113,7 +272,7 @@ public:
             typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
                                      !has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -124,19 +283,43 @@ public:
             typename std::enable_if<(!has_call_operator<LHS, X &, Y &>::value &&
                                      has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
+
+  std::string name_;
+
+protected:
+  LHS lhs_;
+  RHS rhs_;
 };
 
+/*
+ * PRODUCT
+ */
 template <class LHS, class RHS>
-class ProductOfCovarianceTerms : public CombinationOfCovarianceTerms<LHS, RHS> {
+class ProductOfCovarianceFunctions
+    : public CovarianceFunction<ProductOfCovarianceFunctions<LHS, RHS>> {
 public:
-  ProductOfCovarianceTerms() : CombinationOfCovarianceTerms<LHS, RHS>(){};
-  ProductOfCovarianceTerms(LHS &lhs, RHS &rhs)
-      : CombinationOfCovarianceTerms<LHS, RHS>(lhs, rhs){};
+  ProductOfCovarianceFunctions() : lhs_(), rhs_() {
+    name_ = "(" + lhs_.name_ + "*" + rhs_.name_ + ")";
+  };
+  ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
+      : lhs_(lhs), rhs_(rhs) {
+    ProductOfCovarianceFunctions();
+  };
 
-  std::string get_operation_symbol() const { return "*"; }
+  ParameterStore get_params() const {
+    return map_join(lhs_.get_params(), rhs_.get_params());
+  }
+
+  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
+    if (map_contains(lhs_.get_params(), name)) {
+      lhs_.set_param(name, param);
+    } else {
+      rhs_.set_param(name, param);
+    }
+  }
 
   /*
    * If both LHS and RHS have a valid call method for the types X and Y
@@ -146,7 +329,7 @@ public:
             typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
                                      has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->lhs_(x, y) * this->rhs_(x, y);
   }
 
@@ -157,7 +340,7 @@ public:
             typename std::enable_if<(has_call_operator<LHS, X &, Y &>::value &&
                                      !has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -168,9 +351,32 @@ public:
             typename std::enable_if<(!has_call_operator<LHS, X &, Y &>::value &&
                                      has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
-  double operator()(X &x, Y &y) const {
+  double call_impl_(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
+
+  std::string name_;
+
+protected:
+  LHS lhs_;
+  RHS rhs_;
+};
+
+template <typename Derived>
+template <typename Other>
+inline const SumOfCovarianceFunctions<Derived, Other>
+CovarianceFunction<Derived>::
+operator+(const CovarianceFunction<Other> &other) const {
+  return SumOfCovarianceFunctions<Derived, Other>(derived(), other.derived());
+};
+
+template <typename Derived>
+template <typename Other>
+inline const ProductOfCovarianceFunctions<Derived, Other>
+    CovarianceFunction<Derived>::
+    operator*(const CovarianceFunction<Other> &other) const {
+  return ProductOfCovarianceFunctions<Derived, Other>(derived(),
+                                                      other.derived());
 };
 
 } // namespace albatross
