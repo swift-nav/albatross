@@ -18,6 +18,9 @@
 #include "covariance_function.h"
 #include "distance_metrics.h"
 
+constexpr double default_length_scale = 100000.;
+constexpr double default_radial_sigma = 10.;
+
 namespace albatross {
 
 inline double squared_exponential_covariance(double distance,
@@ -42,8 +45,8 @@ public:
       !std::is_base_of<AngularDistance, DistanceMetricType>::value,
       "SquaredExponential covariance with AngularDistance is not PSD.");
 
-  SquaredExponential(double length_scale = 100000.,
-                     double sigma_squared_exponential = 10.)
+  SquaredExponential(double length_scale = default_length_scale,
+                     double sigma_squared_exponential = default_radial_sigma)
       : distance_metric_(), name_() {
     this->params_["squared_exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};
@@ -83,7 +86,8 @@ inline double exponential_covariance(double distance, double length_scale,
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
 public:
-  Exponential(double length_scale = 100000., double sigma_exponential = 10.)
+  Exponential(double length_scale = default_length_scale,
+              double sigma_exponential = default_radial_sigma)
       : distance_metric_(), name_() {
     this->params_["exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};

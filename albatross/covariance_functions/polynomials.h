@@ -17,6 +17,8 @@
 
 namespace albatross {
 
+constexpr double default_sigma = 100.;
+
 struct ConstantTerm {};
 
 /*
@@ -30,7 +32,7 @@ struct ConstantTerm {};
  */
 class Constant : public CovarianceFunction<Constant> {
 public:
-  Constant(double sigma_constant = 10.) : name_("constant") {
+  Constant(double sigma_constant = default_sigma) : name_("constant") {
     this->params_["sigma_constant"] = {sigma_constant,
                                        std::make_shared<NonNegativePrior>()};
   };
@@ -57,19 +59,19 @@ public:
     return sigma_constant * sigma_constant;
   }
 
-  std::string name_;
+  const std::string name_;
 };
 
 template <int order>
 class Polynomial : public CovarianceFunction<Polynomial<order>> {
 public:
-  Polynomial(double sigma = 100.) {
+  Polynomial(double sigma = default_sigma) {
     for (int i = 0; i < order + 1; i++) {
       std::string param_name = "sigma_polynomial_" + std::to_string(i);
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
     }
-    name_ = "polynomal_" + std::to_string(order);
+    name_ = "polynomial_" + std::to_string(order);
   };
 
   ~Polynomial(){};

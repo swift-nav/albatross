@@ -15,6 +15,8 @@
 
 #include "covariance_function.h"
 
+constexpr double default_sigma_noise = 0.1;
+
 namespace albatross {
 
 template <typename Observed>
