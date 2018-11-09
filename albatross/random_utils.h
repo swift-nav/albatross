@@ -27,7 +27,11 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
   assert(n >= 0);
 
   std::size_t n_choices = high - low + 1;
-  assert(n <= n_choices);
+  if (n > n_choices) {
+    std::cout << "ERROR: n (" << n << ") is larger than n_choices ("
+              << n_choices << ")" << std::endl;
+    assert(false);
+  }
 
   if (n == (high - low + 1)) {
     std::vector<std::size_t> all_inds(n);
