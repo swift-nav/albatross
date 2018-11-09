@@ -223,6 +223,18 @@ inline void write_to_csv(std::ostream &stream,
   write_to_csv(stream, dataset, predictions, columns);
 }
 
+/*
+ * Make it easier to write only a dataset (without predictions).
+ */
+template <typename FeatureType>
+inline void write_to_csv(std::ostream &stream,
+                         const RegressionDataset<FeatureType> &dataset,
+                         bool include_header = true) {
+  Eigen::VectorXd zeros = Eigen::VectorXd::Zero(dataset.targets.mean.size());
+  MarginalDistribution zero_predictions(zeros);
+  write_to_csv(stream, dataset, zero_predictions, include_header);
+}
+
 template <typename FeatureType, typename CovarianceType>
 inline void
 write_to_csv(std::ostream &stream,

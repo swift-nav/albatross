@@ -82,6 +82,25 @@ TEST(test_csv_utils, test_writes) {
   read_test_csv(iss);
 }
 
+TEST(test_csv_utils, test_writes_without_predictions) {
+  TestFeature one = {1.2, 2, {1.3, 3}};
+  TestFeature two = {2.2, 3, {2.3, 4}};
+  TestFeature three = {3.2, 4, {3.3, 5}};
+
+  std::vector<TestFeature> features = {one, two, three};
+  Eigen::VectorXd targets(3);
+  targets << 1., 2., 3.;
+
+  RegressionDataset<TestFeature> dataset(features, targets);
+
+  std::ostringstream oss;
+  write_to_csv(oss, dataset);
+
+  std::istringstream iss(oss.str());
+
+  read_test_csv(iss);
+}
+
 /*
  * This does nothing more than read the CSV, but would fail if
  * the CSV were missing columns or had unparsable data.
