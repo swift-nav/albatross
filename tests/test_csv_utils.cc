@@ -215,4 +215,14 @@ TEST(test_csv_utils, test_custom_writes) {
   read_test_csv_with_custom_to_map(iss);
 }
 
+TEST(test_csv_utils, test_writes_eigen) {
+
+  Eigen::MatrixXd x = Eigen::MatrixXd::Random(3, 4);
+
+  std::ostringstream oss;
+  write_to_csv(oss, x);
+
+  EXPECT_GT(oss.str().size(), 0);
+}
+
 } // namespace albatross

@@ -235,7 +235,8 @@ public:
 
   bool are_equal(const RepresentationType &lhs,
                  const RepresentationType &rhs) const override {
-    return *lhs == *rhs && lhs->get_fit() == rhs->get_fit();
+    return (*lhs == *rhs && lhs->get_fit() == rhs->get_fit() &&
+            lhs->get_insights() == rhs->get_insights());
   };
 };
 
