@@ -51,6 +51,7 @@ public:
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
+    archive(cereal::make_nvp("insights", this->insights_));
   }
 
   template <class Archive>
@@ -61,6 +62,7 @@ public:
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
     archive(cereal::make_nvp("model_fit", this->model_fit_));
+    archive(cereal::make_nvp("insights", this->insights_));
   }
 
   /*
