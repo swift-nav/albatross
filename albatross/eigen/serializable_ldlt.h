@@ -60,9 +60,12 @@ inline void load_lower_triangle(Archive &archive,
   double b = 1;
   double c = -2. * static_cast<double>(storage_size);
   double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
-  assert(rows_as_double - static_cast<Eigen::Index>(rows_as_double) == 0. &&
+  assert(rows_as_double -
+                 static_cast<Eigen::Index>(std::lround(rows_as_double)) ==
+             0. &&
          "inferred a non integer number of rows");
-  cereal::size_type rows = static_cast<cereal::size_type>(rows_as_double);
+  cereal::size_type rows =
+      static_cast<cereal::size_type>(std::lround(rows_as_double));
   v.resize(rows, rows);
   for (cereal::size_type i = 0; i < rows; i++) {
     for (cereal::size_type j = 0; j <= i; j++) {
