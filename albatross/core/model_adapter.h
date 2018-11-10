@@ -141,7 +141,7 @@ public:
     GenericModelFunctions<FeatureType, FitType> funcs;
 
     decltype(funcs.fitter) fitter =
-        [&](const std::vector<FeatureType> &features,
+        [=](const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) {
           std::unique_ptr<RegressionModel<SubFeature>> sub_ransac =
               sub_model_.ransac_model(inlier_threshold, min_inliers,
