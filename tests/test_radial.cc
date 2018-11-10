@@ -45,7 +45,7 @@ TEST(test_radial, test_is_positive_definite) {
 
   const Exponential<AngularDistance> term(2 * M_PI);
 
-  const Eigen::MatrixXd cov = symmetric_covariance(term, points);
+  const Eigen::MatrixXd cov = term(points);
 
   EXPECT_GE(cov.eigenvalues().real().array().minCoeff(), 0.);
 }

@@ -26,11 +26,11 @@ namespace albatross {
 
 using SqrExp = SquaredExponential<EuclideanDistance>;
 using Noise = IndependentNoise<double>;
-using SqrExpAndNoise = SumOfCovarianceTerms<SqrExp, Noise>;
-using CovFunc = CovarianceFunction<SqrExpAndNoise>;
+using SqrExpAndNoise = SumOfCovarianceFunctions<SqrExp, Noise>;
+using Scale = ScalingTerm<IdentityScaling>;
+using Covariance = ProductOfCovarianceFunctions<Scale, SqrExpAndNoise>;
 using SquaredExponentialGaussianProcess =
-    GaussianProcessRegression<double, CovFunc>;
-
+    GaussianProcessRegression<double, Covariance>;
 using SerializableMockPointer =
     std::unique_ptr<SerializableRegressionModel<MockFeature, MockFit>>;
 using RegressionMockPointer = std::unique_ptr<RegressionModel<MockFeature>>;

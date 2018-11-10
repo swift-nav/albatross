@@ -15,40 +15,13 @@
 
 #include <sstream>
 
-#include "covariance_term.h"
+#include "covariance_function.h"
 #include "distance_metrics.h"
 
+constexpr double default_length_scale = 100000.;
+constexpr double default_radial_sigma = 10.;
+
 namespace albatross {
-
-/*
- * RadialCovariance functions require a distance metric which
- * computes the distance between any two predictors.  That distance
- * is then used by the implementing function to determine how
- * correlated the two elements are as a function of their distance.
- */
-template <class DistanceMetricImpl>
-class RadialCovariance : public CovarianceTerm {
-public:
-  RadialCovariance() : distance_metric_(){};
-
-  ~RadialCovariance(){};
-
-  ParameterStore get_params() const override {
-    return map_join(this->params_, distance_metric_.get_params());
-  }
-
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
-    if (map_contains(this->params_, name)) {
-      this->params_[name] = param;
-    } else {
-      distance_metric_.set_param(name, param);
-    }
-  }
-
-protected:
-  DistanceMetricImpl distance_metric_;
-};
 
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
@@ -60,45 +33,45 @@ inline double squared_exponential_covariance(double distance,
  * SquaredExponential distance
  *  - c(d) = -exp((d/length_scale)^2)
  */
-template <class DistanceMetricImpl>
-class SquaredExponential : public RadialCovariance<DistanceMetricImpl> {
+template <class DistanceMetricType>
+class SquaredExponential
+    : public CovarianceFunction<SquaredExponential<DistanceMetricType>> {
 public:
   // The SquaredExponential radial function is not positive definite
   // when the distance is an angular (or great circle) distance.
   // See:
   // Gneiting, Strictly and non-strictly positive definite functions on spheres
   static_assert(
-      !std::is_base_of<AngularDistance, DistanceMetricImpl>::value,
+      !std::is_base_of<AngularDistance, DistanceMetricType>::value,
       "SquaredExponential covariance with AngularDistance is not PSD.");
 
-  SquaredExponential(double length_scale = 100000.,
-                     double sigma_squared_exponential = 10.) {
+  SquaredExponential(double length_scale = default_length_scale,
+                     double sigma_squared_exponential = default_radial_sigma)
+      : distance_metric_(), name_() {
     this->params_["squared_exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};
     this->params_["sigma_squared_exponential"] = {
         sigma_squared_exponential, std::make_shared<NonNegativePrior>()};
-  };
-
-  ~SquaredExponential(){};
-
-  std::string get_name() const {
     std::ostringstream oss;
     oss << "squared_exponential[" << this->distance_metric_.get_name() << "]";
-    return oss.str();
-  }
+    name_ = oss.str();
+  };
 
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<
-                has_call_operator<DistanceMetricImpl, X &, X &>::value,
+                has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double operator()(const X &x, const X &y) const {
+  double call_impl_(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale =
         this->get_param_value("squared_exponential_length_scale");
     double sigma = this->get_param_value("sigma_squared_exponential");
     return squared_exponential_covariance(distance, length_scale, sigma);
   }
+
+  DistanceMetricType distance_metric_;
+  std::string name_;
 };
 
 inline double exponential_covariance(double distance, double length_scale,
@@ -110,35 +83,37 @@ inline double exponential_covariance(double distance, double length_scale,
  * Exponential distance
  *  - c(d) = -exp(|d|/length_scale)
  */
-template <class DistanceMetricImpl>
-class Exponential : public RadialCovariance<DistanceMetricImpl> {
+template <class DistanceMetricType>
+class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
 public:
-  Exponential(double length_scale = 100000., double sigma_exponential = 10.) {
+  Exponential(double length_scale = default_length_scale,
+              double sigma_exponential = default_radial_sigma)
+      : distance_metric_(), name_() {
     this->params_["exponential_length_scale"] = {
         length_scale, std::make_shared<PositivePrior>()};
     this->params_["sigma_exponential"] = {sigma_exponential,
                                           std::make_shared<NonNegativePrior>()};
+    std::ostringstream oss;
+    oss << "exponential[" << this->distance_metric_.get_name() << "]";
+    name_ = oss.str();
   };
 
   ~Exponential(){};
 
-  std::string get_name() const {
-    std::ostringstream oss;
-    oss << "exponential[" << this->distance_metric_.get_name() << "]";
-    return oss.str();
-  }
-
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<
-                has_call_operator<DistanceMetricImpl, X &, X &>::value,
+                has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double operator()(const X &x, const X &y) const {
+  double call_impl_(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     double length_scale = this->get_param_value("exponential_length_scale");
     double sigma = this->get_param_value("sigma_exponential");
     return exponential_covariance(distance, length_scale, sigma);
   }
+
+  DistanceMetricType distance_metric_;
+  std::string name_;
 };
 
 } // namespace albatross

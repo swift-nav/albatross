@@ -44,6 +44,35 @@ public:
 };
 
 /*
+ * This determines whether or not a class has a method defined for,
+ *   `call_impl_(X x, Y y, Z z, ...)`
+ * The result of the inspection gets stored in the member `value`.
+ */
+template <typename T, typename... Args> class has_defined_call_impl {
+  template <typename C, typename = decltype(std::declval<C>().call_impl_(
+                            std::declval<Args>()...))>
+  static std::true_type test(int);
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
+ * This determines whether or not a class, T, has a member,
+ *   `T.name_`
+ * The result of the inspection gets stored in the member `value`.
+ */
+template <typename T> class has_name_ {
+  template <typename C, typename = decltype(std::declval<C>().name_)>
+  static std::true_type test(int);
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
  * Inspects T to see if it has a class level type called FitType,
  * the result is returned in ::value.
  */
@@ -162,6 +191,42 @@ template <typename X> class is_complete {
 
 public:
   static constexpr bool value = decltype(test<X>(0))::value;
+};
+
+/*
+ * This set of trait logic checks if a type has any call_impl_ method
+ * implemented (including private methods) by hijacking name hiding.
+ * Namely if a derived class overloads a method the base methods will
+ * be hidden.  So by starting with a base class with a known method
+ * then extending that class you can determine if the derived class
+ * included any other methods with that name.
+ *
+ * https://stackoverflow.com/questions/1628768/why-does-an-overridden-function-in-the-derived-class-hide-other-overloads-of-the
+ */
+namespace detail {
+
+struct DummyType {};
+
+struct BaseWithPublicCallImpl {
+  // This method will be accessible in `MultiInherit` only if
+  // the class U doesn't contain any methods with the same name.
+  double call_impl_(DummyType a) { return -1.; }
+};
+
+template <typename U>
+struct MultiInherit : public U, public BaseWithPublicCallImpl {};
+}
+
+template <typename U> class has_any_call_impl {
+  template <typename T>
+  static typename std::enable_if<
+      has_defined_call_impl<detail::MultiInherit<T>, detail::DummyType>::value,
+      std::false_type>::type
+  test(int);
+  template <typename T> static std::true_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<U>(0))::value;
 };
 
 } // namespace albatross

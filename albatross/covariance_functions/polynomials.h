@@ -13,9 +13,11 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 
-#include "covariance_term.h"
+#include "covariance_function.h"
 
 namespace albatross {
+
+constexpr double default_sigma = 100.;
 
 struct ConstantTerm {};
 
@@ -28,16 +30,14 @@ struct ConstantTerm {};
  * underlying constant term would actually be a biased estimate
  * of the mean.
  */
-class Constant : public CovarianceTerm {
+class Constant : public CovarianceFunction<Constant> {
 public:
-  Constant(double sigma_constant = 10.) {
+  Constant(double sigma_constant = default_sigma) : name_("constant") {
     this->params_["sigma_constant"] = {sigma_constant,
                                        std::make_shared<NonNegativePrior>()};
   };
 
   ~Constant(){};
-
-  std::string get_name() const { return "constant"; }
 
   template <typename X>
   std::vector<ConstantTerm>
@@ -53,29 +53,30 @@ public:
    * so you can move one if you move the rest the same amount.
    */
   template <typename X, typename Y>
-  double operator()(const X &x __attribute__((unused)),
+  double call_impl_(const X &x __attribute__((unused)),
                     const Y &y __attribute__((unused))) const {
     double sigma_constant = this->get_param_value("sigma_constant");
     return sigma_constant * sigma_constant;
   }
+
+  const std::string name_;
 };
 
-template <int order> class Polynomial : public CovarianceTerm {
+template <int order>
+class Polynomial : public CovarianceFunction<Polynomial<order>> {
 public:
-  Polynomial(double sigma = 100.) {
+  Polynomial(double sigma = default_sigma) {
     for (int i = 0; i < order + 1; i++) {
       std::string param_name = "sigma_polynomial_" + std::to_string(i);
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
     }
+    name_ = "polynomial_" + std::to_string(order);
   };
 
   ~Polynomial(){};
 
-  std::string get_name() const { return "polynomal_" + std::to_string(order); }
-
-  double operator()(const double &x, const double &y) const {
-
+  double call_impl_(const double &x, const double &y) const {
     double cov = 0.;
     for (int i = 0; i < order + 1; i++) {
       const double sigma = this->get_param_value(param_names_.at(i));
@@ -84,6 +85,8 @@ public:
     }
     return cov;
   }
+
+  std::string name_;
 
 private:
   std::map<int, std::string> param_names_;

@@ -19,7 +19,7 @@
 
 namespace albatross {
 
-using SqrExp = CovarianceFunction<SquaredExponential<EuclideanDistance>>;
+using SqrExp = SquaredExponential<EuclideanDistance>;
 
 using TestBaseModel = GaussianProcessRegression<Eigen::VectorXd, SqrExp>;
 
@@ -39,7 +39,7 @@ public:
 
   /*
    * save/load methods are inherited from the SerializableRegressionModel,
-   * but by defining them here and explicitly showing the inheritence
+   * but by defining them here and explicitly showing the inheritance
    * through the use of `base_class` we can make use of cereal's
    * polymorphic serialization.
    */

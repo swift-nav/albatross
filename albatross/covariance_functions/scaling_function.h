@@ -13,7 +13,7 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 
-#include "covariance_term.h"
+#include "covariance_function.h"
 #include <sstream>
 #include <utility>
 
@@ -23,10 +23,10 @@ class ScalingFunction : public ParameterHandlingMixin {
 public:
   virtual std::string get_name() const = 0;
 
-  // A scaling function should also implement operators
+  // A scaling function should also implement calls
   // for whichever types it is intended to scale using
   // the signature:
-  //   double operator(const X &x) const;
+  //   double call_impl_(const X &x) const;
 };
 
 /*
@@ -41,7 +41,7 @@ public:
  *     z = f(y) * y
  * where f is a determinstic function of y that returns a scalar.
  * You might then ask what the covariance between two elements in
- * z is which is woudl be given by,
+ * z is which would be given by,
  *     cov(z_i, z_j) = f(y_i) * cov(y_i, y_j) * f(y_j)
  * but you might also be interested in the covariance between
  * some y_i and an observation z_j,
@@ -59,20 +59,15 @@ public:
  * This might be better explained by example which can be found
  * in the tests (test_scaling_function).
  */
-template <typename ScalingFunction> class ScalingTerm : public CovarianceTerm {
+template <typename ScalingFunction>
+class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
 public:
-  ScalingTerm() : CovarianceTerm(){};
-  virtual ~ScalingTerm(){};
+  ScalingTerm() : scaling_function_(), name_() {
+    name_ = scaling_function_.get_name();
+  };
 
-  /*
-   * The following methods forward any requests dealing with
-   * the ParameterHandlingMixin to the ScalingFunction.
-   */
-  std::string get_name() const override { return scaling_function_.get_name(); }
-
-  std::string pretty_string() const {
-    return scaling_function_.pretty_string();
-  }
+  ScalingTerm(const ScalingFunction &func)
+      : scaling_function_(func), name_(scaling_function_.get_name()){};
 
   void set_params(const ParameterStore &params) {
     scaling_function_.set_params(params);
@@ -86,18 +81,6 @@ public:
     return scaling_function_.get_params();
   }
 
-  template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("base_class",
-                             cereal::base_class<CovarianceTerm>(this)));
-    archive(cereal::make_nvp("scaling_function", scaling_function_));
-  }
-
-  template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("base_class",
-                             cereal::base_class<CovarianceTerm>(this)));
-    archive(cereal::make_nvp("scaling_function", scaling_function_));
-  }
-
   void unchecked_set_param(const ParameterKey &name,
                            const Parameter &param) override {
     scaling_function_.set_param(name, param);
@@ -107,13 +90,14 @@ public:
    * If both Scaling and Covariance have a valid call method for the types X
    * and Y this will return the product of the two.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_call_operator<ScalingFunction, X &>::value &&
-                               has_call_operator<ScalingFunction, Y &>::value),
-                              int>::type = 0>
-  double operator()(X &x, Y &y) const {
-    return this->scaling_function_(x) * this->scaling_function_(y);
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_defined_call_impl<ScalingFunction, X &>::value &&
+                 has_defined_call_impl<ScalingFunction, Y &>::value),
+                int>::type = 0>
+  double call_impl_(const X &x, const Y &y) const {
+    return this->scaling_function_.call_impl_(x) *
+           this->scaling_function_.call_impl_(y);
   }
 
   /*
@@ -121,21 +105,23 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (!has_call_operator<ScalingFunction, X &>::value &&
-                 has_call_operator<ScalingFunction, Y &>::value),
+                (!has_defined_call_impl<ScalingFunction, X &>::value &&
+                 has_defined_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double operator()(X &x, Y &y) const {
-    return this->scaling_function_(y);
+  double call_impl_(const X &x, const Y &y) const {
+    return this->scaling_function_.call_impl_(y);
   }
 
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_call_operator<ScalingFunction, X &>::value &&
-                               !has_call_operator<ScalingFunction, Y &>::value),
-                              int>::type = 0>
-  double operator()(X &x, Y &y) const {
-    return this->scaling_function_(x);
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_defined_call_impl<ScalingFunction, X &>::value &&
+                 !has_defined_call_impl<ScalingFunction, Y &>::value),
+                int>::type = 0>
+  double call_impl_(const X &x, const Y &y) const {
+    return this->scaling_function_.call_impl_(x);
   }
+
+  std::string name_;
 
 private:
   ScalingFunction scaling_function_;

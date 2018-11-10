@@ -54,7 +54,7 @@ set(albatross_HEADERS
     albatross/models/ransac.h
     albatross/models/ransac_gp.h
     albatross/models/least_squares.h
-    albatross/covariance_functions/covariance_term.h
+    albatross/covariance_functions/covariance_function.h
     albatross/covariance_functions/covariance_functions.h
     albatross/covariance_functions/distance_metrics.h
     albatross/covariance_functions/noise.h

@@ -30,10 +30,8 @@ public:
 };
 
 auto make_simple_covariance_function() {
-  using SqrExp = SquaredExponential<EuclideanDistance>;
-  using Noise = IndependentNoise<double>;
-  CovarianceFunction<SqrExp> squared_exponential = {SqrExp(100., 100.)};
-  CovarianceFunction<Noise> noise = {Noise(0.1)};
+  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+  IndependentNoise<double> noise(0.1);
   return squared_exponential + noise;
 }
 

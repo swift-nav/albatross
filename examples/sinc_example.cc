@@ -64,9 +64,9 @@ int main(int argc, char *argv[]) {
   using SquaredExp = SquaredExponential<EuclideanDistance>;
   using PolynomialTerm = Polynomial<1>;
 
-  CovarianceFunction<Polynomial<1>> polynomial = {Polynomial<1>(100.)};
-  CovarianceFunction<Noise> noise = {Noise(meas_noise)};
-  CovarianceFunction<SquaredExp> squared_exponential = {SquaredExp(3.5, 5.7)};
+  Polynomial<1> polynomial(100.);
+  Noise noise(meas_noise);
+  SquaredExp squared_exponential(3.5, 5.7);
   auto cov = polynomial + noise + squared_exponential;
 
   std::cout << cov.pretty_string() << std::endl;

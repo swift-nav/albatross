@@ -32,27 +32,26 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Defining the model." << std::endl;
   // Measurement Noise
-  using Noise = IndependentNoise<Station>;
-  CovarianceFunction<Noise> noise = {Noise(2.0)};
+  IndependentNoise<Station> noise(2.0);
 
   // A Constant temperature value
-  CovarianceFunction<Constant> mean = {Constant(1.5)};
+  Constant mean(1.5);
 
   // Scale the constant temperature value in a way that defaults
   // to colder values for higher elevations.
   using ElevationScalar = ScalingTerm<ElevationScalingFunction>;
-  CovarianceFunction<ElevationScalar> elevation_scalar = {ElevationScalar()};
+  ElevationScalar elevation_scalar;
   auto elevation_scaled_mean = elevation_scalar * mean;
 
   // Radial distance is the difference in lengths of the X, Y, Z
   // locations, which translates into a difference in height so
   // this term means "station at different elevations will be less correlated"
   using RadialSqrExp = SquaredExponential<StationDistance<RadialDistance>>;
-  CovarianceFunction<RadialSqrExp> radial_sqr_exp = {RadialSqrExp(15000., 2.5)};
+  RadialSqrExp radial_sqr_exp(15000., 2.5);
 
   // The angular distance is equivalent to the great circle distance
   using AngularExp = Exponential<StationDistance<AngularDistance>>;
-  CovarianceFunction<AngularExp> angular_exp = {AngularExp(9e-2, 3.5)};
+  AngularExp angular_exp(9e-2, 3.5);
 
   // We multiply the angular and elevation covariance terms.  To justify this
   // think of the extremes.  If two stations are really far apart, regardless

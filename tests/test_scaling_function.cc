@@ -60,11 +60,9 @@ class ObliquityScaling : public ScalingFunction {
 public:
   ObliquityScaling() : ScalingFunction(){};
 
-  ~ObliquityScaling(){};
-
   std::string get_name() const { return "obliquity_scaling"; }
 
-  double operator()(const double &x) const { return obliquity_function(x); }
+  double call_impl_(const double &x) const { return obliquity_function(x); }
 };
 
 auto make_attenuation_data(const double attenuation = 3.14159,
@@ -96,10 +94,10 @@ TEST(test_scaling_functions, test_predicts) {
   using Feature = double;
   using Noise = IndependentNoise<Feature>;
 
-  CovarianceFunction<Constant> constant = {Constant(10.)};
-  CovarianceFunction<Noise> noise = {Noise(0.01)};
+  Constant constant(10.);
+  Noise noise(0.01);
   using TestScalingTerm = ScalingTerm<ObliquityScaling>;
-  CovarianceFunction<TestScalingTerm> scaling = {TestScalingTerm()};
+  TestScalingTerm scaling;
 
   auto dataset = make_attenuation_data();
 
@@ -130,10 +128,11 @@ TEST(test_scaling_functions, test_inference) {
   double attenuation = 3.14159;
   double sigma = 0.01;
 
-  CovarianceFunction<Constant> constant = {Constant(2 * attenuation)};
-  CovarianceFunction<Noise> noise = {Noise(sigma)};
+  Constant constant(2 * attenuation);
+  Noise noise(sigma);
+
   using TestScalingTerm = ScalingTerm<ObliquityScaling>;
-  CovarianceFunction<TestScalingTerm> scaling = {TestScalingTerm()};
+  TestScalingTerm scaling;
 
   auto dataset = make_attenuation_data(attenuation, sigma);
 
@@ -144,8 +143,7 @@ TEST(test_scaling_functions, test_inference) {
 
   auto model = gp_from_covariance<double>(covariance_function);
 
-  auto state_space =
-      constant.term.get_state_space_representation(dataset.features);
+  auto state_space = constant.get_state_space_representation(dataset.features);
   model.fit(dataset);
   auto state_estimate = model.inspect(state_space);
   // Make sure our estimate of the attenuation term is close, despite the fact
