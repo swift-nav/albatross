@@ -4,9 +4,11 @@ cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
 
 set(ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS "")
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS "-stdlib=libc++")
-endif()
+if (APPLE)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(ALBATROSS_GFLAGS_CMAKE_CXX_FLAGS "-stdlib=libc++")
+  endif()
+endif (APPLE)
 
 # This adds libgflags as an external project with the specified parameters.
 ExternalProject_Add(libgflags

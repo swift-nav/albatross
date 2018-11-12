@@ -11,9 +11,11 @@ option(ENABLE_AUTOLINT "Enable automatic linting and warning with clang-tidy. " 
 # Enable static stack analyzer, defaults to off.
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
+if (APPLE)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  endif()
+endif (APPLE)
 
 add_subdirectory(third_party/googletest)
 
