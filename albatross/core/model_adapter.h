@@ -141,11 +141,12 @@ public:
     GenericModelFunctions<FeatureType, FitType> funcs;
 
     decltype(funcs.fitter) fitter =
-        [=](const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) {
+        [this, inlier_threshold, min_inliers, random_sample_size,
+         max_iterations](const std::vector<FeatureType> &features,
+                         const MarginalDistribution &targets) {
           std::unique_ptr<RegressionModel<SubFeature>> sub_ransac =
-              sub_model_.ransac_model(inlier_threshold, min_inliers,
-                                      random_sample_size, max_iterations);
+              this->sub_model_.ransac_model(inlier_threshold, min_inliers,
+                                            random_sample_size, max_iterations);
           sub_ransac->fit(convert_features(features), targets);
           return std::move(sub_ransac);
         };
