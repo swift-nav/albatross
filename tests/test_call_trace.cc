@@ -59,9 +59,12 @@ public:
   int expected_number_of_calls() override { return 3; }
 
   void check_expected_values(const X &x, const Y &y) override {
+    // (x, x) is defined for both, so 1. + 5.
     EXPECT_DOUBLE_EQ(this->covariance_function(x, x), 6.);
+    // (x, y) and (y, x) are only defined for XY so (undef + 7.) = 7.
     EXPECT_DOUBLE_EQ(this->covariance_function(x, y), 7.);
     EXPECT_DOUBLE_EQ(this->covariance_function(y, x), 7.);
+    // (y, y) is only defined for XY so (undef + 9.) = 9.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, y), 9.);
   }
 };
@@ -72,7 +75,9 @@ public:
   int expected_number_of_calls() override { return 3; }
 
   void check_expected_values(const X &x, const Y &y) override {
+    // (x, x) is only defined for X so (1. + undef) = 1.
     EXPECT_DOUBLE_EQ(this->covariance_function(x, x), 1.);
+    // (y, y) is only defined for Y so (undef + 3.) = 3.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, y), 3.);
   }
 };
@@ -84,9 +89,12 @@ public:
   int expected_number_of_calls() override { return 5; }
 
   void check_expected_values(const X &x, const Y &y) override {
+    // (x, x) breaksdown to ((1. + undef) + 5.) = 6.
     EXPECT_DOUBLE_EQ(this->covariance_function(x, x), 6.);
+    // (y, x) and (x, y) break down to ((undef + undef) + 7.)
     EXPECT_DOUBLE_EQ(this->covariance_function(y, x), 7.);
     EXPECT_DOUBLE_EQ(this->covariance_function(x, y), 7.);
+    // (y, y) breaks down to ((3. + undef) + 9.) = 12.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, y), 12.);
   }
 };
@@ -98,9 +106,12 @@ public:
   int expected_number_of_calls() override { return 3; };
 
   void check_expected_values(const X &x, const Y &y) override {
+    // (x, x) breaks down to (1. * 5.)
     EXPECT_DOUBLE_EQ(this->covariance_function(x, x), 5.);
+    // (x, y) and (y, x) break down to (undef * 7.) = 7.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, x), 7.);
     EXPECT_DOUBLE_EQ(this->covariance_function(x, y), 7.);
+    // (y, y) breaks down to (undef * 9.) = 9.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, y), 9.);
   }
 };
@@ -113,9 +124,12 @@ public:
   int expected_number_of_calls() override { return 7; };
 
   void check_expected_values(const X &x, const Y &y) override {
+    // (x, x) breaks down to ((1. + 5.) * (1. * 5.)) = 30.
     EXPECT_DOUBLE_EQ(this->covariance_function(x, x), 30.);
+    // (x, y) and (y, x) break down to ((undef + 7.) * (undef * 7.)) = 49.
     EXPECT_DOUBLE_EQ(this->covariance_function(y, x), 49.);
     EXPECT_DOUBLE_EQ(this->covariance_function(x, y), 49.);
+    // (y, y) breaks down to ((undef + 9.) * (undef * 9)) = 81
     EXPECT_DOUBLE_EQ(this->covariance_function(y, y), 81.);
   }
 };
