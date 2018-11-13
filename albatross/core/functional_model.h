@@ -68,7 +68,7 @@ protected:
   FitType model_fit_;
   const typename GenericModelFunctions<FeatureType, FitType>::Fitter fitter_;
   const typename GenericModelFunctions<FeatureType, FitType>::Predictor
-      &predictor_;
+      predictor_;
   std::string model_name_;
 };
 
