@@ -26,6 +26,8 @@ template <typename X, typename Y> class SumOfCovarianceFunctions;
 
 template <typename X, typename Y> class ProductOfCovarianceFunctions;
 
+template <typename Derived> class CallTrace;
+
 /*
  * CovarianceFunction is a CRTP base class which can be used in a
  * way similar to a polymorphic abstract class.  For example if
@@ -213,6 +215,8 @@ public:
                                                  * errors should give you an indication of which types were attempted.
                                                  */
 
+  CallTrace<Derived> call_trace() const;
+
   template <typename Other>
   const SumOfCovarianceFunctions<Derived, Other>
   operator+(const CovarianceFunction<Other> &other) const;
@@ -236,6 +240,7 @@ public:
   SumOfCovarianceFunctions() : lhs_(), rhs_() {
     name_ = "(" + lhs_.name_ + "+" + rhs_.name_ + ")";
   };
+
   SumOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
       : lhs_(lhs), rhs_(rhs) {
     SumOfCovarianceFunctions();
@@ -292,6 +297,7 @@ public:
 protected:
   LHS lhs_;
   RHS rhs_;
+  friend class CallTrace<SumOfCovarianceFunctions<LHS, RHS>>;
 };
 
 /*
@@ -360,6 +366,7 @@ public:
 protected:
   LHS lhs_;
   RHS rhs_;
+  friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
 };
 
 template <typename Derived>

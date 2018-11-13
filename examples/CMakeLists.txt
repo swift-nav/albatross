@@ -72,3 +72,25 @@ add_custom_target(
 add_dependencies(run_temperature_example
     temperature_example
 )
+
+add_executable(call_trace_example
+    EXCLUDE_FROM_ALL
+    call_trace_example.cc
+)
+
+add_dependencies(call_trace_example
+    albatross
+)
+
+target_link_libraries(call_trace_example m gflags pthread)
+
+add_custom_target(
+    run_call_trace_example ALL
+    DEPENDS ${example_HEADERS}
+    COMMAND call_trace_example
+    COMMENT "Running call_trace_example"
+)
+
+add_dependencies(run_call_trace_example
+    call_trace_example
+)
