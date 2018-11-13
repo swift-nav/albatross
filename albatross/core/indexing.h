@@ -61,6 +61,18 @@ inline Eigen::VectorXd subset(const std::vector<SizeType> &indices,
 }
 
 /*
+ * Convenience method which subsets the features and targets of a dataset.
+ */
+template <typename SizeType, typename FeatureType>
+inline RegressionDataset<FeatureType>
+subset(const std::vector<SizeType> &indices,
+       const RegressionDataset<FeatureType> &dataset) {
+  return RegressionDataset<FeatureType>(subset(indices, dataset.features),
+                                        subset(indices, dataset.targets),
+                                        dataset.metadata);
+}
+
+/*
  * Extracts a subset of columns from an Eigen::Matrix
  */
 template <typename SizeType>
