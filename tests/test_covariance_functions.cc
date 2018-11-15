@@ -10,6 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include "core/parameter_macros.h"
 #include "covariance_functions/covariance_functions.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -96,6 +97,22 @@ TYPED_TEST(TestVectorCovarianceFunctions, can_set_params) {
   }
 }
 
+class DummyCovariance : public CovarianceFunction<DummyCovariance> {
+public:
+  DummyCovariance(double foo_ = sqrt(2.), double bar_ = log(2.)) {
+    foo.value = foo_;
+    bar.value = bar_;
+  }
+
+  ALBATROSS_DECLARE_PARAMS(foo, bar)
+
+  double call_impl_(const double &x, const double &y) const {
+    return foo.value + bar.value;
+  }
+
+  std::string name_ = "dummy";
+};
+
 /*
  * In the following we test any covariance functions which should support
  * Eigen::Vector feature vectors.
@@ -108,8 +125,9 @@ public:
 };
 
 typedef ::testing::Types<
-    IndependentNoise<double>, Polynomial<2>,
-    SumOfCovarianceFunctions<IndependentNoise<double>, Polynomial<2>>>
+    DummyCovariance, IndependentNoise<double>, Polynomial<2>,
+    SumOfCovarianceFunctions<IndependentNoise<double>, Polynomial<2>>,
+    SumOfCovarianceFunctions<IndependentNoise<double>, DummyCovariance>>
     DoubleCompatibleCovarianceFunctions;
 
 TYPED_TEST_CASE(TestDoubleCovarianceFunctions,
