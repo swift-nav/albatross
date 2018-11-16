@@ -23,9 +23,11 @@ template <typename Observed>
 class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
 public:
   IndependentNoise(double sigma_noise = 0.1) : name_("independent_noise") {
-    this->params_["sigma_independent_noise"] = {
-        sigma_noise, std::make_shared<NonNegativePrior>()};
+    sigma_independent_noise = {sigma_noise,
+                               std::make_shared<NonNegativePrior>()};
   };
+
+  ALBATROSS_DECLARE_PARAMS(sigma_independent_noise);
 
   ~IndependentNoise(){};
 
@@ -37,8 +39,7 @@ public:
    */
   double call_impl_(const Observed &x, const Observed &y) const {
     if (x == y) {
-      double sigma_noise = this->get_param_value("sigma_independent_noise");
-      return sigma_noise * sigma_noise;
+      return sigma_independent_noise.value * sigma_independent_noise.value;
     } else {
       return 0.;
     }
