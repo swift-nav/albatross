@@ -77,6 +77,39 @@ inline auto block_diagonal(
   return output;
 }
 
+/*
+ * Builds a dense block diagonal matrix for a vector of matrices.  These
+ * blocks need not be square.
+ *
+ * A = [[1 2]      B = [[5 6]
+ *       3 4]]          [7 8]]
+ *
+ * C = vertical_stack({A, B}) = [[1 2]
+ *                               [3 4]
+ *                               [5 6]
+ *                               [7 8]]
+ */
+template <typename _Scalar, int _Rows, int _Cols>
+inline auto vertical_stack(
+    const std::vector<Eigen::Matrix<_Scalar, _Rows, _Cols>> &blocks) {
+  Eigen::Index rows = 0;
+  const Eigen::Index cols = blocks[0].cols();
+  for (const auto &block : blocks) {
+    rows += block.rows();
+    assert(block.cols() == cols);
+  }
+
+  using MatrixType = Eigen::Matrix<_Scalar, Eigen::Dynamic, _Cols>;
+  MatrixType output = MatrixType::Zero(rows, cols);
+  Eigen::Index row = 0;
+  Eigen::Index col = 0;
+  for (const auto &this_block : blocks) {
+    output.block(row, 0, this_block.rows(), cols) = this_block;
+    row += this_block.rows();
+  }
+  return output;
+}
+
 } // namespace albatross
 
 #endif

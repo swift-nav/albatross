@@ -14,14 +14,10 @@
 #define ALBATROSS_CORE_INDEXING_H
 
 #include "core/dataset.h"
-#include <Eigen/Core>
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <iterator>
-#include <map>
 #include <numeric>
-#include <vector>
 
 namespace albatross {
 

@@ -35,6 +35,7 @@ using DiagonalMatrixXd =
 // variable independent of all others.
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
+using Metadata = std::map<std::string, std::string>;
 /*
  * A RegressionDataset holds two vectors of data, the features
  * where a single feature can be any class that contains the information used
@@ -45,13 +46,14 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 template <typename FeatureType> struct RegressionDataset {
   std::vector<FeatureType> features;
   MarginalDistribution targets;
-  std::map<std::string, std::string> metadata;
+  Metadata metadata;
 
   RegressionDataset(){};
 
   RegressionDataset(const std::vector<FeatureType> &features_,
-                    const MarginalDistribution &targets_)
-      : features(features_), targets(targets_) {
+                    const MarginalDistribution &targets_,
+                    const Metadata &metadata_)
+      : features(features_), targets(targets_), metadata(metadata_) {
     // If the two inputs aren't the same size they clearly aren't
     // consistent.
     assert(static_cast<int>(features.size()) ==
@@ -59,8 +61,17 @@ template <typename FeatureType> struct RegressionDataset {
   }
 
   RegressionDataset(const std::vector<FeatureType> &features_,
+                    const MarginalDistribution &targets_)
+      : RegressionDataset(features_, targets_, {}) {}
+
+  RegressionDataset(const std::vector<FeatureType> &features_,
                     const Eigen::VectorXd &targets_)
-      : RegressionDataset(features_, MarginalDistribution(targets_)) {}
+      : RegressionDataset(features_, MarginalDistribution(targets_), {}) {}
+
+  RegressionDataset(const std::vector<FeatureType> &features_,
+                    const Eigen::VectorXd &targets_, const Metadata &metadata_)
+      : RegressionDataset(features_, MarginalDistribution(targets_),
+                          metadata_) {}
 
   bool operator==(const RegressionDataset &other) const {
     return (features == other.features && targets == other.targets &&
