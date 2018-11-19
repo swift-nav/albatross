@@ -222,8 +222,11 @@ struct AdaptedFeature {
   double value;
 };
 
-static inline auto make_adapted_toy_linear_data() {
-  const auto dataset = make_toy_linear_data();
+static inline auto make_adapted_toy_linear_data(const double a = 5.,
+                                                const double b = 1.,
+                                                const double sigma = 0.1,
+                                                const std::size_t n = 10) {
+  const auto dataset = make_toy_linear_data(a, b, sigma, n);
 
   std::vector<AdaptedFeature> adapted_features;
   for (const auto &f : dataset.features) {
