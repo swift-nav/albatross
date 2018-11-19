@@ -11,6 +11,7 @@
  */
 
 #include "core/parameter_handling_mixin.h"
+#include "core/parameter_macros.h"
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
@@ -179,6 +180,43 @@ TEST(test_parameter_handler, test_set_param_values_doesnt_overwrite_prior) {
     EXPECT_TRUE(!pair.second.has_prior() ||
                 (pair.second.prior == new_param.prior));
   }
+};
+
+class MacroParameterHandler : public ParameterHandlingMixin {
+public:
+  ALBATROSS_DECLARE_PARAMS(foo, bar)
+
+  void expect_foo_equals(double x) { EXPECT_DOUBLE_EQ(this->foo.value, x); }
+
+  void expect_bar_equals(double x) { EXPECT_DOUBLE_EQ(this->bar.value, x); }
+};
+
+/*
+ * Simply makes sure that a BaseModel that should be able to
+ * make perfect predictions compiles and runs as expected.
+ */
+TEST(test_parameter_handler, test_get_set_with_macros) {
+  auto p = MacroParameterHandler();
+
+  p.set_param("foo", 3.14159);
+  p.set_param("bar", sqrt(2.));
+
+  auto params = p.get_params();
+  for (auto &pair : params) {
+    pair.second.value += 1.;
+  }
+  // Make sure modifying the returned map doesn't modify the original;
+  auto unmodified_params = p.get_params();
+  EXPECT_EQ(unmodified_params["foo"].value, 3.14159);
+  EXPECT_EQ(unmodified_params["bar"].value, sqrt(2.));
+  // Then make sure after we set the new params they stick.
+  p.set_params(params);
+  auto modified_params = p.get_params();
+  EXPECT_EQ(modified_params["foo"], 4.14159);
+  EXPECT_EQ(modified_params["bar"], sqrt(2.) + 1.);
+
+  p.expect_foo_equals(4.14159);
+  p.expect_bar_equals(sqrt(2.) + 1.);
 };
 
 } // namespace albatross

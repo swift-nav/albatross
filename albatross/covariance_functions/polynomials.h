@@ -32,10 +32,11 @@ struct ConstantTerm {};
  */
 class Constant : public CovarianceFunction<Constant> {
 public:
-  Constant(double sigma_constant = default_sigma) : name_("constant") {
-    this->params_["sigma_constant"] = {sigma_constant,
-                                       std::make_shared<NonNegativePrior>()};
+  Constant(double sigma_constant_ = default_sigma) : name_("constant") {
+    sigma_constant = {sigma_constant_, std::make_shared<NonNegativePrior>()};
   };
+
+  ALBATROSS_DECLARE_PARAMS(sigma_constant);
 
   ~Constant(){};
 
@@ -55,8 +56,7 @@ public:
   template <typename X, typename Y>
   double call_impl_(const X &x __attribute__((unused)),
                     const Y &y __attribute__((unused))) const {
-    double sigma_constant = this->get_param_value("sigma_constant");
-    return sigma_constant * sigma_constant;
+    return sigma_constant.value * sigma_constant.value;
   }
 
   const std::string name_;

@@ -14,7 +14,7 @@
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 
 #include "../core/traits.h"
-#include "core/parameter_handling_mixin.h"
+#include "core/parameter_macros.h"
 #include "map_utils.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>

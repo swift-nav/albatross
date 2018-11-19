@@ -45,13 +45,16 @@ public:
       !std::is_base_of<AngularDistance, DistanceMetricType>::value,
       "SquaredExponential covariance with AngularDistance is not PSD.");
 
-  SquaredExponential(double length_scale = default_length_scale,
-                     double sigma_squared_exponential = default_radial_sigma)
+  ALBATROSS_DECLARE_PARAMS(squared_exponential_length_scale,
+                           sigma_squared_exponential);
+
+  SquaredExponential(double length_scale_ = default_length_scale,
+                     double sigma_squared_exponential_ = default_radial_sigma)
       : distance_metric_(), name_() {
-    this->params_["squared_exponential_length_scale"] = {
-        length_scale, std::make_shared<PositivePrior>()};
-    this->params_["sigma_squared_exponential"] = {
-        sigma_squared_exponential, std::make_shared<NonNegativePrior>()};
+    squared_exponential_length_scale = {length_scale_,
+                                        std::make_shared<PositivePrior>()};
+    sigma_squared_exponential = {sigma_squared_exponential_,
+                                 std::make_shared<NonNegativePrior>()};
     std::ostringstream oss;
     oss << "squared_exponential[" << this->distance_metric_.get_name() << "]";
     name_ = oss.str();
@@ -64,10 +67,9 @@ public:
                 int>::type = 0>
   double call_impl_(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
-    double length_scale =
-        this->get_param_value("squared_exponential_length_scale");
-    double sigma = this->get_param_value("sigma_squared_exponential");
-    return squared_exponential_covariance(distance, length_scale, sigma);
+    return squared_exponential_covariance(
+        distance, squared_exponential_length_scale.value,
+        sigma_squared_exponential.value);
   }
 
   DistanceMetricType distance_metric_;
@@ -86,13 +88,15 @@ inline double exponential_covariance(double distance, double length_scale,
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
 public:
-  Exponential(double length_scale = default_length_scale,
-              double sigma_exponential = default_radial_sigma)
+  ALBATROSS_DECLARE_PARAMS(exponential_length_scale, sigma_exponential);
+
+  Exponential(double length_scale_ = default_length_scale,
+              double sigma_exponential_ = default_radial_sigma)
       : distance_metric_(), name_() {
-    this->params_["exponential_length_scale"] = {
-        length_scale, std::make_shared<PositivePrior>()};
-    this->params_["sigma_exponential"] = {sigma_exponential,
-                                          std::make_shared<NonNegativePrior>()};
+    exponential_length_scale = {length_scale_,
+                                std::make_shared<PositivePrior>()};
+    sigma_exponential = {sigma_exponential_,
+                         std::make_shared<NonNegativePrior>()};
     std::ostringstream oss;
     oss << "exponential[" << this->distance_metric_.get_name() << "]";
     name_ = oss.str();
@@ -107,9 +111,8 @@ public:
                 int>::type = 0>
   double call_impl_(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
-    double length_scale = this->get_param_value("exponential_length_scale");
-    double sigma = this->get_param_value("sigma_exponential");
-    return exponential_covariance(distance, length_scale, sigma);
+    return exponential_covariance(distance, exponential_length_scale.value,
+                                  sigma_exponential.value);
   }
 
   DistanceMetricType distance_metric_;

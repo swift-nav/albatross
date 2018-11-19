@@ -187,13 +187,40 @@ TYPED_TEST(RegressionModelTester, cross_validation_variants) {
   EXPECT_LE(cv_scores.mean(), 0.1);
 }
 
+class MakeLargeGaussianProcess : public AbstractTestModel<double> {
+public:
+  std::unique_ptr<RegressionModel<double>> create() const override {
+    auto covariance = make_simple_covariance_function();
+    return gp_pointer_from_covariance<double>(covariance);
+  }
+
+  RegressionDataset<double> get_dataset() const override {
+    return make_toy_linear_data(5., 1., 0.1, 100);
+  }
+};
+
+class MakeLargeAdaptedGaussianProcess
+    : public AbstractTestModel<AdaptedFeature> {
+public:
+  std::unique_ptr<RegressionModel<AdaptedFeature>> create() const override {
+    auto covariance = make_simple_covariance_function();
+    auto gp = gp_from_covariance<double>(covariance);
+    return std::make_unique<AdaptedExample<decltype(gp)>>(gp);
+  }
+
+  RegressionDataset<AdaptedFeature> get_dataset() const override {
+    return make_adapted_toy_linear_data(5., 1., 0.1, 100);
+  }
+};
+
 template <typename ModelCreator>
 class SpecializedRegressionModelTester : public ::testing::Test {
 public:
   ModelCreator creator;
 };
 
-typedef ::testing::Types<MakeGaussianProcess, MakeAdaptedGaussianProcess>
+typedef ::testing::Types<MakeLargeGaussianProcess,
+                         MakeLargeAdaptedGaussianProcess>
     SpecializedModelCreators;
 TYPED_TEST_CASE(SpecializedRegressionModelTester, SpecializedModelCreators);
 
@@ -220,7 +247,6 @@ TYPED_TEST(SpecializedRegressionModelTester,
   const auto cv_slow_scores = cross_validated_scores(rmse, folds, model.get());
   end = high_resolution_clock::now();
   auto slow_duration = duration_cast<microseconds>(end - start).count();
-
   // Make sure the faster variant is actually faster and that the results
   // are the same.
   EXPECT_LT(fast_duration, slow_duration);
