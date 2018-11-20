@@ -39,7 +39,6 @@ TEST(test_concatenate, test_concatenate_datasets) {
   EXPECT_EQ(reassembled.targets.mean, dataset.targets.mean);
   EXPECT_EQ(reassembled.targets.covariance.diagonal(),
             dataset.targets.covariance.diagonal());
-  EXPECT_EQ(reassembled.metadata, dataset.metadata);
 }
 
 TEST(test_concatenate, test_concatenate_distributions) {

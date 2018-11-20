@@ -30,7 +30,6 @@ RegressionDataset<FeatureType> concatenate_datasets(
   Eigen::VectorXd target_variance(static_cast<Eigen::Index>(n));
   std::vector<FeatureType> features(n);
 
-  Metadata metadata;
   bool target_has_covariance = datasets[0].targets.has_covariance();
 
   std::size_t i = 0;
@@ -44,7 +43,6 @@ RegressionDataset<FeatureType> concatenate_datasets(
       target_variance[ei] = d.targets.get_diagonal(ej);
       ++i;
     }
-    metadata = map_join(metadata, d.metadata);
   }
   assert(i == n);
   MarginalDistribution targets;
@@ -53,7 +51,7 @@ RegressionDataset<FeatureType> concatenate_datasets(
   } else {
     targets = MarginalDistribution(target_means);
   }
-  return RegressionDataset<FeatureType>(features, targets, metadata);
+  return RegressionDataset<FeatureType>(features, targets);
 }
 
 template <typename CovarianceType>

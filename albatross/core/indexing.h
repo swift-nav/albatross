@@ -64,8 +64,7 @@ inline RegressionDataset<FeatureType>
 subset(const std::vector<SizeType> &indices,
        const RegressionDataset<FeatureType> &dataset) {
   return RegressionDataset<FeatureType>(subset(indices, dataset.features),
-                                        subset(indices, dataset.targets),
-                                        dataset.metadata);
+                                        subset(indices, dataset.targets));
 }
 
 /*
