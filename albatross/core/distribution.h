@@ -17,7 +17,6 @@
 #include "core/traits.h"
 #include "eigen/serializable_diagonal_matrix.h"
 #include <Eigen/Core>
-#include <iostream>
 #include <map>
 #include <vector>
 

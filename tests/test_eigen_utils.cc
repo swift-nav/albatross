@@ -45,3 +45,31 @@ TEST(test_eigen_utils, test_diag_block_diag) {
   EXPECT_NEAR((B.diagonal() - C.diagonal().segment(A.rows(), B.rows())).norm(),
               0., 1E-10);
 }
+
+TEST(test_eigen_utils, test_vertical_stack_matrix) {
+  Eigen::MatrixXd A(2, 3);
+  A << 1, 2, 3, 4, 5, 6;
+
+  Eigen::MatrixXd B(3, 3);
+  B << 7, 8, 9, 10, 11, 12, 13, 14, 15;
+
+  std::vector<Eigen::MatrixXd> input = {A, B};
+  const auto C = albatross::vertical_stack(input);
+  Eigen::MatrixXd expected(5, 3);
+  expected << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15;
+  EXPECT_EQ(expected, C);
+}
+
+TEST(test_eigen_utils, test_vertical_stack_vector) {
+  Eigen::VectorXd A(6);
+  A << 1, 2, 3, 4, 5, 6;
+
+  Eigen::VectorXd B(9);
+  B << 7, 8, 9, 10, 11, 12, 13, 14, 15;
+
+  std::vector<Eigen::VectorXd> input = {A, B};
+  const auto C = albatross::vertical_stack(input);
+  Eigen::VectorXd expected(15);
+  expected << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15;
+  EXPECT_EQ(expected, C);
+}

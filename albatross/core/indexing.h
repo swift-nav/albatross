@@ -14,14 +14,10 @@
 #define ALBATROSS_CORE_INDEXING_H
 
 #include "core/dataset.h"
-#include <Eigen/Core>
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <iterator>
-#include <map>
 #include <numeric>
-#include <vector>
 
 namespace albatross {
 
@@ -68,8 +64,7 @@ inline RegressionDataset<FeatureType>
 subset(const std::vector<SizeType> &indices,
        const RegressionDataset<FeatureType> &dataset) {
   return RegressionDataset<FeatureType>(subset(indices, dataset.features),
-                                        subset(indices, dataset.targets),
-                                        dataset.metadata);
+                                        subset(indices, dataset.targets));
 }
 
 /*
