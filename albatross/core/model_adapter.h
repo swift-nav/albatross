@@ -68,7 +68,13 @@ public:
 
   std::string get_name() const override { return sub_model_.get_name(); };
 
-  bool has_been_fit() const override { return sub_model_.has_been_fit(); }
+  bool has_been_fit() const override { return sub_model_.has_been_fit(); };
+
+  Insights get_insights() const override { return sub_model_.get_insights(); };
+
+  void add_insights(const Insights &insights) override {
+    sub_model_.add_insights(insights);
+  }
 
   ParameterStore get_params() const override {
     return map_join(this->params_, sub_model_.get_params());
