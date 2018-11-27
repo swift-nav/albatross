@@ -163,6 +163,7 @@ protected:
     this->insights_["post_ransac_feature_count"] =
         std::to_string(inliers.size());
     this->sub_model_->set_fit(fit);
+    this->sub_model_->add_insights(this->insights_);
   }
 
   JointDistribution

@@ -140,7 +140,13 @@ public:
 
   virtual std::string get_name() const = 0;
 
-  Insights get_insights() const { return insights_; }
+  virtual Insights get_insights() const { return insights_; }
+
+  virtual void add_insights(const Insights &insights){
+    for(const auto &insight : insights){
+     insights_[insight.first] = insight.second;
+    }
+  };
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
   ransac_model(double inlier_threshold, std::size_t min_inliers,
