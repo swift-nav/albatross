@@ -142,9 +142,9 @@ public:
 
   virtual Insights get_insights() const { return insights_; }
 
-  virtual void add_insights(const Insights &insights){
-    for(const auto &insight : insights){
-     insights_[insight.first] = insight.second;
+  virtual void add_insights(const Insights &insights) {
+    for (const auto &insight : insights) {
+      insights_[insight.first] = insight.second;
     }
   };
 
