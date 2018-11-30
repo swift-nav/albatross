@@ -15,15 +15,45 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
+#include <Eigen/Core>
+
+namespace Eigen {
+
+template <typename _Scalar, int SizeAtCompileTime>
+class SerializableDiagonalMatrix;
+}
+
 namespace albatross {
+
+/*
+ * Model
+ */
 template <typename FeatureType> class RegressionModel;
 template <typename FeatureType> class RegressionDataset;
+template <typename FeatureType> class RegressionFold;
 template <typename FeatureType, typename FitType>
 class SerializableRegressionModel;
-template <typename ModelType, typename FeatureType> class GenericRansac;
 
+template <typename FeatureType>
+using RegressionModelCreator =
+    std::function<std::unique_ptr<RegressionModel<FeatureType>>()>;
+
+/*
+ * Distributions
+ */
+template <typename CovarianceType> class Distribution;
+
+using JointDistribution = Distribution<Eigen::MatrixXd>;
+using DiagonalMatrixXd =
+    Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
+using MarginalDistribution = Distribution<DiagonalMatrixXd>;
+
+/*
+ * Cross Validation
+ */
 using FoldIndices = std::vector<std::size_t>;
 using FoldName = std::string;
 using FoldIndexer = std::map<FoldName, FoldIndices>;
@@ -31,6 +61,10 @@ template <typename FeatureType>
 using IndexerFunction =
     std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
 
+/*
+ * RANSAC
+ */
+template <typename ModelType, typename FeatureType> class GenericRansac;
 template <typename FeatureType, typename ModelType>
 std::unique_ptr<GenericRansac<ModelType, FeatureType>>
 make_generic_ransac_model(ModelType *model, double inlier_threshold,
