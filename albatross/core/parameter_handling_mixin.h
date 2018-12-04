@@ -248,7 +248,7 @@ public:
         output.lower_bounds.push_back(lb);
 
         double ub = pair.second.has_prior() ? pair.second.prior->upper_bound()
-                                            : -LARGE_VAL;
+                                            : LARGE_VAL;
         output.upper_bounds.push_back(ub);
       }
     }
