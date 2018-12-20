@@ -25,15 +25,16 @@ template <typename FeatureType> struct FitAndIndices {
   Indexer fit_indices;
 };
 
-// Calculate a numerically stable log determinant of a symmetric matrix using Cholesky
+// Calculate a numerically stable log determinant of a symmetric matrix using
+// Cholesky
 inline double log_determinant_of_symmetric(const Eigen::MatrixXd &M) {
-  double ld = 0;
-  Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
-  auto diagonal = ldlt.vectorD();
+  double log_determinant = 0;
+  const Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
+  const auto diagonal = ldlt.vectorD();
   for (Eigen::Index i = 0; i < M.rows(); ++i) {
-    ld += log(diagonal(i));
+    log_determinant += log(diagonal(i));
   }
-  return ld;
+  return log_determinant;
 }
 
 /*
