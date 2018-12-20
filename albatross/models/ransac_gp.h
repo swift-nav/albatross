@@ -25,6 +25,17 @@ template <typename FeatureType> struct FitAndIndices {
   Indexer fit_indices;
 };
 
+// Calculate a numerically stable log determinant of a symmetric matrix using Cholesky
+inline double log_determinant_of_symmetric(const Eigen::MatrixXd &M) {
+  double ld = 0;
+  Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
+  auto diagonal = ldlt.vectorD();
+  for (Eigen::Index i = 0; i < M.rows(); ++i) {
+    ld += log(diagonal(i));
+  }
+  return ld;
+}
+
 /*
  * Loosely describes the entropy of a model given the
  * covariance matrix.  This can be thought of as describing
@@ -34,7 +45,8 @@ template <typename FeatureType> struct FitAndIndices {
  */
 inline double differential_entropy(const Eigen::MatrixXd &cov) {
   double k = static_cast<double>(cov.rows());
-  return 0.5 * (k * (1 + log(2 * M_PI) + log(cov.determinant())));
+  double ld = log_determinant_of_symmetric(cov);
+  return 0.5 * (k * (1 + log(2 * M_PI) + ld));
 }
 
 template <typename FeatureType>
@@ -82,8 +94,8 @@ get_gp_ransac_model_entropy_metric(const std::vector<FeatureType> &features,
     // Here the metric for two models of the same dimensions will
     // result in preferring one which has more dispersed data.
     auto inlier_cov = symmetric_subset(inliers, cov);
-    double ret = differential_entropy(inlier_cov);
-    return differential_entropy(inlier_cov);
+    double metric_value = differential_entropy(inlier_cov);
+    return metric_value;
   };
 }
 

@@ -112,10 +112,6 @@ ransac(const typename RansacFunctions<FitType>::Fitter &fitter,
         best_inds = ref_inds;
         best_metric = model_metric_value;
       }
-    } else {
-      const auto inlier_inds = concatenate_subset_of_groups(inliers, indexer);
-      ref_inds.insert(ref_inds.end(), inlier_inds.begin(), inlier_inds.end());
-      std::sort(ref_inds.begin(), ref_inds.end());
     }
   }
   assert(best_metric < HUGE_VAL);
