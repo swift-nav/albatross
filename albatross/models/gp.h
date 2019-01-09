@@ -156,7 +156,7 @@ public:
 
   void set_fit(const FitType &fit) {
     this->model_fit_ = fit;
-    this->has_been_fit_ = true;
+    this->has_been_fit_ = (fit.train_features.size() > 0);
   }
 
   /*

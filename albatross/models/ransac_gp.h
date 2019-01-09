@@ -167,16 +167,26 @@ protected:
     const auto inliers = ransac<FitAndIndices<FeatureType>>(
         fitter, inlier_metric, model_metric, map_values(fold_indexer),
         inlier_threshold_, random_sample_size_, min_inliers_, max_iterations_);
+
+    this->insights_["post_ransac_feature_count"] =
+        std::to_string(inliers.size());
+    this->sub_model_->add_insights(this->insights_);
+
+    if (inliers.size() == 0) {
+      this->sub_model_->set_fit(GaussianProcessFit<FeatureType>());
+      this->has_been_fit_ = false;
+      return;
+    }
+
     const auto inlier_features = subset(inliers, features);
     const auto inlier_targets = subset(inliers, targets);
     const auto inlier_cov = symmetric_subset(inliers, cov);
 
     const GaussianProcessFit<FeatureType> fit(inlier_features, inlier_cov,
                                               inlier_targets);
-    this->insights_["post_ransac_feature_count"] =
-        std::to_string(inliers.size());
     this->sub_model_->set_fit(fit);
-    this->sub_model_->add_insights(this->insights_);
+    this->has_been_fit_ = true;
+    return;
   }
 
   JointDistribution
