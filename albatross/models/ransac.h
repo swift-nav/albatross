@@ -114,7 +114,6 @@ ransac(const typename RansacFunctions<FitType>::Fitter &fitter,
       }
     }
   }
-  assert(best_metric < HUGE_VAL);
   return best_inds;
 }
 
@@ -227,8 +226,11 @@ protected:
                random_sample_size_, min_inliers_, max_iterations_);
     this->insights_["post_ransac_feature_count"] =
         std::to_string(inliers.features.size());
-    this->sub_model_->fit(inliers);
     this->sub_model_->add_insights(this->insights_);
+
+    if (inliers.features.size() > 0) {
+      this->sub_model_->fit(inliers);
+    }
   }
 
   JointDistribution
