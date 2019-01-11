@@ -46,6 +46,8 @@ public:
 
 template <typename T> class CallTraceTest {
 public:
+  virtual ~CallTraceTest(){};
+
   virtual int expected_number_of_calls() = 0;
 
   virtual void check_expected_values(const X &x, const Y &y) = 0;

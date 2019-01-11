@@ -68,7 +68,7 @@ MarginalDistribution concatenate_distributions(
 
   Eigen::Index i = 0;
   for (const auto &d : distributions) {
-    for (Eigen::Index j = 0; j < d.size(); ++j) {
+    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d.size()); ++j) {
       mean[i] = d.mean[j];
       variance[i] = d.get_diagonal(j);
       ++i;

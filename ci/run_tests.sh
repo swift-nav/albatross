@@ -29,8 +29,11 @@ ensure_clang_format()
 mkdir -p build
 
 run_tests
-ensure_clang_format
-# Make sure we have the proper header on all files
-bash ./ci/ensure_copyright.sh
+
+if [ -z "$ALBATROSS_ENSURE_PROPER_FORMATING" ]; then
+    ensure_clang_format
+    # Make sure we have the proper header on all files
+    bash ./ci/ensure_copyright.sh
+fi
 
 

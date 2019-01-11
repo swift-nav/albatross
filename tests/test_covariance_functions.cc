@@ -42,8 +42,8 @@ TEST(test_covariance_functions, test_build_covariance) {
 
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
 }
 
 /*
@@ -69,19 +69,19 @@ TYPED_TEST_CASE(TestVectorCovarianceFunctions,
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestVectorCovarianceFunctions, can_set_params) {
@@ -136,15 +136,15 @@ TYPED_TEST_CASE(TestDoubleCovarianceFunctions,
 TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
   auto xs = points_on_a_line(5);
   std::vector<double> features;
-  for (Eigen::Index i = 0; i < xs.size(); ++i) {
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(xs.size()); ++i) {
     features.push_back(xs[i][0]);
   }
 
   Eigen::MatrixXd C = this->covariance_function(features);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {

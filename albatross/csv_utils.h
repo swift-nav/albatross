@@ -148,7 +148,7 @@ template <typename FeatureType, typename DistributionType>
 inline std::map<std::string, std::string>
 to_map(const RegressionDataset<FeatureType> &dataset,
        const Distribution<DistributionType> &predictions, std::size_t i) {
-  assert(dataset.targets.size() == predictions.mean.size());
+  assert(dataset.targets.mean.size() == predictions.mean.size());
   assert(i < dataset.features.size() && i >= 0);
   const auto ei = static_cast<Eigen::Index>(i);
 

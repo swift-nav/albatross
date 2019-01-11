@@ -16,6 +16,7 @@ namespace albatross {
 
 template <typename X> struct SerializableType {
   using RepresentationType = X;
+  virtual ~SerializableType(){};
   virtual RepresentationType create() const {
     RepresentationType obj;
     return obj;
