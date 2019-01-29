@@ -55,6 +55,13 @@ TEST(test_evaluate, test_negative_log_likelihood) {
   const auto dense_diag_nll =
       albatross::negative_log_likelihood(x, dense_diagonal);
   EXPECT_NEAR(diag_nll, dense_diag_nll, 1e-6);
+
+  JointDistribution pred(x, dense_diagonal);
+  MarginalDistribution truth(Eigen::VectorXd::Zero(x.size()));
+
+  const auto dist_nll =
+      evaluation_metrics::negative_log_likelihood(pred, truth);
+  EXPECT_NEAR(dist_nll, dense_diag_nll, 1e-6);
 }
 
 TEST_F(LinearRegressionTest, test_leave_one_out) {
