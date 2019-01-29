@@ -24,22 +24,6 @@
 namespace albatross {
 
 /*
- * This handles the case where the covariance matrix is diagonal, which
- * means makes the computation a lot simpler since all variables are
- * independent.
- */
-static inline double
-negative_log_likelihood(const Eigen::VectorXd &deviation,
-                        const DiagonalMatrixXd &diagonal_covariance) {
-  const auto variances = diagonal_covariance.diagonal();
-  double nll = 0.;
-  for (Eigen::Index i = 0; i < deviation.size(); i++) {
-    nll += negative_log_likelihood(deviation[i], variances[i]);
-  }
-  return nll;
-}
-
-/*
  * Evaluation metrics are best kept in a separate namespace since
  * the compiler can get confused with the use of std::function
  * (which is used in the definition of an EvaluationMetric) and

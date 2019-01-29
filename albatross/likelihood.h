@@ -75,12 +75,15 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
 
 /*
  * This handles the case where the covariance matrix is diagonal, which
- * means makes the computation a lot simpler since all variables are
+ * makes the computation a lot simpler since all variables are
  * independent.
  */
+template <typename _Scalar, int SizeAtCompileTime>
 static inline double
 negative_log_likelihood(const Eigen::VectorXd &deviation,
-                        const DiagonalMatrixXd &diagonal_covariance) {
+                        const Eigen::DiagonalMatrix<_Scalar, SizeAtCompileTime>
+                            &diagonal_covariance) {
+  assert(deviation.size() == diagonal_covariance.diagonal().size());
   const auto variances = diagonal_covariance.diagonal();
   double nll = 0.;
   for (Eigen::Index i = 0; i < deviation.size(); i++) {
