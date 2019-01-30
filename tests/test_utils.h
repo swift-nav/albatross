@@ -63,7 +63,7 @@ public:
 
   std::string get_name() const { return "identity_scaling"; }
 
-  double call_impl_(const double &x) const { return 1.; }
+  double call_impl_(const double &) const { return 1.; }
 };
 
 /*

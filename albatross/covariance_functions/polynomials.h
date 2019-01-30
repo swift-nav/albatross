@@ -42,7 +42,7 @@ public:
 
   template <typename X>
   std::vector<ConstantTerm>
-  get_state_space_representation(std::vector<X> &x) const {
+  get_state_space_representation(std::vector<X> &) const {
     std::vector<ConstantTerm> terms = {ConstantTerm()};
     return terms;
   }

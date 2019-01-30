@@ -118,7 +118,7 @@ static inline MarginalDistribution concatenate_fold_predictions(
   for (const auto &pair : predictions) {
     const auto pred = pair.second;
     const auto fold_indices = fold_indexer.at(pair.first);
-    assert(pred.mean.size() == fold_indices.size());
+    assert(pred.size() == fold_indices.size());
     for (Eigen::Index i = 0; i < pred.mean.size(); i++) {
       // The test indices map each element in the current fold back
       // to the original order of the parent dataset.

@@ -43,13 +43,13 @@ public:
   }
   bool operator!=(const Prior &other) { return !((*this) == other); }
 
-  template <typename Archive> void serialize(Archive &archive) {}
+  template <typename Archive> void serialize(Archive &) {}
 };
 
 class UninformativePrior : public Prior {
 public:
   std::string get_name() const override { return "uninformative"; };
-  double log_pdf(double x) const override { return 0.; }
+  double log_pdf(double) const override { return 0.; }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::base_class<Prior>(this));
@@ -59,7 +59,7 @@ public:
 class FixedPrior : public Prior {
 public:
   std::string get_name() const override { return "fixed"; };
-  double log_pdf(double x) const override { return 0.; }
+  double log_pdf(double) const override { return 0.; }
 
   bool is_fixed() const override { return true; }
 
@@ -108,7 +108,7 @@ public:
   double lower_bound() const override { return lower_; }
   double upper_bound() const override { return upper_; }
 
-  double log_pdf(double x) const override { return -log(upper_ - lower_); }
+  double log_pdf(double) const override { return -log(upper_ - lower_); }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::base_class<Prior>(this), lower_, upper_);

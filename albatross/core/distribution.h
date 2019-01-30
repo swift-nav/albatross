@@ -45,7 +45,7 @@ template <typename CovarianceType> struct Distribution {
   void assert_valid() const {
     if (covariance.size() > 0) {
       assert(covariance.rows() == covariance.cols());
-      assert(mean.size() == static_cast<std::size_t>(covariance.rows()));
+      assert(mean.size() == covariance.rows());
     }
   }
 

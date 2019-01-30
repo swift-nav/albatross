@@ -109,7 +109,7 @@ public:
                 (!has_defined_call_impl<ScalingFunction, X &>::value &&
                  has_defined_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double call_impl_(const X &, const Y &y) const {
     return this->scaling_function_.call_impl_(y);
   }
 
@@ -118,7 +118,7 @@ public:
                 (has_defined_call_impl<ScalingFunction, X &>::value &&
                  !has_defined_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double call_impl_(const X &x, const Y &) const {
     return this->scaling_function_.call_impl_(x);
   }
 

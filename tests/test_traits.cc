@@ -20,16 +20,16 @@ struct Y {};
 
 class HasPublicCallOperator {
 public:
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallOperator {
 protected:
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallOperator {
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallOperator {};
@@ -43,16 +43,16 @@ TEST(test_traits, test_has_call_operator) {
 
 class HasPublicCallImpl {
 public:
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallImpl {
 protected:
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallImpl {
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallImpl {};

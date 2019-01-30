@@ -24,23 +24,23 @@ struct Y {};
 
 class DefinedForX : public CovarianceFunction<DefinedForX> {
 public:
-  double call_impl_(const X &x, const X &y) const { return 1.; }
+  double call_impl_(const X &, const X &) const { return 1.; }
   std::string name_ = "defined_for_x";
 };
 
 class DefinedForY : public CovarianceFunction<DefinedForY> {
 public:
-  double call_impl_(const Y &x, const Y &y) const { return 3.; }
+  double call_impl_(const Y &, const Y &) const { return 3.; }
   std::string name_ = "defined_for_y";
 };
 
 class DefinedForXY : public CovarianceFunction<DefinedForXY> {
 public:
-  double call_impl_(const X &x, const X &y) const { return 5.; }
+  double call_impl_(const X &, const X &) const { return 5.; }
 
-  double call_impl_(const X &x, const Y &y) const { return 7.; }
+  double call_impl_(const X &, const Y &) const { return 7.; }
 
-  double call_impl_(const Y &x, const Y &y) const { return 9.; }
+  double call_impl_(const Y &, const Y &) const { return 9.; }
   std::string name_ = "defined_for_xy";
 };
 
