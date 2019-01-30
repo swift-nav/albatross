@@ -24,8 +24,6 @@ namespace albatross {
 inline std::vector<std::size_t>
 randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
                             std::default_random_engine &gen) {
-  assert(n >= 0);
-
   std::size_t n_choices = high - low + 1;
   if (n > n_choices) {
     std::cout << "ERROR: n (" << n << ") is larger than n_choices ("
