@@ -62,12 +62,13 @@ public:
 template <typename ScalingFunction>
 class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
 public:
-  ScalingTerm() : scaling_function_(), name_() {
+  ScalingTerm() : name_(), scaling_function_() {
     name_ = scaling_function_.get_name();
   };
 
-  ScalingTerm(const ScalingFunction &func)
-      : scaling_function_(func), name_(scaling_function_.get_name()){};
+  ScalingTerm(const ScalingFunction &func) : name_(), scaling_function_(func) {
+    name_ = scaling_function_.get_name();
+  };
 
   void set_params(const ParameterStore &params) {
     scaling_function_.set_params(params);
