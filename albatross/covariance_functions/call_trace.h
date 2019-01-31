@@ -199,7 +199,7 @@ public:
                 !has_defined_call_impl<ProductOfCovarianceFunctions<LHS, RHS>,
                                        X &, Y &>::value,
                 int>::type = 0>
-  std::string eval(const X &x, const Y &y) const {
+  std::string eval(const X &, const Y &) const {
     return "UNDEFINED";
   }
 

@@ -72,7 +72,7 @@ public:
   template <class Archive>
   typename std::enable_if<!valid_output_serializer<ModelFit, Archive>::value,
                           void>::type
-  save(Archive &archive) const {
+  save(Archive &) const {
     static_assert(delay_static_assert<Archive>::value,
                   "SerializableRegressionModel requires a ModelFit type which "
                   "is serializable.");
@@ -81,7 +81,7 @@ public:
   template <class Archive>
   typename std::enable_if<!valid_input_serializer<ModelFit, Archive>::value,
                           void>::type
-  load(Archive &archive) const {
+  load(Archive &) const {
     static_assert(delay_static_assert<Archive>::value,
                   "SerializableRegressionModel requires a ModelFit type which "
                   "is serializable.");

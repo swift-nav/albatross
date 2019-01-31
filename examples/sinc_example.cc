@@ -62,7 +62,6 @@ int main(int argc, char *argv[]) {
   std::cout << "Defining the model." << std::endl;
   using Noise = IndependentNoise<double>;
   using SquaredExp = SquaredExponential<EuclideanDistance>;
-  using PolynomialTerm = Polynomial<1>;
 
   Polynomial<1> polynomial(100.);
   Noise noise(meas_noise);

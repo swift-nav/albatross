@@ -69,9 +69,8 @@ TYPED_TEST_CASE(TestVectorCovarianceFunctions,
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
   const auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  const auto x_size = static_cast<Eigen::Index>(xs.size());
-  assert(C.rows() == x_size);
-  assert(C.cols() == x_size);
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
   C.inverse();
 }
@@ -79,9 +78,8 @@ TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
 TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  const auto x_size = static_cast<Eigen::Index>(xs.size());
-  assert(C.rows() == x_size);
-  assert(C.cols() == x_size);
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
   C.inverse();
 }
