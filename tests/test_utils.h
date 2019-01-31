@@ -246,9 +246,8 @@ public:
       : AdaptedRegressionModel<AdaptedFeature, SubModelType>(model){};
   virtual ~AdaptedExample(){};
 
-  virtual const double
-  convert_feature(const AdaptedFeature &parent_feature) const {
-    return parent_feature.value;
+  double convert_feature(const AdaptedFeature &parent_feature) const override {
+    return double(parent_feature.value);
   }
 };
 

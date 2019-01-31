@@ -63,7 +63,7 @@ public:
 
   // This function will often be required by AdaptedModels
   // The default implementation is a null operation.
-  virtual const SubFeature
+  virtual SubFeature
   convert_feature(const FeatureType &parent_feature) const = 0;
 
   std::string get_name() const override { return sub_model_.get_name(); };

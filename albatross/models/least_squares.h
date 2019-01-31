@@ -112,7 +112,7 @@ public:
   LinearRegression(){};
   std::string get_name() const override { return "linear_regression"; };
 
-  const Eigen::VectorXd convert_feature(const double &x) const override {
+  Eigen::VectorXd convert_feature(const double &x) const override {
     Eigen::VectorXd converted(2);
     converted << 1., x;
     return converted;
