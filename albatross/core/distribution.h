@@ -45,7 +45,7 @@ template <typename CovarianceType> struct Distribution {
   void assert_valid() const {
     if (covariance.size() > 0) {
       assert(covariance.rows() == covariance.cols());
-      assert(mean.size() == static_cast<std::size_t>(covariance.rows()));
+      assert(mean.size() == covariance.rows());
     }
   }
 
@@ -82,7 +82,7 @@ template <typename CovarianceType> struct Distribution {
   template <class Archive>
   typename std::enable_if<
       !valid_in_out_serializer<CovarianceType, Archive>::value, void>::type
-  save(Archive &archive) {
+  save(Archive &) {
     static_assert(delay_static_assert<Archive>::value,
                   "In order to serialize a Distribution the corresponding "
                   "CovarianceType must be serializable.");

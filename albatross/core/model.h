@@ -191,7 +191,7 @@ protected:
 
   JointDistribution
   predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<JointDistribution> &&identity) const {
+          detail::PredictTypeIdentity<JointDistribution> &&) const {
     assert(has_been_fit());
     JointDistribution preds = predict_(features);
     assert(static_cast<std::size_t>(preds.mean.size()) == features.size());
@@ -200,7 +200,7 @@ protected:
 
   MarginalDistribution
   predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<MarginalDistribution> &&identity) const {
+          detail::PredictTypeIdentity<MarginalDistribution> &&) const {
     assert(has_been_fit());
     MarginalDistribution preds = predict_marginal_(features);
     assert(static_cast<std::size_t>(preds.mean.size()) == features.size());
@@ -209,7 +209,7 @@ protected:
 
   Eigen::VectorXd
   predict(const std::vector<FeatureType> &features,
-          detail::PredictTypeIdentity<Eigen::VectorXd> &&identity) const {
+          detail::PredictTypeIdentity<Eigen::VectorXd> &&) const {
     assert(has_been_fit());
     Eigen::VectorXd preds = predict_mean_(features);
     assert(static_cast<std::size_t>(preds.size()) == features.size());
@@ -228,7 +228,7 @@ protected:
   virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<JointDistribution> &identity) {
+      const detail::PredictTypeIdentity<JointDistribution> &) {
     const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
     return cross_validated_predictions<JointDistribution>(folds);
   }
@@ -236,7 +236,7 @@ protected:
   virtual std::vector<MarginalDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<MarginalDistribution> &identity) {
+      const detail::PredictTypeIdentity<MarginalDistribution> &) {
     const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
     return cross_validated_predictions<MarginalDistribution>(folds);
   }
@@ -244,7 +244,7 @@ protected:
   virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) {
+      const detail::PredictTypeIdentity<PredictMeanOnly> &) {
     const auto folds = folds_from_fold_indexer(dataset, fold_indexer);
     return cross_validated_predictions<PredictMeanOnly>(folds);
   }

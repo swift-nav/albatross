@@ -216,7 +216,7 @@ protected:
   virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<JointDistribution> &identity) override {
+      const detail::PredictTypeIdentity<JointDistribution> &) override {
 
     this->fit(dataset);
     const FitType model_fit = this->get_fit();
@@ -236,8 +236,7 @@ protected:
   virtual std::vector<MarginalDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<MarginalDistribution> &identity)
-      override {
+      const detail::PredictTypeIdentity<MarginalDistribution> &) override {
     this->fit(dataset);
     const FitType model_fit = this->get_fit();
 
@@ -259,7 +258,7 @@ protected:
   virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) override {
+      const detail::PredictTypeIdentity<PredictMeanOnly> &) override {
     this->fit(dataset);
     const FitType model_fit = this->get_fit();
 

@@ -79,7 +79,7 @@ template <typename FeatureType> struct RegressionDataset {
   template <class Archive>
   typename std::enable_if<!valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
-  serialize(Archive &archive) {
+  serialize(Archive &) {
     static_assert(delay_static_assert<Archive>::value,
                   "In order to serialize a RegressionDataset the corresponding "
                   "FeatureType must be serializable.");

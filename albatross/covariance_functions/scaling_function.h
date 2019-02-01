@@ -62,12 +62,13 @@ public:
 template <typename ScalingFunction>
 class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
 public:
-  ScalingTerm() : scaling_function_(), name_() {
+  ScalingTerm() : name_(), scaling_function_() {
     name_ = scaling_function_.get_name();
   };
 
-  ScalingTerm(const ScalingFunction &func)
-      : scaling_function_(func), name_(scaling_function_.get_name()){};
+  ScalingTerm(const ScalingFunction &func) : name_(), scaling_function_(func) {
+    name_ = scaling_function_.get_name();
+  };
 
   void set_params(const ParameterStore &params) {
     scaling_function_.set_params(params);
@@ -108,7 +109,7 @@ public:
                 (!has_defined_call_impl<ScalingFunction, X &>::value &&
                  has_defined_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double call_impl_(const X &, const Y &y) const {
     return this->scaling_function_.call_impl_(y);
   }
 
@@ -117,7 +118,7 @@ public:
                 (has_defined_call_impl<ScalingFunction, X &>::value &&
                  !has_defined_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double call_impl_(const X &x, const Y &) const {
     return this->scaling_function_.call_impl_(x);
   }
 

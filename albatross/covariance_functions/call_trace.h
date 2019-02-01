@@ -123,7 +123,7 @@ public:
                 (!has_defined_call_impl<CovFunc, Y &, X &>::value &&
                  !has_defined_call_impl<CovFunc, X &, Y &>::value),
                 int>::type = 0>
-  std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
+  std::vector<CallAndValue> get_trace(const X &, const Y &) const {
     return {{cov_func_.get_name(), "UNDEFINED"}};
   }
 
@@ -153,7 +153,7 @@ public:
                 !has_defined_call_impl<SumOfCovarianceFunctions<LHS, RHS>, X &,
                                        Y &>::value,
                 int>::type = 0>
-  std::string eval(const X &x, const Y &y) const {
+  std::string eval(const X &, const Y &) const {
     return "UNDEFINED";
   }
 
@@ -199,7 +199,7 @@ public:
                 !has_defined_call_impl<ProductOfCovarianceFunctions<LHS, RHS>,
                                        X &, Y &>::value,
                 int>::type = 0>
-  std::string eval(const X &x, const Y &y) const {
+  std::string eval(const X &, const Y &) const {
     return "UNDEFINED";
   }
 

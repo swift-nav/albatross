@@ -69,7 +69,7 @@ get_gp_ransac_fitter(const std::vector<FeatureType> &features,
 
 template <typename FeatureType>
 inline typename RansacFunctions<FitAndIndices<FeatureType>>::InlierMetric
-get_gp_ransac_inlier_metric(const std::vector<FeatureType> &features,
+get_gp_ransac_inlier_metric(const std::vector<FeatureType> &,
                             const MarginalDistribution &targets,
                             const Eigen::MatrixXd &cov,
                             const EvaluationMetric<JointDistribution> &metric) {
@@ -88,8 +88,8 @@ get_gp_ransac_inlier_metric(const std::vector<FeatureType> &features,
 
 template <typename FeatureType>
 inline typename RansacFunctions<FitAndIndices<FeatureType>>::ModelMetric
-get_gp_ransac_model_entropy_metric(const std::vector<FeatureType> &features,
-                                   const MarginalDistribution &targets,
+get_gp_ransac_model_entropy_metric(const std::vector<FeatureType> &,
+                                   const MarginalDistribution &,
                                    const Eigen::MatrixXd &cov) {
   return [&](const Indexer &inliers) {
     // Here the metric for two models of the same dimensions will
@@ -140,9 +140,7 @@ public:
   }
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
-  ransac_model(double inlier_threshold, std::size_t min_inliers,
-               std::size_t random_sample_size,
-               std::size_t max_iterations) override {
+  ransac_model(double, std::size_t, std::size_t, std::size_t) override {
     assert(false); // "cant ransac a ransac model!"
     return nullptr;
   }

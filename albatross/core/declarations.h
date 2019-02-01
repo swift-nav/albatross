@@ -32,8 +32,8 @@ namespace albatross {
  * Model
  */
 template <typename FeatureType> class RegressionModel;
-template <typename FeatureType> class RegressionDataset;
-template <typename FeatureType> class RegressionFold;
+template <typename FeatureType> struct RegressionDataset;
+template <typename FeatureType> struct RegressionFold;
 template <typename FeatureType, typename FitType>
 class SerializableRegressionModel;
 
@@ -44,7 +44,7 @@ using RegressionModelCreator =
 /*
  * Distributions
  */
-template <typename CovarianceType> class Distribution;
+template <typename CovarianceType> struct Distribution;
 
 using JointDistribution = Distribution<Eigen::MatrixXd>;
 using DiagonalMatrixXd =

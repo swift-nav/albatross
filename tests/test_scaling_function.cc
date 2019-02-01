@@ -18,7 +18,7 @@
 namespace albatross {
 
 /*
- * This test data descibes the following situation.
+ * This test data describes the following situation.
  *
  * Assume you have some thin translucent sheet which attenuates
  * the intensity of light passing through it but with an unknown

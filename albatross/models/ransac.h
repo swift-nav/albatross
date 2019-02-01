@@ -209,9 +209,7 @@ public:
   }
 
   virtual std::unique_ptr<RegressionModel<FeatureType>>
-  ransac_model(double inlier_threshold, std::size_t min_inliers,
-               std::size_t random_sample_size,
-               std::size_t max_iterations) override {
+  ransac_model(double, std::size_t, std::size_t, std::size_t) override {
     assert(false); // "cant ransac a ransac model!"
     return nullptr;
   }

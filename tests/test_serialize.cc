@@ -317,7 +317,7 @@ public:
         std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
     const auto keys = map_keys(gp->get_params());
     gp->set_param(keys[0], log(2.));
-    return std::move(gp);
+    return gp;
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -338,7 +338,7 @@ public:
     const auto keys = map_keys(gp->get_params());
     gp->set_param(keys[0], log(2.));
     gp->fit(dataset);
-    return std::move(gp);
+    return gp;
   }
 
   bool are_equal(const RepresentationType &lhs,

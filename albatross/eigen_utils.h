@@ -102,7 +102,6 @@ inline auto vertical_stack(
   using MatrixType = Eigen::Matrix<_Scalar, Eigen::Dynamic, _Cols>;
   MatrixType output = MatrixType::Zero(rows, cols);
   Eigen::Index row = 0;
-  Eigen::Index col = 0;
   for (const auto &this_block : blocks) {
     output.block(row, 0, this_block.rows(), cols) = this_block;
     row += this_block.rows();

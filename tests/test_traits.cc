@@ -20,16 +20,16 @@ struct Y {};
 
 class HasPublicCallOperator {
 public:
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallOperator {
 protected:
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallOperator {
-  double operator()(const X &x, const Y &y) const { return 1.; };
+  double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallOperator {};
@@ -43,16 +43,16 @@ TEST(test_traits, test_has_call_operator) {
 
 class HasPublicCallImpl {
 public:
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallImpl {
 protected:
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallImpl {
-  double call_impl_(const X &x, const Y &y) const { return 1.; };
+  double call_impl_(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallImpl {};
@@ -66,24 +66,24 @@ TEST(test_traits, test_has_any_call_impl_) {
 
 class ValidInOutSerializer {
 public:
-  template <typename Archive> void serialize(Archive &archive){};
+  template <typename Archive> void serialize(Archive &){};
 };
 
 class ValidSaveLoadSerializer {
 public:
-  template <typename Archive> void save(Archive &archive) const {};
+  template <typename Archive> void save(Archive &) const {};
 
-  template <typename Archive> void load(Archive &archive){};
+  template <typename Archive> void load(Archive &){};
 };
 
 class ValidInSerializer {
 public:
-  template <typename Archive> void load(Archive &archive){};
+  template <typename Archive> void load(Archive &){};
 };
 
 class ValidOutSerializer {
 public:
-  template <typename Archive> void save(Archive &archive) const {};
+  template <typename Archive> void save(Archive &) const {};
 };
 
 class InValidInOutSerializer {};

@@ -63,7 +63,7 @@ public:
 
   // This function will often be required by AdaptedModels
   // The default implementation is a null operation.
-  virtual const SubFeature
+  virtual SubFeature
   convert_feature(const FeatureType &parent_feature) const = 0;
 
   std::string get_name() const override { return sub_model_.get_name(); };
@@ -112,7 +112,7 @@ public:
   virtual std::vector<JointDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<JointDistribution> &identity) override {
+      const detail::PredictTypeIdentity<JointDistribution> &) override {
     const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
     return sub_model_.template cross_validated_predictions<JointDistribution>(
         converted, fold_indexer);
@@ -121,8 +121,7 @@ public:
   virtual std::vector<MarginalDistribution> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<MarginalDistribution> &identity)
-      override {
+      const detail::PredictTypeIdentity<MarginalDistribution> &) override {
     const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
     return sub_model_
         .template cross_validated_predictions<MarginalDistribution>(
@@ -132,7 +131,7 @@ public:
   virtual std::vector<Eigen::VectorXd> cross_validated_predictions_(
       const RegressionDataset<FeatureType> &dataset,
       const FoldIndexer &fold_indexer,
-      const detail::PredictTypeIdentity<PredictMeanOnly> &identity) override {
+      const detail::PredictTypeIdentity<PredictMeanOnly> &) override {
     const RegressionDataset<SubFeature> converted = convert_dataset(dataset);
     return sub_model_.template cross_validated_predictions<Eigen::VectorXd>(
         converted, fold_indexer);
@@ -180,8 +179,8 @@ protected:
    * serializable_fit_ method.
    */
   fit_type_if_serializable<RegressionModelImplementation>
-  serializable_fit_(const std::vector<FeatureType> &features,
-                    const MarginalDistribution &targets) const override {
+  serializable_fit_(const std::vector<FeatureType> &,
+                    const MarginalDistribution &) const override {
     assert(false &&
            "serializable_fit_ for an adapted model should never be called");
     typename fit_type_or_void<RegressionModelImplementation>::type dummy;

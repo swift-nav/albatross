@@ -1,8 +1,6 @@
 
 add_definitions(-DCSV_IO_NO_THREAD)
 
-set(CMAKE_CXX_FLAGS "-Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wuninitialized -Wpointer-arith -Wcast-align -Wformat=2 -Wredundant-decls ${CMAKE_CXX_FLAGS}")
-
 add_executable(albatross_unit_tests
 EXCLUDE_FROM_ALL
 test_call_trace.cc

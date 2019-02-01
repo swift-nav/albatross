@@ -210,7 +210,7 @@ struct DummyType {};
 struct BaseWithPublicCallImpl {
   // This method will be accessible in `MultiInherit` only if
   // the class U doesn't contain any methods with the same name.
-  double call_impl_(DummyType a) { return -1.; }
+  double call_impl_(DummyType) { return -1.; }
 };
 
 template <typename U>

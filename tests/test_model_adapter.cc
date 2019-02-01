@@ -31,7 +31,7 @@ public:
 
   std::string get_name() const override { return "test_adapted"; };
 
-  const Eigen::VectorXd convert_feature(const double &x) const override {
+  Eigen::VectorXd convert_feature(const double &x) const override {
     Eigen::VectorXd converted(2);
     converted << 1., (x - this->get_param_value("center"));
     return converted;

@@ -42,8 +42,8 @@ TEST(test_covariance_functions, test_build_covariance) {
 
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
 }
 
 /*
@@ -67,21 +67,21 @@ TYPED_TEST_CASE(TestVectorCovarianceFunctions,
                 VectorCompatibleCovarianceFunctions);
 
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
-  auto xs = points_on_a_line(5);
+  const auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestVectorCovarianceFunctions, can_set_params) {
@@ -106,7 +106,7 @@ public:
 
   ALBATROSS_DECLARE_PARAMS(foo, bar)
 
-  double call_impl_(const double &x, const double &y) const {
+  double call_impl_(const double &, const double &) const {
     return foo.value + bar.value;
   }
 
@@ -136,15 +136,16 @@ TYPED_TEST_CASE(TestDoubleCovarianceFunctions,
 TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
   auto xs = points_on_a_line(5);
   std::vector<double> features;
-  for (Eigen::Index i = 0; i < xs.size(); ++i) {
+  const auto x_size = static_cast<Eigen::Index>(xs.size());
+  for (Eigen::Index i = 0; i < x_size; ++i) {
     features.push_back(xs[i][0]);
   }
 
   Eigen::MatrixXd C = this->covariance_function(features);
-  assert(C.rows() == xs.size());
-  assert(C.cols() == xs.size());
+  assert(C.rows() == x_size);
+  assert(C.cols() == x_size);
   // Make sure C is positive definite.
-  auto inverse = C.inverse();
+  C.inverse();
 }
 
 TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {

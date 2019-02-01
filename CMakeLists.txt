@@ -22,9 +22,9 @@ include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/eigen/")
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/cereal/include")
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -fexceptions -frtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -fexceptions -frtti")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wpointer-arith -Wcast-align -Wformat=2 -Wredundant-decls ${CMAKE_CXX_FLAGS}")
 set("LOG_LEVEL=8")
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wuninitialized -Wpointer-arith -Wcast-align -Wformat=2 -Wredundant-decls ${CMAKE_CXX_FLAGS}")
 
 include_directories("${PROJECT_SOURCE_DIR}/albatross")
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
