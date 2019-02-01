@@ -336,7 +336,11 @@ public:
                                      has_call_operator<RHS, X &, Y &>::value),
                                     int>::type = 0>
   double call_impl_(const X &x, const Y &y) const {
-    return this->lhs_(x, y) * this->rhs_(x, y);
+    double output = this->lhs_(x, y);
+    if (output != 0.) {
+      output *= this->rhs_(x, y);
+    }
+    return output;
   }
 
   /*
