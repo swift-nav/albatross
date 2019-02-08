@@ -118,7 +118,7 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                has_defined_call_impl<Derived, X &, Y &>::value, int>::type = 0>
+                has_valid_call_impl<Derived, X &, Y &>::value, int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
     return derived().call_impl_(x, y);
   }
@@ -127,11 +127,11 @@ public:
    * Use the symmetric property of covariance functions to find C(X, Y)
    * when only C(Y, X) is defined.
    */
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (has_defined_call_impl<Derived, Y &, X &>::value &&
-                 !has_defined_call_impl<Derived, X &, Y &>::value),
-                int>::type = 0>
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_valid_call_impl<Derived, Y &, X &>::value &&
+                               !has_valid_call_impl<Derived, X &, Y &>::value),
+                              int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
     return derived().call_impl_(y, x);
   }
@@ -141,7 +141,7 @@ public:
    */
   template <typename X,
             typename std::enable_if<
-                has_defined_call_impl<Derived, X &, X &>::value, int>::type = 0>
+                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
   double operator()(const X &x) const {
     return derived().call_impl_(x, x);
   }
@@ -151,7 +151,7 @@ public:
    */
   template <typename X,
             typename std::enable_if<
-                has_defined_call_impl<Derived, X &, X &>::value, int>::type = 0>
+                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
     int n = static_cast<int>(xs.size());
     Eigen::MatrixXd C(n, n);
@@ -172,10 +172,9 @@ public:
   /*
    * Cross covariance between two vectors of (possibly) different types.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_defined_call_impl<Derived, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<Derived, X &, Y &>::value), int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              const std::vector<Y> &ys) const {
     int m = static_cast<int>(xs.size());
@@ -197,11 +196,11 @@ public:
   /*
    * Use the symmetric property to compute the cross covariance.
    */
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (has_defined_call_impl<Derived, Y &, X &>::value &&
-                 !has_defined_call_impl<Derived, X &, Y &>::value),
-                int>::type = 0>
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_valid_call_impl<Derived, Y &, X &>::value &&
+                               !has_valid_call_impl<Derived, X &, Y &>::value),
+                              int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              const std::vector<Y> &ys) const {
     return this->operator()(ys, xs).transpose();
@@ -212,15 +211,15 @@ public:
    * with arguments that aren't supported.
    */
   template <typename X, typename std::enable_if<
-                            !has_defined_call_impl<Derived, X &, X &>::value,
+                            !has_valid_call_impl<Derived, X &, X &>::value,
                             int>::type = 0>
   double operator()(const X &x) const = delete; // see below for help debugging.
 
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (!has_defined_call_impl<Derived, X &, Y &>::value &&
-                 !has_defined_call_impl<Derived, Y &, X &>::value),
-                int>::type = 0>
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(!has_valid_call_impl<Derived, X &, Y &>::value &&
+                               !has_valid_call_impl<Derived, Y &, X &>::value),
+                              int>::type = 0>
   double operator()(const X &x,
                     const Y &y) const = delete; // see below for help debugging.
                                                 /*

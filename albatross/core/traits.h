@@ -29,15 +29,31 @@ namespace albatross {
 template <class T> struct delay_static_assert : std::false_type {};
 
 /*
+ * In CovarianceFunction we frequently inspect for definitions of
+ * call_impl_ which MUST be defined for const references to objects
+ * (so that repeated covariance matrix evaluations return the same thing
+ *  and so the computations are not repeatedly copying.)
+ * This type conversion utility will turn a type `T` into `const T&`
+ */
+template <class T> struct call_impl_arg_type {
+  typedef
+      typename std::add_lvalue_reference<typename std::add_const<T>::type>::type
+          type;
+};
+
+/*
  * This determines whether or not a class has a method defined for,
  *   `operator() (X x, Y y, Z z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
 template <typename T, typename... Args> class has_call_operator {
-  template <typename C,
-            typename = decltype(std::declval<C>()(std::declval<Args>()...))>
-  static std::true_type test(int);
-  template <typename C> static std::false_type test(...);
+
+  template <typename C>
+  static constexpr auto test(C *) -> typename std::is_same<
+      decltype(std::declval<C>()(
+          std::declval<typename call_impl_arg_type<Args>::type>()...)),
+      double>::type;
+  template <typename> static constexpr std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
@@ -45,14 +61,17 @@ public:
 
 /*
  * This determines whether or not a class has a method defined for,
- *   `call_impl_(X x, Y y, Z z, ...)`
+ *   `double call_impl_(const X &x, const Y &y, const Z &z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
-template <typename T, typename... Args> class has_defined_call_impl {
-  template <typename C, typename = decltype(std::declval<C>().call_impl_(
-                            std::declval<Args>()...))>
-  static std::true_type test(int);
-  template <typename C> static std::false_type test(...);
+template <typename T, typename... Args> class has_valid_call_impl {
+
+  template <typename C>
+  static constexpr auto test(C *) -> typename std::is_same<
+      decltype(std::declval<const C>().call_impl_(
+          std::declval<typename call_impl_arg_type<Args>::type>()...)),
+      double>::type;
+  template <typename> static constexpr std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
@@ -210,7 +229,7 @@ struct DummyType {};
 struct BaseWithPublicCallImpl {
   // This method will be accessible in `MultiInherit` only if
   // the class U doesn't contain any methods with the same name.
-  double call_impl_(DummyType) { return -1.; }
+  double call_impl_(const DummyType &) const { return -1.; }
 };
 
 template <typename U>
@@ -220,7 +239,7 @@ struct MultiInherit : public U, public BaseWithPublicCallImpl {};
 template <typename U> class has_any_call_impl {
   template <typename T>
   static typename std::enable_if<
-      has_defined_call_impl<detail::MultiInherit<T>, detail::DummyType>::value,
+      has_valid_call_impl<detail::MultiInherit<T>, detail::DummyType>::value,
       std::false_type>::type
   test(int);
   template <typename T> static std::true_type test(...);
