@@ -7,6 +7,7 @@ test_call_trace.cc
 test_concatenate.cc
 test_core_distribution.cc
 test_core_model.cc
+test_covariance_function.cc
 test_covariance_functions.cc
 test_csv_utils.cc
 test_distance_metrics.cc

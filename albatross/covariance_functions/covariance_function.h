@@ -142,6 +142,16 @@ public:
   template <typename X,
             typename std::enable_if<
                 has_defined_call_impl<Derived, X &, X &>::value, int>::type = 0>
+  double operator()(const X &x) const {
+    return derived().call_impl_(x, x);
+  }
+
+  /*
+   * Covariance between each element and every other in a vector.
+   */
+  template <typename X,
+            typename std::enable_if<
+                has_defined_call_impl<Derived, X &, X &>::value, int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
     int n = static_cast<int>(xs.size());
     Eigen::MatrixXd C(n, n);
@@ -198,15 +208,21 @@ public:
   }
 
   /*
-   * A stub to catch the case where a covariance function was called
+   * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
    */
+  template <typename X, typename std::enable_if<
+                            !has_defined_call_impl<Derived, X &, X &>::value,
+                            int>::type = 0>
+  double operator()(const X &x) const = delete; // see below for help debugging.
+
   template <typename X, typename Y,
             typename std::enable_if<
                 (!has_defined_call_impl<Derived, X &, Y &>::value &&
                  !has_defined_call_impl<Derived, Y &, X &>::value),
                 int>::type = 0>
-  double operator()(X &x, Y &y) const = delete; // see below for help debugging.
+  double operator()(const X &x,
+                    const Y &y) const = delete; // see below for help debugging.
                                                 /*
                                                  * If you encounter a deleted function error here ^ it implies that you've
                                                  * attempted to call a covariance function with arguments X, Y that are

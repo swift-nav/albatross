@@ -17,6 +17,7 @@ namespace albatross {
 
 struct X {};
 struct Y {};
+struct Z {};
 
 class HasPublicCallOperator {
 public:
@@ -62,6 +63,26 @@ TEST(test_traits, test_has_any_call_impl_) {
   EXPECT_TRUE(bool(has_any_call_impl<HasProtectedCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasPrivateCallImpl>::value));
   EXPECT_FALSE(bool(has_any_call_impl<HasNoCallImpl>::value));
+}
+
+class HasMultiplePublicCallImpl {
+public:
+  double call_impl_(const X &, const Y &) const { return 1.; };
+
+  double call_impl_(const X &, const X &) const { return 1.; };
+
+  double call_impl_(const Y &, const Y &) const { return 1.; };
+};
+
+TEST(test_traits, test_has_defined_call_impl_) {
+  EXPECT_TRUE(bool(has_defined_call_impl<HasPublicCallImpl, X, Y>::value));
+  EXPECT_FALSE(bool(has_defined_call_impl<HasPublicCallImpl, Y, X>::value));
+  EXPECT_TRUE(
+      bool(has_defined_call_impl<HasMultiplePublicCallImpl, X, X>::value));
+  EXPECT_TRUE(
+      bool(has_defined_call_impl<HasMultiplePublicCallImpl, Y, Y>::value));
+  EXPECT_FALSE(
+      bool(has_defined_call_impl<HasMultiplePublicCallImpl, X, Z>::value));
 }
 
 class ValidInOutSerializer {
