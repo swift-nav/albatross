@@ -48,12 +48,11 @@ template <class T> struct call_impl_arg_type {
  */
 template <typename T, typename... Args> class has_call_operator {
 
-  template <typename C>
-  static constexpr auto test(C *) -> typename std::is_same<
-      decltype(std::declval<C>()(
-          std::declval<typename call_impl_arg_type<Args>::type>()...)),
-      double>::type;
-  template <typename> static constexpr std::false_type test(...);
+  template <typename C,
+            typename = decltype(std::declval<C>()(
+                std::declval<typename call_impl_arg_type<Args>::type>()...))>
+  static std::true_type test(C *);
+  template <typename> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
@@ -67,14 +66,42 @@ public:
 template <typename T, typename... Args> class has_valid_call_impl {
 
   template <typename C>
-  static constexpr auto test(C *) -> typename std::is_same<
+  static auto test(C *) -> typename std::is_same<
       decltype(std::declval<const C>().call_impl_(
           std::declval<typename call_impl_arg_type<Args>::type>()...)),
       double>::type;
-  template <typename> static constexpr std::false_type test(...);
+  template <typename> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
+ * This determines whether or not a class has a method defined for
+ * something close to, but not quite, a valid call_impl_.  For example
+ * if a class has:
+ *   double call_impl_(const X x)
+ * or
+ *   double call_impl_(X &x)
+ * or
+ *   int call_impl_(const X &x)
+ * those are nearly correct but the required `const X &x` in which
+ * case this trait can be used to warn the user.
+ */
+template <typename T, typename... Args> class has_possible_call_impl {
+  template <typename C, typename = decltype(std::declval<C>().call_impl_(
+                            std::declval<Args &>()...))>
+  static std::true_type test(int);
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T, typename... Args> class has_invalid_call_impl {
+public:
+  static constexpr bool value = (has_possible_call_impl<T, Args...>::value &&
+                                 !has_valid_call_impl<T, Args...>::value);
 };
 
 /*
