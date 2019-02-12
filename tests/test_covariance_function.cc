@@ -85,7 +85,7 @@ TEST(test_covariance_function, test_operator_resolution) {
   EXPECT_FALSE(bool(has_call_operator<HasMultiple, Z, Z>::value));
 }
 
-TEST(test_covariance_function, test_vector_operator) {
+TEST(test_covariance_function, test_vector_operator_inspection) {
   EXPECT_TRUE(
       bool(has_call_operator<HasXY, std::vector<X>, std::vector<Y>>::value));
   EXPECT_TRUE(
@@ -110,19 +110,7 @@ TEST(test_covariance_function, test_vector_operator) {
 }
 
 TEST(test_covariance_function, test_covariance_matrix) {
-
   HasMultiple cov;
-
-  EXPECT_TRUE(bool(
-      has_call_operator<decltype(cov), std::vector<X>, std::vector<Y>>::value));
-  EXPECT_TRUE(bool(
-      has_call_operator<decltype(cov), std::vector<Y>, std::vector<X>>::value));
-  EXPECT_TRUE(bool(
-      has_call_operator<decltype(cov), std::vector<X>, std::vector<X>>::value));
-  EXPECT_TRUE(bool(
-      has_call_operator<decltype(cov), std::vector<Y>, std::vector<Y>>::value));
-  EXPECT_FALSE(bool(
-      has_call_operator<decltype(cov), std::vector<Z>, std::vector<Z>>::value));
 
   std::vector<X> xs = {{}, {}, {}};
   std::vector<Y> ys = {{}, {}};
