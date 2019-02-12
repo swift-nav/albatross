@@ -43,7 +43,7 @@ template <class T> struct call_impl_arg_type {
 
 /*
  * This determines whether or not a class has a method defined for,
- *   `operator() (X x, Y y, Z z, ...)`
+ *   `operator() (const X &x, const Y &y, const Z &z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
 template <typename T, typename... Args> class has_call_operator {
@@ -66,10 +66,11 @@ public:
 template <typename T, typename... Args> class has_valid_call_impl {
 
   template <typename C>
-  static auto test(C *) -> typename std::is_same<
+  static typename std::is_same<
       decltype(std::declval<const C>().call_impl_(
           std::declval<typename call_impl_arg_type<Args>::type>()...)),
-      double>::type;
+      double>::type
+  test(C *);
   template <typename> static std::false_type test(...);
 
 public:
