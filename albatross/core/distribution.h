@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
-#include "cereal/cereal.hpp"
-#include "core/traits.h"
-#include "eigen/serializable_diagonal_matrix.h"
-#include <Eigen/Core>
-#include <map>
-#include <vector>
-
 namespace albatross {
 
 /*
@@ -30,37 +23,33 @@ namespace albatross {
 template <typename CovarianceType> struct Distribution {
   Eigen::VectorXd mean;
   CovarianceType covariance;
-  // Sometimes it can be helpful to keep track of some
-  // auxillary information regarding how a distribution was
-  // derived, that can be stored in this map.
-  std::map<std::string, std::string> metadata;
-
-  std::size_t size() const {
-    // If the covariance is defined it must have the same number
-    // of rows and columns which should be the same size as the mean.
-    assert_valid();
-    return mean.size();
-  }
-
-  void assert_valid() const {
-    if (covariance.size() > 0) {
-      assert(covariance.rows() == covariance.cols());
-      assert(mean.size() == covariance.rows());
-    }
-  }
-
-  bool has_covariance() const {
-    assert_valid();
-    return covariance.size() > 0;
-  }
 
   Distribution() : mean(), covariance(){};
   Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(){};
   Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
       : mean(mean_), covariance(covariance_){};
 
-  double get_diagonal(Eigen::Index i) const {
-    return has_covariance() ? covariance.diagonal()[i] : NAN;
+  std::size_t size() const;
+
+  void assert_valid() const;
+
+  bool has_covariance() const;
+
+  double get_diagonal(Eigen::Index i) const;
+
+  template <typename SizeType>
+  Distribution<CovarianceType>
+  subset(const std::vector<SizeType> &indices) const;
+
+  bool operator==(const Distribution<CovarianceType> &other) const {
+    return (mean == other.mean && covariance == other.covariance);
+  }
+
+  template <typename OtherCovarianceType>
+  typename std::enable_if<
+      !std::is_same<CovarianceType, OtherCovarianceType>::value, bool>::type
+  operator==(const Distribution<OtherCovarianceType> &other) const {
+    return false;
   }
 
   /*
@@ -72,7 +61,6 @@ template <typename CovarianceType> struct Distribution {
   serialize(Archive &archive) {
     archive(cereal::make_nvp("mean", mean));
     archive(cereal::make_nvp("covariance", covariance));
-    archive(cereal::make_nvp("metadata", metadata));
   }
 
   /*
@@ -87,25 +75,46 @@ template <typename CovarianceType> struct Distribution {
                   "In order to serialize a Distribution the corresponding "
                   "CovarianceType must be serializable.");
   }
-
-  bool operator==(const Distribution &other) const {
-    return (mean == other.mean && covariance == other.covariance &&
-            metadata == other.metadata);
-  }
 };
 
-// A JointDistribution has a dense covariance matrix, which
-// contains the covariance between each variable and all others.
-using JointDistribution = Distribution<Eigen::MatrixXd>;
+template <typename CovarianceType>
+std::size_t Distribution<CovarianceType>::size() const {
+  // If the covariance is defined it must have the same number
+  // of rows and columns which should be the same size as the mean.
+  assert_valid();
+  return mean.size();
+}
 
-// We use a wrapper around DiagonalMatrix in order to make
-// the resulting distribution serializable
-using DiagonalMatrixXd =
-    Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
-// A MarginalDistribution has only a digaonal covariance
-// matrix, so in turn only describes the variance of each
-// variable independent of all others.
-using MarginalDistribution = Distribution<DiagonalMatrixXd>;
+template <typename CovarianceType>
+void Distribution<CovarianceType>::assert_valid() const {
+  if (covariance.size() > 0) {
+    assert(covariance.rows() == covariance.cols());
+    assert(mean.size() == covariance.rows());
+  }
+}
+
+template <typename CovarianceType>
+bool Distribution<CovarianceType>::has_covariance() const {
+  assert_valid();
+  return covariance.size() > 0;
+}
+
+template <typename CovarianceType>
+double Distribution<CovarianceType>::get_diagonal(Eigen::Index i) const {
+  return has_covariance() ? covariance.diagonal()[i] : NAN;
+}
+
+template <typename SizeType, typename CovarianceType>
+Distribution<CovarianceType> subset(const std::vector<SizeType> &indices,
+                                    const Distribution<CovarianceType> &dist) {
+  auto subset_mean = albatross::subset(indices, Eigen::VectorXd(dist.mean));
+  if (dist.has_covariance()) {
+    auto subset_cov = albatross::symmetric_subset(indices, dist.covariance);
+    return Distribution<CovarianceType>(subset_mean, subset_cov);
+  } else {
+    return Distribution<CovarianceType>(subset_mean);
+  }
+}
 
 } // namespace albatross
 

@@ -1,0 +1,11 @@
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/types/polymorphic.hpp>
+
+#include "core/declarations.h"
+#include "core/indexing.h"
+#include "eigen/serializable_diagonal_matrix.h"
+
+#include "core/traits.h"
+#include "core/distribution.h"
