@@ -31,15 +31,13 @@ namespace albatross {
 /*
  * Model
  */
-template <typename FeatureType> class RegressionModel;
+// template <typename FeatureType> class RegressionModel;
 template <typename FeatureType> struct RegressionDataset;
-template <typename FeatureType> struct RegressionFold;
-template <typename FeatureType, typename FitType>
-class SerializableRegressionModel;
+// template <typename FeatureType> struct RegressionFold;
 
-template <typename FeatureType>
-using RegressionModelCreator =
-    std::function<std::unique_ptr<RegressionModel<FeatureType>>()>;
+template <typename ModelType, typename FeatureType> class Prediction;
+
+template <typename ModelType> class Fit;
 
 /*
  * Distributions
@@ -54,24 +52,25 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 /*
  * Cross Validation
  */
-using FoldIndices = std::vector<std::size_t>;
-using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, FoldIndices>;
-template <typename FeatureType>
-using IndexerFunction =
-    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+// using FoldIndices = std::vector<std::size_t>;
+// using FoldName = std::string;
+// using FoldIndexer = std::map<FoldName, FoldIndices>;
+// template <typename FeatureType>
+// using IndexerFunction =
+//    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
 
 /*
  * RANSAC
  */
-template <typename ModelType, typename FeatureType> class GenericRansac;
-template <typename FeatureType, typename ModelType>
-std::unique_ptr<GenericRansac<ModelType, FeatureType>>
-make_generic_ransac_model(ModelType *model, double inlier_threshold,
-                          std::size_t min_inliers,
-                          std::size_t random_sample_size,
-                          std::size_t max_iterations,
-                          const IndexerFunction<FeatureType> &indexer_function);
+// template <typename ModelType, typename FeatureType> class GenericRansac;
+// template <typename FeatureType, typename ModelType>
+// std::unique_ptr<GenericRansac<ModelType, FeatureType>>
+// make_generic_ransac_model(ModelType *model, double inlier_threshold,
+//                          std::size_t min_inliers,
+//                          std::size_t random_sample_size,
+//                          std::size_t max_iterations,
+//                          const IndexerFunction<FeatureType>
+//                          &indexer_function);
 }
 
 #endif

@@ -17,7 +17,20 @@ namespace albatross {
 
 using Insights = std::map<std::string, std::string>;
 
-template <typename ModelType> class ModelBase {
+template <typename ModelType, typename FeatureType> class Prediction {
+
+public:
+  Prediction(const ModelType &model, const std::vector<FeatureType> &features)
+      : model_(model), features_(features) {}
+
+  Eigen::VectorXd mean() const { return model_.predict_(features_); }
+
+private:
+  const ModelType &model_;
+  const std::vector<FeatureType> &features_;
+};
+
+template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelBase<B> {}
@@ -28,40 +41,32 @@ private:
   ModelBase() : has_been_fit_(false), insights_(){};
   friend ModelType;
 
+  bool has_been_fit_;
+  Insights insights_;
+  Fit<ModelType> model_fit_;
+
 public:
-  template <typename FeatureType, typename TargetType>
-  void fit(const std::vector<FeatureType> &features, const TargetType &targets);
+  template <typename FeatureType>
+  Fit<ModelType> fit(const std::vector<FeatureType> &features,
+                     const MarginalDistribution &targets) {
+    model_fit_ = derived().fit_(features, targets);
+    has_been_fit_ = true;
+    return model_fit_;
+  }
 
   template <typename FeatureType>
-  Eigen::VectorXd predict(const std::vector<FeatureType> &features) const;
+  Prediction<ModelType, FeatureType>
+  predict(const std::vector<FeatureType> &features) const {
+    return Prediction<ModelType, FeatureType>(derived(), features);
+  }
 
   /*
    * CRTP Helpers
    */
-
   ModelType &derived() { return *static_cast<ModelType *>(this); }
   const ModelType &derived() const {
     return *static_cast<const ModelType *>(this);
   }
-
-  bool has_been_fit_;
-  Insights insights_;
 };
-
-template <typename ModelType>
-template <typename FeatureType, typename TargetType>
-void ModelBase<ModelType>::fit(const std::vector<FeatureType> &features,
-                               const TargetType &targets) {
-  derived().fit_(features, targets);
-  has_been_fit_ = true;
-}
-
-template <typename ModelType>
-template <typename FeatureType>
-Eigen::VectorXd
-ModelBase<ModelType>::predict(const std::vector<FeatureType> &features) const {
-  assert(has_been_fit_);
-  return derived().predict_(features);
-}
 }
 #endif

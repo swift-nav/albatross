@@ -41,7 +41,6 @@ void expect_subset_equal(const Eigen::DiagonalMatrix<Scalar, Size> &original,
   expect_subset_equal(original.diagonal(), actual.diagonal(), indices);
 }
 
-
 template <typename X> struct DistributionTestCase {
   using RepresentationType = X;
   virtual RepresentationType create() const {
@@ -50,7 +49,8 @@ template <typename X> struct DistributionTestCase {
   }
 };
 
-template <typename Distribution> struct DistributionTest : public ::testing::Test {
+template <typename Distribution>
+struct DistributionTest : public ::testing::Test {
   typedef typename Distribution::RepresentationType Representation;
 };
 
@@ -71,7 +71,5 @@ TYPED_TEST_P(DistributionTest, test_subset) {
   } else {
     EXPECT_FALSE(ss.has_covariance());
   }
-
 };
-
 }

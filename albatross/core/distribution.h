@@ -82,7 +82,7 @@ std::size_t Distribution<CovarianceType>::size() const {
   // If the covariance is defined it must have the same number
   // of rows and columns which should be the same size as the mean.
   assert_valid();
-  return mean.size();
+  return static_cast<std::size_t>(mean.size());
 }
 
 template <typename CovarianceType>

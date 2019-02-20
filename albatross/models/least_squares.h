@@ -13,45 +13,49 @@
 #ifndef ALBATROSS_MODELS_LEAST_SQUARES_H
 #define ALBATROSS_MODELS_LEAST_SQUARES_H
 
-#include "core/model_adapter.h"
-#include "core/serialize.h"
-#include <Eigen/Dense>
-#include <cmath>
-#include <gtest/gtest.h>
-#include <iostream>
-#include <random>
+//#include "core/model_adapter.h"
+//#include "core/serialize.h"
+//#include <Eigen/Dense>
+//#include <cmath>
+//#include <gtest/gtest.h>
+//#include <iostream>
+//#include <random>
 
 namespace albatross {
 
-struct LeastSquaresFit {
+template <typename Derived> class LeastSquares;
+
+class LinearRegression;
+
+template <typename Derived> struct Fit<LeastSquares<Derived>> {
   Eigen::VectorXd coefs;
 
-  bool operator==(const LeastSquaresFit &other) const {
-    return coefs == other.coefs;
-  }
+  bool operator==(const Fit &other) const { return coefs == other.coefs; }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(coefs);
   }
 };
 
+struct NullLeastSquaresImpl {};
+
 /*
- * This model supports a family of RegressionModels which consist of
+ * This model supports a family of models which consist of
  * first creating a design matrix, A, then solving least squares.  Ie,
  *
  *   min_x |y - Ax|_2^2
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-class LeastSquaresRegression
-    : public SerializableRegressionModel<Eigen::VectorXd, LeastSquaresFit> {
+template <typename Derived = NullLeastSquaresImpl>
+class LeastSquares : public ModelBase<LeastSquares<Derived>> {
 public:
-  LeastSquaresRegression(){};
-  std::string get_name() const override { return "least_squares"; };
+  using FitType = Fit<LeastSquares<Derived>>;
 
-  LeastSquaresFit
-  serializable_fit_(const std::vector<Eigen::VectorXd> &features,
-                    const MarginalDistribution &targets) const override {
+  //  std::string get_name() const override { return "least_squares"; };
+
+  FitType fit_(const std::vector<Eigen::VectorXd> &features,
+               const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -62,14 +66,33 @@ public:
     for (int i = 0; i < m; i++) {
       A.row(i) = features[static_cast<std::size_t>(i)];
     }
-    // Solve for the coefficients using the QR decomposition.
-    LeastSquaresFit model_fit = {least_squares_solver(A, targets.mean)};
+
+    FitType model_fit = {least_squares_solver(A, targets.mean)};
     return model_fit;
   }
 
-protected:
-  Eigen::VectorXd
-  predict_mean_(const std::vector<Eigen::VectorXd> &features) const override {
+  template <typename FeatureType>
+  decltype(auto) convert_feature(const FeatureType &feature) const {
+    return least_squares_impl().convert_feature(feature);
+  }
+
+  template <typename FeatureType>
+  std::vector<Eigen::VectorXd>
+  convert_features(const std::vector<FeatureType> &features) const {
+    std::vector<Eigen::VectorXd> output;
+    for (const auto &f : features) {
+      output.push_back(this->convert_feature(f));
+    }
+    return output;
+  }
+
+  template <typename FeatureType>
+  FitType fit_(const std::vector<FeatureType> &features,
+               const MarginalDistribution &targets) const {
+    return this->fit_(this->convert_features(features), targets);
+  }
+
+  Eigen::VectorXd predict_(const std::vector<Eigen::VectorXd> &features) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
@@ -79,18 +102,26 @@ protected:
     return mean;
   }
 
-  JointDistribution
-  predict_(const std::vector<Eigen::VectorXd> &features) const override {
-    return JointDistribution(predict_mean_(features));
+  template <typename FeatureType>
+  Eigen::VectorXd predict_(const std::vector<FeatureType> &features) const {
+    return this->predict_(this->convert_features(features));
   }
 
   /*
    * This lets you customize the least squares approach if need be,
    * default uses the QR decomposition.
    */
-  virtual Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
-                                               const Eigen::VectorXd &b) const {
+  Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
+                                       const Eigen::VectorXd &b) const {
     return A.colPivHouseholderQr().solve(b);
+  }
+
+  /*
+   * CRTP Helpers
+   */
+  Derived &least_squares_impl() { return *static_cast<Derived *>(this); }
+  const Derived &least_squares_impl() const {
+    return *static_cast<const Derived *>(this);
   }
 };
 
@@ -103,18 +134,14 @@ protected:
  * Setup like this the resulting least squares solve will represent
  * an offset and slope.
  */
-using LinearRegressionBase =
-    AdaptedRegressionModel<double, LeastSquaresRegression>;
-
-class LinearRegression : public LinearRegressionBase {
+class LinearRegression : public LeastSquares<LinearRegression> {
 
 public:
-  LinearRegression(){};
-  std::string get_name() const override { return "linear_regression"; };
+  //  std::string get_name() const { return "linear_regression"; };
 
-  Eigen::VectorXd convert_feature(const double &x) const override {
+  Eigen::VectorXd convert_feature(const double &feature) const {
     Eigen::VectorXd converted(2);
-    converted << 1., x;
+    converted << 1., feature;
     return converted;
   }
 
@@ -124,18 +151,18 @@ public:
    * through the use of `base_class` we can make use of cereal's
    * polymorphic serialization.
    */
-  template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("linear_regression",
-                             cereal::base_class<LinearRegressionBase>(this)));
-  }
-
-  template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("linear_regression",
-                             cereal::base_class<LinearRegressionBase>(this)));
-  }
+  //  template <class Archive> void save(Archive &archive) const {
+  //    archive(cereal::make_nvp("linear_regression",
+  //                             cereal::base_class<LinearRegressionBase>(this)));
+  //  }
+  //
+  //  template <class Archive> void load(Archive &archive) {
+  //    archive(cereal::make_nvp("linear_regression",
+  //                             cereal::base_class<LinearRegressionBase>(this)));
+  //  }
 };
 } // namespace albatross
 
-CEREAL_REGISTER_TYPE(albatross::LinearRegression);
+// CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 
 #endif

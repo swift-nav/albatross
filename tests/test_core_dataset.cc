@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include "Dataset"
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -28,8 +28,6 @@ TEST(test_dataset, test_construct) {
   std::vector<std::size_t> indices = {0, 2};
   const auto subset_dataset = subset(indices, dataset);
   EXPECT_EQ(subset_dataset.size(), indices.size());
-
 }
-
 
 } // namespace albatross

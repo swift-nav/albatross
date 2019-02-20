@@ -13,20 +13,6 @@
 #ifndef ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 #define ALBATROSS_CORE_PARAMETER_HANDLING_MIXIN_H
 
-#include <algorithm>
-#include <assert.h>
-#include <iomanip>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <vector>
-
-#include "cereal/cereal.hpp"
-#include "keys.h"
-#include "map_utils.h"
-#include "priors.h"
-#include <cereal/types/map.hpp>
-
 namespace albatross {
 
 using ParameterKey = std::string;
@@ -312,7 +298,7 @@ public:
     params_[name] = param;
   }
 
-protected:
+private:
   ParameterStore params_;
 };
 

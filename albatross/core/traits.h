@@ -120,54 +120,90 @@ public:
 };
 
 /*
- * Inspects T to see if it has a class level type called FitType,
- * the result is returned in ::value.
+ * This determines whether or not a class has a method defined for,
+ *   `FitType fit_(const std::vector<FeatureType>& features,
+ *                 const MarginalDistribution &)`
+ * The result of the inspection gets stored in the member `value`.
  */
-template <typename T> class has_fit_type {
-  template <typename C, typename = typename C::FitType>
-  static std::true_type test(int);
-  template <typename C> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
+// template <typename T, typename FeatureType> class has_fit {
+//
+//  template <typename C, typename = decltype(std::declval<const C>().fit_(
+//                            const std::vector<FeatureType> &,
+//                            const MarginalDistribution &))>
+//  static std::true_type test(C *);
+//  template <typename> static std::false_type test(...);
+//
+// public:
+//  static constexpr bool value = decltype(test<T>(0))::value;
+//};
 
 /*
- * One way to tell the difference between a RegressionModel
- * and a SerializableRegressionModel is by inspecting for a
- * FitType.
+ * This determines FitType from a method with signature,
+ *   `FitType fit_(const std::vector<FeatureType>& features,
+ *                 const MarginalDistribution &)`
+ * The result of the inspection is the FitType stored in `type`.
  */
-template <typename T> using is_serializable_regression_model = has_fit_type<T>;
+// template <typename T, typename FeatureType> class fit_type {
+//
+//  template <typename C>
+//  static typename decltype(std::declval<const C>().fit_(
+//      const std::vector<FeatureType> &, const MarginalDistribution &))
+//  test(C *);
+//
+// public:
+//  typedef decltype(test<T>(0)) type;
+//};
 
-/*
- * This traits helper class defines `::type` to be `T::FitType`
- * if a type with that name has been defined for T and will
- * otherwise be `void`.
- */
-template <typename T> class fit_type_or_void {
-  template <typename C, typename = typename C::FitType>
-  static typename C::FitType test(int);
-  template <typename C> static void test(...);
-
-public:
-  typedef decltype(test<T>(0)) type;
-};
-
-/*
- * Helper function for enable_if and is_serializable_regression_model
- */
-template <typename X, typename T>
-using enable_if_serializable =
-    std::enable_if<is_serializable_regression_model<X>::value, T>;
-
-/*
- * Will result in substitution failure if X is not serializable and
- * otherwise resolves to X::FitType.
- */
-template <typename X>
-using fit_type_if_serializable =
-    typename enable_if_serializable<X,
-                                    typename fit_type_or_void<X>::type>::type;
+///*
+// * Inspects T to see if it has a class level type called FitType,
+// * the result is returned in ::value.
+// */
+// template <typename T> class has_fit_type {
+//  template <typename C, typename = typename C::FitType>
+//  static std::true_type test(int);
+//  template <typename C> static std::false_type test(...);
+//
+// public:
+//  static constexpr bool value = decltype(test<T>(0))::value;
+//};
+//
+///*
+// * One way to tell the difference between a RegressionModel
+// * and a SerializableRegressionModel is by inspecting for a
+// * FitType.
+// */
+// template <typename T> using is_serializable_regression_model =
+// has_fit_type<T>;
+//
+///*
+// * This traits helper class defines `::type` to be `T::FitType`
+// * if a type with that name has been defined for T and will
+// * otherwise be `void`.
+// */
+// template <typename T> class fit_type_or_void {
+//  template <typename C, typename = typename C::FitType>
+//  static typename C::FitType test(int);
+//  template <typename C> static void test(...);
+//
+// public:
+//  typedef decltype(test<T>(0)) type;
+//};
+//
+///*
+// * Helper function for enable_if and is_serializable_regression_model
+// */
+// template <typename X, typename T>
+// using enable_if_serializable =
+//    std::enable_if<is_serializable_regression_model<X>::value, T>;
+//
+///*
+// * Will result in substitution failure if X is not serializable and
+// * otherwise resolves to X::FitType.
+// */
+// template <typename X>
+// using fit_type_if_serializable =
+//    typename enable_if_serializable<X,
+//                                    typename fit_type_or_void<X>::type>::type;
 
 /*
  * The following helper functions let you inspect a type and cereal Archive
@@ -208,22 +244,6 @@ template <typename X, typename Archive> class valid_in_out_serializer {
 
 public:
   static constexpr bool value = decltype(test<X>(0))::value;
-};
-
-/*
- * This helper function takes a model and decides which base class it extends
- * by inspecting whether or not the ModelType has a FitType.
- */
-template <typename FeatureType, typename ModelType>
-class choose_regression_model_implementation {
-  template <typename C, typename = typename C::FitType>
-  static SerializableRegressionModel<FeatureType, typename C::FitType> *
-  test(int);
-
-  template <typename C> static RegressionModel<FeatureType> *test(...);
-
-public:
-  typedef typename std::remove_pointer<decltype(test<ModelType>(0))>::type type;
 };
 
 /*

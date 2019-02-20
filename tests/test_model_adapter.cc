@@ -19,17 +19,17 @@
 
 namespace albatross {
 
-using SqrExp = SquaredExponential<EuclideanDistance>;
+// using SqrExp = SquaredExponential<EuclideanDistance>;
+//
+// using TestBaseModel = GaussianProcessRegression<Eigen::VectorXd, SqrExp>;
+//
+// using TestAdaptedModelBase = AdaptedRegressionModel<double, TestBaseModel>;
 
-using TestBaseModel = GaussianProcessRegression<Eigen::VectorXd, SqrExp>;
-
-using TestAdaptedModelBase = AdaptedRegressionModel<double, TestBaseModel>;
-
-class TestAdaptedModel : public TestAdaptedModelBase {
+class TestAdaptedModel : public ModelBase<TestAdaptedModel> {
 public:
   TestAdaptedModel() { this->params_["center"] = 0.; };
 
-  std::string get_name() const override { return "test_adapted"; };
+  //  std::string get_name() const override { return "test_adapted"; };
 
   Eigen::VectorXd convert_feature(const double &x) const override {
     Eigen::VectorXd converted(2);
@@ -43,15 +43,15 @@ public:
    * through the use of `base_class` we can make use of cereal's
    * polymorphic serialization.
    */
-  template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("test_adapted",
-                             cereal::base_class<TestAdaptedModelBase>(this)));
-  }
-
-  template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("test_adapted",
-                             cereal::base_class<TestAdaptedModelBase>(this)));
-  }
+  //  template <class Archive> void save(Archive &archive) const {
+  //    archive(cereal::make_nvp("test_adapted",
+  //                             cereal::base_class<TestAdaptedModelBase>(this)));
+  //  }
+  //
+  //  template <class Archive> void load(Archive &archive) {
+  //    archive(cereal::make_nvp("test_adapted",
+  //                             cereal::base_class<TestAdaptedModelBase>(this)));
+  //  }
 };
 
 void test_get_set(RegressionModel<double> &model, const std::string &key) {
