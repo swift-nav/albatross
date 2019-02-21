@@ -6,13 +6,14 @@ struct X {int value;};
 struct Y {int value;};
 
 template <typename ModelType> class ModelBase {
+private:
+  // This is nice to have because it makes sure you don't
+  // accidentally do something like:
+  //     class A : public ModelBase<B>
+  ModelBase() {};
+  friend ModelType;
 
 public:
-
-  template <typename T>
-  X convert_(const T &feature) {
-    return derived().convert_(feature);
-  }
 
   template <typename FeatureType>
   typename std::enable_if<has_possible_fit_impl<ModelType, FeatureType>::value, void>::type
@@ -37,13 +38,25 @@ public:
 };
 
 template <typename Derived>
-class Middle : public ModelBase<Derived> {
+class Middle : public ModelBase<Middle<Derived>> {
 public:
+
+  template <typename T>
+  X convert_(const T &feature) {
+    return derived().convert_(feature);
+  }
 
   void fit_(const X &feature) {
     std::cout << "Middle.fit_(X) : " << feature.value << std::endl;
   }
 
+  /*
+   * CRTP Helpers
+   */
+  Derived &derived() { return *static_cast<Derived *>(this); }
+  const Derived &derived() const {
+    return *static_cast<const Derived *>(this);
+  }
 };
 
 class Adapted : public Middle<Adapted> {
