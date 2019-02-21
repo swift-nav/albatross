@@ -21,7 +21,7 @@ class Complete {};
 
 class Incomplete;
 
-TEST(test_traits, test_is_complete) {
+TEST(test_traits_covariance, test_is_complete) {
   EXPECT_TRUE(bool(is_complete<Complete>::value));
   EXPECT_FALSE(bool(is_complete<Incomplete>::value));
 }
@@ -33,7 +33,7 @@ public:
 
 class HasNoName {};
 
-TEST(test_traits, test_has_name) {
+TEST(test_traits_covariance, test_has_name) {
   EXPECT_TRUE(bool(has_name_<HasName>::value));
   EXPECT_FALSE(bool(has_name_<HasNoName>::value));
 }
@@ -58,7 +58,7 @@ class HasPrivateCallOperator {
 
 class HasNoCallOperator {};
 
-TEST(test_traits, test_has_call_operator) {
+TEST(test_traits_covariance, test_has_call_operator) {
   EXPECT_TRUE(bool(has_call_operator<HasPublicCallOperator, X, Y>::value));
   EXPECT_FALSE(bool(has_call_operator<HasPrivateCallOperator, X, Y>::value));
   EXPECT_FALSE(bool(has_call_operator<HasProtectedCallOperator, X, Y>::value));
@@ -81,7 +81,7 @@ class HasPrivateCallImpl {
 
 class HasNoCallImpl {};
 
-TEST(test_traits, test_has_any_call_impl_) {
+TEST(test_traits_covariance, test_has_any_call_impl_) {
   EXPECT_TRUE(bool(has_any_call_impl<HasPublicCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasProtectedCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasPrivateCallImpl>::value));
@@ -104,7 +104,7 @@ public:
   int call_impl_(const Z &, const Z &) const { return 1.; };
 };
 
-TEST(test_traits, test_has_valid_call_impl) {
+TEST(test_traits_covariance, test_has_valid_call_impl) {
   EXPECT_TRUE(bool(has_valid_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_valid_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_TRUE(
@@ -123,7 +123,7 @@ TEST(test_traits, test_has_valid_call_impl) {
  * Here we test to make sure we can identify situations where
  * call_impl_ has been defined but not necessarily properly.
  */
-TEST(test_traits, test_has_possible_call_impl) {
+TEST(test_traits_covariance, test_has_possible_call_impl) {
   EXPECT_TRUE(bool(has_possible_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_possible_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_TRUE(
@@ -138,7 +138,7 @@ TEST(test_traits, test_has_possible_call_impl) {
       bool(has_possible_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
 }
 
-TEST(test_traits, test_has_invalid_call_impl) {
+TEST(test_traits_covariance, test_has_invalid_call_impl) {
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_FALSE(

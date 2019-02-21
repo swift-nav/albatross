@@ -37,7 +37,7 @@ template <typename FeatureType> struct RegressionDataset;
 
 template <typename ModelType, typename FeatureType> class Prediction;
 
-template <typename ModelType> class Fit;
+template <typename ModelType> class Fit {};
 
 /*
  * Distributions

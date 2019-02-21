@@ -82,7 +82,10 @@ TYPED_TEST(RegressionModelTester, test_predict_variants) {
   auto model = this->test_case.get_model();
   model.fit(dataset.features, dataset.targets);
 
-  const auto pred = model->predict(dataset.features);
+  const auto pred_mean = model.predict(dataset.features).mean();
+
+  double rmse = sqrt((pred_mean - dataset.targets.mean).norm());
+  EXPECT_LE(rmse, 0.5);
 
   //  const auto joint_predictions = model->predict(dataset.features);
   //  const auto marginal_predictions =

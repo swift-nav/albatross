@@ -119,7 +119,8 @@ struct MultiInheritCallImpl : public U, public BaseWithPublicCallImpl {};
 template <typename U> class has_any_call_impl {
   template <typename T>
   static typename std::enable_if<
-      has_valid_call_impl<detail::MultiInheritCallImpl<T>, detail::DummyType>::value,
+      has_valid_call_impl<detail::MultiInheritCallImpl<T>,
+                          detail::DummyType>::value,
       std::false_type>::type
   test(int);
   template <typename T> static std::true_type test(...);
@@ -127,7 +128,6 @@ template <typename U> class has_any_call_impl {
 public:
   static constexpr bool value = decltype(test<U>(0))::value;
 };
-
 }
 
 #endif

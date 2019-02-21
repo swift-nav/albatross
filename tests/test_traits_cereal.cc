@@ -41,28 +41,43 @@ public:
 
 class InValidInOutSerializer {};
 
-TEST(test_traits, test_valid_in_out_serializer) {
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidInOutSerializer, NullArchive>::value));
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidSaveLoadSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidInSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidOutSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<InValidInOutSerializer, NullArchive>::value));
+TEST(test_traits_cereal, test_valid_in_out_serializer) {
+  EXPECT_TRUE(
+      bool(valid_in_out_serializer<ValidInOutSerializer, NullArchive>::value));
+  EXPECT_TRUE(bool(
+      valid_in_out_serializer<ValidSaveLoadSerializer, NullArchive>::value));
+  EXPECT_FALSE(
+      bool(valid_in_out_serializer<ValidInSerializer, NullArchive>::value));
+  EXPECT_FALSE(
+      bool(valid_in_out_serializer<ValidOutSerializer, NullArchive>::value));
+  EXPECT_FALSE(bool(
+      valid_in_out_serializer<InValidInOutSerializer, NullArchive>::value));
 }
 
-TEST(test_traits, test_valid_input_serializer) {
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInOutSerializer, NullArchive>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidSaveLoadSerializer, NullArchive>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<ValidOutSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<InValidInOutSerializer, NullArchive>::value));
+TEST(test_traits_cereal, test_valid_input_serializer) {
+  EXPECT_TRUE(
+      bool(valid_input_serializer<ValidInOutSerializer, NullArchive>::value));
+  EXPECT_TRUE(bool(
+      valid_input_serializer<ValidSaveLoadSerializer, NullArchive>::value));
+  EXPECT_TRUE(
+      bool(valid_input_serializer<ValidInSerializer, NullArchive>::value));
+  EXPECT_FALSE(
+      bool(valid_input_serializer<ValidOutSerializer, NullArchive>::value));
+  EXPECT_FALSE(
+      bool(valid_input_serializer<InValidInOutSerializer, NullArchive>::value));
 }
 
-TEST(test_traits, test_valid_output_serializer) {
-  EXPECT_TRUE(bool(valid_output_serializer<ValidInOutSerializer, NullArchive>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidSaveLoadSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<ValidInSerializer, NullArchive>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidOutSerializer, NullArchive>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<InValidInOutSerializer, NullArchive>::value));
+TEST(test_traits_cereal, test_valid_output_serializer) {
+  EXPECT_TRUE(
+      bool(valid_output_serializer<ValidInOutSerializer, NullArchive>::value));
+  EXPECT_TRUE(bool(
+      valid_output_serializer<ValidSaveLoadSerializer, NullArchive>::value));
+  EXPECT_FALSE(
+      bool(valid_output_serializer<ValidInSerializer, NullArchive>::value));
+  EXPECT_TRUE(
+      bool(valid_output_serializer<ValidOutSerializer, NullArchive>::value));
+  EXPECT_FALSE(bool(
+      valid_output_serializer<InValidInOutSerializer, NullArchive>::value));
 }
 
 } // namespace albatross
