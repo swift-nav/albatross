@@ -73,7 +73,7 @@
  *       $1 = value;
  *     } else if (key == "$2") {
  *       $2 = value;
- *     }
+ *     } else if {
  *     ...
  *     } else {
  *       assert(false);

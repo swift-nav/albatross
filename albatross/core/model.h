@@ -17,19 +17,6 @@ namespace albatross {
 
 using Insights = std::map<std::string, std::string>;
 
-template <typename ModelType, typename FeatureType> class Prediction {
-
-public:
-  Prediction(const ModelType &model, const std::vector<FeatureType> &features)
-      : model_(model), features_(features) {}
-
-  Eigen::VectorXd mean() const { return model_.predict_(features_); }
-
-private:
-  const ModelType &model_;
-  const std::vector<FeatureType> &features_;
-};
-
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 private:
   // Declaring these private makes it impossible to accidentally do things like:

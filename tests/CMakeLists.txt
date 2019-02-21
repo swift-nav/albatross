@@ -25,14 +25,16 @@ test_models.cc
 #test_scaling_function.cc
 #test_serializable_ldlt.cc
 #test_serialize.cc
-test_traits.cc
+test_traits_cereal.cc
+test_traits_core.cc
+test_traits_covariance_functions.cc
 #test_tune.cc
 #test_tuning_metrics.cc
 )
 
 add_dependencies(albatross_unit_tests
     albatross
-    clang-format-all
+#    clang-format-all
 )
 
 target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt)

@@ -18,7 +18,6 @@
 
 namespace albatross {
 
-//
 // auto make_simple_covariance_function() {
 //  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
 //  IndependentNoise<double> noise(0.1);
@@ -78,51 +77,54 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   EXPECT_LE(rmse, 0.5);
 }
 
-// TYPED_TEST(RegressionModelTester, test_predict_variants) {
-//  auto dataset = this->creator.get_dataset();
-//  auto model = this->creator.create();
-//  model->fit(dataset);
-//
-//  const auto joint_predictions = model->predict(dataset.features);
-//  const auto marginal_predictions =
-//      model->template predict<MarginalDistribution>(dataset.features);
-//  const auto mean_predictions =
-//      model->template predict<Eigen::VectorXd>(dataset.features);
-//
-//  const auto single_pred_joint =
-//      model->template predict<JointDistribution>(dataset.features[0]);
-//
-//  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
-//  if (joint_predictions.has_covariance()) {
-//    EXPECT_NEAR(single_pred_joint.get_diagonal(0),
-//                joint_predictions.get_diagonal(0), 1e-6);
-//  } else {
-//    EXPECT_FALSE(single_pred_joint.has_covariance());
-//  }
-//
-//  const auto single_pred_marginal =
-//      model->template predict<MarginalDistribution>(dataset.features[0]);
-//  EXPECT_NEAR(single_pred_marginal.mean[0], mean_predictions[0], 1e-6);
-//
-//  if (joint_predictions.has_covariance()) {
-//    EXPECT_NEAR(single_pred_marginal.get_diagonal(0),
-//                joint_predictions.get_diagonal(0), 1e-6);
-//  }
-//
-//  const auto single_pred_mean =
-//      model->template predict<Eigen::VectorXd>(dataset.features[0]);
-//  EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
-//
-//  for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
-//    EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
-//    EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i],
-//    1e-6);
-//    if (joint_predictions.has_covariance()) {
-//      EXPECT_NEAR(joint_predictions.covariance(i, i),
-//                  marginal_predictions.covariance.diagonal()[i], 1e-6);
-//    }
-//  }
-//}
+TYPED_TEST(RegressionModelTester, test_predict_variants) {
+  auto dataset = this->test_case.get_dataset();
+  auto model = this->test_case.get_model();
+  model.fit(dataset.features, dataset.targets);
+
+  const auto pred = model->predict(dataset.features);
+
+  //  const auto joint_predictions = model->predict(dataset.features);
+  //  const auto marginal_predictions =
+  //      model->template predict<MarginalDistribution>(dataset.features);
+  //  const auto mean_predictions =
+  //      model->template predict<Eigen::VectorXd>(dataset.features);
+  //
+  //  const auto single_pred_joint =
+  //      model->template predict<JointDistribution>(dataset.features[0]);
+  //
+  //  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
+  //  if (joint_predictions.has_covariance()) {
+  //    EXPECT_NEAR(single_pred_joint.get_diagonal(0),
+  //                joint_predictions.get_diagonal(0), 1e-6);
+  //  } else {
+  //    EXPECT_FALSE(single_pred_joint.has_covariance());
+  //  }
+  //
+  //  const auto single_pred_marginal =
+  //      model->template predict<MarginalDistribution>(dataset.features[0]);
+  //  EXPECT_NEAR(single_pred_marginal.mean[0], mean_predictions[0], 1e-6);
+  //
+  //  if (joint_predictions.has_covariance()) {
+  //    EXPECT_NEAR(single_pred_marginal.get_diagonal(0),
+  //                joint_predictions.get_diagonal(0), 1e-6);
+  //  }
+  //
+  //  const auto single_pred_mean =
+  //      model->template predict<Eigen::VectorXd>(dataset.features[0]);
+  //  EXPECT_NEAR(single_pred_mean[0], mean_predictions[0], 1e-6);
+  //
+  //  for (Eigen::Index i = 0; i < joint_predictions.mean.size(); i++) {
+  //    EXPECT_NEAR(joint_predictions.mean[i], mean_predictions[i], 1e-6);
+  //    EXPECT_NEAR(joint_predictions.mean[i], marginal_predictions.mean[i],
+  //    1e-6);
+  //    if (joint_predictions.has_covariance()) {
+  //      EXPECT_NEAR(joint_predictions.covariance(i, i),
+  //                  marginal_predictions.covariance.diagonal()[i], 1e-6);
+  //    }
+  //  }
+}
+
 //
 ///*
 // * Here we build two different datasets.  Each dataset consists of targets

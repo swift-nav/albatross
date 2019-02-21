@@ -25,6 +25,7 @@
 #include "core/priors.h"
 #include "core/parameter_handling_mixin.h"
 #include "core/parameter_macros.h"
+#include "core/prediction.h"
 #include "core/model.h"
 
 //#include <algorithm>

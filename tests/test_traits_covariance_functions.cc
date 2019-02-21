@@ -11,9 +11,32 @@
  */
 
 #include "core/traits.h"
+#include "covariance_functions/traits.h"
+
 #include <gtest/gtest.h>
 
 namespace albatross {
+
+class Complete {};
+
+class Incomplete;
+
+TEST(test_traits, test_is_complete) {
+  EXPECT_TRUE(bool(is_complete<Complete>::value));
+  EXPECT_FALSE(bool(is_complete<Incomplete>::value));
+}
+
+class HasName {
+public:
+  std::string name_;
+};
+
+class HasNoName {};
+
+TEST(test_traits, test_has_name) {
+  EXPECT_TRUE(bool(has_name_<HasName>::value));
+  EXPECT_FALSE(bool(has_name_<HasNoName>::value));
+}
 
 struct X {};
 struct Y {};
@@ -128,75 +151,6 @@ TEST(test_traits, test_has_invalid_call_impl) {
       bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Y>::value));
   EXPECT_TRUE(
       bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
-}
-
-class ValidInOutSerializer {
-public:
-  template <typename Archive> void serialize(Archive &){};
-};
-
-class ValidSaveLoadSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
-
-  template <typename Archive> void load(Archive &){};
-};
-
-class ValidInSerializer {
-public:
-  template <typename Archive> void load(Archive &){};
-};
-
-class ValidOutSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
-};
-
-class InValidInOutSerializer {};
-
-TEST(test_traits, test_valid_in_out_serializer) {
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidInSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<InValidInOutSerializer, X>::value));
-}
-
-TEST(test_traits, test_valid_input_serializer) {
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<InValidInOutSerializer, X>::value));
-}
-
-TEST(test_traits, test_valid_output_serializer) {
-  EXPECT_TRUE(bool(valid_output_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<ValidInSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<InValidInOutSerializer, X>::value));
-}
-
-class Complete {};
-
-class Incomplete;
-
-TEST(test_traits, test_is_complete) {
-  EXPECT_TRUE(bool(is_complete<Complete>::value));
-  EXPECT_FALSE(bool(is_complete<Incomplete>::value));
-}
-
-class HasName {
-public:
-  std::string name_;
-};
-
-class HasNoName {};
-
-TEST(test_traits, test_has_name) {
-  EXPECT_TRUE(bool(has_name_<HasName>::value));
-  EXPECT_FALSE(bool(has_name_<HasNoName>::value));
 }
 
 } // namespace albatross

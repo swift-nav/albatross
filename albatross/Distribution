@@ -3,9 +3,10 @@
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/polymorphic.hpp>
 
-#include "core/declarations.h"
-#include "core/indexing.h"
 #include "eigen/serializable_diagonal_matrix.h"
+#include "cereal/traits.h"
 
 #include "core/traits.h"
+#include "core/declarations.h"
+#include "core/indexing.h"
 #include "core/distribution.h"
