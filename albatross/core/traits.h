@@ -91,6 +91,24 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
+#define HAS_VALID_PREDICT(name, predtype)                                      \
+  template <typename T, typename FeatureType> class has_valid_##name {         \
+    template <typename C,                                                      \
+              typename PredictType = decltype(std::declval<const C>().name(    \
+                  std::declval<const std::vector<FeatureType> &>()))>          \
+    static typename std::enable_if<std::is_same<PredictType, predtype>::value, \
+                                   std::true_type>::type                       \
+    test(C *);                                                                 \
+    template <typename> static std::false_type test(...);                      \
+                                                                               \
+  public:                                                                      \
+    static constexpr bool value = decltype(test<T>(0))::value;                 \
+  }
+
+HAS_VALID_PREDICT(predict_mean_, Eigen::VectorXd);
+HAS_VALID_PREDICT(predict_marginal_, MarginalDistribution);
+HAS_VALID_PREDICT(predict_joint_, JointDistribution);
+
 } // namespace albatross
 
 #endif

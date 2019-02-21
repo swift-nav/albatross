@@ -33,14 +33,41 @@ private:
   Fit<ModelType> model_fit_;
 
 public:
-  template <typename FeatureType>
+  /*
+   * Fit
+   */
+  template <
+      typename FeatureType,
+      typename std::enable_if<has_valid_fit_impl<ModelType, FeatureType>::value,
+                              int>::type = 0>
   Fit<ModelType> fit(const std::vector<FeatureType> &features,
                      const MarginalDistribution &targets) {
-    model_fit_ = derived().fit_(features, targets);
+    model_fit_ = derived().fit_impl_(features, targets);
     has_been_fit_ = true;
     return model_fit_;
   }
 
+  template <typename FeatureType,
+            typename std::enable_if<
+                has_possible_fit_impl<ModelType, FeatureType>::value &&
+                    !has_valid_fit_impl<ModelType, FeatureType>::value,
+                int>::type = 0>
+  Fit<ModelType>
+  fit(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) = delete; // Invalid fit_impl_
+
+  template <typename FeatureType,
+            typename std::enable_if<
+                !has_possible_fit_impl<ModelType, FeatureType>::value &&
+                    !has_valid_fit_impl<ModelType, FeatureType>::value,
+                int>::type = 0>
+  Fit<ModelType>
+  fit(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) = delete; // No fit_impl_ found.
+
+  /*
+   * Predict
+   */
   template <typename FeatureType>
   Prediction<ModelType, FeatureType>
   predict(const std::vector<FeatureType> &features) const {

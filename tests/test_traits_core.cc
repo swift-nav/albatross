@@ -10,9 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/declarations.h"
+#include "Distribution"
 
-#include "core/traits.h"
 #include <gtest/gtest.h>
 
 namespace albatross {
@@ -106,7 +105,7 @@ public:
 
 class HasNoFitImpl {};
 
-TEST(test_traits_core, test_has_valid_fit_impl_) {
+TEST(test_traits_core, test_has_valid_fit_impl) {
   EXPECT_TRUE(bool(has_valid_fit_impl<HasValidFitImpl, X>::value));
   EXPECT_FALSE(bool(has_valid_fit_impl<HasWrongReturnTypeFitImpl, X>::value));
   EXPECT_FALSE(bool(has_valid_fit_impl<HasNonConstFitImpl, X>::value));
@@ -132,54 +131,65 @@ TEST(test_traits_core, test_has_possible_fit_impl) {
   EXPECT_FALSE(bool(has_possible_fit_impl<HasNoFitImpl, X>::value));
 }
 
-//
-// TEST(test_traits, test_has_valid_call_impl) {
-//  EXPECT_TRUE(bool(has_valid_call_impl<HasPublicCallImpl, X, Y>::value));
-//  EXPECT_FALSE(bool(has_valid_call_impl<HasPublicCallImpl, Y, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_valid_call_impl<HasMultiplePublicCallImpl, X, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_valid_call_impl<HasMultiplePublicCallImpl, Y, Y>::value));
-//  EXPECT_FALSE(
-//      bool(has_valid_call_impl<HasMultiplePublicCallImpl, Z, X>::value));
-//  EXPECT_FALSE(
-//      bool(has_valid_call_impl<HasMultiplePublicCallImpl, Z, Y>::value));
-//  EXPECT_FALSE(
-//      bool(has_valid_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
+/*
+ * Predict Traits
+ */
+// TEST(test_traits_core, test_is_valid_predict_type) {
+//  EXPECT_TRUE(bool(is_valid_predict_type<Eigen::VectorXd>::value));
+//  EXPECT_TRUE(bool(is_valid_predict_type<MarginalDistribution>::value));
+//  EXPECT_TRUE(bool(is_valid_predict_type<JointDistribution>::value));
+//  EXPECT_FALSE(bool(is_valid_predict_type<Eigen::MatrixXd>::value));
+//  EXPECT_FALSE(bool(is_valid_predict_type<double>::value));
 //}
-//
-///*
-// * Here we test to make sure we can identify situations where
-// * call_impl_ has been defined but not necessarily properly.
-// */
-// TEST(test_traits, test_has_possible_call_impl) {
-//  EXPECT_TRUE(bool(has_possible_call_impl<HasPublicCallImpl, X, Y>::value));
-//  EXPECT_FALSE(bool(has_possible_call_impl<HasPublicCallImpl, Y, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_possible_call_impl<HasMultiplePublicCallImpl, X, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_possible_call_impl<HasMultiplePublicCallImpl, Y, Y>::value));
-//  EXPECT_TRUE(
-//      bool(has_possible_call_impl<HasMultiplePublicCallImpl, Z, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_possible_call_impl<HasMultiplePublicCallImpl, Z, Y>::value));
-//  EXPECT_TRUE(
-//      bool(has_possible_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
-//}
-//
-// TEST(test_traits, test_has_invalid_call_impl) {
-//  EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, X, Y>::value));
-//  EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, Y, X>::value));
-//  EXPECT_FALSE(
-//      bool(has_invalid_call_impl<HasMultiplePublicCallImpl, X, X>::value));
-//  EXPECT_FALSE(
-//      bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Y, Y>::value));
-//  EXPECT_TRUE(
-//      bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, X>::value));
-//  EXPECT_TRUE(
-//      bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Y>::value));
-//  EXPECT_TRUE(
-//      bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
-//}
+
+class HasMeanPredictImpl {
+public:
+  Eigen::VectorXd predict_mean_(const std::vector<X> &) const {
+    return Eigen::VectorXd::Zero(0);
+  }
+};
+
+class HasMarginalPredictImpl {
+public:
+  MarginalDistribution predict_marginal_(const std::vector<X> &) const {
+    const auto mean = Eigen::VectorXd::Zero(0);
+    return MarginalDistribution(mean);
+  }
+};
+
+class HasJointPredictImpl {
+public:
+  JointDistribution predict_joint_(const std::vector<X> &) const {
+    const auto mean = Eigen::VectorXd::Zero(0);
+    return JointDistribution(mean);
+  }
+};
+
+class HasAllPredictImpls {
+public:
+  Eigen::VectorXd predict_mean_(const std::vector<X> &) const {
+    return Eigen::VectorXd::Zero(0);
+  }
+
+  MarginalDistribution predict_marginal_(const std::vector<X> &) const {
+    const auto mean = Eigen::VectorXd::Zero(0);
+    return MarginalDistribution(mean);
+  }
+
+  JointDistribution predict_joint_(const std::vector<X> &) const {
+    const auto mean = Eigen::VectorXd::Zero(0);
+    return JointDistribution(mean);
+  }
+};
+
+TEST(test_traits_core, test_has_valid_predict_impl) {
+  EXPECT_TRUE(bool(has_valid_predict_mean_<HasMeanPredictImpl, X>::value));
+  EXPECT_TRUE(
+      bool(has_valid_predict_marginal_<HasMarginalPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_joint_<HasJointPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_mean_<HasAllPredictImpls, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_marginal_<HasAllPredictImpls, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_joint_<HasAllPredictImpls, X>::value));
+}
 
 } // namespace albatross

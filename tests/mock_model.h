@@ -79,8 +79,8 @@ public:
   //            this));
   //  }
 
-  Fit<MockModel> fit_(const std::vector<MockFeature> &features,
-                      const MarginalDistribution &targets) {
+  Fit<MockModel> fit_impl_(const std::vector<MockFeature> &features,
+                           const MarginalDistribution &targets) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
     Fit<MockModel> model_fit;
@@ -92,7 +92,8 @@ public:
   }
 
   // looks up the prediction in the map
-  Eigen::VectorXd predict_(const std::vector<MockFeature> &features) const {
+  Eigen::VectorXd
+  predict_mean_(const std::vector<MockFeature> &features) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
@@ -104,14 +105,14 @@ public:
     return predictions;
   }
 
-  // looks up the prediction in the map
+  // convert before predicting
   Eigen::VectorXd
-  predict_(const std::vector<ContainsMockFeature> &features) const {
+  predict_mean_(const std::vector<ContainsMockFeature> &features) const {
     std::vector<MockFeature> mock_features;
     for (const auto &f : features) {
       mock_features.push_back(f.mock);
     }
-    return predict_(mock_features);
+    return predict_mean_(mock_features);
   }
 };
 

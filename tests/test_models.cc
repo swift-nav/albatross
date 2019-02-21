@@ -82,19 +82,20 @@ TYPED_TEST(RegressionModelTester, test_predict_variants) {
   auto model = this->test_case.get_model();
   model.fit(dataset.features, dataset.targets);
 
-  const auto pred_mean = model.predict(dataset.features).mean();
+  const auto pred = model.predict(dataset.features);
 
-  double rmse = sqrt((pred_mean - dataset.targets.mean).norm());
-  EXPECT_LE(rmse, 0.5);
+  const Eigen::VectorXd mean = pred.mean();
+  const MarginalDistribution marginal = pred.marginal();
+  const JointDistribution joint = pred.joint();
 
-  //  const auto joint_predictions = model->predict(dataset.features);
-  //  const auto marginal_predictions =
-  //      model->template predict<MarginalDistribution>(dataset.features);
-  //  const auto mean_predictions =
-  //      model->template predict<Eigen::VectorXd>(dataset.features);
-  //
-  //  const auto single_pred_joint =
-  //      model->template predict<JointDistribution>(dataset.features[0]);
+  EXPECT_LE((mean - marginal.mean).norm(), 1e-8);
+  EXPECT_LE((mean - joint.mean).norm(), 1e-8);
+
+
+//  const auto single_pred_joint =
+//      model->template predict<JointDistribution>(dataset.features[0]);
+
+
   //
   //  EXPECT_NEAR(single_pred_joint.mean[0], mean_predictions[0], 1e-6);
   //  if (joint_predictions.has_covariance()) {

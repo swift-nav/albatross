@@ -13,19 +13,9 @@
 #ifndef ALBATROSS_MODELS_LEAST_SQUARES_H
 #define ALBATROSS_MODELS_LEAST_SQUARES_H
 
-//#include "core/model_adapter.h"
-//#include "core/serialize.h"
-//#include <Eigen/Dense>
-//#include <cmath>
-//#include <gtest/gtest.h>
-//#include <iostream>
-//#include <random>
-
 namespace albatross {
 
 template <typename Derived> class LeastSquares;
-
-class LinearRegression;
 
 template <typename Derived> struct Fit<LeastSquares<Derived>> {
   Eigen::VectorXd coefs;
@@ -54,8 +44,8 @@ public:
 
   //  std::string get_name() const override { return "least_squares"; };
 
-  FitType fit_(const std::vector<Eigen::VectorXd> &features,
-               const MarginalDistribution &targets) const {
+  FitType fit_impl_(const std::vector<Eigen::VectorXd> &features,
+                    const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -87,9 +77,9 @@ public:
   }
 
   template <typename FeatureType>
-  FitType fit_(const std::vector<FeatureType> &features,
-               const MarginalDistribution &targets) const {
-    return this->fit_(this->convert_features(features), targets);
+  FitType fit_impl_(const std::vector<FeatureType> &features,
+                    const MarginalDistribution &targets) const {
+    return this->fit_impl_(this->convert_features(features), targets);
   }
 
   Eigen::VectorXd predict_(const std::vector<Eigen::VectorXd> &features) const {
