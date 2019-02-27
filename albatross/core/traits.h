@@ -43,16 +43,16 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-// template <typename ModelType, typename FitType> class is_valid_fit_type {
-//  template <typename C>
-//  static typename std::enable_if<std::is_same<Fit<C>, FitType>::value,
-//                                 std::true_type>::type
-//  test(C *);
-//  template <typename> static std::false_type test(...);
-//
-// public:
-//  static constexpr bool value = decltype(test<ModelType>(0))::value;
-//};
+template <typename T, typename U>
+struct template_param_is_base_of : public std::false_type {};
+
+template <template <typename> class Base, typename T, typename U>
+struct template_param_is_base_of<Base<T>, Base<U>>
+    : public std::is_base_of<T, U> {};
+
+template <typename ModelType, typename FitType>
+struct is_valid_fit_type
+    : public template_param_is_base_of<FitType, Fit<ModelType>> {};
 
 /*
  * This determines whether or not a class (T) has a method defined for,
@@ -60,15 +60,12 @@ public:
  *                const MarginalDistribution &)`
  * The result of the inspection gets stored in the member `value`.
  */
-template <typename T, typename FeatureType, typename ExpectedFitType = Fit<T>>
-class has_valid_fit_impl {
+template <typename T, typename FeatureType> class has_valid_fit_impl {
   template <typename C,
-            typename ActualFitType = decltype(std::declval<const C>().fit_impl_(
+            typename FitType = decltype(std::declval<const C>().fit_impl_(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
-  static typename std::enable_if<
-      std::is_same<ActualFitType, ExpectedFitType>::value, std::true_type>::type
-  test(C *);
+  static typename is_valid_fit_type<T, FitType>::type test(C *);
   template <typename> static std::false_type test(...);
 
 public:

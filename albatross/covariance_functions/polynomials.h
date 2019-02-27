@@ -13,7 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 
-
 namespace albatross {
 
 constexpr double default_sigma = 100.;

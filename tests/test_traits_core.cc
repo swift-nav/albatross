@@ -132,6 +132,21 @@ TEST(test_traits_core, test_has_possible_fit_impl) {
   EXPECT_FALSE(bool(has_possible_fit_impl<HasNoFitImpl, X>::value));
 }
 
+template <typename T>
+struct Base {};
+
+struct Derived : public Base<Derived> {};
+
+TEST(test_traits_core, test_is_valid_fit_type) {
+  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived>>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>>>::value));
+  // If a Derived class which inherits from Base<Derived> has a fit_impl_
+  // which returns Fit<Base<Derived>> consider that a valid fit type.
+  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>>>::value));
+  // However a fit_impl which returns
+  EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>, Fit<Derived>>::value));
+}
+
 /*
  * Predict Traits
  */

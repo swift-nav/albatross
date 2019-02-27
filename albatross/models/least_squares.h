@@ -63,7 +63,7 @@ public:
 
   template <typename FeatureType,
             typename std::enable_if<
-                has_valid_fit_impl<ImplType, FeatureType, FitType>::value,
+                has_valid_fit_impl<ImplType, FeatureType>::value,
                 int>::type = 0>
   FitType fit_impl_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
