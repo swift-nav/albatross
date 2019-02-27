@@ -55,7 +55,6 @@ set(albatross_HEADERS
     albatross/models/ransac_gp.h
     albatross/models/least_squares.h
     albatross/covariance_functions/covariance_function.h
-    albatross/covariance_functions/covariance_functions.h
     albatross/covariance_functions/distance_metrics.h
     albatross/covariance_functions/noise.h
     albatross/covariance_functions/polynomials.h
@@ -68,4 +67,3 @@ add_custom_target(albatross DEPENDS ${albatross_SRCS} ${albatross_HEADERS} COMME
 
 add_subdirectory(tests)
 add_subdirectory(examples)
-

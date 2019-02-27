@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_CORE_MODEL_ADAPTER_H
 #define ALBATROSS_CORE_MODEL_ADAPTER_H
 
-#include "functional_model.h"
-#include "model.h"
-#include "serialize.h"
-#include "traits.h"
-
 namespace albatross {
 
 /*

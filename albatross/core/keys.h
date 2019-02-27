@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_CORE_KEYS_H
 #define ALBATROSS_CORE_KEYS_H
 
-#include <string>
-
 namespace albatross {
 namespace keys {
 const std::string YAML_MODEL_NAME = "model_name";

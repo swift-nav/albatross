@@ -16,7 +16,6 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include <iomanip>
 #include <unordered_map>
 #include <functional>
 #include <memory>
@@ -24,9 +23,8 @@
 
 #include "Dataset"
 
+#include <type_traits>
 #include "core/declarations.h"
-#include "map_utils.h"
-
 #include "core/traits.h"
 #include "core/priors.h"
 #include "core/parameter_handling_mixin.h"

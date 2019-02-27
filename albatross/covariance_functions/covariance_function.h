@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 
-#include "../core/traits.h"
-#include "core/parameter_macros.h"
-#include "map_utils.h"
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <iostream>
-
 namespace albatross {
 
 template <typename X, typename Y> class SumOfCovarianceFunctions;

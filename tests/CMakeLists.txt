@@ -7,8 +7,8 @@ EXCLUDE_FROM_ALL
 #test_concatenate.cc
 #test_core_dataset.cc
 #test_core_distribution.cc
-test_core_model.cc
-#test_covariance_function.cc
+#test_core_model.cc
+test_covariance_function.cc
 #test_covariance_functions.cc
 #test_csv_utils.cc
 #test_distance_metrics.cc
@@ -35,7 +35,7 @@ test_traits_core.cc
 
 add_dependencies(albatross_unit_tests
     albatross
-    clang-format-all
+#    clang-format-all
 )
 
 target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt)

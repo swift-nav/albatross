@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 
-#include <sstream>
-
-#include "covariance_function.h"
-#include "distance_metrics.h"
-
 constexpr double default_length_scale = 100000.;
 constexpr double default_radial_sigma = 10.;
 

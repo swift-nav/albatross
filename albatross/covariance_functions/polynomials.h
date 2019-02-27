@@ -13,7 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 
-#include "covariance_function.h"
 
 namespace albatross {
 

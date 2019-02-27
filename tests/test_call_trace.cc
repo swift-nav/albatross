@@ -9,13 +9,10 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
+#include "Core"
+#include "CovarianceFunctions"
 
-// clang-format off
-#include "covariance_functions/covariance_functions.h"
-#include "covariance_functions/call_trace.h"
-// clang-format on
 #include <gtest/gtest.h>
-#include <iostream>
 
 namespace albatross {
 

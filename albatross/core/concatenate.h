@@ -13,9 +13,6 @@
 #ifndef ALBATROSS_CORE_CONCATENATE_H
 #define ALBATROSS_CORE_CONCATENATE_H
 
-#include "core/dataset.h"
-#include "map_utils.h"
-
 namespace albatross {
 
 template <typename FeatureType>

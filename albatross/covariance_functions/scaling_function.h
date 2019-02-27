@@ -13,10 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 
-#include "covariance_function.h"
-#include <sstream>
-#include <utility>
-
 namespace albatross {
 
 class ScalingFunction : public ParameterHandlingMixin {

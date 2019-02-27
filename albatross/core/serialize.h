@@ -13,14 +13,6 @@
 #ifndef ALBATROSS_CORE_SERIALIZE_H
 #define ALBATROSS_CORE_SERIALIZE_H
 
-#include "core/traits.h"
-#include <cereal/archives/json.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <iostream>
-#include <memory>
-
-#include <core/model.h>
-
 namespace albatross {
 
 template <typename FeatureType, typename ModelFit>

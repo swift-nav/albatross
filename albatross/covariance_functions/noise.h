@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_NOISE_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_NOISE_H
 
-#include "covariance_function.h"
-
 constexpr double default_sigma_noise = 0.1;
 
 namespace albatross {

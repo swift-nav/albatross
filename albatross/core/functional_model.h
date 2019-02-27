@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_CORE_FUNCTIONAL_MODEL_H
 #define ALBATROSS_CORE_FUNCTIONAL_MODEL_H
 
-#include "core/model.h"
-
 namespace albatross {
 
 // This struct is just a type helper to make it obvious that
