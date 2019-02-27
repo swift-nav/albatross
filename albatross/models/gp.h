@@ -184,6 +184,22 @@ public:
                                            this->model_fit_.train_ldlt);
   }
 
+  template <typename PredictFeatureType,
+            typename std::enable_if<
+               !has_call_operator<CovarianceFunc, FeatureType, PredictFeatureType>::value,
+                int>::type = 0>
+  JointDistribution predict_(const std::vector<PredictFeatureType> &features,
+                           PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for cross covariance.
+
+
+  template <typename PredictFeatureType,
+            typename std::enable_if<
+               !has_call_operator<CovarianceFunc, PredictFeatureType, PredictFeatureType>::value,
+                int>::type = 0>
+  JointDistribution predict_(const std::vector<PredictFeatureType> &features,
+                           PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for predict covariance.
+
+
 //  virtual MarginalDistribution
 //  predict_marginal_(const std::vector<FeatureType> &features) const override {
 //    const auto cross_cov =
