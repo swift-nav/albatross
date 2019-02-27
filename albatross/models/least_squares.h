@@ -15,9 +15,9 @@
 
 namespace albatross {
 
-template <typename Derived> class LeastSquares;
+template <typename ImplType> class LeastSquares;
 
-template <typename Derived> struct Fit<LeastSquares<Derived>> {
+template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
   bool operator==(const Fit &other) const { return coefs == other.coefs; }
@@ -37,10 +37,10 @@ struct NullLeastSquaresImpl {};
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-template <typename Derived = NullLeastSquaresImpl>
-class LeastSquares : public ModelBase<LeastSquares<Derived>> {
+template <typename ImplType = NullLeastSquaresImpl>
+class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
 public:
-  using FitType = Fit<LeastSquares<Derived>>;
+  using FitType = Fit<LeastSquares<ImplType>>;
 
   //  std::string get_name() const override { return "least_squares"; };
 
@@ -61,28 +61,17 @@ public:
     return model_fit;
   }
 
-  template <typename FeatureType>
-  decltype(auto) convert_feature(const FeatureType &feature) const {
-    return least_squares_impl().convert_feature(feature);
-  }
-
-  template <typename FeatureType>
-  std::vector<Eigen::VectorXd>
-  convert_features(const std::vector<FeatureType> &features) const {
-    std::vector<Eigen::VectorXd> output;
-    for (const auto &f : features) {
-      output.push_back(this->convert_feature(f));
-    }
-    return output;
-  }
-
-  template <typename FeatureType>
+  template <typename FeatureType,
+            typename std::enable_if<
+                has_valid_fit_impl<ImplType, FeatureType, FitType>::value,
+                int>::type = 0>
   FitType fit_impl_(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
-    return this->fit_impl_(this->convert_features(features), targets);
+    return impl().fit_impl_(features, targets);
   }
 
-  Eigen::VectorXd predict_(const std::vector<Eigen::VectorXd> &features) const {
+  Eigen::VectorXd predict_(const std::vector<Eigen::VectorXd> &features,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
@@ -92,9 +81,13 @@ public:
     return mean;
   }
 
-  template <typename FeatureType>
-  Eigen::VectorXd predict_(const std::vector<FeatureType> &features) const {
-    return this->predict_(this->convert_features(features));
+  template <typename FeatureType, typename PredictType,
+            typename std::enable_if<
+                has_valid_predict_<ImplType, FeatureType, PredictType>::value,
+                int>::type = 0>
+  PredictType predict_(const std::vector<FeatureType> &features,
+                       PredictTypeIdentity<PredictType> &&) const {
+    return impl().predict_(features, PredictTypeIdentity<PredictType>());
   }
 
   /*
@@ -109,10 +102,8 @@ public:
   /*
    * CRTP Helpers
    */
-  Derived &least_squares_impl() { return *static_cast<Derived *>(this); }
-  const Derived &least_squares_impl() const {
-    return *static_cast<const Derived *>(this);
-  }
+  ImplType &impl() { return *static_cast<ImplType *>(this); }
+  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
 };
 
 /*
@@ -129,10 +120,30 @@ class LinearRegression : public LeastSquares<LinearRegression> {
 public:
   //  std::string get_name() const { return "linear_regression"; };
 
-  Eigen::VectorXd convert_feature(const double &feature) const {
+  Eigen::VectorXd convert_feature(const double &f) const {
     Eigen::VectorXd converted(2);
-    converted << 1., feature;
+    converted << 1., f;
     return converted;
+  }
+
+  std::vector<Eigen::VectorXd>
+  convert_features(const std::vector<double> &features) const {
+    std::vector<Eigen::VectorXd> output;
+    for (const auto &f : features) {
+      output.emplace_back(convert_feature(f));
+    }
+    return output;
+  }
+
+  auto fit_impl_(const std::vector<double> &features,
+                 const MarginalDistribution &targets) const {
+    return LeastSquares<LinearRegression>::fit_impl_(convert_features(features),
+                                                     targets);
+  }
+
+  Eigen::VectorXd predict_(const std::vector<double> &features,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
+    return this->predict(convert_features(features)).mean();
   }
 
   /*

@@ -92,8 +92,8 @@ public:
   }
 
   // looks up the prediction in the map
-  Eigen::VectorXd
-  predict_mean_(const std::vector<MockFeature> &features) const {
+  Eigen::VectorXd predict_(const std::vector<MockFeature> &features,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
@@ -106,13 +106,13 @@ public:
   }
 
   // convert before predicting
-  Eigen::VectorXd
-  predict_mean_(const std::vector<ContainsMockFeature> &features) const {
+  Eigen::VectorXd predict_(const std::vector<ContainsMockFeature> &features,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
     std::vector<MockFeature> mock_features;
     for (const auto &f : features) {
       mock_features.push_back(f.mock);
     }
-    return predict_mean_(mock_features);
+    return predict_(mock_features, PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
 

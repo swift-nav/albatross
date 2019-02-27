@@ -1,12 +1,17 @@
+#include "cereal/cereal.hpp"
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/polymorphic.hpp>
 
-#include "eigen/serializable_diagonal_matrix.h"
-#include "cereal/traits.h"
+#include <Eigen/Core>
+#include "Eigen/Dense"
 
-#include "core/traits.h"
+#include <math.h>
+
+#include "cereal/traits.h"
+#include "eigen/serializable_diagonal_matrix.h"
+
 #include "core/declarations.h"
 #include "core/indexing.h"
 #include "core/distribution.h"

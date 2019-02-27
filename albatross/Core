@@ -14,14 +14,20 @@
 #define ALBATROSS_CORE_H
 
 #include <map>
+#include <string>
 #include <iostream>
+#include <iomanip>
 #include <unordered_map>
-
-#include "map_utils.h"
+#include <functional>
+#include <memory>
+#include <vector>
 
 #include "Dataset"
 
 #include "core/declarations.h"
+#include "map_utils.h"
+
+#include "core/traits.h"
 #include "core/priors.h"
 #include "core/parameter_handling_mixin.h"
 #include "core/parameter_macros.h"

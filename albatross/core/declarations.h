@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_CORE_DECLARATIONS_H
 #define ALBATROSS_CORE_DECLARATIONS_H
 
-#include <functional>
-#include <map>
-#include <memory>
-#include <vector>
-
-#include <Eigen/Core>
-
 namespace Eigen {
 
 template <typename _Scalar, int SizeAtCompileTime>
@@ -31,9 +24,12 @@ namespace albatross {
 /*
  * Model
  */
-// template <typename FeatureType> class RegressionModel;
+template <typename ModelType> class ModelBase;
+
 template <typename FeatureType> struct RegressionDataset;
 // template <typename FeatureType> struct RegressionFold;
+
+template <typename T> struct PredictTypeIdentity;
 
 template <typename ModelType, typename FeatureType> class Prediction;
 

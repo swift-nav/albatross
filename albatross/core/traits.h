@@ -13,18 +13,7 @@
 #ifndef ALBATROSS_CORE_TRAITS_H
 #define ALBATROSS_CORE_TRAITS_H
 
-#include "core/declarations.h"
-
 namespace albatross {
-
-/*
- * This little trick was borrowed from cereal, you an think of it as
- * a function that will always return false ... but that doesn't
- * get resolved until template instantiation, which when combined
- * with a static assert let's you include a static assert that
- * only triggers with a particular template parameter is used.
- */
-template <class T> struct delay_static_assert : std::false_type {};
 
 /*
  * Checks if a class type is complete by using sizeof.
@@ -54,19 +43,31 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
+// template <typename ModelType, typename FitType> class is_valid_fit_type {
+//  template <typename C>
+//  static typename std::enable_if<std::is_same<Fit<C>, FitType>::value,
+//                                 std::true_type>::type
+//  test(C *);
+//  template <typename> static std::false_type test(...);
+//
+// public:
+//  static constexpr bool value = decltype(test<ModelType>(0))::value;
+//};
+
 /*
  * This determines whether or not a class (T) has a method defined for,
  *   `Fit<T> fit_impl_(const std::vector<FeatureType>&,
  *                const MarginalDistribution &)`
  * The result of the inspection gets stored in the member `value`.
  */
-template <typename T, typename FeatureType> class has_valid_fit_impl {
+template <typename T, typename FeatureType, typename ExpectedFitType = Fit<T>>
+class has_valid_fit_impl {
   template <typename C,
-            typename FitType = decltype(std::declval<const C>().fit_impl_(
+            typename ActualFitType = decltype(std::declval<const C>().fit_impl_(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
-  static typename std::enable_if<std::is_same<FitType, Fit<T>>::value,
-                                 std::true_type>::type
+  static typename std::enable_if<
+      std::is_same<ActualFitType, ExpectedFitType>::value, std::true_type>::type
   test(C *);
   template <typename> static std::false_type test(...);
 
@@ -91,23 +92,32 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-#define HAS_VALID_PREDICT(name, predtype)                                      \
-  template <typename T, typename FeatureType> class has_valid_##name {         \
-    template <typename C,                                                      \
-              typename PredictType = decltype(std::declval<const C>().name(    \
-                  std::declval<const std::vector<FeatureType> &>()))>          \
-    static typename std::enable_if<std::is_same<PredictType, predtype>::value, \
-                                   std::true_type>::type                       \
-    test(C *);                                                                 \
-    template <typename> static std::false_type test(...);                      \
-                                                                               \
-  public:                                                                      \
-    static constexpr bool value = decltype(test<T>(0))::value;                 \
-  }
+template <typename T, typename FeatureType, typename PredictType>
+class has_valid_predict_ {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>().predict_(
+                std::declval<const std::vector<FeatureType> &>(),
+                std::declval<PredictTypeIdentity<PredictType> &&>()))>
+  static typename std::enable_if<std::is_same<PredictType, ReturnType>::value,
+                                 std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
 
-HAS_VALID_PREDICT(predict_mean_, Eigen::VectorXd);
-HAS_VALID_PREDICT(predict_marginal_, MarginalDistribution);
-HAS_VALID_PREDICT(predict_joint_, JointDistribution);
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T, typename FeatureType>
+using has_valid_predict_mean =
+    has_valid_predict_<T, FeatureType, Eigen::VectorXd>;
+
+template <typename T, typename FeatureType>
+using has_valid_predict_marginal =
+    has_valid_predict_<T, FeatureType, MarginalDistribution>;
+
+template <typename T, typename FeatureType>
+using has_valid_predict_joint =
+    has_valid_predict_<T, FeatureType, JointDistribution>;
 
 } // namespace albatross
 

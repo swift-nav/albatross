@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "Distribution"
+#include "Core"
 
 #include <gtest/gtest.h>
 
@@ -116,6 +116,7 @@ TEST(test_traits_core, test_has_valid_fit_impl) {
   EXPECT_TRUE(bool(has_valid_fit_impl<HasValidXYFitImpl, X>::value));
   EXPECT_TRUE(bool(has_valid_fit_impl<HasValidXYFitImpl, Y>::value));
   EXPECT_FALSE(bool(has_valid_fit_impl<HasNoFitImpl, X>::value));
+  //  EXPECT_TRUE(bool(has_valid_fit_impl<HasInheritedFitImpl, Y>::value));
 }
 
 TEST(test_traits_core, test_has_possible_fit_impl) {
@@ -144,14 +145,17 @@ TEST(test_traits_core, test_has_possible_fit_impl) {
 
 class HasMeanPredictImpl {
 public:
-  Eigen::VectorXd predict_mean_(const std::vector<X> &) const {
+  Eigen::VectorXd predict_(const std::vector<X> &,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
     return Eigen::VectorXd::Zero(0);
   }
 };
 
 class HasMarginalPredictImpl {
 public:
-  MarginalDistribution predict_marginal_(const std::vector<X> &) const {
+  MarginalDistribution
+  predict_(const std::vector<X> &,
+           PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
@@ -159,7 +163,8 @@ public:
 
 class HasJointPredictImpl {
 public:
-  JointDistribution predict_joint_(const std::vector<X> &) const {
+  JointDistribution predict_(const std::vector<X> &,
+                             PredictTypeIdentity<JointDistribution> &&) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return JointDistribution(mean);
   }
@@ -167,29 +172,33 @@ public:
 
 class HasAllPredictImpls {
 public:
-  Eigen::VectorXd predict_mean_(const std::vector<X> &) const {
+  Eigen::VectorXd predict_(const std::vector<X> &,
+                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
     return Eigen::VectorXd::Zero(0);
   }
 
-  MarginalDistribution predict_marginal_(const std::vector<X> &) const {
+  MarginalDistribution
+  predict_(const std::vector<X> &,
+           PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
 
-  JointDistribution predict_joint_(const std::vector<X> &) const {
+  JointDistribution predict_(const std::vector<X> &,
+                             PredictTypeIdentity<JointDistribution> &&) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return JointDistribution(mean);
   }
 };
 
 TEST(test_traits_core, test_has_valid_predict_impl) {
-  EXPECT_TRUE(bool(has_valid_predict_mean_<HasMeanPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X>::value));
   EXPECT_TRUE(
-      bool(has_valid_predict_marginal_<HasMarginalPredictImpl, X>::value));
-  EXPECT_TRUE(bool(has_valid_predict_joint_<HasJointPredictImpl, X>::value));
-  EXPECT_TRUE(bool(has_valid_predict_mean_<HasAllPredictImpls, X>::value));
-  EXPECT_TRUE(bool(has_valid_predict_marginal_<HasAllPredictImpls, X>::value));
-  EXPECT_TRUE(bool(has_valid_predict_joint_<HasAllPredictImpls, X>::value));
+      bool(has_valid_predict_marginal<HasMarginalPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_joint<HasJointPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_mean<HasAllPredictImpls, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_marginal<HasAllPredictImpls, X>::value));
+  EXPECT_TRUE(bool(has_valid_predict_joint<HasAllPredictImpls, X>::value));
 }
 
 } // namespace albatross
