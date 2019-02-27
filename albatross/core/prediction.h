@@ -41,7 +41,7 @@ public:
   template <typename DummyType = FeatureType,
             typename std::enable_if<
                 !has_valid_predict_mean<ModelType, DummyType>::value &&
-                    has_valid_predict_marginal<ModelType, DummyType>::value,
+                 has_valid_predict_marginal<ModelType, DummyType>::value,
                 int>::type = 0>
   Eigen::VectorXd mean() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
@@ -122,11 +122,16 @@ public:
 
   template <typename DummyType = FeatureType,
             typename std::enable_if<
-                !has_valid_predict_mean<ModelType, DummyType>::value &&
                     !has_valid_predict_marginal<ModelType, DummyType>::value &&
                     !has_valid_predict_joint<ModelType, DummyType>::value,
                 int>::type = 0>
-  Eigen::VectorXd marginal() const = delete; // No valid predict method found.
+  Eigen::VectorXd marginal() const = delete; // No valid predict marginal method found.
+
+  template <typename DummyType = FeatureType,
+            typename std::enable_if<
+                    !has_valid_predict_joint<ModelType, DummyType>::value,
+                int>::type = 0>
+  Eigen::VectorXd joint() const = delete; // No valid predict joint method found.
 
 private:
   const ModelType &model_;

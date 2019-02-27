@@ -46,6 +46,18 @@ using DiagonalMatrixXd =
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 /*
+ * Models
+ */
+
+template <typename FeatureType, typename CovarianceFunction>
+class GaussianProcessRegression;
+
+struct NullLeastSquaresImpl {};
+
+template <typename ImplType = NullLeastSquaresImpl>
+class LeastSquares;
+
+/*
  * Cross Validation
  */
 // using FoldIndices = std::vector<std::size_t>;

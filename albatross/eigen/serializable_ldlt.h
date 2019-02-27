@@ -93,7 +93,7 @@ public:
   }
 
   std::vector<Eigen::MatrixXd>
-  inverse_blocks(const std::vector<albatross::FoldIndices> &blocks) const {
+  inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
 
     /*
      * The LDLT decomposition is stored such that,
@@ -140,9 +140,9 @@ public:
     Eigen::Index n = this->rows();
 
     std::size_t size_n = static_cast<std::size_t>(n);
-    std::vector<albatross::FoldIndices> block_indices(size_n);
+    std::vector<std::vector<std::size_t>> block_indices(size_n);
     for (Eigen::Index i = 0; i < n; i++) {
-      block_indices[i] = {static_cast<albatross::FoldIndices::value_type>(i)};
+      block_indices[i] = {static_cast<std::size_t>(i)};
     }
 
     Eigen::VectorXd inv_diag(n);

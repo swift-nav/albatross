@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_MODELS_RANSAC_GP_H
 #define ALBATROSS_MODELS_RANSAC_GP_H
 
-#include "crossvalidation.h"
-#include "gp.h"
-#include "ransac.h"
-#include <random>
-
 namespace albatross {
 
 template <typename FeatureType> struct FitAndIndices {

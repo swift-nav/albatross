@@ -20,14 +20,14 @@ template <typename ImplType> class LeastSquares;
 template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
-  bool operator==(const Fit &other) const { return coefs == other.coefs; }
+  bool operator==(const Fit &other) const {
+    return (coefs == other.coefs);
+  }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(coefs);
   }
 };
-
-struct NullLeastSquaresImpl {};
 
 /*
  * This model supports a family of models which consist of
@@ -37,7 +37,7 @@ struct NullLeastSquaresImpl {};
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-template <typename ImplType = NullLeastSquaresImpl>
+template <typename ImplType>
 class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
 public:
   using FitType = Fit<LeastSquares<ImplType>>;
@@ -70,15 +70,15 @@ public:
     return impl().fit_impl_(features, targets);
   }
 
-  Eigen::VectorXd predict_(const std::vector<Eigen::VectorXd> &features,
-                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  JointDistribution predict_(const std::vector<Eigen::VectorXd> &features,
+                           PredictTypeIdentity<JointDistribution> &&) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
       mean(static_cast<Eigen::Index>(i)) =
           features[i].dot(this->model_fit_.coefs);
     }
-    return mean;
+    return JointDistribution(mean);
   }
 
   template <typename FeatureType, typename PredictType,
@@ -141,9 +141,10 @@ public:
                                                      targets);
   }
 
-  Eigen::VectorXd predict_(const std::vector<double> &features,
-                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    return this->predict(convert_features(features)).mean();
+  auto predict_(const std::vector<double> &features,
+                           PredictTypeIdentity<JointDistribution> &&) const {
+    return LeastSquares<LinearRegression>::predict_(convert_features(features),
+                                                    PredictTypeIdentity<JointDistribution>());
   }
 
   /*

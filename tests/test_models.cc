@@ -14,27 +14,29 @@
 
 #include "test_utils.h"
 
+#include "models/gp.h"
 #include "models/least_squares.h"
 
 namespace albatross {
 
-// auto make_simple_covariance_function() {
-//  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
-//  IndependentNoise<double> noise(0.1);
-//  return squared_exponential + noise;
-//}
-//
-// class MakeGaussianProcess : public AbstractTestModel<double> {
-// public:
-//  std::unique_ptr<RegressionModel<double>> create() const override {
-//    auto covariance = make_simple_covariance_function();
-//    return gp_pointer_from_covariance<double>(covariance);
-//  }
-//
-//  RegressionDataset<double> get_dataset() const override {
-//    return make_toy_linear_data();
-//  }
-//};
+ auto make_simple_covariance_function() {
+  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+  IndependentNoise<double> noise(0.1);
+  return squared_exponential + noise;
+}
+
+class MakeGaussianProcess {
+public:
+
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+    return gp_from_covariance<double>(covariance);
+  }
+
+RegressionDataset<double> get_dataset() const {
+  return make_toy_linear_data();
+}
+};
 //
 // class MakeAdaptedGaussianProcess : public AbstractTestModel<AdaptedFeature> {
 // public:
@@ -64,7 +66,7 @@ public:
   ModelTestCase test_case;
 };
 
-typedef ::testing::Types<MakeLinearRegression> ModelCreators;
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess> ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
@@ -85,13 +87,12 @@ TYPED_TEST(RegressionModelTester, test_predict_variants) {
   const auto pred = model.predict(dataset.features);
 
   const Eigen::VectorXd pred_mean = pred.mean();
-  double rmse = sqrt((pred_mean - dataset.targets.mean).norm());
-  EXPECT_LE(rmse, 0.5);
-  //  const MarginalDistribution marginal = pred.marginal();
-  //  const JointDistribution joint = pred.joint();
 
-  //  EXPECT_LE((mean - marginal.mean).norm(), 1e-8);
-  //  EXPECT_LE((mean - joint.mean).norm(), 1e-8);
+  const MarginalDistribution marginal = pred.marginal();
+  EXPECT_LE((pred_mean - marginal.mean).norm(), 1e-8);
+
+  const JointDistribution joint = pred.joint();
+  EXPECT_LE((pred_mean - joint.mean).norm(), 1e-8);
 
   //  const auto single_pred_joint =
   //      model->template predict<JointDistribution>(dataset.features[0]);

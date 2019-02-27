@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_TUNING_METRICS_H
 #define ALBATROSS_TUNING_METRICS_H
 
-#include "core/model.h"
-#include "core/serialize.h"
-#include "evaluate.h"
-#include "models/gp.h"
-#include <map>
-#include <vector>
-
 namespace albatross {
 
 template <typename FeatureType>

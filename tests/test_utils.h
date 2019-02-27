@@ -15,18 +15,11 @@
 
 #include "Core"
 
+#include "GP"
+
 #include <random>
 
 #include "mock_model.h"
-//#include "core/serialize.h"
-//#include "covariance_functions/covariance_functions.h"
-//#include "evaluate.h"
-//#include "models/least_squares.h"
-//#include "models/ransac_gp.h"
-//#include <Eigen/Dense>
-//#include <cereal/types/map.hpp>
-//#include <cmath>
-//#include <gtest/gtest.h>
 
 namespace albatross {
 

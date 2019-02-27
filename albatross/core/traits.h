@@ -56,8 +56,9 @@ struct is_valid_fit_type
 
 /*
  * This determines whether or not a class (T) has a method defined for,
- *   `Fit<T> fit_impl_(const std::vector<FeatureType>&,
- *                const MarginalDistribution &)`
+ *   `Fit<U> fit_impl_(const std::vector<FeatureType>&,
+ *                     const MarginalDistribution &)`
+ * where U is a base of T.
  * The result of the inspection gets stored in the member `value`.
  */
 template <typename T, typename FeatureType> class has_valid_fit_impl {
