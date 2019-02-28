@@ -47,19 +47,6 @@ template <typename FeatureType> struct RegressionFold {
 };
 
 /*
- * Computes the indices between 0 and n - 1 which are NOT contained
- * in `indices`.  Here complement is the mathematical interpretation
- * of the word meaning "the part required to make something whole".
- * In other words, indices and indices_complement(indices) should
- * contain all the numbers between 0 and n-1
- */
-inline FoldIndices indices_complement(const FoldIndices &indices, const int n) {
-  FoldIndices all_indices(n);
-  std::iota(all_indices.begin(), all_indices.end(), 0);
-  return vector_set_difference(all_indices, indices);
-}
-
-/*
  * Each flavor of cross validation can be described by a set of
  * FoldIndices, which store which indices should be used for the
  * test cases.  This function takes a map from FoldName to

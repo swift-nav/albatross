@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "csv.h"
-#include "csv_utils.h"
 #include <gtest/gtest.h>
+
+#include "Core"
 
 namespace albatross {
 

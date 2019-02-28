@@ -152,28 +152,28 @@ static inline auto make_toy_linear_data(const double a = 5.,
 //  RegressionDataset<double> dataset_;
 //};
 //
-// inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
-//                                    int seed = 5) {
-//  std::random_device rd{};
-//  std::mt19937 gen{rd()};
-//  gen.seed(seed);
-//
-//  std::uniform_real_distribution<double> rand_lon(0., 2 * M_PI);
-//  std::uniform_real_distribution<double> rand_lat(-M_PI / 2., M_PI / 2.);
-//
-//  std::vector<Eigen::VectorXd> points;
-//
-//  for (std::size_t i = 0; i < n; i++) {
-//    const double lon = rand_lon(gen);
-//    const double lat = rand_lat(gen);
-//    Eigen::VectorXd x(3);
-//    // Convert the spherical coordinates to X,Y,Z
-//    x << cos(lat) * cos(lon) * radius, cos(lat) * sin(lon) * radius,
-//        sin(lat) * radius;
-//    points.push_back(x);
-//  }
-//  return points;
-//}
+ inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
+                                    int seed = 5) {
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  gen.seed(seed);
+
+  std::uniform_real_distribution<double> rand_lon(0., 2 * M_PI);
+  std::uniform_real_distribution<double> rand_lat(-M_PI / 2., M_PI / 2.);
+
+  std::vector<Eigen::VectorXd> points;
+
+  for (std::size_t i = 0; i < n; i++) {
+    const double lon = rand_lon(gen);
+    const double lat = rand_lat(gen);
+    Eigen::VectorXd x(3);
+    // Convert the spherical coordinates to X,Y,Z
+    x << cos(lat) * cos(lon) * radius, cos(lat) * sin(lon) * radius,
+        sin(lat) * radius;
+    points.push_back(x);
+  }
+  return points;
+}
 //
 //// Group values by interval, but return keys that once sorted won't be
 //// in order

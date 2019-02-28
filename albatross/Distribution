@@ -21,5 +21,6 @@
 #include "core/declarations.h"
 #include "core/indexing.h"
 #include "core/distribution.h"
+#include "core/concatenate.h"
 
 #endif

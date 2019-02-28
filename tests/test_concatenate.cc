@@ -10,10 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/concatenate.h"
-#include "crossvalidation.h"
-#include "test_utils.h"
 #include <gtest/gtest.h>
+
+#include "Dataset"
+
+#include "test_utils.h"
 
 namespace albatross {
 
@@ -26,8 +27,7 @@ TEST(test_concatenate, test_concatenate_datasets) {
   for (std::size_t i = 0; i < dataset.features.size() - 3; ++i) {
     first_inds.push_back(i);
   }
-  const auto last_inds =
-      albatross::indices_complement(first_inds, dataset.features.size());
+  const auto last_inds = indices_complement(first_inds, dataset.features.size());
 
   const auto first = albatross::subset(first_inds, dataset);
   const auto last = albatross::subset(last_inds, dataset);
