@@ -33,5 +33,6 @@
 #include <vector>
 
 #include "map_utils.h"
+#include "random_utils.h"
 
 #endif

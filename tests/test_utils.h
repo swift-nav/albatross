@@ -44,29 +44,29 @@ static inline auto make_toy_linear_data(const double a = 5.,
 }
 
 
-// class MockParameterHandler : public ParameterHandlingMixin {
-// public:
-//  MockParameterHandler(const ParameterStore &params)
-//      : ParameterHandlingMixin(params){};
-//};
-//
-// class TestParameterHandler : public ParameterHandlingMixin {
-// public:
-//  TestParameterHandler() : ParameterHandlingMixin() {
-//    params_ = {{"A", 1.}, {"B", 2.}};
-//  };
-//};
-//
-//
-// static inline void
-// expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
-//                              const std::vector<ParameterValue> &y) {
-//  for (std::size_t i = 0; i < x.size(); i++) {
-//    EXPECT_DOUBLE_EQ(x[i], y[i]);
-//  }
-//  EXPECT_EQ(x.size(), y.size());
-//}
-//
+ class MockParameterHandler : public ParameterHandlingMixin {
+ public:
+  MockParameterHandler(const ParameterStore &params)
+      : ParameterHandlingMixin(params){};
+};
+
+ class TestParameterHandler : public ParameterHandlingMixin {
+ public:
+  TestParameterHandler() : ParameterHandlingMixin() {
+    params_ = {{"A", 1.}, {"B", 2.}};
+  };
+};
+
+
+ static inline void
+ expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
+                              const std::vector<ParameterValue> &y) {
+  for (std::size_t i = 0; i < x.size(); i++) {
+    EXPECT_DOUBLE_EQ(x[i], y[i]);
+  }
+  EXPECT_EQ(x.size(), y.size());
+}
+
 
 //
 // static inline auto

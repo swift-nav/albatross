@@ -14,6 +14,7 @@
 
 #include "Core"
 
+
 namespace albatross {
 
 struct SubFeature {

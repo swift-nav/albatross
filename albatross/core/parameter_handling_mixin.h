@@ -298,7 +298,7 @@ public:
     params_[name] = param;
   }
 
-private:
+protected:
   ParameterStore params_;
 };
 
