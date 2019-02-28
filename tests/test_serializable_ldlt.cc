@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include "Common"
 #include "eigen/serializable_ldlt.h"
 
 namespace albatross {

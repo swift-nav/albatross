@@ -33,24 +33,55 @@ public:
     return gp_from_covariance<double>(covariance);
   }
 
-RegressionDataset<double> get_dataset() const {
-  return make_toy_linear_data();
-}
+  RegressionDataset<double> get_dataset() const {
+    return make_toy_linear_data();
+  }
 };
-//
-// class MakeAdaptedGaussianProcess : public AbstractTestModel<AdaptedFeature> {
-// public:
-//  std::unique_ptr<RegressionModel<AdaptedFeature>> create() const override {
-//    auto covariance = make_simple_covariance_function();
-//    auto gp = gp_from_covariance<double>(covariance);
-//    return std::make_unique<AdaptedExample<decltype(gp)>>(gp);
-//  }
-//
-//  RegressionDataset<AdaptedFeature> get_dataset() const override {
-//    return make_adapted_toy_linear_data();
-//  }
-//};
-//
+
+template <typename CovarianceFunc>
+class AdaptedGaussianProcess : public GaussianProcessRegression<double, CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>> {
+public:
+  using Base = GaussianProcessRegression<double, CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>>;
+
+  auto fit_impl_(const std::vector<AdaptedFeature> &features,
+                 const MarginalDistribution &targets) const {
+    std::vector<double> converted;
+    for (const auto &f : features) {
+      converted.push_back(f.value);
+    }
+    return Base::fit_impl_(converted, targets);
+  }
+
+  JointDistribution predict_(const std::vector<AdaptedFeature> &features,
+                       PredictTypeIdentity<JointDistribution> &&) const {
+    std::vector<double> converted;
+    for (const auto &f : features) {
+      converted.push_back(f.value);
+    }
+    return Base::predict_(converted, PredictTypeIdentity<JointDistribution>());
+  }
+
+};
+
+class MakeAdaptedGaussianProcess {
+public:
+
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+    AdaptedGaussianProcess<decltype(covariance)> gp;
+
+    using CovarianceFunc = decltype(covariance);
+    static_assert(std::is_base_of<GaussianProcessRegression<double, CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>>,
+                                  AdaptedGaussianProcess<CovarianceFunc>>::value, "not base of");
+
+    return gp;
+  }
+
+  RegressionDataset<AdaptedFeature> get_dataset() const {
+    return make_adapted_toy_linear_data();
+  }
+};
+
 class MakeLinearRegression {
 public:
   LinearRegression get_model() const { return LinearRegression(); }
@@ -66,7 +97,7 @@ public:
   ModelTestCase test_case;
 };
 
-typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess> ModelCreators;
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess, MakeAdaptedGaussianProcess> ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {

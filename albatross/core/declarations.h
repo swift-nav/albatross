@@ -49,13 +49,17 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
  * Models
  */
 
-template <typename FeatureType, typename CovarianceFunction>
+struct NullGPImpl {};
+
+template <typename FeatureType, typename CovarianceFunc, typename ImplType = NullGPImpl>
 class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
 
 template <typename ImplType = NullLeastSquaresImpl>
 class LeastSquares;
+
+
 
 /*
  * Cross Validation

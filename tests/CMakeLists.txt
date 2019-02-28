@@ -3,11 +3,11 @@ add_definitions(-DCSV_IO_NO_THREAD)
 
 add_executable(albatross_unit_tests
 EXCLUDE_FROM_ALL
-#test_call_trace.cc
+test_call_trace.cc
 #test_concatenate.cc
-#test_core_dataset.cc
-#test_core_distribution.cc
-#test_core_model.cc
+test_core_dataset.cc
+test_core_distribution.cc
+test_core_model.cc
 test_covariance_function.cc
 #test_covariance_functions.cc
 #test_csv_utils.cc
@@ -24,11 +24,11 @@ test_models.cc
 #test_radial.cc
 #test_random_utils.cc
 #test_scaling_function.cc
-#test_serializable_ldlt.cc
+test_serializable_ldlt.cc
 #test_serialize.cc
-#test_traits_cereal.cc
+test_traits_cereal.cc
 test_traits_core.cc
-#test_traits_covariance_functions.cc
+test_traits_covariance_functions.cc
 #test_tune.cc
 #test_tuning_metrics.cc
 )

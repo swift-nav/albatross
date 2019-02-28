@@ -10,8 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/traits.h"
-#include "covariance_functions/traits.h"
+#include "CovarianceFunctions"
 
 #include <gtest/gtest.h>
 

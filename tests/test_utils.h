@@ -43,26 +43,7 @@ static inline auto make_toy_linear_data(const double a = 5.,
   return RegressionDataset<double>(features, targets);
 }
 
-// class TestAdaptedModel : public ModelBase<TestAdaptedModel> {
-// public:
-//  TestAdaptedModel() { this->params_["center"] = 0.; };
-//
-//  Eigen::VectorXd convert_feature(const double &x) const override {
-//    Eigen::VectorXd converted(2);
-//    converted << 1., (x - this->get_param_value("center"));
-//    return converted;
-//  }
-//};
-//
-// class IdentityScaling : public ScalingFunction {
-// public:
-//  IdentityScaling() : ScalingFunction(){};
-//
-//  std::string get_name() const { return "identity_scaling"; }
-//
-//  double call_impl_(const double &) const { return 1.; }
-//};
-//
+
 // class MockParameterHandler : public ParameterHandlingMixin {
 // public:
 //  MockParameterHandler(const ParameterStore &params)
@@ -133,40 +114,26 @@ static inline auto make_toy_linear_data(const double a = 5.,
 // * Here we create data and a model that will make it easier to test
 // * that models using the model_adapter.h interface work.
 // */
-// struct AdaptedFeature {
-//  double value;
-//};
-//
-// static inline auto make_adapted_toy_linear_data(const double a = 5.,
-//                                                const double b = 1.,
-//                                                const double sigma = 0.1,
-//                                                const std::size_t n = 10) {
-//  const auto dataset = make_toy_linear_data(a, b, sigma, n);
-//
-//  std::vector<AdaptedFeature> adapted_features;
-//  for (const auto &f : dataset.features) {
-//    adapted_features.push_back({f});
-//  }
-//
-//  RegressionDataset<AdaptedFeature> adapted_dataset(adapted_features,
-//                                                    dataset.targets);
-//  return adapted_dataset;
-//}
-//
-// template <typename SubModelType>
-// class AdaptedExample
-//    : public AdaptedRegressionModel<AdaptedFeature, SubModelType> {
-// public:
-//  AdaptedExample(const SubModelType &model)
-//      : AdaptedRegressionModel<AdaptedFeature, SubModelType>(model){};
-//  virtual ~AdaptedExample(){};
-//
-//  double convert_feature(const AdaptedFeature &parent_feature) const override
-//  {
-//    return double(parent_feature.value);
-//  }
-//};
-//
+ struct AdaptedFeature {
+  double value;
+};
+
+ static inline auto make_adapted_toy_linear_data(const double a = 5.,
+                                                const double b = 1.,
+                                                const double sigma = 0.1,
+                                                const std::size_t n = 10) {
+  const auto dataset = make_toy_linear_data(a, b, sigma, n);
+
+  std::vector<AdaptedFeature> adapted_features;
+  for (const auto &f : dataset.features) {
+    adapted_features.push_back({f});
+  }
+
+  RegressionDataset<AdaptedFeature> adapted_dataset(adapted_features,
+                                                    dataset.targets);
+  return adapted_dataset;
+}
+
 // static inline std::unique_ptr<RegressionModel<AdaptedFeature>>
 // adapted_toy_gaussian_process() {
 //  auto covariance = toy_covariance_function();

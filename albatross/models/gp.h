@@ -28,8 +28,8 @@ namespace albatross {
 //    std::size_t random_sample_size, std::size_t max_iterations,
 //    const IndexerFunction<FeatureType> &indexer_function);
 
-template <typename FeatureType, typename CovarianceFunc>
-struct Fit<GaussianProcessRegression<FeatureType, CovarianceFunc>> {
+template <typename FeatureType, typename CovarianceFunc, typename ImplType>
+struct Fit<GaussianProcessRegression<FeatureType, CovarianceFunc, ImplType>> {
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_ldlt;
@@ -76,10 +76,10 @@ inline JointDistribution predict_from_covariance_and_fit(
   return JointDistribution(pred, posterior_cov);
 }
 
-template <typename FeatureType, typename CovarianceFunc>
-class GaussianProcessRegression : public ModelBase<GaussianProcessRegression<FeatureType, CovarianceFunc>> {
+template <typename FeatureType, typename CovarianceFunc, typename ImplType>
+class GaussianProcessRegression : public ModelBase<GaussianProcessRegression<FeatureType, CovarianceFunc, ImplType>> {
 public:
-  using ModelType = GaussianProcessRegression<FeatureType, CovarianceFunc>;
+  using ModelType = GaussianProcessRegression<FeatureType, CovarianceFunc, ImplType>;
   using FitType = Fit<ModelType>;
 
   static_assert(has_call_operator<CovarianceFunc, FeatureType, FeatureType>::value,
@@ -169,10 +169,20 @@ public:
     return FitType(features, cov, targets);
   }
 
+  template <typename OtherFeatureType,
+            typename std::enable_if<
+                has_valid_fit_impl<ImplType, OtherFeatureType>::value,
+                int>::type = 0>
+  FitType fit_impl_(const std::vector<OtherFeatureType> &features,
+                    const MarginalDistribution &targets) const {
+    return impl().fit_impl_(features, targets);
+  }
+
   template <typename PredictFeatureType,
             typename std::enable_if<
                has_call_operator<CovarianceFunc, FeatureType, PredictFeatureType>::value &&
-               has_call_operator<CovarianceFunc, PredictFeatureType, PredictFeatureType>::value,
+               has_call_operator<CovarianceFunc, PredictFeatureType, PredictFeatureType>::value &&
+               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
                 int>::type = 0>
   JointDistribution predict_(const std::vector<PredictFeatureType> &features,
                            PredictTypeIdentity<JointDistribution> &&) const {
@@ -184,9 +194,19 @@ public:
                                            this->model_fit_.train_ldlt);
   }
 
+  template <typename PredictFeatureType, typename PredictType,
+            typename std::enable_if<
+                has_valid_predict_<ImplType, PredictFeatureType, PredictType>::value,
+                int>::type = 0>
+  PredictType predict_(const std::vector<PredictFeatureType> &features,
+                       PredictTypeIdentity<PredictType> &&) const {
+    return impl().predict_(features, PredictTypeIdentity<PredictType>());
+  }
+
   template <typename PredictFeatureType,
             typename std::enable_if<
-               !has_call_operator<CovarianceFunc, FeatureType, PredictFeatureType>::value,
+               !has_call_operator<CovarianceFunc, FeatureType, PredictFeatureType>::value &&
+               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
                 int>::type = 0>
   JointDistribution predict_(const std::vector<PredictFeatureType> &features,
                            PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for cross covariance.
@@ -194,7 +214,8 @@ public:
 
   template <typename PredictFeatureType,
             typename std::enable_if<
-               !has_call_operator<CovarianceFunc, PredictFeatureType, PredictFeatureType>::value,
+               !has_call_operator<CovarianceFunc, PredictFeatureType, PredictFeatureType>::value &&
+               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
                 int>::type = 0>
   JointDistribution predict_(const std::vector<PredictFeatureType> &features,
                            PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for predict covariance.
@@ -321,37 +342,36 @@ protected:
 //    }
 //    return output;
 //  }
+
+  /*
+   * CRTP Helpers
+   */
+  ImplType &impl() { return *static_cast<ImplType *>(this); }
+  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
+
   CovarianceFunc covariance_function_;
   std::string model_name_;
 };
 
-template <typename FeatureType, typename CovFunc>
-GaussianProcessRegression<FeatureType, CovFunc>
-gp_from_covariance(CovFunc covariance_function) {
-  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function);
+template <typename FeatureType, typename CovarianceFunc>
+auto gp_from_covariance(CovarianceFunc covariance_function,
+                            const std::string &model_name) {
+  return GaussianProcessRegression<FeatureType, CovarianceFunc>(covariance_function, model_name);
 };
 
-template <typename FeatureType, typename CovFunc>
-GaussianProcessRegression<FeatureType, CovFunc>
-gp_from_covariance(CovFunc covariance_function, const std::string &model_name) {
-  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function,
-                                                         model_name);
+template <typename FeatureType, typename CovarianceFunc>
+auto gp_from_covariance(CovarianceFunc covariance_function) {
+  return GaussianProcessRegression<FeatureType, CovarianceFunc>(covariance_function,
+                                                                covariance_function.get_name());
 };
 
-template <typename FeatureType, typename CovFunc>
-std::unique_ptr<GaussianProcessRegression<FeatureType, CovFunc>>
-gp_pointer_from_covariance(CovFunc covariance_function) {
-  return std::make_unique<GaussianProcessRegression<FeatureType, CovFunc>>(
-      covariance_function);
-}
+//template <typename FeatureType, typename CovFunc, typename ImplType = NullGPImpl>
+//GaussianProcessRegression<FeatureType, CovFunc, ImplType>
+//gp_from_covariance(CovFunc covariance_function, const std::string &model_name = covariance_function.get_name()) {
+//  return GaussianProcessRegression<FeatureType, CovFunc, ImplType>(covariance_function,
+//                                                         model_name);
+//};
 
-template <typename FeatureType, typename CovFunc>
-std::unique_ptr<GaussianProcessRegression<FeatureType, CovFunc>>
-gp_pointer_from_covariance(CovFunc covariance_function,
-                           const std::string &model_name) {
-  return std::make_unique<GaussianProcessRegression<FeatureType, CovFunc>>(
-      covariance_function, model_name);
-}
 } // namespace albatross
 
 #endif
