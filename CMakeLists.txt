@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(ClangTools)
 
 # Enable Clang auto-formatting, defaults to on. 
-option(ENABLE_AUTOFORMAT "Enable automatic formatting and replacement with clang-format." OFF)
+option(ENABLE_AUTOFORMAT "Enable automatic formatting and replacement with clang-format." ON)
 # Enable Clang auto-linting, defaults to off.
 option(ENABLE_AUTOLINT "Enable automatic linting and warning with clang-tidy. " OFF)
 # Enable static stack analyzer, defaults to off.

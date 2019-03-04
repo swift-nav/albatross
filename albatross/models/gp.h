@@ -123,12 +123,17 @@ class GaussianProcessBase : public ModelBase<GaussianProcessBase<FeatureType, Co
    * the covariance functions.
    */
   ParameterStore get_params() const override {
-    return covariance_function_.get_params();
+    return map_join(impl().params_, covariance_function_.get_params());
   }
 
   void unchecked_set_param(const std::string &name,
                            const Parameter &param) override {
-    covariance_function_.set_param(name, param);
+
+    if (map_contains(covariance_function_.get_params(), name)) {
+      covariance_function_.set_param(name, param);
+    } else {
+      impl().params_[name] = param;
+    }
   }
 
   std::string pretty_string() const {

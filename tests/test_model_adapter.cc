@@ -18,9 +18,10 @@
 namespace albatross {
 
  template <typename CovFunc>
- class TestAdaptedModel : public GaussianProcessRegression<double, CovFunc, TestAdaptedModel<CovFunc>> {
+ class TestAdaptedModel : public GaussianProcessBase<double, CovFunc, TestAdaptedModel<CovFunc>> {
  public:
-   using Base = GaussianProcessRegression<double, CovFunc, TestAdaptedModel>;
+   using Base = GaussianProcessBase<double, CovFunc, TestAdaptedModel>;
+//   friend Base;
 
    TestAdaptedModel() {
      this->params_["center"] = {1., std::make_shared<UniformPrior>(-10., 10.)};
@@ -36,7 +37,6 @@ namespace albatross {
 
    auto fit_impl_(const std::vector<AdaptedFeature> &features,
                   const MarginalDistribution &targets) const {
-
      return Base::fit_impl_(convert(features), targets);
    }
 
