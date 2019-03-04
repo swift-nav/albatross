@@ -97,23 +97,19 @@ static inline auto make_toy_linear_data(const double a = 5.,
 //  return RegressionDataset<double>(dataset.features, target_dist);
 //}
 //
-// static inline auto toy_covariance_function() {
-//  using Noise = IndependentNoise<double>;
-//  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
-//  IndependentNoise<double> noise = Noise(0.1);
-//  auto covariance = squared_exponential + noise;
-//  return covariance;
-//}
-//
-// static inline std::unique_ptr<RegressionModel<double>> toy_gaussian_process()
-// {
-//  return gp_pointer_from_covariance<double>(toy_covariance_function());
-//}
-//
-///*
-// * Here we create data and a model that will make it easier to test
-// * that models using the model_adapter.h interface work.
-// */
+
+inline auto toy_covariance_function() {
+  using Noise = IndependentNoise<double>;
+  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+  IndependentNoise<double> noise = Noise(0.1);
+  auto covariance = squared_exponential + noise;
+  return covariance;
+}
+
+/*
+ * Here we create data and a model that will make it easier to test
+ * that models using the model_adapter.h interface work.
+ */
  struct AdaptedFeature {
   double value;
 };
@@ -134,13 +130,6 @@ static inline auto make_toy_linear_data(const double a = 5.,
   return adapted_dataset;
 }
 
-// static inline std::unique_ptr<RegressionModel<AdaptedFeature>>
-// adapted_toy_gaussian_process() {
-//  auto covariance = toy_covariance_function();
-//  auto gp = gp_from_covariance<double>(covariance);
-//  return std::make_unique<AdaptedExample<decltype(gp)>>(gp);
-//}
-//
 // class LinearRegressionTest : public ::testing::Test {
 // public:
 //  LinearRegressionTest() : model_ptr_(), dataset_() {

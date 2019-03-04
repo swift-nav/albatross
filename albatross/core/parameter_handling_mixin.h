@@ -15,13 +15,6 @@
 
 namespace albatross {
 
-using ParameterKey = std::string;
-// If you change the way these are stored, be sure there's
-// a corresponding cereal type included or you'll get some
-// really impressive compilation errors.
-using ParameterPrior = std::shared_ptr<Prior>;
-using ParameterValue = double;
-
 struct TunableParameters {
   std::vector<double> values;
   std::vector<double> lower_bounds;
@@ -74,8 +67,6 @@ struct Parameter {
     }
   }
 };
-
-using ParameterStore = std::map<ParameterKey, Parameter>;
 
 /*
  * Prints out a set of parameters in a way that is both

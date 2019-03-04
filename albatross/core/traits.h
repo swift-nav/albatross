@@ -61,6 +61,26 @@ struct is_valid_fit_type
  * where U is a base of T.
  * The result of the inspection gets stored in the member `value`.
  */
+template <typename T, typename FeatureType> class has_valid_fit {
+  template <typename C,
+            typename FitType = decltype(std::declval<C>().fit(
+                std::declval<const std::vector<FeatureType> &>(),
+                std::declval<const MarginalDistribution &>()))>
+  static typename is_valid_fit_type<T, FitType>::type test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+
+/*
+ * This determines whether or not a class (T) has a method defined for,
+ *   `Fit<U> fit_impl_(const std::vector<FeatureType>&,
+ *                     const MarginalDistribution &)`
+ * where U is a base of T.
+ * The result of the inspection gets stored in the member `value`.
+ */
 template <typename T, typename FeatureType> class has_valid_fit_impl {
   template <typename C,
             typename FitType = decltype(std::declval<const C>().fit_impl_(
@@ -116,6 +136,21 @@ using has_valid_predict_marginal =
 template <typename T, typename FeatureType>
 using has_valid_predict_joint =
     has_valid_predict_<T, FeatureType, JointDistribution>;
+
+
+
+template <typename T>
+class has_get_params {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>().get_params())>
+  static typename std::enable_if<std::is_same<ReturnType, ParameterStore>::value,
+                                 std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
 
 } // namespace albatross
 

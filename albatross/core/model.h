@@ -65,6 +65,11 @@ public:
   fit(const std::vector<FeatureType> &features,
       const MarginalDistribution &targets) = delete; // No fit_impl_ found.
 
+  template <typename FeatureType>
+  Fit<ModelType> fit(const RegressionDataset<FeatureType> &dataset) {
+    return fit(dataset.features, dataset.targets);
+  }
+
   /*
    * Predict
    */

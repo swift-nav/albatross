@@ -147,17 +147,64 @@ TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>, Fit<Derived>>::value));
 }
 
+template <typename T>
+struct Adaptable;
+
+template <typename T>
+struct Fit<Adaptable<T>> {};
+
+template <typename ImplType>
+struct Adaptable : public ModelBase<Adaptable<ImplType>> {
+
+  Fit<Adaptable<ImplType>> fit_impl_(const std::vector<X> &,
+                                   const MarginalDistribution &) const {
+    return Fit<Adaptable<ImplType>>();
+  }
+
+  /*
+   * This forwards on `fit_impl_` definitions from the implementing class
+   * to this class so it can be picked up by ModelBase.
+   */
+  template <typename FeatureType,
+            typename std::enable_if<
+                       has_valid_fit_impl<ImplType, FeatureType>::value,
+                                   int>::type = 0>
+  Fit<Adaptable<ImplType>> fit_impl_(const std::vector<FeatureType> &features,
+                                   const MarginalDistribution &targets) const {
+    return impl().fit_impl_(features, targets);
+  }
+
+  /*
+   * CRTP Helpers
+   */
+  ImplType &impl() { return *static_cast<ImplType *>(this); }
+  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
+
+};
+
+struct Extended : public Adaptable<Extended> {
+
+  using Base = Adaptable<Extended>;
+
+  auto fit_impl_(const std::vector<Y> &,
+                 const MarginalDistribution &targets) const {
+    std::vector<X> xs = {{}};
+    return Base::fit_impl_(xs, targets);
+  }
+
+};
+
+
+TEST(test_traits_core, test_adaptable_has_valid_fit_impl) {
+  EXPECT_TRUE(bool(has_valid_fit<Extended, X>::value));
+  EXPECT_TRUE(bool(has_valid_fit<Extended, Y>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended>>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>>>::value));
+}
+
 /*
  * Predict Traits
  */
-// TEST(test_traits_core, test_is_valid_predict_type) {
-//  EXPECT_TRUE(bool(is_valid_predict_type<Eigen::VectorXd>::value));
-//  EXPECT_TRUE(bool(is_valid_predict_type<MarginalDistribution>::value));
-//  EXPECT_TRUE(bool(is_valid_predict_type<JointDistribution>::value));
-//  EXPECT_FALSE(bool(is_valid_predict_type<Eigen::MatrixXd>::value));
-//  EXPECT_FALSE(bool(is_valid_predict_type<double>::value));
-//}
-
 class HasMeanPredictImpl {
 public:
   Eigen::VectorXd predict_(const std::vector<X> &,

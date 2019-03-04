@@ -26,39 +26,16 @@ namespace albatross {
  * to adapt something that has extended RegressionModel.
  */
 template <typename FeatureType, typename SubModelType>
-class AdaptedRegressionModel
-    : public choose_regression_model_implementation<FeatureType,
-                                                    SubModelType>::type {
-
+class AdaptedRegressionModel : public ModelBase<SubModelType> {
 public:
-  using SubFeature = typename SubModelType::Feature;
-  using RegressionModelImplementation =
-      typename choose_regression_model_implementation<FeatureType,
-                                                      SubModelType>::type;
-
-  static_assert(std::is_same<RegressionModelImplementation,
-                             RegressionModel<FeatureType>>::value ||
-                    std::is_base_of<RegressionModel<FeatureType>,
-                                    RegressionModelImplementation>::value,
-                "The template parameter RegressionModelImplementation must be "
-                "derived from RegressionModel<FeatureType>");
-
-  static_assert(
-      !has_fit_type<RegressionModelImplementation>::value ||
-          std::is_same<
-              typename fit_type_or_void<RegressionModelImplementation>::type,
-              typename fit_type_or_void<SubModelType>::type>::value,
-      "If the RegressionModelImplementation is serializable, it must have the "
-      "same FitType as the sub_model");
 
   AdaptedRegressionModel() : sub_model_(){};
   AdaptedRegressionModel(const SubModelType &sub_model)
       : sub_model_(sub_model){};
-  virtual ~AdaptedRegressionModel(){};
 
   // This function will often be required by AdaptedModels
   // The default implementation is a null operation.
-  virtual SubFeature
+  template <typename
   convert_feature(const FeatureType &parent_feature) const = 0;
 
   std::string get_name() const override { return sub_model_.get_name(); };

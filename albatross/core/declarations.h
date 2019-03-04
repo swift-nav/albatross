@@ -36,6 +36,21 @@ template <typename ModelType, typename FeatureType> class Prediction;
 template <typename ModelType> class Fit {};
 
 /*
+ * Parameter Handling
+ */
+class Prior;
+struct Parameter;
+
+using ParameterKey = std::string;
+// If you change the way these are stored, be sure there's
+// a corresponding cereal type included or you'll get some
+// really impressive compilation errors.
+using ParameterPrior = std::shared_ptr<Prior>;
+using ParameterValue = double;
+
+using ParameterStore = std::map<ParameterKey, Parameter>;
+
+/*
  * Distributions
  */
 template <typename CovarianceType> struct Distribution;
@@ -48,10 +63,10 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 /*
  * Models
  */
+template <typename FeatureType, typename CovarianceFunc, typename ImplType>
+class GaussianProcessBase;
 
-struct NullGPImpl {};
-
-template <typename FeatureType, typename CovarianceFunc, typename ImplType = NullGPImpl>
+template <typename FeatureType, typename CovarianceFunc>
 class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
