@@ -79,12 +79,16 @@ class LeastSquares;
 /*
  * Cross Validation
  */
-// using FoldIndices = std::vector<std::size_t>;
-// using FoldName = std::string;
-// using FoldIndexer = std::map<FoldName, FoldIndices>;
-// template <typename FeatureType>
-// using IndexerFunction =
-//    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+ using FoldIndices = std::vector<std::size_t>;
+ using FoldName = std::string;
+ using FoldIndexer = std::map<FoldName, FoldIndices>;
+
+ template <typename FeatureType>
+ using IndexerFunction =
+    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+
+ template <typename ModelType>
+ class CrossValidation;
 
 /*
  * RANSAC
