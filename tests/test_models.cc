@@ -14,76 +14,74 @@
 
 #include "test_utils.h"
 
-//#include "models/gp.h"
+#include "GP"
 #include "models/least_squares.h"
 
 namespace albatross {
 
-// auto make_simple_covariance_function() {
-//  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
-//  IndependentNoise<double> noise(0.1);
-//  return squared_exponential + noise;
-//}
+ auto make_simple_covariance_function() {
+  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+  IndependentNoise<double> noise(0.1);
+  return squared_exponential + noise;
+}
 
-//class MakeGaussianProcess {
-//public:
+class MakeGaussianProcess {
+public:
+
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+    return gp_from_covariance(covariance);
+  }
+
+  RegressionDataset<double> get_dataset() const {
+    return make_toy_linear_data();
+  }
+};
 //
-//  auto get_model() const {
-//    auto covariance = make_simple_covariance_function();
-//    return gp_from_covariance<double>(covariance);
-//  }
-//
-//  RegressionDataset<double> get_dataset() const {
-//    return make_toy_linear_data();
-//  }
-//};
-//
-//template <typename CovarianceFunc>
-//class AdaptedGaussianProcess : public GaussianProcessBase<double, CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>> {
-//public:
-//  using Base = GaussianProcessBase<double, CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>>;
-//
-//  void fit_impl_() const = delete;
-//  void predict_() const = delete;
-//
-//  auto fit_impl_(const std::vector<AdaptedFeature> &features,
-//                          const MarginalDistribution &targets) const {
-//    std::vector<double> converted;
-//    for (const auto &f : features) {
-//      converted.push_back(f.value);
-//    }
-//    return Base::fit_impl_(converted, targets);
-//  }
-//
-//  JointDistribution predict_(const std::vector<AdaptedFeature> &features,
-//                             PredictTypeIdentity<JointDistribution> &&) const {
-//    std::vector<double> converted;
-//    for (const auto &f : features) {
-//      converted.push_back(f.value);
-//    }
-//    return Base::predict(converted).joint();
-//  }
-//};
-//
-//class MakeAdaptedGaussianProcess {
-//public:
-//
-//  auto get_model() const {
-//    auto covariance = make_simple_covariance_function();
-//    AdaptedGaussianProcess<decltype(covariance)> gp;
-//
-//    return gp;
-//  }
-//
-////  RegressionDataset<AdaptedFeature> get_dataset() const {
-////    return make_adapted_toy_linear_data();
-////  }
-//
-//  RegressionDataset<double> get_dataset() const {
-//    return make_toy_linear_data();
-//  }
-//
-//};
+template <typename CovarianceFunc>
+class AdaptedGaussianProcess : public GaussianProcessBase<CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>> {
+public:
+  using Base = GaussianProcessBase<CovarianceFunc, AdaptedGaussianProcess<CovarianceFunc>>;
+
+  template <typename FitFeatureType>
+  using GPFitType = Fit<Base, FitFeatureType>;
+
+  auto fit(const std::vector<AdaptedFeature> &features,
+           const MarginalDistribution &targets) const {
+    std::vector<double> converted;
+    for (const auto &f : features) {
+      converted.push_back(f.value);
+    }
+    return Base::fit(converted, targets);
+  }
+
+  template <typename FitFeatureType>
+  JointDistribution predict(const std::vector<AdaptedFeature> &features,
+                            const GPFitType<FitFeatureType> &gp_fit,
+                             PredictTypeIdentity<JointDistribution> &&) const {
+    std::vector<double> converted;
+    for (const auto &f : features) {
+      converted.push_back(f.value);
+    }
+    return Base::predict(converted, gp_fit, PredictTypeIdentity<JointDistribution>());
+  }
+};
+
+class MakeAdaptedGaussianProcess {
+public:
+
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+    AdaptedGaussianProcess<decltype(covariance)> gp;
+
+    return gp;
+  }
+
+  RegressionDataset<AdaptedFeature> get_dataset() const {
+    return make_adapted_toy_linear_data();
+  }
+
+};
 
 class MakeLinearRegression {
 public:
@@ -100,8 +98,7 @@ public:
   ModelTestCase test_case;
 };
 
-//typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess, MakeAdaptedGaussianProcess> ModelCreators;
-typedef ::testing::Types<MakeLinearRegression> ModelCreators;
+typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess, MakeAdaptedGaussianProcess> ModelCreators;
 TYPED_TEST_CASE(RegressionModelTester, ModelCreators);
 
 TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
@@ -116,21 +113,20 @@ TYPED_TEST(RegressionModelTester, performs_reasonably_on_linear_data) {
   EXPECT_LE(rmse, 0.5);
 }
 
-//TYPED_TEST(RegressionModelTester, test_predict_variants) {
-//  auto dataset = this->test_case.get_dataset();
-//  auto model = this->test_case.get_model();
-//  const auto fit_model = model.get_fit_model(dataset.features, dataset.targets);
-//  const auto pred = fit_model.get_prediction(dataset.features);
-//
-//  const Eigen::VectorXd pred_mean = pred.mean();
-//
-//  const MarginalDistribution marginal = pred.marginal();
-//  EXPECT_LE((pred_mean - marginal.mean).norm(), 1e-8);
-//
-//  const JointDistribution joint = pred.joint();
-//  EXPECT_LE((pred_mean - joint.mean).norm(), 1e-8);
-//}
+TYPED_TEST(RegressionModelTester, test_predict_variants) {
+  auto dataset = this->test_case.get_dataset();
+  auto model = this->test_case.get_model();
+  const auto fit_model = model.get_fit_model(dataset.features, dataset.targets);
+  const auto pred = fit_model.get_prediction(dataset.features);
 
+  const Eigen::VectorXd pred_mean = pred.mean();
+
+  const MarginalDistribution marginal = pred.marginal();
+  EXPECT_LE((pred_mean - marginal.mean).norm(), 1e-8);
+
+  const JointDistribution joint = pred.joint();
+  EXPECT_LE((pred_mean - joint.mean).norm(), 1e-8);
+}
 
   //  const auto single_pred_joint =
   //      model->template predict<JointDistribution>(dataset.features[0]);

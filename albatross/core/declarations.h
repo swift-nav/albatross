@@ -27,7 +27,6 @@ namespace albatross {
 template <typename ModelType> class ModelBase;
 
 template <typename FeatureType> struct RegressionDataset;
-// template <typename FeatureType> struct RegressionFold;
 
 template <typename T> struct PredictTypeIdentity;
 
@@ -36,11 +35,6 @@ template <typename ModelType, typename FeatureType, typename FitType> class Pred
 template <typename ModelType, typename FitType> class FitModel;
 
 template <typename ModelType, typename FeatureType=void> class Fit {};
-
-//template <typename ModelType, typename FeatureType, typename Fit>
-//Prediction<ModelType, FeatureType, Fit>
-//predict(const FitModel<ModelType, Fit> &,
-//        const std::vector<FeatureType> &);
 
 /*
  * Parameter Handling
@@ -70,10 +64,10 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 /*
  * Models
  */
-template <typename FeatureType, typename CovarianceFunc, typename ImplType>
+template <typename CovarianceFunc, typename ImplType>
 class GaussianProcessBase;
 
-template <typename FeatureType, typename CovarianceFunc>
+template <typename CovarianceFunc>
 class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
@@ -100,15 +94,7 @@ class LeastSquares;
 /*
  * RANSAC
  */
-// template <typename ModelType, typename FeatureType> class GenericRansac;
-// template <typename FeatureType, typename ModelType>
-// std::unique_ptr<GenericRansac<ModelType, FeatureType>>
-// make_generic_ransac_model(ModelType *model, double inlier_threshold,
-//                          std::size_t min_inliers,
-//                          std::size_t random_sample_size,
-//                          std::size_t max_iterations,
-//                          const IndexerFunction<FeatureType>
-//                          &indexer_function);
+ template <typename ModelType, typename FeatureType> class Ransac;
 }
 
 #endif

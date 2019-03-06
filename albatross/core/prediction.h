@@ -89,7 +89,7 @@ public:
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.marginal<T>()");
     const auto joint_pred =
-        fit_model_.model_.predict_(features_, fit_model_, PredictTypeIdentity<JointDistribution>());
+        fit_model_.model_.predict_(features_, fit_model_.fit_, PredictTypeIdentity<JointDistribution>());
     if (joint_pred.has_covariance()) {
       Eigen::VectorXd diag = joint_pred.covariance.diagonal();
       return MarginalDistribution(joint_pred.mean, diag.asDiagonal());
@@ -108,7 +108,7 @@ public:
   JointDistribution joint() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.joint<T>()");
-    return fit_model_.model_.predict_(features_, fit_model_, PredictTypeIdentity<JointDistribution>());
+    return fit_model_.model_.predict_(features_, fit_model_.fit_, PredictTypeIdentity<JointDistribution>());
   }
 
   /*

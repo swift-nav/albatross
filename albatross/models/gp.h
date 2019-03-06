@@ -28,8 +28,8 @@ namespace albatross {
 //    std::size_t random_sample_size, std::size_t max_iterations,
 //    const IndexerFunction<FeatureType> &indexer_function);
 
-template <typename FeatureType, typename CovFunc, typename ImplType>
-struct Fit<GaussianProcessBase<FeatureType, CovFunc, ImplType>> {
+template <typename CovFunc, typename ImplType, typename FeatureType>
+struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_ldlt;
@@ -77,15 +77,13 @@ inline JointDistribution predict_from_covariance_and_fit(
 }
 
 
-template <typename FeatureType, typename CovFunc, typename ImplType>
-class GaussianProcessBase : public ModelBase<GaussianProcessBase<FeatureType, CovFunc, ImplType>> {
+template <typename CovFunc, typename ImplType>
+class GaussianProcessBase : public ModelBase<GaussianProcessBase<CovFunc, ImplType>> {
+
+  template <typename FitFeatureType>
+  using GPFitType = Fit<GaussianProcessBase<CovFunc, ImplType>, FitFeatureType>;
 
  public:
-  using ModelType = GaussianProcessBase<FeatureType, CovFunc, ImplType>;
-  using FitType = Fit<ModelType>;
-
-  static_assert(has_call_operator<CovFunc, FeatureType, FeatureType>::value,
-                "Invalid Covariance Function, not defined for FeatureType");
 
   GaussianProcessBase()
       : covariance_function_(), model_name_(covariance_function_.get_name()){};
@@ -144,64 +142,64 @@ class GaussianProcessBase : public ModelBase<GaussianProcessBase<FeatureType, Co
     return ss.str();
   }
 
-// private:
-  FitType
-  fit_impl_(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const {
+  // If the implementing class doesn't have a fit method for this
+  // FeatureType but the CovarianceFunction does.
+  template <typename FeatureType,
+            typename std::enable_if<has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+                           !has_valid_fit<ImplType, FeatureType>::value,
+                           int>::type = 0>
+  GPFitType<FeatureType>
+  fit(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) const {
     Eigen::MatrixXd cov = covariance_function_(features);
-    return FitType(features, cov, targets);
+    return GPFitType<FeatureType>(features, cov, targets);
   }
 
-  template <typename OtherFeatureType,
+  template <typename FeatureType,
             typename std::enable_if<
-                has_valid_fit_impl<ImplType, OtherFeatureType>::value,
+                has_valid_fit<ImplType, FeatureType>::value,
                 int>::type = 0>
-  FitType fit_impl_(const std::vector<OtherFeatureType> &features,
-                    const MarginalDistribution &targets) const {
-    return impl().fit_impl_(features, targets);
+  auto fit(const std::vector<FeatureType> &features,
+           const MarginalDistribution &targets) const {
+    return impl().fit(features, targets);
   }
 
-  template <typename PredictFeatureType,
+  template <typename FeatureType, typename FitFeaturetype,
             typename std::enable_if<
-               has_call_operator<CovFunc, FeatureType, PredictFeatureType>::value &&
-               has_call_operator<CovFunc, PredictFeatureType, PredictFeatureType>::value &&
-               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
+               has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+               has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value &&
+               !has_valid_predict<ImplType, FeatureType, GPFitType<FitFeaturetype>, JointDistribution>::value,
                 int>::type = 0>
-  JointDistribution predict_(const std::vector<PredictFeatureType> &features,
-                           PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution predict(const std::vector<FeatureType> &features,
+                            const GPFitType<FitFeaturetype> &gp_fit,
+                            PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
-        covariance_function_(this->model_fit_.train_features, features);
+        covariance_function_(gp_fit.train_features, features);
     Eigen::MatrixXd pred_cov = covariance_function_(features);
     return predict_from_covariance_and_fit(cross_cov, pred_cov,
-                                           this->model_fit_.information,
-                                           this->model_fit_.train_ldlt);
+                                           gp_fit.information,
+                                           gp_fit.train_ldlt);
   }
 
-  template <typename PredictFeatureType, typename PredictType,
+  template <typename FeatureType, typename FitFeatureType, typename PredictType,
             typename std::enable_if<
-                has_valid_predict_<ImplType, PredictFeatureType, PredictType>::value,
+            has_valid_predict<ImplType, FeatureType, GPFitType<FitFeatureType>, PredictType>::value,
                 int>::type = 0>
-  PredictType predict_(const std::vector<PredictFeatureType> &features,
-                       PredictTypeIdentity<PredictType> &&) const {
-    return impl().predict_(features, PredictTypeIdentity<PredictType>());
+  PredictType predict(const std::vector<FeatureType> &features,
+                      const GPFitType<FitFeatureType> &gp_fit,
+                      PredictTypeIdentity<PredictType> &&) const {
+    return impl().predict(features, gp_fit, PredictTypeIdentity<PredictType>());
   }
 
-  template <typename PredictFeatureType,
+  template <typename FeatureType, typename FitFeatureType, typename PredictType,
             typename std::enable_if<
-               !has_call_operator<CovFunc, FeatureType, PredictFeatureType>::value &&
-               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
+               (!has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
+                !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value) &&
+               !has_valid_predict<ImplType, FeatureType, GPFitType<FitFeatureType>, PredictType>::value,
                 int>::type = 0>
-  JointDistribution predict_(const std::vector<PredictFeatureType> &features,
-                           PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for cross covariance.
-
-
-  template <typename PredictFeatureType,
-            typename std::enable_if<
-               !has_call_operator<CovFunc, PredictFeatureType, PredictFeatureType>::value &&
-               !has_valid_predict_<ImplType, PredictFeatureType, JointDistribution>::value,
-                int>::type = 0>
-  JointDistribution predict_(const std::vector<PredictFeatureType> &features,
-                           PredictTypeIdentity<JointDistribution> &&) const = delete; // Covariance Function isn't defined for predict covariance.
+  PredictType predict(const std::vector<FeatureType> &features,
+                      const GPFitType<FitFeatureType> &gp_fit,
+                      PredictTypeIdentity<PredictType> &&) const = delete; // Covariance Function isn't defined for FeatureType.
 
 
 //  virtual MarginalDistribution
@@ -336,10 +334,10 @@ protected:
   std::string model_name_;
 };
 
-template <typename FeatureType, typename CovFunc>
-class GaussianProcessRegression : public GaussianProcessBase<FeatureType, CovFunc, GaussianProcessRegression<FeatureType, CovFunc>> {
+template <typename CovFunc>
+class GaussianProcessRegression : public GaussianProcessBase<CovFunc, GaussianProcessRegression<CovFunc>> {
 public:
-  using Base = GaussianProcessBase<FeatureType, CovFunc, GaussianProcessRegression<FeatureType, CovFunc>>;
+  using Base = GaussianProcessBase<CovFunc, GaussianProcessRegression<CovFunc>>;
 
   GaussianProcessRegression() : Base() {};
   GaussianProcessRegression(CovFunc &covariance_function) : Base(covariance_function) {};
@@ -347,20 +345,20 @@ public:
                             const std::string &model_name) : Base(covariance_function, model_name) {};
 
   // The only reason these are here is to hide the base class implementations.
-  void fit_impl_() const = delete;
-  void predict_() const = delete;
+  void fit() const = delete;
+  void predict() const = delete;
 
 };
 
-template <typename FeatureType, typename CovFunc>
+template <typename CovFunc>
 auto gp_from_covariance(CovFunc covariance_function,
                             const std::string &model_name) {
-  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function, model_name);
+  return GaussianProcessRegression<CovFunc>(covariance_function, model_name);
 };
 
-template <typename FeatureType, typename CovFunc>
+template <typename CovFunc>
 auto gp_from_covariance(CovFunc covariance_function) {
-  return GaussianProcessRegression<FeatureType, CovFunc>(covariance_function,
+  return GaussianProcessRegression<CovFunc>(covariance_function,
                                                          covariance_function.get_name());
 };
 
