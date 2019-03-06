@@ -37,10 +37,10 @@ struct ContainsMockFeature {
   MockFeature mock;
 };
 
-template <> struct Fit<MockModel> {
+template <>
+struct Fit<MockModel> {
   std::map<int, double> train_data;
 
-public:
   template <class Archive> void serialize(Archive &ar) {
     ar(cereal::make_nvp("train_data", train_data));
   };
@@ -79,8 +79,8 @@ public:
   //            this));
   //  }
 
-  Fit<MockModel> fit_impl_(const std::vector<MockFeature> &features,
-                           const MarginalDistribution &targets) const {
+  Fit<MockModel> fit(const std::vector<MockFeature> &features,
+                     const MarginalDistribution &targets) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
     Fit<MockModel> model_fit;
@@ -92,27 +92,29 @@ public:
   }
 
   // looks up the prediction in the map
-  Eigen::VectorXd predict_(const std::vector<MockFeature> &features,
-                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd predict(const std::vector<MockFeature> &features,
+                          const Fit<MockModel> &fit,
+                          PredictTypeIdentity<Eigen::VectorXd> &&) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
     for (int i = 0; i < n; i++) {
       int index = features[static_cast<std::size_t>(i)].value;
-      predictions[i] = this->model_fit_.train_data.find(index)->second;
+      predictions[i] = fit.train_data.find(index)->second;
     }
 
     return predictions;
   }
 
   // convert before predicting
-  Eigen::VectorXd predict_(const std::vector<ContainsMockFeature> &features,
-                           PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd predict(const std::vector<ContainsMockFeature> &features,
+                          const Fit<MockModel> &fit,
+                          PredictTypeIdentity<Eigen::VectorXd> &&) const {
     std::vector<MockFeature> mock_features;
     for (const auto &f : features) {
       mock_features.push_back(f.mock);
     }
-    return predict_(mock_features, PredictTypeIdentity<Eigen::VectorXd>());
+    return predict(mock_features, fit, PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
 

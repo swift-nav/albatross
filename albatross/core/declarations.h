@@ -31,9 +31,16 @@ template <typename FeatureType> struct RegressionDataset;
 
 template <typename T> struct PredictTypeIdentity;
 
-template <typename ModelType, typename FeatureType> class Prediction;
+template <typename ModelType, typename FeatureType, typename FitType> class Prediction;
 
-template <typename ModelType> class Fit {};
+template <typename ModelType, typename FitType> class FitModel;
+
+template <typename ModelType, typename FeatureType=void> class Fit {};
+
+//template <typename ModelType, typename FeatureType, typename Fit>
+//Prediction<ModelType, FeatureType, Fit>
+//predict(const FitModel<ModelType, Fit> &,
+//        const std::vector<FeatureType> &);
 
 /*
  * Parameter Handling

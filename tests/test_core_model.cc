@@ -22,27 +22,30 @@ namespace albatross {
  */
 TEST(test_core_model, test_fit_predict) {
   auto dataset = mock_training_data();
+
   MockModel m;
-  m.fit(dataset.features, dataset.targets);
-  // We should be able to perfectly predict in this case.
-  Eigen::VectorXd predictions = m.predict(dataset.features).mean();
+  const auto fit_model = m.get_fit_model(dataset.features, dataset.targets);
+  Eigen::VectorXd predictions = fit_model.get_prediction(dataset.features).mean();
+
   EXPECT_LT((predictions - dataset.targets.mean).norm(), 1e-10);
 }
 
 TEST(test_core_model, test_fit_predict_different_types) {
   auto dataset = mock_training_data();
   MockModel m;
-  m.fit(dataset.features, dataset.targets);
-  // We should be able to perfectly predict in this case.
+
+  const auto fit_model = m.get_fit_model(dataset.features, dataset.targets);
 
   std::vector<ContainsMockFeature> derived_features;
   for (const auto &f : dataset.features) {
     derived_features.push_back({f});
   }
 
-  Eigen::VectorXd predictions = m.predict(derived_features).mean();
+  Eigen::VectorXd predictions = fit_model.get_prediction(derived_features).mean();
+
   EXPECT_LT((predictions - dataset.targets.mean).norm(), 1e-10);
 }
+
 
 template <typename ModelType>
 void test_get_set(ModelBase<ModelType> &model, const std::string &key) {

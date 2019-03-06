@@ -44,8 +44,8 @@ public:
 
   //  std::string get_name() const override { return "least_squares"; };
 
-  FitType fit_impl_(const std::vector<Eigen::VectorXd> &features,
-                    const MarginalDistribution &targets) const {
+  FitType fit(const std::vector<Eigen::VectorXd> &features,
+              const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -63,31 +63,33 @@ public:
 
   template <typename FeatureType,
             typename std::enable_if<
-                has_valid_fit_impl<ImplType, FeatureType>::value,
+                   has_valid_fit<ImplType, FeatureType>::value,
                 int>::type = 0>
-  FitType fit_impl_(const std::vector<FeatureType> &features,
+  FitType fit(const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
-    return impl().fit_impl_(features, targets);
+    return impl().fit(features, targets);
   }
 
-  JointDistribution predict_(const std::vector<Eigen::VectorXd> &features,
-                           PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution predict(const std::vector<Eigen::VectorXd> &features,
+                            const FitType &least_squares_fit,
+                            PredictTypeIdentity<JointDistribution> &&) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
       mean(static_cast<Eigen::Index>(i)) =
-          features[i].dot(this->model_fit_.coefs);
+          features[i].dot(least_squares_fit.coefs);
     }
     return JointDistribution(mean);
   }
 
-  template <typename FeatureType, typename PredictType,
+  template <typename FeatureType, typename FitType, typename PredictType,
             typename std::enable_if<
-                has_valid_predict_<ImplType, FeatureType, PredictType>::value,
+                has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
                 int>::type = 0>
-  PredictType predict_(const std::vector<FeatureType> &features,
-                       PredictTypeIdentity<PredictType> &&) const {
-    return impl().predict_(features, PredictTypeIdentity<PredictType>());
+  PredictType predict(const std::vector<FeatureType> &features,
+                      const FitType &least_squares_fit,
+                      PredictTypeIdentity<PredictType> &&) const {
+    return impl().predict(features, least_squares_fit, PredictTypeIdentity<PredictType>());
   }
 
   /*
@@ -120,6 +122,8 @@ class LinearRegression : public LeastSquares<LinearRegression> {
 public:
   //  std::string get_name() const { return "linear_regression"; };
 
+  using Base = LeastSquares<LinearRegression>;
+
   Eigen::VectorXd convert_feature(const double &f) const {
     Eigen::VectorXd converted(2);
     converted << 1., f;
@@ -135,16 +139,18 @@ public:
     return output;
   }
 
-  auto fit_impl_(const std::vector<double> &features,
-                 const MarginalDistribution &targets) const {
-    return LeastSquares<LinearRegression>::fit_impl_(convert_features(features),
-                                                     targets);
+  Base::FitType fit(const std::vector<double> &features,
+           const MarginalDistribution &targets) const {
+    return Base::fit(convert_features(features),
+                     targets);
   }
 
-  auto predict_(const std::vector<double> &features,
-                           PredictTypeIdentity<JointDistribution> &&) const {
-    return LeastSquares<LinearRegression>::predict_(convert_features(features),
-                                                    PredictTypeIdentity<JointDistribution>());
+  JointDistribution predict(const std::vector<double> &features,
+               const Base::FitType &least_squares_fit,
+               PredictTypeIdentity<JointDistribution> &&) const {
+    return Base::predict(convert_features(features),
+                         least_squares_fit,
+                         PredictTypeIdentity<JointDistribution>());
   }
 
   /*

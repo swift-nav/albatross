@@ -15,69 +15,83 @@
 
 namespace albatross {
 
+
 using Insights = std::map<std::string, std::string>;
 
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
-private:
+
+  template <typename X, typename Y, typename Z>
+  friend class Prediction;
+
+  template <typename T, typename FeatureType>
+  friend class fit_model_type;
+
+  template <typename T, typename FitModelType>
+  friend struct fit_type_from_fit_model_type;
+
+  template <typename T, typename FeatureType>
+  friend struct fit_type;
+
+ private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelBase<B> {}
   // or
   //     using A = ModelBase<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  ModelBase() : has_been_fit_(false), insights_(){};
+  ModelBase() : insights_(){};
   friend ModelType;
-
-  bool has_been_fit_;
   Insights insights_;
-  Fit<ModelType> model_fit_;
 
-public:
   /*
    * Fit
    */
   template <
       typename FeatureType,
-      typename std::enable_if<has_valid_fit_impl<ModelType, FeatureType>::value,
+      typename std::enable_if<has_valid_fit<ModelType, FeatureType>::value,
                               int>::type = 0>
-  Fit<ModelType> fit(const std::vector<FeatureType> &features,
-                     const MarginalDistribution &targets) {
-    model_fit_ = derived().fit_impl_(features, targets);
-    has_been_fit_ = true;
-    return model_fit_;
+  auto
+  fit_(const std::vector<FeatureType> &features,
+       const MarginalDistribution &targets) const {
+    const auto fit = derived().fit(features, targets);
+    return FitModel<ModelType, decltype(fit)>(derived(), std::move(fit));
   }
 
   template <typename FeatureType,
             typename std::enable_if<
-                has_possible_fit_impl<ModelType, FeatureType>::value &&
-                    !has_valid_fit_impl<ModelType, FeatureType>::value,
+                    has_possible_fit<ModelType, FeatureType>::value &&
+                    !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  Fit<ModelType>
-  fit(const std::vector<FeatureType> &features,
-      const MarginalDistribution &targets) = delete; // Invalid fit_impl_
+  FitModel<ModelType, FeatureType>
+  fit_(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) const = delete; // Invalid fit_impl_
 
   template <typename FeatureType,
             typename std::enable_if<
-                !has_possible_fit_impl<ModelType, FeatureType>::value &&
-                    !has_valid_fit_impl<ModelType, FeatureType>::value,
+                    !has_possible_fit<ModelType, FeatureType>::value &&
+                    !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  Fit<ModelType>
-  fit(const std::vector<FeatureType> &features,
-      const MarginalDistribution &targets) = delete; // No fit_impl_ found.
+  FitModel<ModelType, FeatureType>
+  fit_(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) const = delete; // No fit_impl_ found.
 
-  template <typename FeatureType>
-  Fit<ModelType> fit(const RegressionDataset<FeatureType> &dataset) {
-    return fit(dataset.features, dataset.targets);
+  template <typename PredictFeatureType, typename FitType, typename PredictType,
+            typename std::enable_if<
+                       has_valid_predict<ModelType, PredictFeatureType, FitType, PredictType>::value,
+                 int>::type = 0>
+  PredictType predict_(const std::vector<PredictFeatureType> &features,
+                       const FitType &fit,
+                       PredictTypeIdentity<PredictType> &&) const {
+    return derived().predict(features, fit, PredictTypeIdentity<PredictType>());
   }
 
-  /*
-   * Predict
-   */
-  template <typename FeatureType>
-  Prediction<ModelType, FeatureType>
-  predict(const std::vector<FeatureType> &features) const {
-    return Prediction<ModelType, FeatureType>(derived(), features);
-  }
+  template <typename PredictFeatureType, typename FitType, typename PredictType,
+            typename std::enable_if<
+                       !has_valid_predict<ModelType, PredictFeatureType, FitType, PredictType>::value,
+                 int>::type = 0>
+  PredictType predict_(const std::vector<PredictFeatureType> &features,
+                       const FitType &fit,
+                       PredictTypeIdentity<PredictType> &&) const = delete; // No valid predict.
 
   /*
    * CRTP Helpers
@@ -86,6 +100,23 @@ public:
   const ModelType &derived() const {
     return *static_cast<const ModelType *>(this);
   }
+
+public:
+
+  template <typename FeatureType>
+  auto
+  get_fit_model(const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) const {
+    return fit_(features, targets);
+  }
+
+  template <typename FeatureType>
+  auto
+  get_fit_model(const RegressionDataset<FeatureType> &dataset) const {
+    return fit_(dataset.features, dataset.targets);
+  }
+
 };
+
 }
 #endif

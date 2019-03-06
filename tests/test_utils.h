@@ -15,7 +15,7 @@
 
 #include "Core"
 
-#include "GP"
+//#include "GP"
 
 #include <random>
 
@@ -98,13 +98,13 @@ static inline auto make_toy_linear_data(const double a = 5.,
 //}
 //
 
-inline auto toy_covariance_function() {
-  using Noise = IndependentNoise<double>;
-  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
-  IndependentNoise<double> noise = Noise(0.1);
-  auto covariance = squared_exponential + noise;
-  return covariance;
-}
+//inline auto toy_covariance_function() {
+//  using Noise = IndependentNoise<double>;
+//  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
+//  IndependentNoise<double> noise = Noise(0.1);
+//  auto covariance = squared_exponential + noise;
+//  return covariance;
+//}
 
 /*
  * Here we create data and a model that will make it easier to test
