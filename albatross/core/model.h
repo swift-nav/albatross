@@ -26,12 +26,6 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   template <typename T, typename FeatureType>
   friend class fit_model_type;
 
-  template <typename T, typename FitModelType>
-  friend struct fit_type_from_fit_model_type;
-
-  template <typename T, typename FeatureType>
-  friend struct fit_type;
-
  private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelBase<B> {}
@@ -53,7 +47,7 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   auto
   fit_(const std::vector<FeatureType> &features,
        const MarginalDistribution &targets) const {
-    const auto fit = derived().fit(features, targets);
+    auto fit = derived().fit(features, targets);
     return FitModel<ModelType, decltype(fit)>(derived(), std::move(fit));
   }
 
@@ -62,18 +56,18 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
                     has_possible_fit<ModelType, FeatureType>::value &&
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  FitModel<ModelType, FeatureType>
+  void
   fit_(const std::vector<FeatureType> &features,
-      const MarginalDistribution &targets) const = delete; // Invalid fit_impl_
+       const MarginalDistribution &targets) const = delete; // Invalid fit_impl_
 
   template <typename FeatureType,
             typename std::enable_if<
                     !has_possible_fit<ModelType, FeatureType>::value &&
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  FitModel<ModelType, FeatureType>
+  void
   fit_(const std::vector<FeatureType> &features,
-      const MarginalDistribution &targets) const = delete; // No fit_impl_ found.
+       const MarginalDistribution &targets) const = delete; // No fit_impl_ found.
 
   template <typename PredictFeatureType, typename FitType, typename PredictType,
             typename std::enable_if<
@@ -102,6 +96,18 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   }
 
 public:
+
+  template <typename DummyType = ModelType,
+            typename std::enable_if<!has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    return typeid(ModelType).name();
+  }
+
+  template <typename DummyType = ModelType,
+            typename std::enable_if<has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    return derived().name();
+  }
 
   template <typename FeatureType>
   auto

@@ -42,8 +42,6 @@ class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
 public:
   using FitType = Fit<LeastSquares<ImplType>>;
 
-  //  std::string get_name() const override { return "least_squares"; };
-
   FitType fit(const std::vector<Eigen::VectorXd> &features,
               const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
@@ -120,8 +118,6 @@ public:
 class LinearRegression : public LeastSquares<LinearRegression> {
 
 public:
-  //  std::string get_name() const { return "linear_regression"; };
-
   using Base = LeastSquares<LinearRegression>;
 
   Eigen::VectorXd convert_feature(const double &f) const {
@@ -153,21 +149,6 @@ public:
                          PredictTypeIdentity<JointDistribution>());
   }
 
-  /*
-   * save/load methods are inherited from the SerializableRegressionModel,
-   * but by defining them here and explicitly showing the inheritence
-   * through the use of `base_class` we can make use of cereal's
-   * polymorphic serialization.
-   */
-  //  template <class Archive> void save(Archive &archive) const {
-  //    archive(cereal::make_nvp("linear_regression",
-  //                             cereal::base_class<LinearRegressionBase>(this)));
-  //  }
-  //
-  //  template <class Archive> void load(Archive &archive) {
-  //    archive(cereal::make_nvp("linear_regression",
-  //                             cereal::base_class<LinearRegressionBase>(this)));
-  //  }
 };
 } // namespace albatross
 

@@ -16,6 +16,14 @@
 
 namespace albatross {
 
+TEST(test_core_model, test_get_name) {
+  auto dataset = mock_training_data();
+
+  MockModel m;
+  EXPECT_EQ(m.get_name(), "mock_model");
+}
+
+
 /*
  * Simply makes sure that a BaseModel that should be able to
  * make perfect predictions compiles and runs as expected.

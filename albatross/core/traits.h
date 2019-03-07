@@ -30,19 +30,26 @@ public:
 };
 
 /*
- * This determines whether or not a class, T, has a member,
- *   `T.name_`
- * The result of the inspection gets stored in the member `value`.
+ * This determines whether or not a class, T, has a method,
+ *   `std::string T.name() const`
  */
-template <typename T> class has_name_ {
-  template <typename C, typename = decltype(std::declval<C>().name_)>
-  static std::true_type test(int);
+template <typename T> class has_name {
+  template <typename C, typename ReturnType = decltype(std::declval<const C>().name())>
+  static
+  typename std::enable_if<std::is_same<std::string, ReturnType>::value, std::true_type>::type
+  test(int);
+
   template <typename C> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
+/*
+ * Like std::is_base_of<T, U> except compares the first template parameter.  Ie,
+ *
+ *  first_template_param_is_base_of<C<T, X>, C<U, Y>>::value == is_base_of<T, U>::value
+ */
 template <typename T, typename U>
 struct first_template_param_is_base_of : public std::false_type {};
 
@@ -50,8 +57,12 @@ template <template <typename, typename> class Base, typename T, typename U, type
 struct first_template_param_is_base_of<Base<T, P>, Base<U, Q>>
     : public std::is_base_of<T, U> {};
 
+
 struct is_valid_fit_type_dummy_type {};
 
+/*
+ * A valid fit for a ModelType is defined as Fit<AnyBaseOfModelType, AnyFeatureType>.
+ */
 template <typename ModelType, typename FitType>
 struct is_valid_fit_type
     : public first_template_param_is_base_of<FitType, Fit<ModelType, is_valid_fit_type_dummy_type>> {};
@@ -61,7 +72,6 @@ struct is_valid_fit_type
  *   `Fit<U, FeatureType> fit(const std::vector<FeatureType>&,
  *                            const MarginalDistribution &)`
  * where U is a base of T.
- * The result of the inspection gets stored in the member `value`.
  */
 template <typename T, typename FeatureType> class has_valid_fit {
   template <typename C,
@@ -78,8 +88,7 @@ public:
 /*
  * This determines whether or not a class (T) has a method defined for,
  *   `Anything fit(std::vector<FeatureType>&,
- *                       MarginalDistribution &)`
- * The result of the inspection gets stored in the member `value`.
+ *                 MarginalDistribution &)`
  */
 template <typename T, typename FeatureType> class has_possible_fit {
   template <typename C, typename = decltype(std::declval<C>().fit(
@@ -92,9 +101,14 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
+/*
+ * Determines which object would be returned from a call to:
+ *
+ *   T::get_fit_model(features, targets);
+ */
 template <typename T, typename FeatureType> class fit_model_type {
   template <typename C,
-            typename FitModelType = decltype(std::declval<const C>().fit_(
+            typename FitModelType = decltype(std::declval<const C>().get_fit_model(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
   static FitModelType test(C *);
@@ -105,29 +119,44 @@ public:
   typedef decltype(test<T>(0)) type;
 };
 
-template <typename T, typename FitModelType>
-struct fit_type_from_fit_model_type {
+
+/*
+ * fit_type
+ *
+ * Determines which Fit specialization will be returned if you
+ * call ModelType::fit.
+ */
+template <typename ModelType, typename FeatureType, int = 0>
+struct fit_type {
   typedef void type;
 };
 
-template <typename T, template <typename, typename> typename FitModelType, typename ModelType, typename FitType>
-struct fit_type_from_fit_model_type<T, FitModelType<ModelType, FitType>> {
+template <typename ModelType, typename FeatureType, typename FitType>
+struct fit_type<FitModel<ModelType, FitType>, FeatureType> {
   typedef FitType type;
 };
 
-template <typename T, typename FeatureType>
-struct fit_type {
-  typedef typename fit_type_from_fit_model_type<T, typename fit_model_type<T, FeatureType>::type>::type type;
-//  typedef typename fit_model_type<T, FeatureType>::type type;
+
+template <typename M, typename F>
+struct fit_type<M, F> : public fit_type<typename fit_model_type<M, F>::type, F> {
 };
 
+
+/*
+ * A valid predict method has a signature that looks like:
+ *
+ *   PredictType predict(const std::vector<FeatureType> &,
+ *                       const FitType &,
+ *                       const PredictTypeIdentity<PredictType>) const;
+ *
+ */
 template <typename T, typename FeatureType, typename FitType, typename PredictType>
 class has_valid_predict {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().predict(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const FitType &>(),
-                std::declval<PredictTypeIdentity<PredictType> &&>()))>
+                std::declval<PredictTypeIdentity<PredictType>>()))>
   static typename std::enable_if<std::is_same<PredictType, ReturnType>::value,
                                  std::true_type>::type
   test(C *);
@@ -148,21 +177,6 @@ using has_valid_predict_marginal =
 template <typename T, typename FeatureType, typename FitType>
 using has_valid_predict_joint =
     has_valid_predict<T, FeatureType, FitType, JointDistribution>;
-
-
-
-template <typename T>
-class has_get_params {
-  template <typename C,
-            typename ReturnType = decltype(std::declval<const C>().get_params())>
-  static typename std::enable_if<std::is_same<ReturnType, ParameterStore>::value,
-                                 std::true_type>::type
-  test(C *);
-  template <typename> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
 
 } // namespace albatross
 

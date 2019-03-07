@@ -63,6 +63,10 @@ public:
     this->bar = {bar_, std::make_shared<PositivePrior>()};
   };
 
+  std::string name() const {
+    return "mock_model";
+  }
+
   //  std::string get_name() const override { return "mock_model"; };
 
   //  template <typename Archive> void save(Archive &archive) const {
