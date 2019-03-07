@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_CORE_DECLARATIONS_H
 #define ALBATROSS_CORE_DECLARATIONS_H
 
-#include <functional>
-#include <map>
-#include <memory>
-#include <vector>
-
-#include <Eigen/Core>
-
 namespace Eigen {
 
 template <typename _Scalar, int SizeAtCompileTime>
@@ -31,15 +24,32 @@ namespace albatross {
 /*
  * Model
  */
-template <typename FeatureType> class RegressionModel;
-template <typename FeatureType> struct RegressionDataset;
-template <typename FeatureType> struct RegressionFold;
-template <typename FeatureType, typename FitType>
-class SerializableRegressionModel;
+template <typename ModelType> class ModelBase;
 
-template <typename FeatureType>
-using RegressionModelCreator =
-    std::function<std::unique_ptr<RegressionModel<FeatureType>>()>;
+template <typename FeatureType> struct RegressionDataset;
+
+template <typename T> struct PredictTypeIdentity;
+
+template <typename ModelType, typename FeatureType, typename FitType> class Prediction;
+
+template <typename ModelType, typename FitType> class FitModel;
+
+template <typename ModelType, typename FeatureType=void> class Fit {};
+
+/*
+ * Parameter Handling
+ */
+class Prior;
+struct Parameter;
+
+using ParameterKey = std::string;
+// If you change the way these are stored, be sure there's
+// a corresponding cereal type included or you'll get some
+// really impressive compilation errors.
+using ParameterPrior = std::shared_ptr<Prior>;
+using ParameterValue = double;
+
+using ParameterStore = std::map<ParameterKey, Parameter>;
 
 /*
  * Distributions
@@ -52,26 +62,39 @@ using DiagonalMatrixXd =
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 /*
+ * Models
+ */
+template <typename CovarianceFunc, typename ImplType>
+class GaussianProcessBase;
+
+template <typename CovarianceFunc>
+class GaussianProcessRegression;
+
+struct NullLeastSquaresImpl {};
+
+template <typename ImplType = NullLeastSquaresImpl>
+class LeastSquares;
+
+
+
+/*
  * Cross Validation
  */
-using FoldIndices = std::vector<std::size_t>;
-using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, FoldIndices>;
-template <typename FeatureType>
-using IndexerFunction =
+ using FoldIndices = std::vector<std::size_t>;
+ using FoldName = std::string;
+ using FoldIndexer = std::map<FoldName, FoldIndices>;
+
+ template <typename FeatureType>
+ using IndexerFunction =
     std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+
+ template <typename ModelType>
+ class CrossValidation;
 
 /*
  * RANSAC
  */
-template <typename ModelType, typename FeatureType> class GenericRansac;
-template <typename FeatureType, typename ModelType>
-std::unique_ptr<GenericRansac<ModelType, FeatureType>>
-make_generic_ransac_model(ModelType *model, double inlier_threshold,
-                          std::size_t min_inliers,
-                          std::size_t random_sample_size,
-                          std::size_t max_iterations,
-                          const IndexerFunction<FeatureType> &indexer_function);
+ template <typename ModelType, typename FeatureType> class Ransac;
 }
 
 #endif
