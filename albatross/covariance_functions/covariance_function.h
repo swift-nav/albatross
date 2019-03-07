@@ -89,12 +89,21 @@ public:
                 "\n\t\t..."
                 "\n\t}\n");
 
-  std::string get_name() const {
-    static_assert(has_name_<Derived>::value, "A public member `std::string "
-                                             "name_` must be defined for all "
-                                             "covariance functions");
-    return derived().name_;
-  };
+  template <typename DummyType = Derived,
+            typename std::enable_if<!has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    static_assert(std::is_same<DummyType, Derived>::value,
+                  "never do covariance_function.get_name<T>()");
+    return typeid(Derived).name();
+  }
+
+  template <typename DummyType = Derived,
+            typename std::enable_if<has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    static_assert(std::is_same<DummyType, Derived>::value,
+                  "never do covariance_function.get_name<T>()");
+    return derived().name();
+  }
 
   std::string pretty_string() const {
     std::ostringstream ss;
@@ -282,14 +291,14 @@ template <class LHS, class RHS>
 class SumOfCovarianceFunctions
     : public CovarianceFunction<SumOfCovarianceFunctions<LHS, RHS>> {
 public:
-  SumOfCovarianceFunctions() : lhs_(), rhs_() {
-    name_ = "(" + lhs_.name_ + "+" + rhs_.name_ + ")";
-  };
+  SumOfCovarianceFunctions() : lhs_(), rhs_() {};
 
   SumOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
-      : lhs_(lhs), rhs_(rhs) {
-    SumOfCovarianceFunctions();
-  };
+      : lhs_(lhs), rhs_(rhs) {};
+
+  std::string name() const {
+    return "(" + lhs_.name() + "+" + rhs_.name() + ")";
+  }
 
   ParameterStore get_params() const {
     return map_join(lhs_.get_params(), rhs_.get_params());
@@ -340,8 +349,6 @@ public:
     return this->rhs_(x, y);
   }
 
-  std::string name_;
-
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -355,13 +362,15 @@ template <class LHS, class RHS>
 class ProductOfCovarianceFunctions
     : public CovarianceFunction<ProductOfCovarianceFunctions<LHS, RHS>> {
 public:
-  ProductOfCovarianceFunctions() : lhs_(), rhs_() {
-    name_ = "(" + lhs_.name_ + "*" + rhs_.name_ + ")";
-  };
+  ProductOfCovarianceFunctions() : lhs_(), rhs_() {};
   ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
       : lhs_(lhs), rhs_(rhs) {
     ProductOfCovarianceFunctions();
   };
+
+  std::string name() const {
+    return "(" + lhs_.name() + "*" + rhs_.name() + ")";
+  }
 
   ParameterStore get_params() const {
     return map_join(lhs_.get_params(), rhs_.get_params());
@@ -415,8 +424,6 @@ public:
   double call_impl_(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
-
-  std::string name_;
 
 protected:
   LHS lhs_;

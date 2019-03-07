@@ -30,13 +30,17 @@ struct ConstantTerm {};
  */
 class Constant : public CovarianceFunction<Constant> {
 public:
-  Constant(double sigma_constant_ = default_sigma) : name_("constant") {
+  Constant(double sigma_constant_ = default_sigma) {
     sigma_constant = {sigma_constant_, std::make_shared<NonNegativePrior>()};
   };
 
   ALBATROSS_DECLARE_PARAMS(sigma_constant);
 
   ~Constant(){};
+
+  std::string name() const {
+    return "constant";
+  }
 
   template <typename X>
   std::vector<ConstantTerm>
@@ -56,8 +60,6 @@ public:
                     const Y &y __attribute__((unused))) const {
     return sigma_constant.value * sigma_constant.value;
   }
-
-  const std::string name_;
 };
 
 template <int order>
@@ -69,8 +71,11 @@ public:
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
     }
-    name_ = "polynomial_" + std::to_string(order);
   };
+
+  std::string name() const {
+    return "polynomial_" + std::to_string(order);
+  }
 
   ~Polynomial(){};
 
@@ -83,8 +88,6 @@ public:
     }
     return cov;
   }
-
-  std::string name_;
 
 private:
   std::map<int, std::string> param_names_;

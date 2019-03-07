@@ -25,18 +25,6 @@ TEST(test_traits_covariance, test_is_complete) {
   EXPECT_FALSE(bool(is_complete<Incomplete>::value));
 }
 
-class HasName {
-public:
-  std::string name_;
-};
-
-class HasNoName {};
-
-TEST(test_traits_covariance, test_has_name) {
-  EXPECT_TRUE(bool(has_name_<HasName>::value));
-  EXPECT_FALSE(bool(has_name_<HasNoName>::value));
-}
-
 struct X {};
 struct Y {};
 struct Z {};

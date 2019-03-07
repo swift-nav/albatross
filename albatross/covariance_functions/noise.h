@@ -20,7 +20,7 @@ namespace albatross {
 template <typename Observed>
 class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
 public:
-  IndependentNoise(double sigma_noise = 0.1) : name_("independent_noise") {
+  IndependentNoise(double sigma_noise = 0.1) {
     sigma_independent_noise = {sigma_noise,
                                std::make_shared<NonNegativePrior>()};
   };
@@ -29,7 +29,7 @@ public:
 
   ~IndependentNoise(){};
 
-  std::string get_name() const { return "independent_noise"; }
+  std::string name() const { return "independent_noise"; }
 
   /*
    * This will create a scaled identity matrix, but only between
@@ -42,7 +42,6 @@ public:
       return 0.;
     }
   }
-  std::string name_;
 };
 } // namespace albatross
 

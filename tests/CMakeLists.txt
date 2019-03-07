@@ -27,9 +27,9 @@ test_core_model.cc
 ##test_scaling_function.cc
 #test_serializable_ldlt.cc
 ##test_serialize.cc
-#test_traits_cereal.cc
+test_traits_cereal.cc
 test_traits_core.cc
-#test_traits_covariance_functions.cc
+test_traits_covariance_functions.cc
 ##test_tune.cc
 ##test_tuning_metrics.cc
 )

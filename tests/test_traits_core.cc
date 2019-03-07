@@ -301,4 +301,17 @@ TEST(test_traits_core, test_has_valid_predict_impl) {
   EXPECT_TRUE(bool(has_valid_predict_joint<HasAllPredictImpls, X, Fit<HasAllPredictImpls>>::value));
 }
 
+class HasName {
+public:
+  std::string name() const {return "name";};
+};
+
+class HasNoName {};
+
+TEST(test_traits_covariance, test_has_name) {
+  EXPECT_TRUE(bool(has_name<HasName>::value));
+  EXPECT_FALSE(bool(has_name<HasNoName>::value));
+}
+
+
 } // namespace albatross
