@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/model.h"
-#include "test_utils.h"
 #include <gtest/gtest.h>
+
+#include "test_utils.h"
 
 namespace albatross {
 
@@ -22,17 +22,49 @@ namespace albatross {
  */
 TEST(test_core_model, test_fit_predict) {
   auto dataset = mock_training_data();
+
   MockModel m;
-  m.fit(dataset);
-  // We should be able to perfectly predict in this case.
-  JointDistribution predictions = m.predict(dataset.features);
-  EXPECT_LT((predictions.mean - dataset.targets.mean).norm(), 1e-10);
+  const auto fit_model = m.get_fit_model(dataset.features, dataset.targets);
+  Eigen::VectorXd predictions = fit_model.get_prediction(dataset.features).mean();
+
+  EXPECT_LT((predictions - dataset.targets.mean).norm(), 1e-10);
 }
 
-TEST(test_core_model, test_regression_model_abstraction) {
-  // This just tests to make sure that an implementation of a RegressionModel
-  // can be passed around as a pointer to the abstract class.
-  std::unique_ptr<RegressionModel<MockFeature>> m_ptr =
-      std::make_unique<MockModel>();
+TEST(test_core_model, test_fit_predict_different_types) {
+  auto dataset = mock_training_data();
+  MockModel m;
+
+  const auto fit_model = m.get_fit_model(dataset.features, dataset.targets);
+
+  std::vector<ContainsMockFeature> derived_features;
+  for (const auto &f : dataset.features) {
+    derived_features.push_back({f});
+  }
+
+  Eigen::VectorXd predictions = fit_model.get_prediction(derived_features).mean();
+
+  EXPECT_LT((predictions - dataset.targets.mean).norm(), 1e-10);
 }
+
+
+template <typename ModelType>
+void test_get_set(ModelBase<ModelType> &model, const std::string &key) {
+  // Make sure a key exists, then modify it and make sure it
+  // takes on the new value.
+  const auto orig = model.get_param_value(key);
+  model.set_param(key, orig + 1.);
+  EXPECT_EQ(model.get_params().at(key), orig + 1.);
+}
+
+TEST(test_core_model, test_get_set_params) {
+  auto model = MockModel();
+  auto params = model.get_params();
+  std::size_t count = 0;
+  for (const auto &pair : params) {
+    test_get_set(model, pair.first);
+    ++count;
+  }
+  EXPECT_GT(count, 0);
+};
+
 } // namespace albatross
