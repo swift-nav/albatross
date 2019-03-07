@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2019 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,27 +10,23 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_FIT_H
-#define ALBATROSS_CORE_FIT_H
+#ifndef ALBATROSS_CORE_FIT_MODEL_H
+#define ALBATROSS_CORE_FIT_MODEL_H
 
 namespace albatross {
 
 template <typename ModelType, typename Fit>
 class FitModel {
-
+ public:
   template <typename X, typename Y, typename Z>
   friend class Prediction;
-
- public:
 
   static_assert(std::is_move_constructible<Fit>::value,
                 "Fit type must be move constructible to avoid unexpected copying.");
 
   FitModel(const ModelType &model,
-           const Fit &&fit)
+           Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
-
- public:
 
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
@@ -38,7 +34,8 @@ class FitModel {
     return Prediction<ModelType, PredictFeatureType, Fit>(*this, features);
   }
 
-  const ModelType &model_;
+ private:
+  const ModelType model_;
   const Fit fit_;
 
 };

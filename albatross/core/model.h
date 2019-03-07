@@ -53,7 +53,7 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   auto
   fit_(const std::vector<FeatureType> &features,
        const MarginalDistribution &targets) const {
-    const auto fit = derived().fit(features, targets);
+    auto fit = derived().fit(features, targets);
     return FitModel<ModelType, decltype(fit)>(derived(), std::move(fit));
   }
 
