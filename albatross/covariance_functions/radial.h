@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 
-#include <sstream>
-
-#include "covariance_function.h"
-#include "distance_metrics.h"
-
 constexpr double default_length_scale = 100000.;
 constexpr double default_radial_sigma = 10.;
 
@@ -50,15 +45,16 @@ public:
 
   SquaredExponential(double length_scale_ = default_length_scale,
                      double sigma_squared_exponential_ = default_radial_sigma)
-      : distance_metric_(), name_() {
+      : distance_metric_() {
     squared_exponential_length_scale = {length_scale_,
                                         std::make_shared<PositivePrior>()};
     sigma_squared_exponential = {sigma_squared_exponential_,
                                  std::make_shared<NonNegativePrior>()};
-    std::ostringstream oss;
-    oss << "squared_exponential[" << this->distance_metric_.get_name() << "]";
-    name_ = oss.str();
   };
+
+  std::string name() const {
+    return "squared_exponential[" << this->distance_metric_.name() << "]";
+  }
 
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
@@ -73,7 +69,6 @@ public:
   }
 
   DistanceMetricType distance_metric_;
-  std::string name_;
 };
 
 inline double exponential_covariance(double distance, double length_scale,
@@ -92,15 +87,16 @@ public:
 
   Exponential(double length_scale_ = default_length_scale,
               double sigma_exponential_ = default_radial_sigma)
-      : distance_metric_(), name_() {
+      : distance_metric_() {
     exponential_length_scale = {length_scale_,
                                 std::make_shared<PositivePrior>()};
     sigma_exponential = {sigma_exponential_,
                          std::make_shared<NonNegativePrior>()};
-    std::ostringstream oss;
-    oss << "exponential[" << this->distance_metric_.get_name() << "]";
-    name_ = oss.str();
   };
+
+  std::string name() const {
+    return "exponential[" << this->distance_metric_.get_name() << "]";
+  }
 
   ~Exponential(){};
 
@@ -116,7 +112,6 @@ public:
   }
 
   DistanceMetricType distance_metric_;
-  std::string name_;
 };
 
 } // namespace albatross
