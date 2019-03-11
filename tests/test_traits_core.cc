@@ -16,6 +16,11 @@
 
 namespace albatross {
 
+TEST(test_traits_core, test_is_vector) {
+  EXPECT_TRUE(bool(is_vector<std::vector<double>>::value));
+  EXPECT_FALSE(bool(is_vector<double>::value));
+}
+
 struct X {};
 struct Y {};
 struct Z {};
@@ -23,7 +28,7 @@ struct Z {};
 class HasValidFitImpl : public ModelBase<HasValidFitImpl> {
 public:
   Fit<HasValidFitImpl, X> fit(const std::vector<X> &,
-                           const MarginalDistribution &) const {
+                              const MarginalDistribution &) const {
     return {};
   };
 };
@@ -46,17 +51,17 @@ public:
 class HasNonConstArgsFitImpl : public ModelBase<HasNonConstFitImpl> {
 public:
   Fit<HasNonConstArgsFitImpl, X> fit(std::vector<X> &,
-                                        const MarginalDistribution &) const {
+                                     const MarginalDistribution &) const {
     return {};
   };
 
   Fit<HasNonConstArgsFitImpl, X> fit(const std::vector<X> &,
-                                        MarginalDistribution &) const {
+                                     MarginalDistribution &) const {
     return {};
   };
 
   Fit<HasNonConstArgsFitImpl, X> fit(std::vector<X> &,
-                                        MarginalDistribution &) const {
+                                     MarginalDistribution &) const {
     return {};
   };
 };
@@ -64,15 +69,15 @@ public:
 class HasProtectedValidFitImpl : public ModelBase<HasNonConstFitImpl> {
 protected:
   Fit<HasProtectedValidFitImpl, X> fit(const std::vector<X> &,
-                                          const MarginalDistribution &) const {
+                                       const MarginalDistribution &) const {
     return {};
   };
 };
 
-class HasPrivateValidFitImpl : public ModelBase<HasPrivateValidFitImpl>  {
+class HasPrivateValidFitImpl : public ModelBase<HasPrivateValidFitImpl> {
 private:
   Fit<HasPrivateValidFitImpl, X> fit(const std::vector<X> &,
-                                        const MarginalDistribution &) const {
+                                     const MarginalDistribution &) const {
     return {};
   };
 };
@@ -98,7 +103,7 @@ public:
   };
 
   Fit<HasValidXYFitImpl, Y> fit(const std::vector<Y> &,
-                                      const MarginalDistribution &) const {
+                                const MarginalDistribution &) const {
     return {};
   };
 };
@@ -140,18 +145,25 @@ TEST(test_traits_core, test_fit_type) {
                                 fit_type<HasValidXYFitImpl, X>::type>::value));
   EXPECT_TRUE(bool(std::is_same<Fit<HasValidXYFitImpl, Y>,
                                 fit_type<HasValidXYFitImpl, Y>::type>::value));
+  EXPECT_TRUE(
+      bool(std::is_same<Fit<HasValidAndInvalidFitImpl, X>,
+                        fit_type<HasValidAndInvalidFitImpl, X>::type>::value));
+  //  EXPECT_FALSE(
+  //      bool(std::is_same<Fit<HasPrivateValidFitImpl, X>,
+  //                        fit_type<HasPrivateValidFitImpl, X>::type>::value));
 }
 
-template <typename T>
-struct Base {};
+template <typename T> struct Base {};
 
 struct Derived : public Base<Derived> {};
 
 TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, X>>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, Y>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, X>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, Y>>::value));
+  EXPECT_TRUE(
+      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, X>>::value));
+  EXPECT_TRUE(
+      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, Y>>::value));
   // If a Derived class which inherits from Base<Derived> has a fit
   // which returns Fit<Base<Derived>> consider that a valid fit type.
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>, X>>::value));
@@ -161,8 +173,7 @@ TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>, Fit<Derived, Y>>::value));
 }
 
-template <typename T>
-struct Adaptable;
+template <typename T> struct Adaptable;
 
 template <typename T, typename FeatureType>
 struct Fit<Adaptable<T>, FeatureType> {};
@@ -171,7 +182,7 @@ template <typename ImplType>
 struct Adaptable : public ModelBase<Adaptable<ImplType>> {
 
   Fit<Adaptable<ImplType>, X> fit(const std::vector<X> &,
-                                   const MarginalDistribution &) const {
+                                  const MarginalDistribution &) const {
     return Fit<Adaptable<ImplType>, X>();
   }
 
@@ -180,11 +191,10 @@ struct Adaptable : public ModelBase<Adaptable<ImplType>> {
    * to this class so it can be picked up by ModelBase.
    */
   template <typename FeatureType,
-            typename std::enable_if<
-                       has_valid_fit<ImplType, FeatureType>::value,
-                                   int>::type = 0>
+            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
+                                    int>::type = 0>
   auto fit(const std::vector<FeatureType> &features,
-                                   const MarginalDistribution &targets) const {
+           const MarginalDistribution &targets) const {
     return impl().fit(features, targets);
   }
 
@@ -193,33 +203,33 @@ struct Adaptable : public ModelBase<Adaptable<ImplType>> {
    */
   ImplType &impl() { return *static_cast<ImplType *>(this); }
   const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
-
 };
 
 struct Extended : public Adaptable<Extended> {
 
   using Base = Adaptable<Extended>;
 
-  auto fit(const std::vector<Y> &,
-                 const MarginalDistribution &targets) const {
+  auto fit(const std::vector<Y> &, const MarginalDistribution &targets) const {
     std::vector<X> xs = {{}};
     return Base::fit(xs, targets);
   }
 
-  Z predict(const std::vector<Y> &,
-            const Fit<Adaptable<Extended>, X> &,
+  Z predict(const std::vector<Y> &, const Fit<Adaptable<Extended>, X> &,
             PredictTypeIdentity<Z>) const {
     return {};
   }
+};
 
+struct OtherExtended : public Adaptable<OtherExtended> {
 };
 
 TEST(test_traits_core, test_adaptable_fit_type) {
   EXPECT_TRUE(bool(std::is_base_of<Fit<Adaptable<Extended>, X>,
-                   fit_type<Extended, Y>::type>::value));
+                                   fit_type<Extended, Y>::type>::value));
   EXPECT_TRUE(bool(std::is_base_of<Fit<Adaptable<Extended>, X>,
-                   fit_type<Extended, X>::type>::value));
-  EXPECT_TRUE(bool(has_valid_predict<Extended, Y, Fit<Adaptable<Extended>, X>, Z>::value));
+                                   fit_type<Extended, X>::type>::value));
+  EXPECT_TRUE(bool(
+      has_valid_predict<Extended, Y, Fit<Adaptable<Extended>, X>, Z>::value));
 }
 
 TEST(test_traits_core, test_adaptable_has_valid_fit) {
@@ -227,8 +237,14 @@ TEST(test_traits_core, test_adaptable_has_valid_fit) {
   EXPECT_TRUE(bool(has_valid_fit<Extended, Y>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, X>>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, Y>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, X>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, Y>>::value));
+  EXPECT_TRUE(
+      bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, X>>::value));
+  EXPECT_TRUE(
+      bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, Y>>::value));
+  EXPECT_FALSE(
+      bool(is_valid_fit_type<OtherExtended, Fit<Adaptable<Extended>, Y>>::value));
+  EXPECT_FALSE(
+      bool(is_valid_fit_type<Extended, Fit<Adaptable<OtherExtended>, Y>>::value));
 }
 
 /*
@@ -238,7 +254,7 @@ class HasMeanPredictImpl {
 public:
   Eigen::VectorXd predict(const std::vector<X> &,
                           const Fit<HasMeanPredictImpl> &,
-                           PredictTypeIdentity<Eigen::VectorXd>) const {
+                          PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Zero(0);
   }
 };
@@ -246,9 +262,8 @@ public:
 class HasMarginalPredictImpl {
 public:
   MarginalDistribution
-  predict(const std::vector<X> &,
-           const Fit<HasMarginalPredictImpl> &,
-           PredictTypeIdentity<MarginalDistribution>) const {
+  predict(const std::vector<X> &, const Fit<HasMarginalPredictImpl> &,
+          PredictTypeIdentity<MarginalDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
@@ -257,8 +272,8 @@ public:
 class HasJointPredictImpl {
 public:
   JointDistribution predict(const std::vector<X> &,
-                             const Fit<HasJointPredictImpl> &,
-                             PredictTypeIdentity<JointDistribution>) const {
+                            const Fit<HasJointPredictImpl> &,
+                            PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return JointDistribution(mean);
   }
@@ -267,22 +282,21 @@ public:
 class HasAllPredictImpls {
 public:
   Eigen::VectorXd predict(const std::vector<X> &,
-                           const Fit<HasAllPredictImpls> &,
-                           PredictTypeIdentity<Eigen::VectorXd>) const {
+                          const Fit<HasAllPredictImpls> &,
+                          PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Zero(0);
   }
 
   MarginalDistribution
-  predict(const std::vector<X> &,
-           const Fit<HasAllPredictImpls> &,
-           PredictTypeIdentity<MarginalDistribution>) const {
+  predict(const std::vector<X> &, const Fit<HasAllPredictImpls> &,
+          PredictTypeIdentity<MarginalDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
 
   JointDistribution predict(const std::vector<X> &,
-                             const Fit<HasAllPredictImpls> &,
-                             PredictTypeIdentity<JointDistribution>) const {
+                            const Fit<HasAllPredictImpls> &,
+                            PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return JointDistribution(mean);
   }
@@ -290,20 +304,36 @@ public:
 
 TEST(test_traits_core, test_has_valid_predict_impl) {
 
+  EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X,
+                                          Fit<HasMeanPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_marginal<HasMeanPredictImpl, X, Fit<HasMeanPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_joint<HasMeanPredictImpl, X, Fit<HasMeanPredictImpl>>::value));
 
 
-  EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X, Fit<HasMeanPredictImpl>>::value));
   EXPECT_TRUE(
-      bool(has_valid_predict_marginal<HasMarginalPredictImpl, X, Fit<HasMarginalPredictImpl>>::value));
-  EXPECT_TRUE(bool(has_valid_predict_joint<HasJointPredictImpl, X, Fit<HasJointPredictImpl>>::value));
-  EXPECT_TRUE(bool(has_valid_predict_mean<HasAllPredictImpls, X, Fit<HasAllPredictImpls>>::value));
-  EXPECT_TRUE(bool(has_valid_predict_marginal<HasAllPredictImpls, X, Fit<HasAllPredictImpls>>::value));
-  EXPECT_TRUE(bool(has_valid_predict_joint<HasAllPredictImpls, X, Fit<HasAllPredictImpls>>::value));
+      bool(has_valid_predict_marginal<HasMarginalPredictImpl, X,
+                                      Fit<HasMarginalPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_mean<HasMarginalPredictImpl, X, Fit<HasMarginalPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_joint<HasMarginalPredictImpl, X, Fit<HasMarginalPredictImpl>>::value));
+
+
+  EXPECT_TRUE(bool(has_valid_predict_joint<HasJointPredictImpl, X,
+                                           Fit<HasJointPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_mean<HasJointPredictImpl, X, Fit<HasJointPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_marginal<HasJointPredictImpl, X, Fit<HasJointPredictImpl>>::value));
+
+
+  EXPECT_TRUE(bool(has_valid_predict_mean<HasAllPredictImpls, X,
+                                          Fit<HasAllPredictImpls>>::value));
+  EXPECT_TRUE(bool(has_valid_predict_marginal<HasAllPredictImpls, X,
+                                              Fit<HasAllPredictImpls>>::value));
+  EXPECT_TRUE(bool(has_valid_predict_joint<HasAllPredictImpls, X,
+                                           Fit<HasAllPredictImpls>>::value));
 }
 
 class HasName {
 public:
-  std::string name() const {return "name";};
+  std::string name() const { return "name"; };
 };
 
 class HasNoName {};
@@ -312,6 +342,5 @@ TEST(test_traits_covariance, test_has_name) {
   EXPECT_TRUE(bool(has_name<HasName>::value));
   EXPECT_FALSE(bool(has_name<HasNoName>::value));
 }
-
 
 } // namespace albatross

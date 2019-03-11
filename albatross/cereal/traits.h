@@ -18,7 +18,7 @@
 namespace albatross {
 
 /*
- * This little trick was borrowed from cereal, you an think of it as
+ * This little trick was borrowed from cereal, you can think of it as
  * a function that will always return false ... but that doesn't
  * get resolved until template instantiation, which when combined
  * with a static assert let's you include a static assert that
