@@ -15,17 +15,15 @@
 
 namespace albatross {
 
-template <typename ModelType, typename Fit>
-class FitModel {
- public:
-  template <typename X, typename Y, typename Z>
-  friend class Prediction;
+template <typename ModelType, typename Fit> class FitModel {
+public:
+  template <typename X, typename Y, typename Z> friend class Prediction;
 
-  static_assert(std::is_move_constructible<Fit>::value,
-                "Fit type must be move constructible to avoid unexpected copying.");
+  static_assert(
+      std::is_move_constructible<Fit>::value,
+      "Fit type must be move constructible to avoid unexpected copying.");
 
-  FitModel(const ModelType &model,
-           Fit &&fit)
+  FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
 
   template <typename PredictFeatureType>
@@ -34,11 +32,9 @@ class FitModel {
     return Prediction<ModelType, PredictFeatureType, Fit>(*this, features);
   }
 
- private:
+private:
   const ModelType model_;
   const Fit fit_;
-
 };
-
 }
 #endif

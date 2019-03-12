@@ -37,7 +37,6 @@ public:
   }
 };
 
-
 template <typename CovarianceFunc>
 class AdaptedGaussianProcess
     : public GaussianProcessBase<CovarianceFunc,

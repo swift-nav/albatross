@@ -220,8 +220,7 @@ struct Extended : public Adaptable<Extended> {
   }
 };
 
-struct OtherExtended : public Adaptable<OtherExtended> {
-};
+struct OtherExtended : public Adaptable<OtherExtended> {};
 
 TEST(test_traits_core, test_adaptable_fit_type) {
   EXPECT_TRUE(bool(std::is_base_of<Fit<Adaptable<Extended>, X>,
@@ -241,10 +240,10 @@ TEST(test_traits_core, test_adaptable_has_valid_fit) {
       bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, X>>::value));
   EXPECT_TRUE(
       bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, Y>>::value));
-  EXPECT_FALSE(
-      bool(is_valid_fit_type<OtherExtended, Fit<Adaptable<Extended>, Y>>::value));
-  EXPECT_FALSE(
-      bool(is_valid_fit_type<Extended, Fit<Adaptable<OtherExtended>, Y>>::value));
+  EXPECT_FALSE(bool(
+      is_valid_fit_type<OtherExtended, Fit<Adaptable<Extended>, Y>>::value));
+  EXPECT_FALSE(bool(
+      is_valid_fit_type<Extended, Fit<Adaptable<OtherExtended>, Y>>::value));
 }
 
 /*
@@ -306,22 +305,29 @@ TEST(test_traits_core, test_has_valid_predict_impl) {
 
   EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X,
                                           Fit<HasMeanPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_marginal<HasMeanPredictImpl, X, Fit<HasMeanPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_joint<HasMeanPredictImpl, X, Fit<HasMeanPredictImpl>>::value));
-
+  EXPECT_FALSE(
+      bool(has_valid_predict_marginal<HasMeanPredictImpl, X,
+                                      Fit<HasMeanPredictImpl>>::value));
+  EXPECT_FALSE(bool(has_valid_predict_joint<HasMeanPredictImpl, X,
+                                            Fit<HasMeanPredictImpl>>::value));
 
   EXPECT_TRUE(
       bool(has_valid_predict_marginal<HasMarginalPredictImpl, X,
                                       Fit<HasMarginalPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_mean<HasMarginalPredictImpl, X, Fit<HasMarginalPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_joint<HasMarginalPredictImpl, X, Fit<HasMarginalPredictImpl>>::value));
-
+  EXPECT_FALSE(
+      bool(has_valid_predict_mean<HasMarginalPredictImpl, X,
+                                  Fit<HasMarginalPredictImpl>>::value));
+  EXPECT_FALSE(
+      bool(has_valid_predict_joint<HasMarginalPredictImpl, X,
+                                   Fit<HasMarginalPredictImpl>>::value));
 
   EXPECT_TRUE(bool(has_valid_predict_joint<HasJointPredictImpl, X,
                                            Fit<HasJointPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_mean<HasJointPredictImpl, X, Fit<HasJointPredictImpl>>::value));
-  EXPECT_FALSE(bool(has_valid_predict_marginal<HasJointPredictImpl, X, Fit<HasJointPredictImpl>>::value));
-
+  EXPECT_FALSE(bool(has_valid_predict_mean<HasJointPredictImpl, X,
+                                           Fit<HasJointPredictImpl>>::value));
+  EXPECT_FALSE(
+      bool(has_valid_predict_marginal<HasJointPredictImpl, X,
+                                      Fit<HasJointPredictImpl>>::value));
 
   EXPECT_TRUE(bool(has_valid_predict_mean<HasAllPredictImpls, X,
                                           Fit<HasAllPredictImpls>>::value));
