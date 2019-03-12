@@ -124,14 +124,14 @@ class GaussianProcessBase
 public:
   GaussianProcessBase()
       : covariance_function_(), model_name_(covariance_function_.get_name()){};
-  GaussianProcessBase(CovFunc &covariance_function)
+  GaussianProcessBase(const CovFunc &covariance_function)
       : covariance_function_(covariance_function),
         model_name_(covariance_function_.get_name()){};
   /*
    * Sometimes it's nice to be able to provide a custom model name since
    * these models are generalizable.
    */
-  GaussianProcessBase(CovFunc &covariance_function,
+  GaussianProcessBase(const CovFunc &covariance_function,
                       const std::string &model_name)
       : covariance_function_(covariance_function), model_name_(model_name){};
   GaussianProcessBase(const std::string &model_name)
