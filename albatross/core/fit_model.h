@@ -23,14 +23,19 @@ public:
       std::is_move_constructible<Fit>::value,
       "Fit type must be move constructible to avoid unexpected copying.");
 
+  FitModel(const ModelType &model, Fit &fit) = delete;
+
   FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
 
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
   get_prediction(const std::vector<PredictFeatureType> &features) const {
-    return Prediction<ModelType, PredictFeatureType, Fit>(*this, features);
+    return Prediction<ModelType, PredictFeatureType, Fit>(model_, fit_,
+                                                          features);
   }
+
+  Fit get_fit() const { return fit_; }
 
 private:
   const ModelType model_;
