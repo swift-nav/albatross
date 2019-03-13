@@ -29,6 +29,11 @@ public:
   static constexpr bool value = decltype(test<X>(0))::value;
 };
 
+template <typename T> struct is_vector : public std::false_type {};
+
+template <typename T>
+struct is_vector<std::vector<T>> : public std::true_type {};
+
 /*
  * This determines whether or not a class, T, has a method,
  *   `std::string T.name() const`
@@ -147,7 +152,6 @@ struct fit_type<M, F>
  *   PredictType predict(const std::vector<FeatureType> &,
  *                       const FitType &,
  *                       const PredictTypeIdentity<PredictType>) const;
- *
  */
 template <typename T, typename FeatureType, typename FitType,
           typename PredictType>
@@ -177,6 +181,47 @@ using has_valid_predict_marginal =
 template <typename T, typename FeatureType, typename FitType>
 using has_valid_predict_joint =
     has_valid_predict<T, FeatureType, FitType, JointDistribution>;
+
+/*
+ * Methods for inspecting `Prediction` types.
+ */
+template <typename T> class has_mean {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>().mean())>
+  static
+      typename std::enable_if<std::is_same<Eigen::VectorXd, ReturnType>::value,
+                              std::true_type>::type
+      test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T> class has_marginal {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>().marginal())>
+  static typename std::enable_if<
+      std::is_same<MarginalDistribution, ReturnType>::value,
+      std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T> class has_joint {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>().joint())>
+  static typename std::enable_if<
+      std::is_same<JointDistribution, ReturnType>::value, std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
 
 } // namespace albatross
 
