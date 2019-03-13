@@ -10,12 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_LIKELIHOOD_H
-#define ALBATROSS_LIKELIHOOD_H
-
-#include <Eigen/Cholesky>
-#include <Eigen/Dense>
-#include <math.h>
+#ifndef ALBATROSS_EVALUATION_LIKELIHOOD_H
+#define ALBATROSS_EVALUATION_LIKELIHOOD_H
 
 namespace albatross {
 
