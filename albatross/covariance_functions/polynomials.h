@@ -38,9 +38,7 @@ public:
 
   ~Constant(){};
 
-  std::string name() const {
-    return "constant";
-  }
+  std::string name() const { return "constant"; }
 
   template <typename X>
   std::vector<ConstantTerm>
@@ -73,9 +71,7 @@ public:
     }
   };
 
-  std::string name() const {
-    return "polynomial_" + std::to_string(order);
-  }
+  std::string name() const { return "polynomial_" + std::to_string(order); }
 
   ~Polynomial(){};
 

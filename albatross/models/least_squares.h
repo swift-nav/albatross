@@ -20,9 +20,7 @@ template <typename ImplType> class LeastSquares;
 template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
-  bool operator==(const Fit &other) const {
-    return (coefs == other.coefs);
-  }
+  bool operator==(const Fit &other) const { return (coefs == other.coefs); }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(coefs);
@@ -60,17 +58,16 @@ public:
   }
 
   template <typename FeatureType,
-            typename std::enable_if<
-                   has_valid_fit<ImplType, FeatureType>::value,
-                int>::type = 0>
+            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
+                                    int>::type = 0>
   FitType fit(const std::vector<FeatureType> &features,
-                    const MarginalDistribution &targets) const {
+              const MarginalDistribution &targets) const {
     return impl().fit(features, targets);
   }
 
   JointDistribution predict(const std::vector<Eigen::VectorXd> &features,
                             const FitType &least_squares_fit,
-                            PredictTypeIdentity<JointDistribution> &&) const {
+                            PredictTypeIdentity<JointDistribution>) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
@@ -80,14 +77,16 @@ public:
     return JointDistribution(mean);
   }
 
-  template <typename FeatureType, typename FitType, typename PredictType,
-            typename std::enable_if<
-                has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
-                int>::type = 0>
+  template <
+      typename FeatureType, typename FitType, typename PredictType,
+      typename std::enable_if<
+          has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
+          int>::type = 0>
   PredictType predict(const std::vector<FeatureType> &features,
                       const FitType &least_squares_fit,
-                      PredictTypeIdentity<PredictType> &&) const {
-    return impl().predict(features, least_squares_fit, PredictTypeIdentity<PredictType>());
+                      PredictTypeIdentity<PredictType>) const {
+    return impl().predict(features, least_squares_fit,
+                          PredictTypeIdentity<PredictType>());
   }
 
   /*
@@ -136,22 +135,18 @@ public:
   }
 
   Base::FitType fit(const std::vector<double> &features,
-           const MarginalDistribution &targets) const {
-    return Base::fit(convert_features(features),
-                     targets);
+                    const MarginalDistribution &targets) const {
+    return Base::fit(convert_features(features), targets);
   }
 
   JointDistribution predict(const std::vector<double> &features,
-               const Base::FitType &least_squares_fit,
-               PredictTypeIdentity<JointDistribution> &&) const {
-    return Base::predict(convert_features(features),
-                         least_squares_fit,
+                            const Base::FitType &least_squares_fit,
+                            PredictTypeIdentity<JointDistribution>) const {
+    return Base::predict(convert_features(features), least_squares_fit,
                          PredictTypeIdentity<JointDistribution>());
   }
-
 };
-} // namespace albatross
 
-// CEREAL_REGISTER_TYPE(albatross::LinearRegression);
+} // namespace albatross
 
 #endif

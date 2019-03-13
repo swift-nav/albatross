@@ -30,11 +30,12 @@ template <typename FeatureType> struct RegressionDataset;
 
 template <typename T> struct PredictTypeIdentity;
 
-template <typename ModelType, typename FeatureType, typename FitType> class Prediction;
+template <typename ModelType, typename FeatureType, typename FitType>
+class Prediction;
 
 template <typename ModelType, typename FitType> class FitModel;
 
-template <typename ModelType, typename FeatureType=void> class Fit {};
+template <typename ModelType, typename FeatureType = void> class Fit {};
 
 /*
  * Parameter Handling
@@ -64,37 +65,31 @@ using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 /*
  * Models
  */
-template <typename CovarianceFunc, typename ImplType>
-class GaussianProcessBase;
+template <typename CovarianceFunc, typename ImplType> class GaussianProcessBase;
 
-template <typename CovarianceFunc>
-class GaussianProcessRegression;
+template <typename CovarianceFunc> class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
 
-template <typename ImplType = NullLeastSquaresImpl>
-class LeastSquares;
-
-
+template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
 
 /*
  * Cross Validation
  */
- using FoldIndices = std::vector<std::size_t>;
- using FoldName = std::string;
- using FoldIndexer = std::map<FoldName, FoldIndices>;
+using FoldIndices = std::vector<std::size_t>;
+using FoldName = std::string;
+using FoldIndexer = std::map<FoldName, FoldIndices>;
 
- template <typename FeatureType>
- using IndexerFunction =
+template <typename FeatureType>
+using IndexerFunction =
     std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
 
- template <typename ModelType>
- class CrossValidation;
+template <typename ModelType> class CrossValidation;
 
 /*
  * RANSAC
  */
- template <typename ModelType, typename FeatureType> class Ransac;
+template <typename ModelType, typename FeatureType> class Ransac;
 }
 
 #endif

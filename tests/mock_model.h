@@ -37,8 +37,7 @@ struct ContainsMockFeature {
   MockFeature mock;
 };
 
-template <>
-struct Fit<MockModel> {
+template <> struct Fit<MockModel> {
   std::map<int, double> train_data;
 
   template <class Archive> void serialize(Archive &ar) {

@@ -291,10 +291,10 @@ template <class LHS, class RHS>
 class SumOfCovarianceFunctions
     : public CovarianceFunction<SumOfCovarianceFunctions<LHS, RHS>> {
 public:
-  SumOfCovarianceFunctions() : lhs_(), rhs_() {};
+  SumOfCovarianceFunctions() : lhs_(), rhs_(){};
 
   SumOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
-      : lhs_(lhs), rhs_(rhs) {};
+      : lhs_(lhs), rhs_(rhs){};
 
   std::string name() const {
     return "(" + lhs_.name() + "+" + rhs_.name() + ")";
@@ -362,7 +362,7 @@ template <class LHS, class RHS>
 class ProductOfCovarianceFunctions
     : public CovarianceFunction<ProductOfCovarianceFunctions<LHS, RHS>> {
 public:
-  ProductOfCovarianceFunctions() : lhs_(), rhs_() {};
+  ProductOfCovarianceFunctions() : lhs_(), rhs_(){};
   ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
       : lhs_(lhs), rhs_(rhs) {
     ProductOfCovarianceFunctions();
