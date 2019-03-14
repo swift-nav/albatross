@@ -9,35 +9,87 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-#include "models/ransac_gp.h"
-#include "test_utils.h"
 #include <gtest/gtest.h>
+
+#include "test_models.h"
+
+#include "Evaluation"
+#include "Ransac"
 
 namespace albatross {
 
-TEST(test_outlier, test_ransac) {
-  auto dataset = make_toy_linear_data();
-  const auto model_ptr = toy_gaussian_process();
+TEST(test_outlier, test_ransac_direct) {
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
 
-  EvaluationMetric<JointDistribution> nll =
-      albatross::evaluation_metrics::negative_log_likelihood;
+  std::vector<std::size_t> bad_inds = {3, 5};
+  for (const auto &i : bad_inds) {
+    dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
+  }
 
-  dataset.targets.mean[3] = 400.;
-  dataset.targets.mean[5] = -300.;
+  NegativeLogLikelihood<JointDistribution> nll;
 
-  const auto fold_indexer = leave_one_out_indexer(dataset);
-  const auto modified =
-      ransac(dataset, fold_indexer, model_ptr.get(), nll, 1., 3, 3, 20);
+  const auto indexer = leave_one_out_indexer(dataset.features);
+  double inlier_threshold = 1.;
+  std::size_t sample_size = 3;
+  std::size_t min_inliers = 3;
+  std::size_t max_iterations = 20;
+  const auto inliers = ransac(dataset, indexer, model, nll, inlier_threshold,
+                              sample_size, min_inliers, max_iterations);
 
-  EXPECT_EQ(modified.features.size(), dataset.features.size() - 2);
+  EXPECT_EQ(inliers.features.size(), dataset.features.size() - bad_inds.size());
 
-  // Make sure we threw out the correct features.
-  EXPECT_EQ(std::find(modified.features.begin(), modified.features.end(),
-                      dataset.features[3]),
-            modified.features.end());
-  EXPECT_EQ(std::find(modified.features.begin(), modified.features.end(),
-                      dataset.features[5]),
-            modified.features.end());
+  for (const auto &i : bad_inds) {
+    // Make sure we threw out the correct features.
+    EXPECT_EQ(std::find(inliers.features.begin(), inliers.features.end(),
+                        dataset.features[i]),
+              inliers.features.end());
+  }
+}
+
+TEST(test_outlier, test_ransac_model) {
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
+
+  std::vector<std::size_t> bad_inds = {3, 5};
+  for (const auto &i : bad_inds) {
+    dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
+  }
+
+  NegativeLogLikelihood<JointDistribution> nll;
+
+  double inlier_threshold = 1.;
+  std::size_t sample_size = 3;
+  std::size_t min_inliers = 3;
+  std::size_t max_iterations = 20;
+  const auto ransac_model = model.ransac(nll, inlier_threshold, sample_size,
+                                         min_inliers, max_iterations);
+  const auto fit_model = ransac_model.get_fit_model(dataset);
+
+  const auto pred = fit_model.get_prediction(dataset.features);
+  expect_predict_variants_consistent(pred);
+
+  const auto indexer = leave_one_out_indexer(dataset.features);
+  const auto inliers = ransac(dataset, indexer, model, nll, inlier_threshold,
+                              sample_size, min_inliers, max_iterations);
+  const auto direct_pred =
+      model.get_fit_model(inliers).get_prediction(dataset.features);
+  expect_predict_variants_consistent(direct_pred);
+
+  EXPECT_EQ(pred.mean(), direct_pred.mean());
+
+  const auto cv_nll =
+      ransac_model.cross_validate().scores(nll, dataset, indexer);
+
+  // The cross validated outliers should look very unlikely
+  EXPECT_GE(subset(cv_nll, bad_inds).minCoeff(), 1e4);
+
+  // But the valid data point should have reasonable likelihood
+  EXPECT_LE(
+      subset(cv_nll, indices_complement(bad_inds, dataset.size())).maxCoeff(),
+      1.);
 }
 
 // Group values by interval, but return keys that once sorted won't be
@@ -48,66 +100,18 @@ std::string group_by_modulo(const double &x) {
 }
 
 TEST(test_outlier, test_ransac_groups) {
-  auto dataset = make_toy_linear_data();
-  const auto model_ptr = toy_gaussian_process();
-
-  EvaluationMetric<JointDistribution> nll =
-      albatross::evaluation_metrics::negative_log_likelihood;
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
 
   dataset.targets.mean[5] = -300.;
 
+  NegativeLogLikelihood<JointDistribution> nll;
   const auto fold_indexer =
-      leave_one_group_out_indexer<double>(dataset, group_by_modulo);
-  const auto modified =
-      ransac(dataset, fold_indexer, model_ptr.get(), nll, 0., 1, 1, 20);
+      leave_one_group_out_indexer<double>(dataset.features, group_by_modulo);
+  const auto modified = ransac(dataset, fold_indexer, model, nll, 0., 1, 1, 20);
 
   EXPECT_LE(modified.features.size(), dataset.features.size());
-}
-
-TEST(test_outlier, test_ransac_gp) {
-  auto dataset = make_toy_linear_data();
-
-  const auto fold_indexer = leave_one_out_indexer(dataset);
-
-  const auto model_ptr = toy_gaussian_process();
-
-  double inlier_threshold = 1.;
-  std::size_t min_inliers = 2;
-  std::size_t min_features = 3;
-  std::size_t max_iterations = 20;
-
-  auto ransac_model = model_ptr->ransac_model(inlier_threshold, min_inliers,
-                                              min_features, max_iterations);
-
-  EvaluationMetric<JointDistribution> nll =
-      albatross::evaluation_metrics::negative_log_likelihood;
-
-  dataset.targets.mean[3] = 400.;
-  dataset.targets.mean[5] = -300.;
-
-  ransac_model->fit(dataset);
-
-  const auto scores =
-      cross_validated_scores(nll, dataset, fold_indexer, ransac_model.get());
-
-  // Here we use the original model_ptr and make sure it also was fit after
-  // we called `model_ptr->ransac_model.fit()`
-  const auto in_sample_preds =
-      model_ptr->template predict<Eigen::VectorXd>(dataset.features);
-
-  // Here we make sure the leave one out likelihoods for inliers are all
-  // reasonable, and for the known outliers we assert the likelihood is
-  // really really really small.
-  for (Eigen::Index i = 0; i < scores.size(); i++) {
-    double in_sample_error = fabs(in_sample_preds[i] - dataset.targets.mean[i]);
-    if (i == 3 || i == 5) {
-      EXPECT_GE(scores[i], 1.e5);
-      EXPECT_GE(in_sample_error, 100.);
-    } else {
-      EXPECT_LE(scores[i], 0.);
-      EXPECT_LE(in_sample_error, 0.1);
-    }
-  }
 }
 
 } // namespace albatross

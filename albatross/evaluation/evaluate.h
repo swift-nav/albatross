@@ -30,8 +30,17 @@ namespace albatross {
  * inferred.
  */
 template <typename RequiredPredictType> struct EvaluationMetric {
+
   virtual double operator()(const RequiredPredictType &,
                             const MarginalDistribution &) const = 0;
+
+  template <typename ModelType, typename FeatureType, typename FitType>
+  double
+  operator()(const Prediction<ModelType, FeatureType, FitType> &prediction,
+             const MarginalDistribution &truth) const {
+    return this->operator()(prediction.template get<RequiredPredictType>(),
+                            truth);
+  }
 };
 
 static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
