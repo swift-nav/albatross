@@ -58,6 +58,21 @@ inline Eigen::MatrixXd subset_cols(const Eigen::MatrixXd &v,
 }
 
 /*
+ * Extracts a subset of rows from an Eigen::Matrix
+ */
+template <typename SizeType>
+inline Eigen::MatrixXd subset_rows(const Eigen::MatrixXd &v,
+                                   const std::vector<SizeType> &row_indices) {
+  Eigen::MatrixXd out(row_indices.size(), v.cols());
+  for (std::size_t i = 0; i < row_indices.size(); i++) {
+    auto ii = static_cast<Eigen::Index>(i);
+    auto row_index = static_cast<Eigen::Index>(row_indices[i]);
+    out.row(ii) = v.row(row_index);
+  }
+  return out;
+}
+
+/*
  * Extracts a subset of an Eigen::Matrix for the given row and column
  * indices.
  */
@@ -126,7 +141,7 @@ template <typename SizeType, typename Scalar, int Size>
 inline void set_subset(const Eigen::DiagonalMatrix<Scalar, Size> &from,
                        const std::vector<SizeType> &indices,
                        Eigen::DiagonalMatrix<Scalar, Size> *to) {
-  assert(static_cast<Eigen::Index>(indices.size()) == from.size());
+  assert(static_cast<Eigen::Index>(indices.size()) == from.diagonal().size());
   for (std::size_t i = 0; i < indices.size(); i++) {
     to->diagonal()[static_cast<Eigen::Index>(indices[i])] =
         from.diagonal()[static_cast<Eigen::Index>(i)];
