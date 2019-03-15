@@ -65,16 +65,16 @@ public:
     return impl().fit(features, targets);
   }
 
-  JointDistribution predict(const std::vector<Eigen::VectorXd> &features,
-                            const FitType &least_squares_fit,
-                            PredictTypeIdentity<JointDistribution>) const {
+  Eigen::VectorXd predict(const std::vector<Eigen::VectorXd> &features,
+                          const FitType &least_squares_fit,
+                          PredictTypeIdentity<Eigen::VectorXd>) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
       mean(static_cast<Eigen::Index>(i)) =
           features[i].dot(least_squares_fit.coefs);
     }
-    return JointDistribution(mean);
+    return Eigen::VectorXd(mean);
   }
 
   template <
@@ -139,14 +139,13 @@ public:
     return Base::fit(convert_features(features), targets);
   }
 
-  JointDistribution predict(const std::vector<double> &features,
-                            const Base::FitType &least_squares_fit,
-                            PredictTypeIdentity<JointDistribution>) const {
+  Eigen::VectorXd predict(const std::vector<double> &features,
+                          const Base::FitType &least_squares_fit,
+                          PredictTypeIdentity<Eigen::VectorXd>) const {
     return Base::predict(convert_features(features), least_squares_fit,
-                         PredictTypeIdentity<JointDistribution>());
+                         PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
-
 } // namespace albatross
 
 #endif
