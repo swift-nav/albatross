@@ -19,8 +19,8 @@ namespace albatross {
  * Extract a subset of a standard vector.
  */
 template <typename SizeType, typename X>
-inline std::vector<X> subset(const std::vector<SizeType> &indices,
-                             const std::vector<X> &v) {
+inline std::vector<X> subset(const std::vector<X> &v,
+                             const std::vector<SizeType> &indices) {
   std::vector<X> out(indices.size());
   for (std::size_t i = 0; i < static_cast<std::size_t>(indices.size()); i++) {
     out[i] = v[static_cast<std::size_t>(indices[i])];
@@ -32,8 +32,8 @@ inline std::vector<X> subset(const std::vector<SizeType> &indices,
  * Extract a subset of an Eigen::Vector
  */
 template <typename SizeType>
-inline Eigen::VectorXd subset(const std::vector<SizeType> &indices,
-                              const Eigen::VectorXd &v) {
+inline Eigen::VectorXd subset(const Eigen::VectorXd &v,
+                              const std::vector<SizeType> &indices) {
   Eigen::VectorXd out(static_cast<Eigen::Index>(indices.size()));
   for (std::size_t i = 0; i < indices.size(); i++) {
     out[static_cast<Eigen::Index>(i)] =
@@ -46,8 +46,8 @@ inline Eigen::VectorXd subset(const std::vector<SizeType> &indices,
  * Extracts a subset of columns from an Eigen::Matrix
  */
 template <typename SizeType>
-inline Eigen::MatrixXd subset_cols(const std::vector<SizeType> &col_indices,
-                                   const Eigen::MatrixXd &v) {
+inline Eigen::MatrixXd subset_cols(const Eigen::MatrixXd &v,
+                                   const std::vector<SizeType> &col_indices) {
   Eigen::MatrixXd out(v.rows(), col_indices.size());
   for (std::size_t i = 0; i < col_indices.size(); i++) {
     auto ii = static_cast<Eigen::Index>(i);
@@ -62,9 +62,9 @@ inline Eigen::MatrixXd subset_cols(const std::vector<SizeType> &col_indices,
  * indices.
  */
 template <typename SizeType>
-inline Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
-                              const std::vector<SizeType> &col_indices,
-                              const Eigen::MatrixXd &v) {
+inline Eigen::MatrixXd subset(const Eigen::MatrixXd &v,
+                              const std::vector<SizeType> &row_indices,
+                              const std::vector<SizeType> &col_indices) {
   Eigen::MatrixXd out(row_indices.size(), col_indices.size());
   for (std::size_t i = 0; i < row_indices.size(); i++) {
     for (std::size_t j = 0; j < col_indices.size(); j++) {
@@ -83,10 +83,10 @@ inline Eigen::MatrixXd subset(const std::vector<SizeType> &row_indices,
  * and columns.
  */
 template <typename SizeType>
-inline Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
-                                        const Eigen::MatrixXd &v) {
+inline Eigen::MatrixXd symmetric_subset(const Eigen::MatrixXd &v,
+                                        const std::vector<SizeType> &indices) {
   assert(v.rows() == v.cols());
-  return subset(indices, indices, v);
+  return subset(v, indices, indices);
 }
 
 /*
@@ -94,9 +94,9 @@ inline Eigen::MatrixXd symmetric_subset(const std::vector<SizeType> &indices,
  */
 template <typename SizeType, typename Scalar, int Size>
 inline Eigen::DiagonalMatrix<Scalar, Size>
-symmetric_subset(const std::vector<SizeType> &indices,
-                 const Eigen::DiagonalMatrix<Scalar, Size> &v) {
-  return subset(indices, v.diagonal()).asDiagonal();
+symmetric_subset(const Eigen::DiagonalMatrix<Scalar, Size> &v,
+                 const std::vector<SizeType> &indices) {
+  return subset(v.diagonal(), indices).asDiagonal();
 }
 
 /*
@@ -106,8 +106,9 @@ symmetric_subset(const std::vector<SizeType> &indices,
  *     to[indices] = from;
  */
 template <typename SizeType>
-inline void set_subset(const std::vector<SizeType> &indices,
-                       const Eigen::VectorXd &from, Eigen::VectorXd *to) {
+inline void set_subset(const Eigen::VectorXd &from,
+                       const std::vector<SizeType> &indices,
+                       Eigen::VectorXd *to) {
   assert(static_cast<Eigen::Index>(indices.size()) == from.size());
   for (std::size_t i = 0; i < indices.size(); ++i) {
     (*to)[static_cast<Eigen::Index>(indices[i])] =
@@ -122,13 +123,12 @@ inline void set_subset(const std::vector<SizeType> &indices,
  *     to[indices] = from;
  */
 template <typename SizeType, typename Scalar, int Size>
-inline Eigen::VectorXd
-set_subset(const std::vector<SizeType> &indices,
-           const Eigen::DiagonalMatrix<Scalar, Size> &from,
-           Eigen::DiagonalMatrix<Scalar, Size> *to) {
+inline void set_subset(const Eigen::DiagonalMatrix<Scalar, Size> &from,
+                       const std::vector<SizeType> &indices,
+                       Eigen::DiagonalMatrix<Scalar, Size> *to) {
   assert(static_cast<Eigen::Index>(indices.size()) == from.size());
   for (std::size_t i = 0; i < indices.size(); i++) {
-    to.diagonal()[static_cast<Eigen::Index>(indices[i])] =
+    to->diagonal()[static_cast<Eigen::Index>(indices[i])] =
         from.diagonal()[static_cast<Eigen::Index>(i)];
   }
 }

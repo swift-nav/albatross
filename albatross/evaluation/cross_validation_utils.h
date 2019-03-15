@@ -70,13 +70,11 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (std::size_t i = 0; i < folds.size(); ++i) {
-    const auto fold_pred = means[i];
-    const auto fold = folds[i];
     Eigen::Index fold_size =
-        static_cast<Eigen::Index>(fold.test_dataset.size());
-    assert(fold_pred.size() == fold_size);
-    set_subset(fold.test_indices, fold_pred, &pred);
-    number_filled += static_cast<Eigen::Index>(fold.test_indices.size());
+        static_cast<Eigen::Index>(folds[i].test_dataset.size());
+    assert(means[i].size() == fold_size);
+    set_subset(means[i], folds[i].test_indices, &pred);
+    number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
   }
   assert(number_filled == n);
   return pred;
@@ -102,12 +100,11 @@ inline MarginalDistribution concatenate_marginal_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (std::size_t i = 0; i < folds.size(); ++i) {
-    const auto fold_pred = marginals[i];
-    const auto fold = folds[i];
-    assert(fold_pred.size() == fold.test_dataset.size());
-    set_subset(fold.test_indices, fold_pred.mean, &mean);
-    set_subset(fold.test_indices, fold_pred.covariance.diagonal(), &variance);
-    number_filled += static_cast<Eigen::Index>(fold.test_indices.size());
+    assert(marginals[i].size() == folds[i].test_dataset.size());
+    set_subset(marginals[i].mean, folds[i].test_indices, &mean);
+    set_subset(marginals[i].covariance.diagonal(), folds[i].test_indices,
+               &variance);
+    number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
   }
   assert(number_filled == n);
   return MarginalDistribution(mean, variance.asDiagonal());

@@ -120,12 +120,12 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
     const auto train_indices = indices_complement(test_indices, n);
 
     std::vector<FeatureType> train_features =
-        subset(train_indices, dataset.features);
-    MarginalDistribution train_targets = subset(train_indices, dataset.targets);
+        subset(dataset.features, train_indices);
+    MarginalDistribution train_targets = subset(dataset.targets, train_indices);
 
     std::vector<FeatureType> test_features =
-        subset(test_indices, dataset.features);
-    MarginalDistribution test_targets = subset(test_indices, dataset.targets);
+        subset(dataset.features, test_indices);
+    MarginalDistribution test_targets = subset(dataset.targets, test_indices);
 
     assert(train_features.size() == train_targets.size());
     assert(test_features.size() == test_targets.size());

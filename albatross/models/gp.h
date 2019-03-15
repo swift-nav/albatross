@@ -286,8 +286,8 @@ public:
 
     std::vector<JointDistribution> output;
     for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
-      Eigen::VectorXd vi = subset(indices[i], gp_fit.information);
+      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
       const auto A_inv = inverse_blocks[i].inverse();
       output.push_back(JointDistribution(yi - A_inv * vi, A_inv));
     }
@@ -308,8 +308,8 @@ public:
 
     std::vector<MarginalDistribution> output;
     for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
-      Eigen::VectorXd vi = subset(indices[i], gp_fit.information);
+      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
       const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
 
       output.push_back(MarginalDistribution(
@@ -330,8 +330,8 @@ public:
 
     std::vector<Eigen::VectorXd> output;
     for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(indices[i], dataset.targets.mean);
-      Eigen::VectorXd vi = subset(indices[i], gp_fit.information);
+      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
       const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
       output.push_back(yi - A_ldlt.solve(vi));
     }
