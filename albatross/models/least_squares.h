@@ -148,6 +148,4 @@ public:
 };
 } // namespace albatross
 
-// CEREAL_REGISTER_TYPE(albatross::LinearRegression);
-
 #endif

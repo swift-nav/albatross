@@ -241,20 +241,16 @@ public:
     return albatross::get_predictions(model_, folds);
   }
 
-  template <typename FeatureType>
-  auto get_predictions(const RegressionDataset<FeatureType> &dataset) const {
-    const auto indexer = leave_one_out_indexer(dataset.features);
+  template <typename FeatureType, typename IndexFunc>
+  auto get_predictions(const RegressionDataset<FeatureType> &dataset,
+                       const IndexFunc &index_function) const {
+    const auto indexer = index_function(dataset);
     const auto folds = folds_from_fold_indexer(dataset, indexer);
-    return albatross::get_predictions(model_, folds);
+    return get_predictions(folds);
   }
 
   // get_prediction
 
-  /*
-   * get_prediction deals with returning a Prediction object which looks
-   * like any other but which provides out of sample predictions for
-   * a given indexer.
-   */
   template <typename FeatureType>
   CVPrediction<ModelType, FeatureType>
   get_prediction(const RegressionDataset<FeatureType> &dataset,
@@ -262,16 +258,10 @@ public:
     return CVPrediction<ModelType, FeatureType>(model_, dataset, indexer);
   }
 
-  template <typename FeatureType>
+  template <typename FeatureType, typename IndexFunc>
   auto get_prediction(const RegressionDataset<FeatureType> &dataset,
-                      const GrouperFunction<FeatureType> &grouper) const {
-    const auto indexer = leave_one_group_out_indexer(dataset.features, grouper);
-    return get_prediction(dataset, indexer);
-  }
-
-  template <typename FeatureType>
-  auto get_prediction(const RegressionDataset<FeatureType> &dataset) const {
-    const auto indexer = leave_one_out_indexer(dataset.features);
+                      const IndexFunc &index_function) const {
+    const auto indexer = index_function(dataset);
     return get_prediction(dataset, indexer);
   }
 
@@ -282,11 +272,7 @@ public:
   scores(const EvaluationMetric<RequiredPredictType> &metric,
          const std::vector<RegressionFold<FeatureType>> &folds) const {
     const auto preds = get_predictions(folds);
-    std::vector<RequiredPredictType> predictions;
-    for (const auto &pred : preds) {
-      predictions.emplace_back(pred.template get<RequiredPredictType>());
-    }
-    return cross_validated_scores(metric, folds, predictions);
+    return cross_validated_scores(metric, folds, preds);
   }
 
   template <typename RequiredPredictType, typename FeatureType>
@@ -300,18 +286,12 @@ public:
     return cross_validated_scores(metric, folds, predictions);
   }
 
-  template <typename RequiredPredictType, typename FeatureType>
+  template <typename RequiredPredictType, typename FeatureType,
+            typename IndexFunc>
   Eigen::VectorXd scores(const EvaluationMetric<RequiredPredictType> &metric,
                          const RegressionDataset<FeatureType> &dataset,
-                         const GrouperFunction<FeatureType> &grouper) const {
-    const auto indexer = leave_one_group_out_indexer(dataset.features, grouper);
-    return scores(metric, dataset, indexer);
-  }
-
-  template <typename RequiredPredictType, typename FeatureType>
-  Eigen::VectorXd scores(const EvaluationMetric<RequiredPredictType> &metric,
-                         const RegressionDataset<FeatureType> &dataset) const {
-    const auto indexer = leave_one_out_indexer(dataset.features);
+                         const IndexFunc &index_function) const {
+    const auto indexer = index_function(dataset);
     return scores(metric, dataset, indexer);
   }
 };

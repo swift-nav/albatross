@@ -30,48 +30,33 @@ get_predictions(const ModelType &model,
   return predictions;
 }
 
-template <typename FeatureType>
-inline std::size_t
-max_index(const std::vector<RegressionFold<FeatureType>> &folds) {
-  std::size_t n = 0;
-  for (const auto &fold : folds) {
-    for (const auto &idx : fold.test_indices) {
-      if (idx > n) {
-        n = idx;
-      }
-    }
+template <typename PredictType, typename Prediction>
+inline auto get_predict_types(
+    const std::vector<Prediction> &prediction_classes,
+    PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
+  std::vector<PredictType> predictions;
+  for (const auto &pred : prediction_classes) {
+    predictions.emplace_back(pred.template get<PredictType>());
   }
-  return n + 1;
+  return predictions;
 }
 
 template <typename PredictionType>
 inline std::vector<Eigen::VectorXd>
 get_means(const std::vector<PredictionType> &predictions) {
-  std::vector<Eigen::VectorXd> means;
-  for (const auto &pred : predictions) {
-    means.emplace_back(pred.mean());
-  }
-  return means;
+  return get_predict_types<Eigen::VectorXd>(predictions);
 }
 
 template <typename PredictionType>
 inline std::vector<MarginalDistribution>
 get_marginals(const std::vector<PredictionType> &predictions) {
-  std::vector<MarginalDistribution> marginals;
-  for (const auto &pred : predictions) {
-    marginals.emplace_back(pred.marginal());
-  }
-  return marginals;
+  return get_predict_types<MarginalDistribution>(predictions);
 }
 
 template <typename PredictionType>
 inline std::vector<JointDistribution>
 get_joints(const std::vector<PredictionType> &predictions) {
-  std::vector<JointDistribution> joints;
-  for (const auto &pred : predictions) {
-    joints.emplace_back(pred.joint());
-  }
-  return joints;
+  return get_predict_types<JointDistribution>(predictions);
 }
 
 template <typename FeatureType>
@@ -80,7 +65,7 @@ inline Eigen::VectorXd concatenate_mean_predictions(
     const std::vector<Eigen::VectorXd> &means) {
   assert(folds.size() == means.size());
 
-  Eigen::Index n = static_cast<Eigen::Index>(max_index(folds));
+  Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
   Eigen::VectorXd pred(n);
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
@@ -110,7 +95,7 @@ inline MarginalDistribution concatenate_marginal_predictions(
     const std::vector<MarginalDistribution> &marginals) {
   assert(folds.size() == marginals.size());
 
-  Eigen::Index n = static_cast<Eigen::Index>(max_index(folds));
+  Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
   assert(folds.size() == marginals.size());
   Eigen::VectorXd mean(n);
   Eigen::VectorXd variance(n);
@@ -135,11 +120,12 @@ inline MarginalDistribution concatenate_marginal_predictions(
   return concatenate_marginal_predictions(folds, get_marginals(predictions));
 }
 
-template <typename FeatureType, typename RequiredPredictType>
+template <typename EvaluationMetricType, typename FeatureType,
+          typename PredictionType>
 Eigen::VectorXd
-cross_validated_scores(const EvaluationMetric<RequiredPredictType> &metric,
+cross_validated_scores(const EvaluationMetricType &metric,
                        const std::vector<RegressionFold<FeatureType>> &folds,
-                       const std::vector<RequiredPredictType> &predictions) {
+                       const std::vector<PredictionType> &predictions) {
   assert(folds.size() == predictions.size());
   Eigen::Index n = static_cast<Eigen::Index>(predictions.size());
   Eigen::VectorXd output(n);

@@ -23,7 +23,9 @@ TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  const auto prediction = model.cross_validate().get_prediction(dataset);
+  LeaveOneOut leave_one_out;
+  const auto prediction =
+      model.cross_validate().get_prediction(dataset, leave_one_out);
 
   expect_predict_variants_consistent(prediction);
 }
@@ -32,7 +34,9 @@ TYPED_TEST_P(RegressionModelTester, test_get_predictions) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  const auto predictions = model.cross_validate().get_predictions(dataset);
+  LeaveOneOut leave_one_out;
+  const auto predictions =
+      model.cross_validate().get_predictions(dataset, leave_one_out);
 
   for (const auto &pred : predictions) {
     expect_predict_variants_consistent(pred);
@@ -43,14 +47,19 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  const auto indexer = leave_one_out_indexer(dataset.features);
+  LeaveOneOut leave_one_out;
+  const auto indexer = leave_one_out(dataset);
   const auto folds = folds_from_fold_indexer(dataset, indexer);
 
   const RootMeanSquareError rmse;
 
   auto cv_scores = model.cross_validate().scores(rmse, folds);
-  auto cv_fast_scores = model.cross_validate().scores(rmse, dataset, indexer);
 
+  auto cv_fast_scores = model.cross_validate().scores(rmse, dataset, indexer);
+  auto cv_fast_scores_alternate =
+      model.cross_validate().scores(rmse, dataset, leave_one_out);
+
+  EXPECT_LE((cv_fast_scores - cv_fast_scores_alternate).norm(), 1e-8);
   EXPECT_LE((cv_scores - cv_fast_scores).norm(), 1e-8);
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
@@ -130,22 +139,24 @@ TYPED_TEST(SpecializedCrossValidationTester,
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
+  LeaveOneOut leave_one_out;
   // time the computation of RMSE using the fast LOO variant.
   using namespace std::chrono;
   high_resolution_clock::time_point start = high_resolution_clock::now();
-  const auto cv_fast_scores =
-      model.cross_validate().scores(RootMeanSquareError(), dataset);
+  const auto cv_fast_scores = model.cross_validate().scores(
+      RootMeanSquareError(), dataset, leave_one_out);
   high_resolution_clock::time_point end = high_resolution_clock::now();
   auto fast_duration = duration_cast<microseconds>(end - start).count();
 
   // time RMSE using the default method.
-  const auto loo_indexer = leave_one_out_indexer(dataset.features);
+  const auto loo_indexer = leave_one_out(dataset);
   const auto folds = folds_from_fold_indexer(dataset, loo_indexer);
   start = high_resolution_clock::now();
   const auto cv_slow_scores =
       model.cross_validate().scores(RootMeanSquareError(), folds);
   end = high_resolution_clock::now();
   auto slow_duration = duration_cast<microseconds>(end - start).count();
+
   // Make sure the faster variant is actually faster and that the results
   // are the same.
   EXPECT_LT(fast_duration, 0.5 * slow_duration);

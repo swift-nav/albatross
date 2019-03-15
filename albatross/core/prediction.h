@@ -149,6 +149,8 @@ public:
     return get(get_type<PredictType>());
   }
 
+  std::size_t size() const { return features_.size(); }
+
 private:
   template <typename T> struct get_type {};
 

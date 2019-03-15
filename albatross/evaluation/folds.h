@@ -31,6 +31,10 @@ template <typename FeatureType> struct RegressionFold {
         test_indices(test_indices_){};
 };
 
+/*
+ * Leave One Out
+ */
+
 template <typename FeatureType>
 static inline FoldIndexer
 leave_one_out_indexer(const std::vector<FeatureType> &features) {
@@ -42,11 +46,24 @@ leave_one_out_indexer(const std::vector<FeatureType> &features) {
   return groups;
 }
 
+template <typename FeatureType>
+static inline FoldIndexer
+leave_one_out_indexer(const RegressionDataset<FeatureType> &dataset) {
+  return leave_one_out_indexer(dataset.features);
+}
+
+struct LeaveOneOut {
+
+  template <typename FeatureType>
+  FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
+    return leave_one_out_indexer(dataset);
+  }
+};
+
 /*
- * Splits a dataset into cross validation folds where each fold contains all
- but
- * one predictor/target pair.
+ * Leave One Group Out
  */
+
 template <typename FeatureType>
 static inline FoldIndexer leave_one_group_out_indexer(
     const std::vector<FeatureType> &features,
@@ -69,6 +86,18 @@ static inline FoldIndexer leave_one_group_out_indexer(
   return groups;
 }
 
+template <typename GroupFunc> struct LeaveOneGroupOut {
+
+  LeaveOneGroupOut(const GroupFunc &grouper_) : grouper(grouper_){};
+
+  template <typename FeatureType>
+  FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
+    return leave_one_group_out_indexer(dataset.features, grouper);
+  }
+
+  GroupFunc grouper;
+};
+
 /*
  * Each flavor of cross validation can be described by a set of
  * FoldIndices, which store which indices should be used for the
@@ -79,7 +108,6 @@ template <typename FeatureType>
 static inline std::vector<RegressionFold<FeatureType>>
 folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
                         const FoldIndexer &groups) {
-  // For a dataset with n features, we'll have n folds.
   const std::size_t n = dataset.features.size();
   std::vector<RegressionFold<FeatureType>> folds;
   // For each fold, partition into train and test sets.
@@ -111,6 +139,45 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
                                                 group_name, test_indices));
   }
   return folds;
+}
+
+/*
+ * Inspects a bunch of folds and creates a set of all the indicies
+ * in an original dataset that comprise the test_datasets and the folds.
+ */
+template <typename FeatureType>
+inline std::set<std::size_t>
+unique_test_indices(const std::vector<RegressionFold<FeatureType>> &folds) {
+  std::set<std::size_t> indices;
+  for (const auto &fold : folds) {
+    indices.insert(fold.test_indices.begin(), fold.test_indices.end());
+  }
+  return indices;
+}
+
+template <typename FeatureType>
+inline std::size_t
+dataset_size_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
+  const auto unique_indices = unique_test_indices(folds);
+
+  // Make sure there were no duplicate test indices.
+  std::size_t count = 0;
+  for (const auto &fold : folds) {
+    count += fold.test_indices.size();
+  };
+  assert(count == unique_indices.size());
+
+  // Make sure the minimum was zero
+  std::size_t zero =
+      *std::min_element(unique_indices.begin(), unique_indices.end());
+  assert(zero == 0);
+
+  // And the maximum agrees with the size;
+  std::size_t n =
+      *std::max_element(unique_indices.begin(), unique_indices.end());
+  assert(unique_indices.size() == n + 1);
+
+  return n + 1;
 }
 }
 
