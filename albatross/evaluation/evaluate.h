@@ -29,18 +29,33 @@ namespace albatross {
  * object as an argument the RequiredPredictType cannot be
  * inferred.
  */
+
+template<typename RequiredPredictType>
+using Evaluator = double(*)(const RequiredPredictType&,
+                         const MarginalDistribution &);
+
 template <typename RequiredPredictType> struct EvaluationMetric {
 
-  virtual double operator()(const RequiredPredictType &,
-                            const MarginalDistribution &) const = 0;
+  Evaluator<RequiredPredictType> eval_;
+
+  EvaluationMetric(Evaluator<RequiredPredictType> eval) : eval_(eval) { }
+
+  double
+  operator()(const RequiredPredictType &prediction,
+             const MarginalDistribution &truth) const {
+    return eval_(prediction, truth);
+  }
+
 
   template <typename ModelType, typename FeatureType, typename FitType>
   double
   operator()(const Prediction<ModelType, FeatureType, FitType> &prediction,
              const MarginalDistribution &truth) const {
-    return this->operator()(prediction.template get<RequiredPredictType>(),
+    return (*this)(prediction.template get<RequiredPredictType>(),
                             truth);
   }
+
+  template <class Archive> void serialize(Archive &){};
 };
 
 static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
@@ -50,11 +65,13 @@ static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
   return sqrt(mse);
 }
 
+static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
+                                            const MarginalDistribution &truth) {
+  return root_mean_square_error(prediction, truth.mean);
+}
+
 struct RootMeanSquareError : public EvaluationMetric<Eigen::VectorXd> {
-  double operator()(const Eigen::VectorXd &prediction,
-                    const MarginalDistribution &truth) const override {
-    return root_mean_square_error(prediction, truth.mean);
-  }
+  RootMeanSquareError() : EvaluationMetric<Eigen::VectorXd>(root_mean_square_error) { }
 };
 
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
@@ -66,11 +83,13 @@ static inline double standard_deviation(const Eigen::VectorXd &prediction,
   return std::sqrt(error.dot(error) / (n_elements - 1));
 }
 
+static inline double standard_deviation(const Eigen::VectorXd &prediction,
+                                        const MarginalDistribution &truth) {
+  return standard_deviation(prediction, truth.mean);
+}
+
 struct StandardDeviation : public EvaluationMetric<Eigen::VectorXd> {
-  double operator()(const Eigen::VectorXd &prediction,
-                    const MarginalDistribution &truth) const override {
-    return standard_deviation(prediction, truth.mean);
-  }
+  StandardDeviation() : EvaluationMetric<Eigen::VectorXd>(standard_deviation) { }
 };
 
 /*
@@ -102,10 +121,7 @@ negative_log_likelihood(const MarginalDistribution &prediction,
 
 template <typename PredictType = JointDistribution>
 struct NegativeLogLikelihood : public EvaluationMetric<PredictType> {
-  double operator()(const PredictType &prediction,
-                    const MarginalDistribution &truth) const override {
-    return negative_log_likelihood(prediction, truth);
-  }
+  NegativeLogLikelihood() : EvaluationMetric<PredictType>(negative_log_likelihood) { }
 };
 
 } // namespace albatross

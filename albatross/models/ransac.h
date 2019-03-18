@@ -193,7 +193,7 @@ public:
       "MetricType must be an EvaluationMetric.");
 
   std::string get_name() const {
-    return "ransac[" << sub_model_->get_name() << "]";
+    return "ransac[" + sub_model_.get_name() + "]";
     ;
   };
 
