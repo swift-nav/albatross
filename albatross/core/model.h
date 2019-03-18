@@ -23,11 +23,6 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
   template <typename T, typename FeatureType> friend class fit_model_type;
 
-  template <typename T, typename FitModelType>
-  friend struct fit_type_from_fit_model_type;
-
-  template <typename T, typename FeatureType> friend struct fit_type;
-
 private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelBase<B> {}
@@ -56,19 +51,17 @@ private:
       typename std::enable_if<has_possible_fit<ModelType, FeatureType>::value &&
                                   !has_valid_fit<ModelType, FeatureType>::value,
                               int>::type = 0>
-  FitModel<ModelType, FeatureType>
-  fit_(const std::vector<FeatureType> &features,
-       const MarginalDistribution &targets) const = delete; // Invalid fit_impl_
+  void fit_(const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) const = delete; // Invalid fit
 
   template <typename FeatureType,
             typename std::enable_if<
                 !has_possible_fit<ModelType, FeatureType>::value &&
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  FitModel<ModelType, FeatureType>
+  void
   fit_(const std::vector<FeatureType> &features,
-       const MarginalDistribution &targets) const =
-      delete; // No fit_impl_ found.
+       const MarginalDistribution &targets) const = delete; // No fit found.
 
   template <
       typename PredictFeatureType, typename FitType, typename PredictType,
@@ -99,6 +92,18 @@ private:
   }
 
 public:
+  template <typename DummyType = ModelType,
+            typename std::enable_if<!has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    return typeid(ModelType).name();
+  }
+
+  template <typename DummyType = ModelType,
+            typename std::enable_if<has_name<DummyType>::value, int>::type = 0>
+  std::string get_name() {
+    return derived().name();
+  }
+
   template <typename FeatureType>
   auto get_fit_model(const std::vector<FeatureType> &features,
                      const MarginalDistribution &targets) const {
@@ -109,6 +114,14 @@ public:
   auto get_fit_model(const RegressionDataset<FeatureType> &dataset) const {
     return fit_(dataset.features, dataset.targets);
   }
+
+  CrossValidation<ModelType> cross_validate() const;
+
+  template <typename MetricType>
+  Ransac<ModelType, MetricType>
+  ransac(const MetricType &metric, double inlier_threshold,
+         std::size_t min_inliers, std::size_t random_sample_size,
+         std::size_t max_iterations) const;
 };
 }
 #endif

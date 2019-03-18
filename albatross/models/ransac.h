@@ -13,12 +13,6 @@
 #ifndef ALBATROSS_MODELS_RANSAC_H
 #define ALBATROSS_MODELS_RANSAC_H
 
-#include "core/traits.h"
-#include "crossvalidation.h"
-#include "evaluate.h"
-#include "random_utils.h"
-#include <random>
-
 namespace albatross {
 
 using Indexer = std::vector<std::size_t>;
@@ -127,143 +121,128 @@ ransac(const typename RansacFunctions<FitType>::Fitter &fitter,
  * process implementation for an example of ways to speed things up for specific
  * models.
  */
-template <typename FeatureType, typename PredictType>
+template <typename ModelType, typename FeatureType, typename MetricPredictType>
 RegressionDataset<FeatureType>
 ransac(const RegressionDataset<FeatureType> &dataset,
-       const FoldIndexer &fold_indexer, RegressionModel<FeatureType> *model,
-       EvaluationMetric<PredictType> &metric, double inlier_threshold,
-       std::size_t random_sample_size, std::size_t min_inliers,
-       int max_iterations) {
+       const FoldIndexer &fold_indexer, const ModelBase<ModelType> &model,
+       const EvaluationMetric<MetricPredictType> &metric,
+       double inlier_threshold, std::size_t random_sample_size,
+       std::size_t min_inliers, int max_iterations) {
 
-  using FitType = RegressionModel<FeatureType> *;
+  using FitType = typename fit_model_type<ModelType, FeatureType>::type;
 
   typename RansacFunctions<FitType>::Fitter fitter =
       [&](const std::vector<std::size_t> &inds) {
-        RegressionDataset<FeatureType> dataset_subset(
-            subset(inds, dataset.features), subset(inds, dataset.targets));
-        model->fit(dataset_subset);
-        return model;
+        return model.get_fit_model(subset(dataset, inds));
       };
 
-  typename RansacFunctions<FitType>::InlierMetric inlier_metric =
-      [&](const std::vector<std::size_t> &inds, const FitType &fit) {
-        const auto pred = fit->predict(subset(inds, dataset.features));
-        const auto target = subset(inds, dataset.targets);
-        double metric_value = metric(pred, target);
-        return metric_value;
-      };
+  typename RansacFunctions<FitType>::InlierMetric inlier_metric = [&](
+      const std::vector<std::size_t> &inds, const FitType &fit) {
+    const auto pred = fit.get_prediction(subset(dataset.features, inds));
+    const auto target = subset(dataset.targets, inds);
+    const MetricPredictType prediction = pred.template get<MetricPredictType>();
+    return metric(prediction, target);
+  };
 
   typename RansacFunctions<FitType>::ModelMetric model_metric =
       [&](const std::vector<std::size_t> &inds) {
-        RegressionDataset<FeatureType> inlier_dataset(
-            subset(inds, dataset.features), subset(inds, dataset.targets));
-        const auto inlier_loo = leave_one_out_indexer(inlier_dataset);
-        return cross_validated_scores(metric, inlier_dataset, inlier_loo, model)
-            .mean();
-
+        RegressionDataset<FeatureType> inlier_dataset = subset(dataset, inds);
+        const auto inlier_loo = leave_one_out_indexer(inlier_dataset.features);
+        double mean_score = model.cross_validate()
+                                .scores(metric, inlier_dataset, inlier_loo)
+                                .mean();
+        return mean_score;
       };
 
   const auto best_inds = ransac<FitType>(
       fitter, inlier_metric, model_metric, map_values(fold_indexer),
       inlier_threshold, random_sample_size, min_inliers, max_iterations);
-  RegressionDataset<FeatureType> best_dataset(
-      subset(best_inds, dataset.features), subset(best_inds, dataset.targets));
-  return best_dataset;
+  return subset(dataset, best_inds);
 }
 
-/*
- * This wraps any other RegressionModel and performs ransac each time fit is
- * called.
- *
- * Note that the model pointer passed into the constructor is NOT const and will
- * be updated any time `fit` is called on this class.
- */
-template <typename ModelType, typename FeatureType>
-class GenericRansac : public RegressionModel<FeatureType> {
-public:
-  GenericRansac(ModelType *sub_model, double inlier_threshold,
-                std::size_t min_inliers, std::size_t random_sample_size,
-                std::size_t max_iterations,
-                const IndexerFunction<FeatureType> &indexer_function =
-                    leave_one_out_indexer<FeatureType>)
-      : sub_model_(sub_model), inlier_threshold_(inlier_threshold),
-        min_inliers_(min_inliers), random_sample_size_(random_sample_size),
-        max_iterations_(max_iterations), indexer_function_(indexer_function),
-        metric_(evaluation_metrics::negative_log_likelihood){};
+template <typename ModelType, typename MetricType, typename FeatureType>
+struct Fit<Ransac<ModelType, MetricType>, FeatureType> {
 
-  std::string get_name() const override {
-    std::ostringstream oss;
-    oss << "ransac[" << sub_model_->get_name() << "]";
-    return oss.str();
+  using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
+
+  Fit(const FitModelType &fit_model_) : fit_model(fit_model_){};
+
+  FitModelType fit_model;
+};
+
+/*
+ * This wraps any other model and performs ransac each time fit is called.
+ */
+template <typename ModelType, typename MetricType>
+class Ransac : public ModelBase<Ransac<ModelType, MetricType>> {
+public:
+  Ransac(const ModelType &sub_model, const MetricType &metric,
+         double inlier_threshold, std::size_t min_inliers,
+         std::size_t random_sample_size, std::size_t max_iterations)
+      : sub_model_(sub_model), metric_(metric),
+        inlier_threshold_(inlier_threshold), min_inliers_(min_inliers),
+        random_sample_size_(random_sample_size),
+        max_iterations_(max_iterations){};
+
+  static_assert(
+      std::is_base_of<EvaluationMetric<Eigen::VectorXd>, MetricType>::value ||
+          std::is_base_of<EvaluationMetric<MarginalDistribution>,
+                          MetricType>::value ||
+          std::is_base_of<EvaluationMetric<JointDistribution>,
+                          MetricType>::value,
+      "MetricType must be an EvaluationMetric.");
+
+  std::string get_name() const {
+    return "ransac[" + sub_model_.get_name() + "]";
+    ;
   };
 
-  bool has_been_fit() const override { return sub_model_->has_been_fit(); }
-
-  ParameterStore get_params() const override {
-    return sub_model_->get_params();
-  }
+  ParameterStore get_params() const override { return sub_model_.get_params(); }
 
   void unchecked_set_param(const std::string &name,
                            const Parameter &param) override {
-    sub_model_->set_param(name, param);
+    sub_model_.set_param(name, param);
   }
 
-  virtual std::unique_ptr<RegressionModel<FeatureType>>
-  ransac_model(double, std::size_t, std::size_t, std::size_t) override {
-    assert(false); // "cant ransac a ransac model!"
-    return nullptr;
-  }
-
-protected:
-  void fit_(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) override {
+  template <typename FeatureType>
+  Fit<Ransac<ModelType, MetricType>, FeatureType>
+  fit(const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) const {
+    // Remove outliers
     RegressionDataset<FeatureType> dataset(features, targets);
-    const auto fold_indexer = indexer_function_(dataset);
+    const auto fold_indexer = leave_one_out_indexer(dataset.features);
     RegressionDataset<FeatureType> inliers =
         ransac(dataset, fold_indexer, sub_model_, metric_, inlier_threshold_,
                random_sample_size_, min_inliers_, max_iterations_);
-    this->insights_["post_ransac_feature_count"] =
-        std::to_string(inliers.features.size());
-    this->sub_model_->add_insights(this->insights_);
-
-    if (inliers.features.size() > 0) {
-      this->sub_model_->fit(inliers);
-    }
+    // Then generate a fit.
+    return Fit<Ransac<ModelType, MetricType>, FeatureType>(
+        sub_model_.get_fit_model(inliers));
   }
 
-  JointDistribution
-  predict_(const std::vector<FeatureType> &features) const override {
-    return sub_model_->template predict<JointDistribution>(features);
+  template <typename PredictFeatureType, typename FitType, typename PredictType>
+  PredictType predict(const std::vector<PredictFeatureType> &features,
+                      const FitType &ransac_fit_,
+                      PredictTypeIdentity<PredictType> &&) const {
+    return ransac_fit_.fit_model.get_prediction(features)
+        .template get<PredictType>();
   }
 
-  MarginalDistribution
-  predict_marginal_(const std::vector<FeatureType> &features) const override {
-    return sub_model_->template predict<MarginalDistribution>(features);
-  }
-
-  Eigen::VectorXd
-  predict_mean_(const std::vector<FeatureType> &features) const override {
-    return sub_model_->template predict<Eigen::VectorXd>(features);
-  }
-
-  ModelType *sub_model_;
+  ModelType sub_model_;
+  MetricType metric_;
   double inlier_threshold_;
   std::size_t min_inliers_;
   std::size_t random_sample_size_;
   std::size_t max_iterations_;
-  IndexerFunction<FeatureType> indexer_function_;
-  EvaluationMetric<JointDistribution> metric_;
 };
 
-template <typename FeatureType, typename ModelType>
-inline std::unique_ptr<GenericRansac<ModelType, FeatureType>>
-make_generic_ransac_model(
-    ModelType *model, double inlier_threshold, std::size_t min_inliers,
-    std::size_t random_sample_size, std::size_t max_iterations,
-    const IndexerFunction<FeatureType> &indexer_function) {
-  return std::make_unique<GenericRansac<ModelType, FeatureType>>(
-      model, inlier_threshold, min_inliers, random_sample_size, max_iterations,
-      indexer_function);
+template <typename ModelType>
+template <typename MetricType>
+Ransac<ModelType, MetricType> ModelBase<ModelType>::ransac(
+    const MetricType &metric, double inlier_threshold, std::size_t min_inliers,
+    std::size_t random_sample_size, std::size_t max_iterations) const {
+  return Ransac<ModelType, MetricType>(derived(), metric, inlier_threshold,
+                                       min_inliers, random_sample_size,
+                                       max_iterations);
 }
 
 } // namespace albatross
