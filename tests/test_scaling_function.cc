@@ -10,10 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "covariance_functions/covariance_functions.h"
-#include "test_utils.h"
 #include <gtest/gtest.h>
-#include <iostream>
+
+#include "test_utils.h"
+
+#include "Evaluation"
 
 namespace albatross {
 
@@ -62,7 +63,7 @@ public:
 
   std::string get_name() const { return "obliquity_scaling"; }
 
-  double call_impl_(const double &x) const { return obliquity_function(x); }
+  double _call_impl(const double &x) const { return obliquity_function(x); }
 };
 
 auto make_attenuation_data(const double attenuation = 3.14159,
@@ -106,13 +107,11 @@ TEST(test_scaling_functions, test_predicts) {
   // function, then noisy measurements are taken.
   auto covariance_function = constant * scaling + noise;
 
-  auto model = gp_from_covariance<double>(covariance_function);
+  auto model = gp_from_covariance(covariance_function);
 
-  auto folds = leave_one_out(dataset);
-  EvaluationMetric<Eigen::VectorXd> rmse =
-      evaluation_metrics::root_mean_square_error;
-  auto cv_scores = cross_validated_scores(rmse, folds, &model);
-
+  RootMeanSquareError rmse;
+  LeaveOneOut loo;
+  auto cv_scores = model.cross_validate().scores(rmse, dataset, loo);
   EXPECT_LE(cv_scores.mean(), 0.01);
 }
 
@@ -141,13 +140,12 @@ TEST(test_scaling_functions, test_inference) {
   // function, then noisy measurements are taken.
   auto covariance_function = constant * scaling + noise;
 
-  auto model = gp_from_covariance<double>(covariance_function);
+  auto model = gp_from_covariance(covariance_function);
 
   auto state_space = constant.get_state_space_representation(dataset.features);
-  model.fit(dataset);
-  auto state_estimate = model.inspect(state_space);
+  auto state_estimate = model.fit(dataset).predict(state_space);
   // Make sure our estimate of the attenuation term is close, despite the fact
   // that we made scaled observations of it.
-  EXPECT_LE(fabs(state_estimate.mean[0] - attenuation), 1e-2);
+  EXPECT_LE(fabs(state_estimate.mean()[0] - attenuation), 1e-2);
 }
 } // namespace albatross

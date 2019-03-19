@@ -10,11 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/traits.h"
-#include "covariance_functions/covariance_function.h"
-#include "covariance_functions/noise.h"
-#include "models/gp.h"
-#include "models/ransac_gp.h"
+#include "CovarianceFunctions"
+
 #include <gtest/gtest.h>
 
 namespace albatross {
@@ -43,23 +40,23 @@ struct Z {};
 
 class HasXX : public CovarianceFunction<HasXX> {
 public:
-  double call_impl_(const X &, const X &) const { return 1.; };
+  double _call_impl(const X &, const X &) const { return 1.; };
 };
 
 class HasXY : public CovarianceFunction<HasXY> {
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasNone : public CovarianceFunction<HasNone> {};
 
 class HasMultiple : public CovarianceFunction<HasMultiple> {
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 
-  double call_impl_(const X &, const X &) const { return 1.; };
+  double _call_impl(const X &, const X &) const { return 1.; };
 
-  double call_impl_(const Y &, const Y &) const { return 1.; };
+  double _call_impl(const Y &, const Y &) const { return 1.; };
 
   std::string name_ = "has_multiple";
 };

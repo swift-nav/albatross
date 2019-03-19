@@ -31,7 +31,7 @@ template <typename Derived> class CallTrace;
  *
  *     std::string get_name() const {return "my_cov_func";}
  *
- *     double call_impl_(const X &x, const X &y) const {
+ *     double _call_impl(const X &x, const X &y) const {
  *       return covariance_between_x_and_y(x, y);
  *     }
  *
@@ -45,11 +45,11 @@ template <typename Derived> class CallTrace;
  *     virtual std::string get_name() const = 0;
  *
  *     template <typename X, typename Y=X>
- *     double call_impl_(const X &x, const Y &y) const = 0;
+ *     double _call_impl(const X &x, const Y &y) const = 0;
  *
  *     template <typename X, typename Y=X>
  *     double operator()(const X &x, const Y &y) const {
- *       return this->call_impl_(x, y);
+ *       return this->_call_impl(x, y);
  *     }
  *
  *   }
@@ -59,7 +59,7 @@ template <typename Derived> class CallTrace;
  * never compile.
  *
  * This is where CRTP comes in handy.  To write a new CovarianceFunction you
- * need to provide `call_impl_` functions for any pair of types you'd like to
+ * need to provide `_call_impl(` functions for any pair of types you'd like to
  * have defined.  The CovarianceFunction CRTP base class is then capable of
  * detecting which methods are required at compile time and creating the
  * corresponding operator() methods.  This also makes it possible to compose
@@ -85,7 +85,7 @@ public:
                 "implies you aren't using CRTP.  Implementations "
                 "of a CovarianceFunction should look something like:\n"
                 "\n\tclass Foo : public CovarianceFunction<Foo> {"
-                "\n\t\tdouble call_impl_(const X &x, const Y &y) const;"
+                "\n\t\tdouble _call_impl(const X &x, const Y &y) const;"
                 "\n\t\t..."
                 "\n\t}\n");
 
@@ -122,7 +122,7 @@ public:
             typename std::enable_if<
                 has_valid_call_impl<Derived, X &, Y &>::value, int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
-    return derived().call_impl_(x, y);
+    return derived()._call_impl(x, y);
   }
 
   /*
@@ -135,7 +135,7 @@ public:
                                !has_valid_call_impl<Derived, X &, Y &>::value),
                               int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
-    return derived().call_impl_(y, x);
+    return derived()._call_impl(y, x);
   }
 
   /*
@@ -145,7 +145,7 @@ public:
             typename std::enable_if<
                 has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
   double operator()(const X &x) const {
-    return derived().call_impl_(x, x);
+    return derived()._call_impl(x, x);
   }
 
   /*
@@ -223,10 +223,10 @@ public:
                             (!has_valid_call_impl<Derived, X &, X &>::value &&
                              !has_possible_call_impl<Derived, X &, X &>::value),
                             int>::type = 0>
-  // There don't appear to be any call_impl_ methods with signature
-  // `double call_impl_(const X&, const X&) const`.
+  // There don't appear to be any _call_impl( methods with signature
+  // `double _call_impl(const X&, const X&) const`.
   double operator()(const X &x) const =
-      delete; // No call_impl_.  See comments for help.
+      delete; // No _call_impl(.  See comments for help.
 
   /*
    * Stubs to catch the case where a covariance function was called
@@ -236,11 +236,11 @@ public:
                             (!has_valid_call_impl<Derived, X &, X &>::value &&
                              has_invalid_call_impl<Derived, X &, X &>::value),
                             int>::type = 0>
-  // Here it seems there are no valid call_impl_ methods for these types
-  // but there are some invalid ones.  Be sure that the call_impl_ is
-  // defined in the form: `double call_impl_(const X&, const X&) const`.
+  // Here it seems there are no valid _call_impl( methods for these types
+  // but there are some invalid ones.  Be sure that the _call_impl( is
+  // defined in the form: `double _call_impl(const X&, const X&) const`.
   double operator()(const X &x) const =
-      delete; // Invalid call_impl_.  See comments for help.
+      delete; // Invalid _call_impl(.  See comments for help.
 
   template <typename X, typename Y,
             typename std::enable_if<
@@ -249,11 +249,11 @@ public:
                     (!has_possible_call_impl<Derived, X &, Y &>::value &&
                      !has_possible_call_impl<Derived, Y &, X &>::value),
                 int>::type = 0>
-  // There don't appear to be any call_impl_ methods with signature
-  // `double call_impl_(const X&, const Y&) const`.
+  // There don't appear to be any _call_impl( methods with signature
+  // `double _call_impl(const X&, const Y&) const`.
   double operator()(const X &x,
                     const Y &y) const =
-      delete; // No call_impl_.  See comments for help.
+      delete; // No _call_impl(.  See comments for help.
 
   template <typename X, typename Y,
             typename std::enable_if<
@@ -262,12 +262,12 @@ public:
                     (has_invalid_call_impl<Derived, X &, Y &>::value ||
                      has_invalid_call_impl<Derived, Y &, X &>::value),
                 int>::type = 0>
-  // Here it seems there are no valid call_impl_ methods for these types
-  // but there are some invalid ones.  Be sure that the call_impl_ is
-  // defined in the form: `double call_impl_(const X&, const X&) const`.
+  // Here it seems there are no valid _call_impl( methods for these types
+  // but there are some invalid ones.  Be sure that the _call_impl( is
+  // defined in the form: `double _call_impl(const X&, const X&) const`.
   double operator()(const X &x,
                     const Y &y) const =
-      delete; // Invalid call_impl_.  See comments for help.
+      delete; // Invalid _call_impl(.  See comments for help.
 
   CallTrace<Derived> call_trace() const;
 
@@ -321,7 +321,7 @@ public:
       typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
                                has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
 
@@ -333,7 +333,7 @@ public:
       typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
                                !has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -345,7 +345,7 @@ public:
       typename std::enable_if<(!has_valid_call_impl<LHS, X &, Y &>::value &&
                                has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
 
@@ -393,7 +393,7 @@ public:
       typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
                                has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     double output = this->lhs_(x, y);
     if (output != 0.) {
       output *= this->rhs_(x, y);
@@ -409,7 +409,7 @@ public:
       typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
                                !has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -421,7 +421,7 @@ public:
       typename std::enable_if<(!has_valid_call_impl<LHS, X &, Y &>::value &&
                                has_valid_call_impl<RHS, X &, Y &>::value),
                               int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
+  double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
 
