@@ -9,8 +9,6 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-#include <cereal/archives/json.hpp>
-#include <cereal/types/polymorphic.hpp>
 
 namespace albatross {
 
@@ -31,22 +29,24 @@ template <typename Serializable> struct SerializeTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(SerializeTest);
 
-TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_json) {
-  TypeParam model_and_rep;
-  using X = typename TypeParam::RepresentationType;
+template <typename InputArchiveType, typename OutputArchiveType,
+          typename SerializableTestType>
+void expect_roundtrip_serializable() {
+  SerializableTestType model_and_rep;
+  using X = typename SerializableTestType::RepresentationType;
   const X original = model_and_rep.create();
 
   // Serialize it
   std::ostringstream os;
   {
-    cereal::JSONOutputArchive oarchive(os);
+    OutputArchiveType oarchive(os);
     oarchive(original);
   }
   // Deserialize it.
   std::istringstream is(os.str());
   X deserialized;
   {
-    cereal::JSONInputArchive iarchive(is);
+    InputArchiveType iarchive(is);
     iarchive(deserialized);
   }
   // Make sure the original and deserialized representations are
@@ -55,41 +55,20 @@ TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_json) {
   // Reserialize the deserialized object
   std::ostringstream os_again;
   {
-    cereal::JSONOutputArchive oarchive(os_again);
+    OutputArchiveType oarchive(os_again);
     oarchive(deserialized);
   }
   // And make sure the serialized strings are the same,
   EXPECT_EQ(os_again.str(), os.str());
 }
 
-TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_binary) {
-  TypeParam model_and_rep;
-  using X = typename TypeParam::RepresentationType;
-  const X original = model_and_rep.create();
+TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_json) {
+  expect_roundtrip_serializable<cereal::JSONInputArchive,
+                                cereal::JSONOutputArchive, TypeParam>();
+}
 
-  // Serialize it
-  std::ostringstream os;
-  {
-    cereal::BinaryOutputArchive oarchive(os);
-    oarchive(original);
-  }
-  // Deserialize it.
-  std::istringstream is(os.str());
-  X deserialized;
-  {
-    cereal::BinaryInputArchive iarchive(is);
-    iarchive(deserialized);
-  }
-  // Make sure the original and deserialized representations are
-  // equivalent.
-  EXPECT_TRUE(model_and_rep.are_equal(original, deserialized));
-  // Reserialize the deserialized object
-  std::ostringstream os_again;
-  {
-    cereal::BinaryOutputArchive oarchive(os_again);
-    oarchive(deserialized);
-  }
-  // And make sure the serialized strings are the same,
-  EXPECT_EQ(os_again.str(), os.str());
+TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_binary) {
+  expect_roundtrip_serializable<cereal::BinaryInputArchive,
+                                cereal::BinaryOutputArchive, TypeParam>();
 }
 }

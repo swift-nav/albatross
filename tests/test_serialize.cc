@@ -10,33 +10,16 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/model.h"
-#include "core/serialize.h"
-#include <functional>
 #include <gtest/gtest.h>
 
-#include "test_serialize.h"
+#include "test_models.h"
 #include "test_utils.h"
 
-#include "models/gp.h"
+#include "GP"
 
-CEREAL_REGISTER_TYPE_WITH_NAME(albatross::MockModel, "mock_model_name");
+#include "test_serialize.h"
 
 namespace albatross {
-
-using SqrExp = SquaredExponential<EuclideanDistance>;
-using Noise = IndependentNoise<double>;
-using SqrExpAndNoise = SumOfCovarianceFunctions<SqrExp, Noise>;
-using Scale = ScalingTerm<IdentityScaling>;
-using Covariance = ProductOfCovarianceFunctions<Scale, SqrExpAndNoise>;
-using SquaredExponentialGaussianProcess =
-    GaussianProcessRegression<double, Covariance>;
-using SerializableMockPointer =
-    std::unique_ptr<SerializableRegressionModel<MockFeature, MockFit>>;
-using RegressionMockPointer = std::unique_ptr<RegressionModel<MockFeature>>;
-using SerializableLeastSquaresPointer =
-    std::unique_ptr<SerializableRegressionModel<double, LeastSquaresFit>>;
-using DoubleRegressionModelPointer = std::unique_ptr<RegressionModel<double>>;
 
 /*
  * In what follows we set up a series of test cases in which vary how
@@ -211,142 +194,6 @@ struct DatasetWithMetadata
   };
 };
 
-class UnfitSerializableModel
-    : public SerializableType<SerializableMockPointer> {
-public:
-  RepresentationType create() const override {
-    return std::make_unique<MockModel>(log(2.));
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return *lhs == *rhs;
-  };
-};
-
-class FitSerializableModel : public SerializableType<SerializableMockPointer> {
-public:
-  RepresentationType create() const override {
-    auto dataset = mock_training_data();
-    auto model_ptr = std::make_unique<MockModel>(log(2.));
-    model_ptr->fit(dataset);
-    return std::move(model_ptr);
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return (*lhs == *rhs && lhs->get_fit() == rhs->get_fit() &&
-            lhs->get_insights() == rhs->get_insights());
-  };
-};
-
-class FitDirectModel : public SerializableType<MockModel> {
-public:
-  RepresentationType create() const override {
-    auto dataset = mock_training_data();
-    auto model = MockModel(log(2.));
-    model.fit(dataset);
-    ParameterPrior prior = std::make_shared<UniformPrior>(3., 4.);
-    model.set_prior("parameter", prior);
-    return model;
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return lhs == rhs && lhs.get_fit() == rhs.get_fit();
-  };
-};
-
-class UnfitDirectModel : public SerializableType<MockModel> {
-public:
-  RepresentationType create() const override { return MockModel(log(2.)); }
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return lhs == rhs && lhs.get_fit() == rhs.get_fit();
-  };
-};
-
-class UnfitRegressionModel : public SerializableType<RegressionMockPointer> {
-public:
-  RepresentationType create() const override {
-    return std::make_unique<MockModel>(log(2.));
-  }
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return *lhs == *rhs;
-  };
-};
-
-class FitLinearRegressionModel : public SerializableType<LinearRegression> {
-public:
-  RepresentationType create() const override {
-    auto model = LinearRegression();
-    auto dataset = make_toy_linear_data();
-    model.fit(dataset);
-    return model;
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return lhs.get_fit() == rhs.get_fit();
-  };
-};
-
-class FitLinearSerializablePointer
-    : public SerializableType<SerializableLeastSquaresPointer> {
-public:
-  RepresentationType create() const override {
-    auto model = std::make_unique<LinearRegression>();
-    auto dataset = make_toy_linear_data();
-    model->fit(dataset);
-    return std::move(model);
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return lhs->get_fit() == rhs->get_fit();
-  };
-};
-
-class UnfitGaussianProcess
-    : public SerializableType<
-          std::unique_ptr<SquaredExponentialGaussianProcess>> {
-public:
-  RepresentationType create() const override {
-    auto gp =
-        std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
-    const auto keys = map_keys(gp->get_params());
-    gp->set_param(keys[0], log(2.));
-    return gp;
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return *lhs == *rhs;
-  };
-};
-
-class FitGaussianProcess
-    : public SerializableType<
-          std::unique_ptr<SquaredExponentialGaussianProcess>> {
-public:
-  RepresentationType create() const override {
-
-    auto dataset = make_toy_linear_data();
-    auto gp =
-        std::make_unique<SquaredExponentialGaussianProcess>("custom_name");
-    const auto keys = map_keys(gp->get_params());
-    gp->set_param(keys[0], log(2.));
-    gp->fit(dataset);
-    return gp;
-  }
-
-  bool are_equal(const RepresentationType &lhs,
-                 const RepresentationType &rhs) const override {
-    return *lhs == *rhs && lhs->get_fit() == rhs->get_fit();
-  };
-};
-
 REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
                            test_roundtrip_serialize_binary);
 
@@ -354,13 +201,107 @@ typedef ::testing::Types<
     LDLT, EigenMatrix3d, SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
     EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd, FullJointDistribution,
     MeanOnlyJointDistribution, FullMarginalDistribution,
-    MeanOnlyMarginalDistribution, ParameterStoreType,
-    SerializableType<MockModel>, UnfitSerializableModel, FitSerializableModel,
-    Dataset, DatasetWithMetadata, FitDirectModel, UnfitDirectModel,
-    UnfitRegressionModel, FitLinearRegressionModel,
-    FitLinearSerializablePointer, UnfitGaussianProcess, FitGaussianProcess>
+    MeanOnlyMarginalDistribution, ParameterStoreType, Dataset,
+    DatasetWithMetadata, SerializableType<MockModel>>
     ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
+
+/*
+ * Make sure all the example models serialize.
+ */
+
+template <typename DatasetType, int = 0> struct feature_type {
+  typedef void type;
+};
+
+template <typename FeatureType>
+struct feature_type<RegressionDataset<FeatureType>> {
+  typedef FeatureType type;
+};
+
+template <typename T> class model_types {
+  template <typename C,
+            typename ModelType = decltype(std::declval<const T>().get_model())>
+  static ModelType test_model(C *);
+  template <typename> static void test_model(...);
+
+  template <typename C, typename DatasetType =
+                            decltype(std::declval<const T>().get_dataset())>
+  static typename feature_type<DatasetType>::type test_feature_type(C *);
+  template <typename> static void test_feature_type(...);
+
+public:
+  typedef decltype(test_model<T>(0)) model_type;
+  typedef decltype(test_feature_type<T>(0)) feature;
+  typedef typename fit_model_type<decltype(test_model<T>(0)),
+                                  decltype(test_feature_type<T>(0))>::type
+      fit_model_type;
+};
+
+template <typename ModelTestCase>
+struct SerializableModelType
+    : public SerializableType<typename model_types<ModelTestCase>::model_type> {
+
+  using ModelType = typename model_types<ModelTestCase>::model_type;
+
+  ModelType create() const {
+    ModelTestCase test_case;
+    auto model = test_case.get_model();
+    double offset = 1.1;
+    for (const auto &param : model.get_params()) {
+      model.set_param_value(param.first, param.second.value + offset);
+      offset += 1.11;
+    }
+    return model;
+  }
+
+  virtual bool are_equal(const ModelType &lhs, const ModelType &rhs) const {
+    return lhs == rhs;
+  };
+};
+
+template <typename ModelTestCase>
+struct SerializableFitModelType
+    : public SerializableType<
+          typename model_types<ModelTestCase>::fit_model_type> {
+
+  using FitModelType = typename model_types<ModelTestCase>::fit_model_type;
+
+  FitModelType create() const {
+    ModelTestCase test_case;
+    auto model = test_case.get_model();
+    auto dataset = test_case.get_dataset();
+    double offset = 1.1;
+    for (const auto &param : model.get_params()) {
+      model.set_param_value(param.first, param.second.value + offset);
+      offset += 1.11;
+    }
+    return model.fit(dataset);
+  }
+
+  virtual bool are_equal(const FitModelType &lhs,
+                         const FitModelType &rhs) const {
+    return lhs == rhs;
+  };
+};
+
+TYPED_TEST_P(RegressionModelTester, test_model_serializes) {
+  expect_roundtrip_serializable<cereal::JSONInputArchive,
+                                cereal::JSONOutputArchive,
+                                SerializableModelType<TypeParam>>();
+}
+
+TYPED_TEST_P(RegressionModelTester, test_fit_model_serializes) {
+  expect_roundtrip_serializable<cereal::JSONInputArchive,
+                                cereal::JSONOutputArchive,
+                                SerializableFitModelType<TypeParam>>();
+}
+
+REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_model_serializes,
+                           test_fit_model_serializes);
+
+INSTANTIATE_TYPED_TEST_CASE_P(test_serialize, RegressionModelTester,
+                              ExampleModels);
 
 } // namespace albatross

@@ -165,7 +165,13 @@ struct Fit<Ransac<ModelType, MetricType>, FeatureType> {
 
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
+  Fit(){};
+
   Fit(const FitModelType &fit_model_) : fit_model(fit_model_){};
+
+  template <typename Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("fit_model", fit_model));
+  }
 
   FitModelType fit_model;
 };
@@ -176,6 +182,8 @@ struct Fit<Ransac<ModelType, MetricType>, FeatureType> {
 template <typename ModelType, typename MetricType>
 class Ransac : public ModelBase<Ransac<ModelType, MetricType>> {
 public:
+  Ransac(){};
+
   Ransac(const ModelType &sub_model, const MetricType &metric,
          double inlier_threshold, std::size_t min_inliers,
          std::size_t random_sample_size, std::size_t max_iterations)
@@ -225,6 +233,19 @@ public:
                       PredictTypeIdentity<PredictType> &&) const {
     return ransac_fit_.fit_model.get_prediction(features)
         .template get<PredictType>();
+  }
+
+  // Hide any inherited save/load methods.
+  void save() const;
+  void load();
+
+  template <typename Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("sub_model", sub_model_));
+    archive(cereal::make_nvp("metric", metric_));
+    archive(cereal::make_nvp("inlier_threshold", inlier_threshold_));
+    archive(cereal::make_nvp("min_inliers", min_inliers_));
+    archive(cereal::make_nvp("random_sample_size", random_sample_size_));
+    archive(cereal::make_nvp("max_iterations", max_iterations_));
   }
 
   ModelType sub_model_;

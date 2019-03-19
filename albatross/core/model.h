@@ -92,6 +92,24 @@ private:
   }
 
 public:
+  template <class Archive> void save(Archive &archive) const {
+    archive(cereal::make_nvp("params", derived().get_params()));
+    archive(cereal::make_nvp("insights", insights_));
+  }
+
+  template <class Archive> void load(Archive &archive) {
+    ParameterStore params;
+    archive(cereal::make_nvp("params", params));
+    derived().set_params(params);
+    archive(cereal::make_nvp("insights", insights_));
+  }
+
+  bool operator==(const ModelType &other) const {
+    return (derived().get_params() == other.get_params() &&
+            derived().get_name() == other.get_name() &&
+            derived().insights_ == other.insights_);
+  }
+
   template <typename DummyType = ModelType,
             typename std::enable_if<!has_name<DummyType>::value, int>::type = 0>
   std::string get_name() {
