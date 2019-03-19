@@ -23,10 +23,17 @@ public:
       std::is_move_constructible<Fit>::value,
       "Fit type must be move constructible to avoid unexpected copying.");
 
+  FitModel(){};
+
   FitModel(const ModelType &model, const Fit &fit) = delete;
 
   FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
+
+  template <class Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("model", model_));
+    archive(cereal::make_nvp("fit", fit_));
+  }
 
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
@@ -37,9 +44,13 @@ public:
 
   Fit get_fit() const { return fit_; }
 
+  bool operator==(const FitModel &other) const {
+    return (model_ == other.model_ && fit_ == other.fit_);
+  }
+
 private:
-  const ModelType model_;
-  const Fit fit_;
+  ModelType model_;
+  Fit fit_;
 };
 }
 #endif
