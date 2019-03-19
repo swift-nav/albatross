@@ -62,24 +62,14 @@ public:
     this->bar = {bar_, std::make_shared<PositivePrior>()};
   };
 
-  //  std::string get_name() const override { return "mock_model"; };
+  std::string get_name() const { return "mock_model"; }
 
-  //  template <typename Archive> void save(Archive &archive) const {
-  //    archive(
-  //        cereal::base_class<SerializableRegressionModel<MockFeature,
-  //        MockFit>>(
-  //            this));
-  //  }
-  //
-  //  template <typename Archive> void load(Archive &archive) {
-  //    archive(
-  //        cereal::base_class<SerializableRegressionModel<MockFeature,
-  //        MockFit>>(
-  //            this));
-  //  }
+  bool operator==(const MockModel &other) const {
+    return other.get_params() == this->get_params();
+  }
 
-  Fit<MockModel> fit(const std::vector<MockFeature> &features,
-                     const MarginalDistribution &targets) const {
+  Fit<MockModel> _fit_impl(const std::vector<MockFeature> &features,
+                           const MarginalDistribution &targets) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
     Fit<MockModel> model_fit;
@@ -91,29 +81,31 @@ public:
   }
 
   // looks up the prediction in the map
-  Eigen::VectorXd predict(const std::vector<MockFeature> &features,
-                          const Fit<MockModel> &fit,
-                          PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd _predict_impl(const std::vector<MockFeature> &features,
+                                const Fit<MockModel> &fit_,
+                                PredictTypeIdentity<Eigen::VectorXd> &&) const {
     int n = static_cast<int>(features.size());
     Eigen::VectorXd predictions(n);
 
     for (int i = 0; i < n; i++) {
       int index = features[static_cast<std::size_t>(i)].value;
-      predictions[i] = fit.train_data.find(index)->second;
+      predictions[i] = fit_.train_data.find(index)->second;
     }
 
     return predictions;
   }
 
   // convert before predicting
-  Eigen::VectorXd predict(const std::vector<ContainsMockFeature> &features,
-                          const Fit<MockModel> &fit,
-                          PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd
+  _predict_impl(const std::vector<ContainsMockFeature> &features,
+                const Fit<MockModel> &fit_,
+                PredictTypeIdentity<Eigen::VectorXd> &&) const {
     std::vector<MockFeature> mock_features;
     for (const auto &f : features) {
       mock_features.push_back(f.mock);
     }
-    return predict(mock_features, fit, PredictTypeIdentity<Eigen::VectorXd>());
+    return _predict_impl(mock_features, fit_,
+                         PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
 

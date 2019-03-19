@@ -17,7 +17,7 @@ namespace albatross {
 
 class ScalingFunction : public ParameterHandlingMixin {
 public:
-  virtual std::string name() const = 0;
+  virtual std::string get_name() const = 0;
 
   // A scaling function should also implement calls
   // for whichever types it is intended to scale using
@@ -62,7 +62,7 @@ public:
 
   ScalingTerm(const ScalingFunction &func) : scaling_function_(func){};
 
-  std::string name() const { return scaling_function_.name(); }
+  std::string get_name() const { return scaling_function_.get_name(); }
 
   void set_params(const ParameterStore &params) {
     scaling_function_.set_params(params);

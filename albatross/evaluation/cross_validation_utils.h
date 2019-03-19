@@ -23,8 +23,8 @@ get_predictions(const ModelType &model,
   using FitType = typename fit_type<ModelType, FeatureType>::type;
   std::vector<Prediction<ModelType, FeatureType, FitType>> predictions;
   for (const auto &fold : folds) {
-    predictions.emplace_back(model.get_fit_model(fold.train_dataset)
-                                 .get_prediction(fold.test_dataset.features));
+    predictions.emplace_back(
+        model.fit(fold.train_dataset).predict(fold.test_dataset.features));
   }
 
   return predictions;

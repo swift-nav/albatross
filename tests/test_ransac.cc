@@ -66,16 +66,15 @@ TEST(test_outlier, test_ransac_model) {
   std::size_t max_iterations = 20;
   const auto ransac_model = model.ransac(nll, inlier_threshold, sample_size,
                                          min_inliers, max_iterations);
-  const auto fit_model = ransac_model.get_fit_model(dataset);
+  const auto fit_model = ransac_model.fit(dataset);
 
-  const auto pred = fit_model.get_prediction(dataset.features);
+  const auto pred = fit_model.predict(dataset.features);
   expect_predict_variants_consistent(pred);
 
   const auto indexer = leave_one_out_indexer(dataset.features);
   const auto inliers = ransac(dataset, indexer, model, nll, inlier_threshold,
                               sample_size, min_inliers, max_iterations);
-  const auto direct_pred =
-      model.get_fit_model(inliers).get_prediction(dataset.features);
+  const auto direct_pred = model.fit(inliers).predict(dataset.features);
   expect_predict_variants_consistent(direct_pred);
 
   EXPECT_EQ(pred.mean(), direct_pred.mean());

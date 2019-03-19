@@ -57,9 +57,7 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
     information = train_ldlt.solve(targets.mean);
   }
 
-  template <typename Archive>
-  // todo: enable if FeatureType is serializable
-  void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("information", information));
     archive(cereal::make_nvp("train_ldlt", train_ldlt));
     archive(cereal::make_nvp("train_features", train_features));
@@ -175,8 +173,8 @@ public:
                 has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
                     !has_valid_fit<ImplType, FeatureType>::value,
                 int>::type = 0>
-  GPFitType<FeatureType> fit(const std::vector<FeatureType> &features,
-                             const MarginalDistribution &targets) const {
+  GPFitType<FeatureType> _fit_impl(const std::vector<FeatureType> &features,
+                                   const MarginalDistribution &targets) const {
     Eigen::MatrixXd cov = covariance_function_(features);
     return GPFitType<FeatureType>(features, cov, targets);
   }
@@ -184,9 +182,9 @@ public:
   template <typename FeatureType,
             typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
                                     int>::type = 0>
-  auto fit(const std::vector<FeatureType> &features,
-           const MarginalDistribution &targets) const {
-    return impl().fit(features, targets);
+  auto _fit_impl(const std::vector<FeatureType> &features,
+                 const MarginalDistribution &targets) const {
+    return impl()._fit_impl(features, targets);
   }
 
   template <
@@ -198,9 +196,10 @@ public:
                                  GPFitType<FitFeaturetype>,
                                  JointDistribution>::value,
           int>::type = 0>
-  JointDistribution predict(const std::vector<FeatureType> &features,
-                            const GPFitType<FitFeaturetype> &gp_fit,
-                            PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const GPFitType<FitFeaturetype> &gp_fit,
+                PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     Eigen::MatrixXd prior_cov = covariance_function_(features);
@@ -218,9 +217,9 @@ public:
                                  MarginalDistribution>::value,
           int>::type = 0>
   MarginalDistribution
-  predict(const std::vector<FeatureType> &features,
-          const GPFitType<FitFeaturetype> &gp_fit,
-          PredictTypeIdentity<MarginalDistribution> &&) const {
+  _predict_impl(const std::vector<FeatureType> &features,
+                const GPFitType<FitFeaturetype> &gp_fit,
+                PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     Eigen::VectorXd prior_variance(static_cast<Eigen::Index>(features.size()));
@@ -240,9 +239,9 @@ public:
                                  GPFitType<FitFeaturetype>,
                                  Eigen::VectorXd>::value,
           int>::type = 0>
-  Eigen::VectorXd predict(const std::vector<FeatureType> &features,
-                          const GPFitType<FitFeaturetype> &gp_fit,
-                          PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd _predict_impl(const std::vector<FeatureType> &features,
+                                const GPFitType<FitFeaturetype> &gp_fit,
+                                PredictTypeIdentity<Eigen::VectorXd> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     return gp_mean_prediction(cross_cov, gp_fit.information);
@@ -253,10 +252,11 @@ public:
                                                       GPFitType<FitFeatureType>,
                                                       PredictType>::value,
                                     int>::type = 0>
-  PredictType predict(const std::vector<FeatureType> &features,
-                      const GPFitType<FitFeatureType> &gp_fit,
-                      PredictTypeIdentity<PredictType> &&) const {
-    return impl().predict(features, gp_fit, PredictTypeIdentity<PredictType>());
+  PredictType _predict_impl(const std::vector<FeatureType> &features,
+                            const GPFitType<FitFeatureType> &gp_fit,
+                            PredictTypeIdentity<PredictType> &&) const {
+    return impl()._predict_impl(features, gp_fit,
+                                PredictTypeIdentity<PredictType>());
   }
 
   template <
@@ -267,9 +267,9 @@ public:
               !has_valid_predict<ImplType, FeatureType,
                                  GPFitType<FitFeatureType>, PredictType>::value,
           int>::type = 0>
-  PredictType predict(const std::vector<FeatureType> &features,
-                      const GPFitType<FitFeatureType> &gp_fit,
-                      PredictTypeIdentity<PredictType> &&) const =
+  PredictType _predict_impl(const std::vector<FeatureType> &features,
+                            const GPFitType<FitFeatureType> &gp_fit,
+                            PredictTypeIdentity<PredictType> &&) const =
       delete; // Covariance Function isn't defined for FeatureType.
 
   template <typename FeatureType>
@@ -278,7 +278,7 @@ public:
                               const FoldIndexer &fold_indexer,
                               PredictTypeIdentity<JointDistribution>) const {
 
-    const auto fit_model = impl().get_fit_model(dataset);
+    const auto fit_model = impl().fit(dataset);
     const auto gp_fit = fit_model.get_fit();
 
     const std::vector<FoldIndices> indices = map_values(fold_indexer);
@@ -300,7 +300,7 @@ public:
                               const FoldIndexer &fold_indexer,
                               PredictTypeIdentity<MarginalDistribution>) const {
 
-    const auto fit_model = impl().get_fit_model(dataset);
+    const auto fit_model = impl().fit(dataset);
     const auto gp_fit = fit_model.get_fit();
 
     const std::vector<FoldIndices> indices = map_values(fold_indexer);
@@ -323,7 +323,7 @@ public:
   cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
                               const FoldIndexer &fold_indexer,
                               PredictTypeIdentity<Eigen::VectorXd>) const {
-    const auto fit_model = impl().get_fit_model(dataset);
+    const auto fit_model = impl().fit(dataset);
     const auto gp_fit = fit_model.get_fit();
     const std::vector<FoldIndices> indices = map_values(fold_indexer);
     const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
@@ -366,8 +366,8 @@ public:
       : Base(covariance_function, model_name){};
 
   // The only reason these are here is to hide the base class implementations.
-  void fit() const = delete;
-  void predict() const = delete;
+  void _fit_impl() const = delete;
+  void _predict_impl() const = delete;
 };
 
 template <typename CovFunc>

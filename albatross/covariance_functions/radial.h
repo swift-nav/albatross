@@ -53,7 +53,7 @@ public:
   };
 
   std::string name() const {
-    return "squared_exponential[" << this->distance_metric_.name() << "]";
+    return "squared_exponential[" + this->distance_metric_.get_name() + "]";
   }
 
   // This operator is only defined when the distance metric is also defined.
@@ -95,7 +95,7 @@ public:
   };
 
   std::string name() const {
-    return "exponential[" << this->distance_metric_.get_name() << "]";
+    return "exponential[" + this->distance_metric_.get_name() + "]";
   }
 
   ~Exponential(){};

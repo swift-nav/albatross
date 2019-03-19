@@ -18,8 +18,8 @@ TYPED_TEST_P(RegressionModelTester, test_performs_reasonably_on_linear_data) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  const auto fit_model = model.get_fit_model(dataset.features, dataset.targets);
-  const auto pred = fit_model.get_prediction(dataset.features);
+  const auto fit_model = model.fit(dataset.features, dataset.targets);
+  const auto pred = fit_model.predict(dataset.features);
   const auto pred_mean = pred.mean();
 
   double rmse = sqrt((pred_mean - dataset.targets.mean).norm());
@@ -35,9 +35,9 @@ TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  const auto fit_model = model.get_fit_model(dataset.features, dataset.targets);
+  const auto fit_model = model.fit(dataset.features, dataset.targets);
   silly_function_to_increment_stack_pointer();
-  const auto pred = fit_model.get_prediction(dataset.features);
+  const auto pred = fit_model.predict(dataset.features);
   silly_function_to_increment_stack_pointer();
 
   expect_predict_variants_consistent(pred);
@@ -52,20 +52,20 @@ INSTANTIATE_TYPED_TEST_CASE_P(test_models, RegressionModelTester,
 
 class BadModel : public ModelBase<BadModel> {
 public:
-  Fit<BadModel> fit(const std::vector<double> &,
-                    const MarginalDistribution &) const {
+  Fit<BadModel> _fit_impl(const std::vector<double> &,
+                          const MarginalDistribution &) const {
     return {};
   }
 
-  Eigen::VectorXd predict(const std::vector<double> &features,
-                          const Fit<BadModel> &,
-                          const PredictTypeIdentity<Eigen::VectorXd>) const {
+  Eigen::VectorXd
+  _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
+                const PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Ones(static_cast<Eigen::Index>(features.size()));
   }
 
   MarginalDistribution
-  predict(const std::vector<double> &features, const Fit<BadModel> &,
-          const PredictTypeIdentity<MarginalDistribution>) const {
+  _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
+                const PredictTypeIdentity<MarginalDistribution>) const {
     const auto zeros =
         Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
     return MarginalDistribution(zeros, zeros.asDiagonal());
@@ -75,7 +75,7 @@ public:
 TEST(test_models, test_expect_predict_variants_consistent_fails) {
   const auto dataset = make_toy_linear_data();
   BadModel m;
-  const auto pred = m.get_fit_model(dataset).get_prediction(dataset.features);
+  const auto pred = m.fit(dataset).predict(dataset.features);
   expect_predict_variants_inconsistent(pred);
 }
 

@@ -40,8 +40,10 @@ class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
 public:
   using FitType = Fit<LeastSquares<ImplType>>;
 
-  FitType fit(const std::vector<Eigen::VectorXd> &features,
-              const MarginalDistribution &targets) const {
+  std::string get_name() const { return "least_squares"; }
+
+  FitType _fit_impl(const std::vector<Eigen::VectorXd> &features,
+                    const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -60,14 +62,14 @@ public:
   template <typename FeatureType,
             typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
                                     int>::type = 0>
-  FitType fit(const std::vector<FeatureType> &features,
-              const MarginalDistribution &targets) const {
-    return impl().fit(features, targets);
+  FitType _fit_impl(const std::vector<FeatureType> &features,
+                    const MarginalDistribution &targets) const {
+    return impl()._fit_impl(features, targets);
   }
 
-  Eigen::VectorXd predict(const std::vector<Eigen::VectorXd> &features,
-                          const FitType &least_squares_fit,
-                          PredictTypeIdentity<Eigen::VectorXd>) const {
+  Eigen::VectorXd _predict_impl(const std::vector<Eigen::VectorXd> &features,
+                                const FitType &least_squares_fit,
+                                PredictTypeIdentity<Eigen::VectorXd>) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
@@ -82,11 +84,11 @@ public:
       typename std::enable_if<
           has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
           int>::type = 0>
-  PredictType predict(const std::vector<FeatureType> &features,
-                      const FitType &least_squares_fit,
-                      PredictTypeIdentity<PredictType>) const {
-    return impl().predict(features, least_squares_fit,
-                          PredictTypeIdentity<PredictType>());
+  PredictType _predict_impl(const std::vector<FeatureType> &features,
+                            const FitType &least_squares_fit,
+                            PredictTypeIdentity<PredictType>) const {
+    return impl()._predict_impl(features, least_squares_fit,
+                                PredictTypeIdentity<PredictType>());
   }
 
   /*
@@ -119,6 +121,8 @@ class LinearRegression : public LeastSquares<LinearRegression> {
 public:
   using Base = LeastSquares<LinearRegression>;
 
+  std::string get_name() const { return "linear_regression"; }
+
   Eigen::VectorXd convert_feature(const double &f) const {
     Eigen::VectorXd converted(2);
     converted << 1., f;
@@ -134,16 +138,16 @@ public:
     return output;
   }
 
-  Base::FitType fit(const std::vector<double> &features,
-                    const MarginalDistribution &targets) const {
-    return Base::fit(convert_features(features), targets);
+  Base::FitType _fit_impl(const std::vector<double> &features,
+                          const MarginalDistribution &targets) const {
+    return Base::_fit_impl(convert_features(features), targets);
   }
 
-  Eigen::VectorXd predict(const std::vector<double> &features,
-                          const Base::FitType &least_squares_fit,
-                          PredictTypeIdentity<Eigen::VectorXd>) const {
-    return Base::predict(convert_features(features), least_squares_fit,
-                         PredictTypeIdentity<Eigen::VectorXd>());
+  Eigen::VectorXd _predict_impl(const std::vector<double> &features,
+                                const Base::FitType &least_squares_fit,
+                                PredictTypeIdentity<Eigen::VectorXd>) const {
+    return Base::_predict_impl(convert_features(features), least_squares_fit,
+                               PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
 } // namespace albatross

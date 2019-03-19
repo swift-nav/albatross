@@ -78,14 +78,15 @@ struct is_valid_fit_type
 
 /*
  * This determines whether or not a class (T) has a method defined for,
- *   `Fit<U, FeatureType> fit(const std::vector<FeatureType>&,
+ *   `Fit<U, FeatureType> _fit_impl(const std::vector<FeatureType>&,
  *                            const MarginalDistribution &)`
  * where U is a base of T.
  */
 template <typename T, typename FeatureType> class has_valid_fit {
-  template <typename C, typename FitType = decltype(std::declval<const C>().fit(
-                            std::declval<const std::vector<FeatureType> &>(),
-                            std::declval<const MarginalDistribution &>()))>
+  template <typename C,
+            typename FitType = decltype(std::declval<const C>()._fit_impl(
+                std::declval<const std::vector<FeatureType> &>(),
+                std::declval<const MarginalDistribution &>()))>
   static typename is_valid_fit_type<T, FitType>::type test(C *);
   template <typename> static std::false_type test(...);
 
@@ -95,11 +96,11 @@ public:
 
 /*
  * This determines whether or not a class (T) has a method defined for,
- *   `Anything fit(std::vector<FeatureType>&,
+ *   `Anything _fit_impl(std::vector<FeatureType>&,
  *                 MarginalDistribution &)`
  */
 template <typename T, typename FeatureType> class has_possible_fit {
-  template <typename C, typename = decltype(std::declval<C>().fit(
+  template <typename C, typename = decltype(std::declval<C>()._fit_impl(
                             std::declval<std::vector<FeatureType> &>(),
                             std::declval<MarginalDistribution &>()))>
   static std::true_type test(C *);
@@ -112,14 +113,13 @@ public:
 /*
  * Determines which object would be returned from a call to:
  *
- *   T::get_fit_model(features, targets);
+ *   T::fit(features, targets);
  */
 template <typename T, typename FeatureType> class fit_model_type {
-  template <
-      typename C,
-      typename FitModelType = decltype(std::declval<const C>().get_fit_model(
-          std::declval<const std::vector<FeatureType> &>(),
-          std::declval<const MarginalDistribution &>()))>
+  template <typename C,
+            typename FitModelType = decltype(std::declval<const C>().fit(
+                std::declval<const std::vector<FeatureType> &>(),
+                std::declval<const MarginalDistribution &>()))>
   static FitModelType test(C *);
   template <typename> static void test(...);
 
@@ -149,18 +149,19 @@ struct fit_type<M, F>
 /*
  * A valid predict method has a signature that looks like:
  *
- *   PredictType predict(const std::vector<FeatureType> &,
+ *   PredictType _predict_impl(const std::vector<FeatureType> &,
  *                       const FitType &,
  *                       const PredictTypeIdentity<PredictType>) const;
  */
 template <typename T, typename FeatureType, typename FitType,
           typename PredictType>
 class has_valid_predict {
-  template <typename C,
-            typename ReturnType = decltype(std::declval<const C>().predict(
-                std::declval<const std::vector<FeatureType> &>(),
-                std::declval<const FitType &>(),
-                std::declval<PredictTypeIdentity<PredictType>>()))>
+  template <
+      typename C,
+      typename ReturnType = decltype(std::declval<const C>()._predict_impl(
+          std::declval<const std::vector<FeatureType> &>(),
+          std::declval<const FitType &>(),
+          std::declval<PredictTypeIdentity<PredictType>>()))>
   static typename std::enable_if<std::is_same<PredictType, ReturnType>::value,
                                  std::true_type>::type
   test(C *);

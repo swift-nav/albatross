@@ -91,7 +91,7 @@ public:
 
   template <typename DummyType = Derived,
             typename std::enable_if<!has_name<DummyType>::value, int>::type = 0>
-  std::string get_name() {
+  std::string get_name() const {
     static_assert(std::is_same<DummyType, Derived>::value,
                   "never do covariance_function.get_name<T>()");
     return typeid(Derived).name();
@@ -99,7 +99,7 @@ public:
 
   template <typename DummyType = Derived,
             typename std::enable_if<has_name<DummyType>::value, int>::type = 0>
-  std::string get_name() {
+  std::string get_name() const {
     static_assert(std::is_same<DummyType, Derived>::value,
                   "never do covariance_function.get_name<T>()");
     return derived().name();
@@ -297,7 +297,7 @@ public:
       : lhs_(lhs), rhs_(rhs){};
 
   std::string name() const {
-    return "(" + lhs_.name() + "+" + rhs_.name() + ")";
+    return "(" + lhs_.get_name() + "+" + rhs_.get_name() + ")";
   }
 
   ParameterStore get_params() const {
@@ -369,7 +369,7 @@ public:
   };
 
   std::string name() const {
-    return "(" + lhs_.name() + "*" + rhs_.name() + ")";
+    return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
   }
 
   ParameterStore get_params() const {

@@ -48,25 +48,26 @@ public:
   template <typename FitFeatureType>
   using GPFitType = Fit<Base, FitFeatureType>;
 
-  auto fit(const std::vector<AdaptedFeature> &features,
-           const MarginalDistribution &targets) const {
+  auto _fit_impl(const std::vector<AdaptedFeature> &features,
+                 const MarginalDistribution &targets) const {
     std::vector<double> converted;
     for (const auto &f : features) {
       converted.push_back(f.value);
     }
-    return Base::fit(converted, targets);
+    return Base::_fit_impl(converted, targets);
   }
 
   template <typename FitFeatureType>
-  JointDistribution predict(const std::vector<AdaptedFeature> &features,
-                            const GPFitType<FitFeatureType> &gp_fit,
-                            PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution
+  _predict_impl(const std::vector<AdaptedFeature> &features,
+                const GPFitType<FitFeatureType> &gp_fit,
+                PredictTypeIdentity<JointDistribution> &&) const {
     std::vector<double> converted;
     for (const auto &f : features) {
       converted.push_back(f.value);
     }
-    return Base::predict(converted, gp_fit,
-                         PredictTypeIdentity<JointDistribution>());
+    return Base::_predict_impl(converted, gp_fit,
+                               PredictTypeIdentity<JointDistribution>());
   }
 };
 

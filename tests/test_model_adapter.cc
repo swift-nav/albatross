@@ -9,52 +9,51 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-
-#include "covariance_functions/covariance_functions.h"
-#include "evaluate.h"
-#include "models/gp.h"
-#include "test_utils.h"
-#include <cereal/archives/json.hpp>
 #include <gtest/gtest.h>
+
+#include "test_utils.h"
 
 namespace albatross {
 
-using SqrExp = SquaredExponential<EuclideanDistance>;
-
-using TestBaseModel = GaussianProcessRegression<Eigen::VectorXd, SqrExp>;
-
-using TestAdaptedModelBase = AdaptedRegressionModel<double, TestBaseModel>;
-
-class TestAdaptedModel : public TestAdaptedModelBase {
+template <typename CovFunc>
+class TestAdaptedModel
+    : public GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>> {
 public:
-  TestAdaptedModel() { this->params_["center"] = 0.; };
+  using Base = GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>;
 
-  std::string get_name() const override { return "test_adapted"; };
+  template <typename FitFeatureType>
+  using FitType = Fit<GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>,
+                      FitFeatureType>;
 
-  Eigen::VectorXd convert_feature(const double &x) const override {
-    Eigen::VectorXd converted(2);
-    converted << 1., (x - this->get_param_value("center"));
+  TestAdaptedModel() {
+    this->params_["center"] = {1., std::make_shared<UniformPrior>(-10., 10.)};
+  }
+
+  std::vector<double>
+  convert(const std::vector<AdaptedFeature> &features) const {
+    std::vector<double> converted;
+    for (const auto &f : features) {
+      converted.push_back(f.value - this->get_param_value("center"));
+    }
     return converted;
   }
 
-  /*
-   * save/load methods are inherited from the SerializableRegressionModel,
-   * but by defining them here and explicitly showing the inheritance
-   * through the use of `base_class` we can make use of cereal's
-   * polymorphic serialization.
-   */
-  template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("test_adapted",
-                             cereal::base_class<TestAdaptedModelBase>(this)));
+  auto _fit_impl(const std::vector<AdaptedFeature> &features,
+                 const MarginalDistribution &targets) const {
+    return Base::_fit_impl(convert(features), targets);
   }
 
-  template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("test_adapted",
-                             cereal::base_class<TestAdaptedModelBase>(this)));
+  JointDistribution
+  _predict_impl(const std::vector<AdaptedFeature> &features,
+                const FitType<double> &fit_,
+                PredictTypeIdentity<JointDistribution> &&) const {
+    return Base::_predict_impl(convert(features), fit_,
+                               PredictTypeIdentity<JointDistribution>());
   }
 };
 
-void test_get_set(RegressionModel<double> &model, const std::string &key) {
+template <typename ModelType>
+void test_get_set(ModelType &model, const std::string &key) {
   // Make sure a key exists, then modify it and make sure it
   // takes on the new value.
   const auto orig = model.get_param_value(key);
