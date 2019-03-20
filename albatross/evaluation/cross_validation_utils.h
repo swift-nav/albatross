@@ -70,9 +70,8 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (std::size_t i = 0; i < folds.size(); ++i) {
-    Eigen::Index fold_size =
-        static_cast<Eigen::Index>(folds[i].test_dataset.size());
-    assert(means[i].size() == fold_size);
+    assert(means[i].size() ==
+           static_cast<Eigen::Index>(folds[i].test_dataset.size()));
     set_subset(means[i], folds[i].test_indices, &pred);
     number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
   }
@@ -127,9 +126,8 @@ cross_validated_scores(const EvaluationMetricType &metric,
   Eigen::Index n = static_cast<Eigen::Index>(predictions.size());
   Eigen::VectorXd output(n);
   for (Eigen::Index i = 0; i < n; ++i) {
-    auto fold_size = static_cast<std::size_t>(folds[i].test_dataset.size());
-    auto pred_size = static_cast<std::size_t>(predictions[i].size());
-    assert(fold_size == pred_size);
+    assert(static_cast<std::size_t>(folds[i].test_dataset.size()) ==
+           static_cast<std::size_t>(predictions[i].size()));
     output[i] = metric(predictions[i], folds[i].test_dataset.targets);
   }
   return output;

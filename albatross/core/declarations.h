@@ -86,7 +86,7 @@ template <typename FeatureType>
 using GroupFunction = std::string (*)(const FeatureType &);
 
 template <typename FeatureType>
-using IndexerFunction = FoldIndexer (*) (const RegressionDataset<FeatureType> &);
+using IndexerFunction = FoldIndexer (*)(const RegressionDataset<FeatureType> &);
 
 template <typename ModelType> class CrossValidation;
 

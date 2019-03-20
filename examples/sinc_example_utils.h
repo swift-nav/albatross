@@ -28,7 +28,7 @@ public:
 
   std::string get_name() const { return "slope_term"; }
 
-  double _call_impl((const double &x, const double &y) const {
+  double _call_impl(const double &x, const double &y) const {
     double sigma_slope = this->params_.at("sigma_slope").value;
     return sigma_slope * sigma_slope * x * y;
   }

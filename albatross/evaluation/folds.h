@@ -65,9 +65,9 @@ struct LeaveOneOut {
  */
 
 template <typename FeatureType>
-static inline FoldIndexer leave_one_group_out_indexer(
-    const std::vector<FeatureType> &features,
-    GroupFunction<FeatureType> get_group_name) {
+static inline FoldIndexer
+leave_one_group_out_indexer(const std::vector<FeatureType> &features,
+                            GroupFunction<FeatureType> get_group_name) {
   FoldIndexer groups;
   for (std::size_t i = 0; i < features.size(); i++) {
     const std::string k = get_group_name(features[i]);
@@ -86,8 +86,7 @@ static inline FoldIndexer leave_one_group_out_indexer(
   return groups;
 }
 
-template <typename FeatureType>
-struct LeaveOneGroupOut {
+template <typename FeatureType> struct LeaveOneGroupOut {
 
   LeaveOneGroupOut(GroupFunction<FeatureType> grouper_) : grouper(grouper_){};
 
@@ -170,7 +169,9 @@ dataset_size_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
   // Make sure the minimum was zero
   std::size_t zero =
       *std::min_element(unique_indices.begin(), unique_indices.end());
-  assert(zero == 0);
+  if (zero != 0) {
+    assert(false);
+  }
 
   // And the maximum agrees with the size;
   std::size_t n =

@@ -44,7 +44,7 @@ template <typename CovarianceType> struct Distribution {
   template <typename OtherCovarianceType>
   typename std::enable_if<
       !std::is_same<CovarianceType, OtherCovarianceType>::value, bool>::type
-  operator==(const Distribution<OtherCovarianceType> &other) const {
+  operator==(const Distribution<OtherCovarianceType> &) const {
     return false;
   }
 

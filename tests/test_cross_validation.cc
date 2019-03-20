@@ -51,8 +51,7 @@ TYPED_TEST_P(RegressionModelTester, test_logo_predict_variants) {
   auto model = this->test_case.get_model();
 
   LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(group_by_interval);
-  const auto prediction =
-      model.cross_validate().predict(dataset, logo);
+  const auto prediction = model.cross_validate().predict(dataset, logo);
 
   EXPECT_TRUE(is_monotonic_increasing(prediction.mean()));
 
@@ -108,8 +107,8 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
 }
 
 REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_loo_predict_variants,
-                           test_logo_predict_variants,
-                           test_loo_get_predictions, test_score_variants);
+                           test_logo_predict_variants, test_loo_get_predictions,
+                           test_score_variants);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_cross_validation, RegressionModelTester,
                               ExampleModels);

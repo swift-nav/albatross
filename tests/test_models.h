@@ -28,6 +28,8 @@ inline auto make_simple_covariance_function() {
 
 class MakeGaussianProcess {
 public:
+  MakeGaussianProcess(){};
+
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     return gp_from_covariance(covariance);
@@ -67,8 +69,9 @@ public:
   template <typename FitFeatureType>
   using GPFitType = Fit<Base, FitFeatureType>;
 
-  auto _fit_impl(const std::vector<AdaptedFeature> &features,
-                 const MarginalDistribution &targets) const {
+  typename fit_type<Base, double>::type
+  _fit_impl(const std::vector<AdaptedFeature> &features,
+            const MarginalDistribution &targets) const {
     std::vector<double> converted;
     for (const auto &f : features) {
       converted.push_back(f.value);

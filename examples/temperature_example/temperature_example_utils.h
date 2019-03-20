@@ -77,7 +77,7 @@ public:
 
   std::string get_name() const { return "elevation_scaled"; }
 
-  double _call_impl((const Station &x) const {
+  double _call_impl(const Station &x) const {
     // This is the negative orientation rectifier function which
     // allows lower elevations to have a higher variance.
     double center = this->get_param_value("elevation_scaling_center");
