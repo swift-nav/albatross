@@ -65,7 +65,10 @@ struct LeaveOneOutRMSE {
                     const ModelBase<ModelType> &model) const {
     RootMeanSquareError rmse;
     LeaveOneOut loo;
-    return model.cross_validate().scores(rmse, dataset, loo).mean();
+
+    double rmse_score =
+        model.cross_validate().scores(rmse, dataset, loo).mean();
+    return rmse_score;
   }
 };
 

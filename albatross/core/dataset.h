@@ -27,6 +27,8 @@ template <typename FeatureType> struct RegressionDataset {
   MarginalDistribution targets;
   std::map<std::string, std::string> metadata;
 
+  using Feature = FeatureType;
+
   RegressionDataset(){};
 
   RegressionDataset(const std::vector<FeatureType> &features_,

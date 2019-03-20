@@ -67,7 +67,7 @@ struct LeaveOneOut {
 template <typename FeatureType>
 static inline FoldIndexer leave_one_group_out_indexer(
     const std::vector<FeatureType> &features,
-    const GrouperFunction<FeatureType> &get_group_name) {
+    GroupFunction<FeatureType> get_group_name) {
   FoldIndexer groups;
   for (std::size_t i = 0; i < features.size(); i++) {
     const std::string k = get_group_name(features[i]);
@@ -86,16 +86,16 @@ static inline FoldIndexer leave_one_group_out_indexer(
   return groups;
 }
 
-template <typename GroupFunc> struct LeaveOneGroupOut {
+template <typename FeatureType>
+struct LeaveOneGroupOut {
 
-  LeaveOneGroupOut(const GroupFunc &grouper_) : grouper(grouper_){};
+  LeaveOneGroupOut(GroupFunction<FeatureType> grouper_) : grouper(grouper_){};
 
-  template <typename FeatureType>
   FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
     return leave_one_group_out_indexer(dataset.features, grouper);
   }
 
-  GroupFunc grouper;
+  GroupFunction<FeatureType> grouper;
 };
 
 /*

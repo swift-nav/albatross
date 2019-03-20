@@ -109,23 +109,22 @@ TEST(test_csv_utils, test_writes_without_predictions) {
  * the CSV were missing columns or had unparsable data.
  */
 void read_test_csv_with_metadata(std::istream &stream) {
-  io::CSVReader<10> reader("garbage", stream);
+  io::CSVReader<9> reader("garbage", stream);
   reader.read_header(io::ignore_no_column, "bar", "foo", "prediction",
                      "prediction_variance", "sub_feature.one",
-                     "sub_feature.two", "target", "target_variance", "time",
-                     "model");
+                     "sub_feature.two", "target", "target_variance", "time");
 
   bool more_to_parse = true;
   while (more_to_parse) {
     double prediction;
     std::string prediction_variance_str;
     double target;
-    std::string time, model;
+    std::string time;
     std::string target_variance_str;
     TestFeature f;
     more_to_parse = reader.read_row(
         f.bar, f.foo, prediction, prediction_variance_str, f.feature.one,
-        f.feature.two, target, target_variance_str, time, model);
+        f.feature.two, target, target_variance_str, time);
   }
 }
 
@@ -140,7 +139,6 @@ TEST(test_csv_utils, test_writes_metadata) {
   targets << 1., 2., 3.;
 
   MarginalDistribution prediction(targets);
-  prediction.metadata["model"] = "null";
 
   RegressionDataset<TestFeature> first(features, targets);
   first.metadata["time"] = "1";

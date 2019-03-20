@@ -26,8 +26,9 @@ public:
 /*
  * Add any new tuning metrics here:
  */
-typedef ::testing::Types<LeaveOneOutLikelihood, LeaveOneOutRMSE,
-                         GaussianProcessLikelihoodTuningMetric>
+typedef ::testing::Types<LeaveOneOutLikelihood<JointDistribution>,
+                         LeaveOneOutLikelihood<MarginalDistribution>,
+                         LeaveOneOutRMSE, GaussianProcessLikelihoodTuningMetric>
     MetricsToTest;
 
 TYPED_TEST_CASE(TuningMetricTester, MetricsToTest);

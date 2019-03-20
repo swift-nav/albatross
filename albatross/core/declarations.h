@@ -83,11 +83,10 @@ using FoldIndexer = std::map<FoldName, FoldIndices>;
 template <typename FeatureType> struct RegressionFold;
 
 template <typename FeatureType>
-using GrouperFunction = std::function<FoldName(const FeatureType &)>;
+using GroupFunction = std::string (*)(const FeatureType &);
 
 template <typename FeatureType>
-using IndexerFunction =
-    std::function<FoldIndexer(const RegressionDataset<FeatureType> &)>;
+using IndexerFunction = FoldIndexer (*) (const RegressionDataset<FeatureType> &);
 
 template <typename ModelType> class CrossValidation;
 
