@@ -31,8 +31,6 @@ std::string group_by_interval(const double &x) {
   }
 }
 
-// Group values by interval, but return keys that once sorted won't be
-// in order
 std::string group_by_interval(const AdaptedFeature &x) {
   return group_by_interval(x.value);
 }
@@ -50,6 +48,10 @@ TYPED_TEST_P(RegressionModelTester, test_logo_predict_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
+  // Here we assume that the test case is linear, then split
+  // it using a group function which will not preserve order
+  // and make sure that cross validation properly reassembles
+  // the predictions
   LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(group_by_interval);
   const auto prediction = model.cross_validate().predict(dataset, logo);
 

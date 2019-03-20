@@ -84,7 +84,8 @@ create_train_data(const int n, const double low, const double high,
   return albatross::RegressionDataset<double>(xs, ys);
 }
 
-albatross::RegressionDataset<double> read_csv_input(const std::string &file_path) {
+albatross::RegressionDataset<double>
+read_csv_input(const std::string &file_path) {
   std::vector<double> xs;
   std::vector<double> ys;
 
