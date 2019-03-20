@@ -47,6 +47,8 @@ template <typename FeatureType> struct RegressionDataset {
             metadata == other.metadata);
   }
 
+  std::size_t size() const { return features.size(); }
+
   template <class Archive>
   typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
@@ -65,6 +67,17 @@ template <typename FeatureType> struct RegressionDataset {
                   "FeatureType must be serializable.");
   }
 };
+
+/*
+ * Convenience method which subsets the features and targets of a dataset.
+ */
+template <typename SizeType, typename FeatureType>
+inline RegressionDataset<FeatureType>
+subset(const RegressionDataset<FeatureType> &dataset,
+       const std::vector<SizeType> &indices) {
+  return RegressionDataset<FeatureType>(subset(dataset.features, indices),
+                                        subset(dataset.targets, indices));
+}
 
 } // namespace albatross
 

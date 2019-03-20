@@ -44,17 +44,18 @@ struct GaussianProcessLikelihoodTuningMetric {
   }
 };
 
+template <typename PredictType = JointDistribution>
 struct LeaveOneOutLikelihood {
 
   template <typename FeatureType, typename ModelType>
   double operator()(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
-    NegativeLogLikelihood<JointDistribution> nll;
+    NegativeLogLikelihood<PredictType> nll;
     LeaveOneOut loo;
     const auto scores = model.cross_validate().scores(nll, dataset, loo);
     double data_nll = scores.sum();
     double prior_nll = model.prior_log_likelihood();
-    return data_nll + prior_nll;
+    return data_nll - prior_nll;
   }
 };
 
