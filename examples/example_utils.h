@@ -84,7 +84,7 @@ create_train_data(const int n, const double low, const double high,
   return albatross::RegressionDataset<double>(xs, ys);
 }
 
-albatross::RegressionDataset<double> read_csv_input(std::string file_path) {
+albatross::RegressionDataset<double> read_csv_input(const std::string &file_path) {
   std::vector<double> xs;
   std::vector<double> ys;
 
@@ -133,7 +133,7 @@ void maybe_create_training_data(const std::string &input_path, const int n,
 
 template <typename ModelType, typename FitType>
 void write_predictions_to_csv(
-    const std::string output_path,
+    const std::string &output_path,
     const albatross::FitModel<ModelType, FitType> &fit_model, const double low,
     const double high) {
   std::ofstream output;

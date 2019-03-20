@@ -87,7 +87,7 @@ public:
 };
 
 albatross::RegressionDataset<Station>
-read_temperature_csv_input(std::string file_path, int thin = 5) {
+read_temperature_csv_input(const std::string &file_path, int thin = 5) {
   std::vector<Station> features;
   std::vector<double> targets;
 
@@ -121,8 +121,8 @@ inline bool file_exists(const std::string &name) {
 }
 
 template <typename ModelType, typename FitType>
-void write_predictions(const std::string output_path,
-                       const std::vector<Station> features,
+void write_predictions(const std::string &output_path,
+                       const std::vector<Station> &features,
                        const FitModel<ModelType, FitType> &fit_model) {
 
   std::ofstream ostream;
