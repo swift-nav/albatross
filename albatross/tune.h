@@ -118,8 +118,8 @@ struct ModelTuner {
     return model.get_params();
   }
 
-  void
-  initialize_optimizer(const nlopt::algorithm &algorithm = nlopt::LN_PRAXIS) {
+  void initialize_optimizer(
+      const nlopt::algorithm &algorithm = nlopt::LN_NELDERMEAD) {
     // The various algorithms in nlopt are coded by the first two characters.
     // In this case LN stands for local, gradient free.
     auto tunable_params = model.get_tunable_parameters();
