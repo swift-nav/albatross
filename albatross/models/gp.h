@@ -52,6 +52,7 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
     if (targets.has_covariance()) {
       cov += targets.covariance;
     }
+    assert(!cov.hasNaN());
     train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
     // Precompute the information vector
     information = train_ldlt.solve(targets.mean);
@@ -337,6 +338,8 @@ public:
     }
     return output;
   }
+
+  CovFunc get_covariance() const { return covariance_function_; }
 
 protected:
   /*

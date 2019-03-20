@@ -21,6 +21,10 @@ namespace albatross {
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
@@ -73,6 +77,10 @@ public:
 
 inline double exponential_covariance(double distance, double length_scale,
                                      double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
   return sigma * sigma * exp(-fabs(distance / length_scale));
 }
 
