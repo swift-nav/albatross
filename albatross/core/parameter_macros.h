@@ -13,15 +13,6 @@
 #ifndef ALBATROSS_CORE_PARAMETER_MACROS_H
 #define ALBATROSS_CORE_PARAMETER_MACROS_H
 
-#include "core/parameter_handling_mixin.h"
-#include <cassert>
-#include <map>
-
-using albatross::Parameter;
-using albatross::ParameterKey;
-using albatross::ParameterValue;
-using albatross::ParameterStore;
-
 /*
  * The for each functionality was taken from:
  *   https://codecraft.co/2014/11/25/variadic-macros-tricks/

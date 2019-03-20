@@ -10,9 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/distribution.h"
-#include "core/model.h"
 #include <gtest/gtest.h>
+
+#include "Distribution"
+#include "test_core_distribution.h"
 
 namespace albatross {
 

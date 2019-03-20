@@ -13,12 +13,6 @@
 #ifndef ALBATROSS_MAP_UTILS_H
 #define ALBATROSS_MAP_UTILS_H
 
-#include <assert.h>
-#include <functional>
-#include <map>
-#include <unordered_map>
-#include <vector>
-
 namespace albatross {
 
 /*

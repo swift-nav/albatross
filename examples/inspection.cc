@@ -10,11 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "example_utils.h"
 #include "gflags/gflags.h"
 
+#include "example_utils.h"
+
+#include "GP"
+
 DEFINE_string(input, "", "path to csv containing input data.");
-DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
 
 int main(int argc, char *argv[]) {

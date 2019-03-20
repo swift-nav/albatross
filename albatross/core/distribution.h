@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
-#include "cereal/cereal.hpp"
-#include "core/traits.h"
-#include "eigen/serializable_diagonal_matrix.h"
-#include <Eigen/Core>
-#include <map>
-#include <vector>
-
 namespace albatross {
 
 /*
