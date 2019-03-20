@@ -61,26 +61,35 @@ int main(int argc, char *argv[]) {
   auto spatial_cov = angular_exp * radial_sqr_exp;
 
   auto covariance = elevation_scaled_mean + noise + spatial_cov;
-  auto model = gp_from_covariance<Station>(covariance);
+  auto model = gp_from_covariance(covariance);
 
-  // These parameters are that came from tuning the model to the leave
-  // one out negative log likelihood.
+  model.set_param("sigma_exponential", {1., std::make_shared<FixedPrior>()});
+
+  //   These parameters are that came from tuning the model to the leave
+  //   one out negative log likelihood. which can be done like this:
+  //
+  //      albatross::LeaveOneOutLikelihood<MarginalDistribution> loo_nll;
+  //      auto tuner = get_tuner(model, loo_nll, data);
+  //      tuner.initialize_optimizer(nlopt::LN_NELDERMEAD);
+  //      const auto params = tuner.tune();
+  //      model.set_params(params);
+  //
   model.set_param_values({
-      {"elevation_scaling_center", 3965.98},
-      {"elevation_scaling_factor", 0.000810492},
-      {"exponential_length_scale", 28197.6},
-      {"squared_exponential_length_scale", 0.0753042},
-      {"sigma_constant", 1.66872},
-      {"sigma_exponential", 2.07548},
-      {"sigma_independent_noise", 1.8288},
-      {"sigma_squared_exponential", 3.77329},
+      {"elevation_scaling_center", 4446.5},
+      {"elevation_scaling_factor", 0.000153439},
+      {"exponential_length_scale", 1.10298},
+      {"sigma_constant", 5.07288},
+      {"sigma_exponential", 1},
+      {"sigma_independent_noise", 1.75027},
+      {"sigma_squared_exponential", 13.913},
+      {"squared_exponential_length_scale", 5835.56},
   });
 
   std::cout << "Training the model." << std::endl;
-  model.fit(data);
+  const auto fit_model = model.fit(data);
 
   auto predict_features = read_temperature_csv_input(FLAGS_predict, 1).features;
   std::cout << "Going to predict at " << predict_features.size() << " locations"
             << std::endl;
-  write_predictions(FLAGS_output, predict_features, model);
+  write_predictions(FLAGS_output, predict_features, fit_model);
 }
