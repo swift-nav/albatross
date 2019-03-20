@@ -46,7 +46,6 @@ TEST(test_indexing, test_vector_subset) {
   idx = {};
   expected = {};
   EXPECT_EQ(subset(x, idx), expected);
-
 }
 
 TEST(test_indexing, test_vector_set_subset) {
@@ -211,7 +210,6 @@ TEST(test_indexing, test_eigen_vector_subset) {
   idx = {};
   expected.resize(0);
   EXPECT_EQ(subset(x, idx), expected);
-
 }
 
 TEST(test_indexing, test_matrix_subset_col) {
@@ -254,7 +252,6 @@ TEST(test_indexing, test_matrix_subset_col) {
   idx = {};
   expected.resize(4, 0);
   EXPECT_EQ(subset_cols(x, idx), expected);
-
 }
 
 TEST(test_indexing, test_matrix_subset_row) {
@@ -297,7 +294,6 @@ TEST(test_indexing, test_matrix_subset_row) {
   idx = {};
   expected.resize(0, 4);
   EXPECT_EQ(subset_rows(x, idx), expected);
-
 }
 
 TEST(test_indexing, test_matrix_symmetric_subset) {
@@ -333,7 +329,6 @@ TEST(test_indexing, test_matrix_symmetric_subset) {
   idx = {};
   expected = subset_cols(subset_rows(x, idx), idx);
   EXPECT_EQ(symmetric_subset(x, idx), expected);
-
 }
 
 } // namespace albatross

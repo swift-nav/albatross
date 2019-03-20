@@ -269,7 +269,7 @@ public:
   };
 
   template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("parameter_store", params_));
+    archive(cereal::make_nvp("parameters", params_));
   };
 
   /*

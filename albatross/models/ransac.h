@@ -169,6 +169,10 @@ struct Fit<Ransac<ModelType, MetricType>, FeatureType> {
 
   Fit(const FitModelType &fit_model_) : fit_model(fit_model_){};
 
+  bool operator==(const Fit &other) const {
+    return fit_model == other.fit_model;
+  }
+
   template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("fit_model", fit_model));
   }
@@ -234,6 +238,7 @@ public:
     return ransac_fit_.fit_model.predict(features).template get<PredictType>();
   }
 
+  // Hide any inherited save/load methods.
   void save() const;
   void load();
 

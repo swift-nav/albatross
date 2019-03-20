@@ -19,7 +19,46 @@
 
 namespace albatross {
 
-TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
+// Group values by interval, but return keys that once sorted won't be
+// in order
+std::string group_by_interval(const double &x) {
+  if (x <= 3) {
+    return "2";
+  } else if (x <= 6) {
+    return "3";
+  } else {
+    return "1";
+  }
+}
+
+// Group values by interval, but return keys that once sorted won't be
+// in order
+std::string group_by_interval(const AdaptedFeature &x) {
+  return group_by_interval(x.value);
+}
+
+bool is_monotonic_increasing(const Eigen::VectorXd &x) {
+  for (Eigen::Index i = 0; i < x.size() - 1; i++) {
+    if (x[i + 1] - x[i] <= 0.) {
+      return false;
+    }
+  }
+  return true;
+}
+
+TYPED_TEST_P(RegressionModelTester, test_logo_predict_variants) {
+  auto dataset = this->test_case.get_dataset();
+  auto model = this->test_case.get_model();
+
+  LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(group_by_interval);
+  const auto prediction = model.cross_validate().predict(dataset, logo);
+
+  EXPECT_TRUE(is_monotonic_increasing(prediction.mean()));
+
+  expect_predict_variants_consistent(prediction);
+}
+
+TYPED_TEST_P(RegressionModelTester, test_loo_predict_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
@@ -30,7 +69,7 @@ TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
   expect_predict_variants_consistent(prediction);
 }
 
-TYPED_TEST_P(RegressionModelTester, test_get_predictions) {
+TYPED_TEST_P(RegressionModelTester, test_loo_get_predictions) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
@@ -67,8 +106,9 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   EXPECT_LE(cv_scores.mean(), 0.1);
 }
 
-REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_predict_variants,
-                           test_get_predictions, test_score_variants);
+REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_loo_predict_variants,
+                           test_logo_predict_variants, test_loo_get_predictions,
+                           test_score_variants);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_cross_validation, RegressionModelTester,
                               ExampleModels);
@@ -82,18 +122,18 @@ INSTANTIATE_TYPED_TEST_CASE_P(test_cross_validation, RegressionModelTester,
  */
 TEST(test_crossvalidation, test_heteroscedastic) {
   const auto dataset = make_heteroscedastic_toy_linear_data();
-  const auto indexer = leave_one_out_indexer(dataset.features);
 
   auto model = MakeGaussianProcess().get_model();
 
+  LeaveOneOut loo;
   const RootMeanSquareError rmse;
-  const auto scores = model.cross_validate().scores(rmse, dataset, indexer);
+  const auto scores = model.cross_validate().scores(rmse, dataset, loo);
 
   RegressionDataset<double> dataset_without_variance(dataset.features,
                                                      dataset.targets.mean);
 
   const auto scores_without_variance =
-      model.cross_validate().scores(rmse, dataset_without_variance, indexer);
+      model.cross_validate().scores(rmse, dataset_without_variance, loo);
 
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }

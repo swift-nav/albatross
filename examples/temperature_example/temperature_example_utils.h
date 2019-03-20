@@ -77,7 +77,7 @@ public:
 
   std::string get_name() const { return "elevation_scaled"; }
 
-  double operator()(const Station &x) const {
+  double _call_impl(const Station &x) const {
     // This is the negative orientation rectifier function which
     // allows lower elevations to have a higher variance.
     double center = this->get_param_value("elevation_scaling_center");
@@ -87,7 +87,7 @@ public:
 };
 
 albatross::RegressionDataset<Station>
-read_temperature_csv_input(std::string file_path, int thin = 5) {
+read_temperature_csv_input(const std::string &file_path, int thin = 5) {
   std::vector<Station> features;
   std::vector<double> targets;
 
@@ -120,9 +120,10 @@ inline bool file_exists(const std::string &name) {
   return f.good();
 }
 
-void write_predictions(const std::string output_path,
-                       const std::vector<Station> features,
-                       const albatross::RegressionModel<Station> &model) {
+template <typename ModelType, typename FitType>
+void write_predictions(const std::string &output_path,
+                       const std::vector<Station> &features,
+                       const FitModel<ModelType, FitType> &fit_model) {
 
   std::ofstream ostream;
   ostream.open(output_path);
@@ -132,7 +133,7 @@ void write_predictions(const std::string output_path,
 
   albatross::RegressionDataset<Station> dataset(features, targets);
 
-  const auto predictions = model.predict<MarginalDistribution>(features);
+  const auto predictions = fit_model.predict(features).marginal();
   albatross::write_to_csv(ostream, dataset, predictions);
 }
 

@@ -159,7 +159,6 @@ to_map(const RegressionDataset<FeatureType> &dataset,
                     target_variance, predictions.mean[ei], predict_variance);
 
   row = map_join(row, dataset.metadata);
-  row = map_join(row, predictions.metadata);
 
   return row;
 }

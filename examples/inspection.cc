@@ -27,6 +27,9 @@ int main(int argc, char *argv[]) {
   const double high = 13.;
   const double meas_noise = 1.;
 
+  if (FLAGS_input == "") {
+    FLAGS_input = "input.csv";
+  }
   maybe_create_training_data(FLAGS_input, n, low, high, meas_noise);
 
   auto data = read_csv_input(FLAGS_input);
@@ -42,17 +45,17 @@ int main(int argc, char *argv[]) {
   SquaredExp squared_exponential(3.5, 5.7);
   auto cov = constant + noise + squared_exponential;
 
-  auto model = gp_from_covariance<double>(cov);
+  auto model = gp_from_covariance(cov);
 
   std::cout << "Using Model:" << std::endl;
   std::cout << model.pretty_string() << std::endl;
 
-  model.fit(data);
+  const auto fit_model = model.fit(data);
 
   const auto constant_state =
       constant.get_state_space_representation(data.features);
 
-  auto posterior_state = model.inspect(constant_state);
+  auto posterior_state = fit_model.predict(constant_state).joint();
   std::cout << "The posterior estimate of the constant term is: ";
   std::cout << posterior_state.mean << " +/- " << posterior_state.covariance
             << std::endl;

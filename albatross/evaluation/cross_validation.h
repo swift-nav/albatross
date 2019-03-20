@@ -250,7 +250,6 @@ public:
   }
 
   // get_prediction
-
   template <typename FeatureType>
   CVPrediction<ModelType, FeatureType>
   predict(const RegressionDataset<FeatureType> &dataset,

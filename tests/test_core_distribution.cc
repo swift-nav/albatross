@@ -17,29 +17,24 @@
 
 namespace albatross {
 
-using TestDistribution = Distribution<Eigen::MatrixXd>;
+TYPED_TEST_P(DistributionTest, test_subset) {
 
-/*
- * Simply makes sure that a BaseModel that should be able to
- * make perfect predictions compiles and runs as expected.
- */
-TEST(test_core_distribution, test_constructors) {
-  int k = 5;
-  Eigen::VectorXd mean(k);
-  Eigen::MatrixXd cov(k, k);
+  TypeParam test_case;
+  const auto dist = test_case.create();
 
-  for (Eigen::Index i = 0; i < k; i++) {
-    mean[i] = i;
+  std::vector<int> indices = {1, 3, 2};
+  const auto ss = subset(dist, indices);
+
+  expect_subset_equal(dist.mean, ss.mean, indices);
+
+  if (dist.has_covariance()) {
+    expect_subset_equal(dist.covariance, ss.covariance, indices);
+  } else {
+    EXPECT_FALSE(ss.has_covariance());
   }
+};
 
-  cov = mean * mean.transpose();
-
-  TestDistribution no_cov(mean);
-  ASSERT_FALSE(no_cov.has_covariance());
-
-  TestDistribution with_cov(mean, cov);
-  ASSERT_TRUE(with_cov.has_covariance());
-}
+REGISTER_TYPED_TEST_CASE_P(DistributionTest, test_subset);
 
 Eigen::VectorXd arange(int k = 5) {
   Eigen::VectorXd mean(k);
@@ -49,48 +44,49 @@ Eigen::VectorXd arange(int k = 5) {
   return mean;
 }
 
-void expect_subset_equal(const Eigen::VectorXd &original,
-                         const Eigen::VectorXd &actual,
-                         const std::vector<int> indices) {
-  for (std::size_t i = 0; i < indices.size(); i++) {
-    EXPECT_EQ(actual[i], original[indices[i]]);
+struct MarginalNoCovariance
+    : public DistributionTestCase<MarginalDistribution> {
+  virtual MarginalDistribution create() const {
+    Eigen::VectorXd mean = arange(5);
+    return MarginalDistribution(mean);
   }
 };
 
-void expect_subset_equal(const Eigen::MatrixXd &original,
-                         const Eigen::MatrixXd &actual,
-                         const std::vector<int> indices) {
-  for (std::size_t i = 0; i < indices.size(); i++) {
-    for (std::size_t j = 0; j < indices.size(); j++) {
-      EXPECT_EQ(actual(i, j), original(indices[i], indices[j]));
-    }
+struct MarginalWithCovariance
+    : public DistributionTestCase<MarginalDistribution> {
+  virtual MarginalDistribution create() const {
+    Eigen::Index k = 5;
+    Eigen::VectorXd mean = arange(k);
+    Eigen::MatrixXd covariance = Eigen::MatrixXd::Random(k, k);
+    covariance = covariance * covariance.transpose();
+
+    return MarginalDistribution(mean, mean.asDiagonal());
   }
-}
+};
 
-template <typename Scalar, int Size>
-void expect_subset_equal(const Eigen::DiagonalMatrix<Scalar, Size> &original,
-                         const Eigen::DiagonalMatrix<Scalar, Size> &actual,
-                         const std::vector<int> indices) {
-  expect_subset_equal(original.diagonal(), actual.diagonal(), indices);
-}
-
-template <typename DistributionType>
-class PolymorphicDistributionTest : public ::testing::Test {};
-
-typedef ::testing::Types<MarginalDistribution, JointDistribution>
-    DistributionsToTest;
-TYPED_TEST_CASE(PolymorphicDistributionTest, DistributionsToTest);
-
-TYPED_TEST(PolymorphicDistributionTest, can_compute_subset) {
-  const TypeParam dist(arange(5));
-
-  std::vector<int> indices = {1, 3, 2};
-  const auto ss = subset(indices, dist);
-
-  expect_subset_equal(dist.mean, ss.mean, indices);
-
-  if (dist.has_covariance()) {
-    expect_subset_equal(dist.covariance, ss.covariance, indices);
+struct JointNoCovariance : public DistributionTestCase<JointDistribution> {
+  virtual JointDistribution create() const {
+    Eigen::Index k = 5;
+    Eigen::VectorXd mean = arange(k);
+    return JointDistribution(mean);
   }
-}
+};
+
+struct JointWithCovariance : public DistributionTestCase<JointDistribution> {
+  virtual JointDistribution create() const {
+    Eigen::Index k = 5;
+    Eigen::VectorXd mean = arange(k);
+    Eigen::MatrixXd covariance = Eigen::MatrixXd::Random(k, k);
+    covariance = covariance * covariance.transpose();
+
+    return JointDistribution(mean, covariance);
+  }
+};
+
+typedef ::testing::Types<MarginalNoCovariance, MarginalWithCovariance,
+                         JointNoCovariance, JointWithCovariance>
+    ToTest;
+
+INSTANTIATE_TYPED_TEST_CASE_P(Albatross, DistributionTest, ToTest);
+
 } // namespace albatross
