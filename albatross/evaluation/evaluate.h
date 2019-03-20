@@ -30,29 +30,26 @@ namespace albatross {
  * inferred.
  */
 
-template<typename RequiredPredictType>
-using Evaluator = double(*)(const RequiredPredictType&,
-                         const MarginalDistribution &);
+template <typename RequiredPredictType>
+using Evaluator = double (*)(const RequiredPredictType &,
+                             const MarginalDistribution &);
 
 template <typename RequiredPredictType> struct EvaluationMetric {
 
   Evaluator<RequiredPredictType> eval_;
 
-  EvaluationMetric(Evaluator<RequiredPredictType> eval) : eval_(eval) { }
+  EvaluationMetric(Evaluator<RequiredPredictType> eval) : eval_(eval) {}
 
-  double
-  operator()(const RequiredPredictType &prediction,
-             const MarginalDistribution &truth) const {
+  double operator()(const RequiredPredictType &prediction,
+                    const MarginalDistribution &truth) const {
     return eval_(prediction, truth);
   }
-
 
   template <typename ModelType, typename FeatureType, typename FitType>
   double
   operator()(const Prediction<ModelType, FeatureType, FitType> &prediction,
              const MarginalDistribution &truth) const {
-    return (*this)(prediction.template get<RequiredPredictType>(),
-                            truth);
+    return (*this)(prediction.template get<RequiredPredictType>(), truth);
   }
 
   template <class Archive> void serialize(Archive &){};
@@ -71,7 +68,8 @@ static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
 }
 
 struct RootMeanSquareError : public EvaluationMetric<Eigen::VectorXd> {
-  RootMeanSquareError() : EvaluationMetric<Eigen::VectorXd>(root_mean_square_error) { }
+  RootMeanSquareError()
+      : EvaluationMetric<Eigen::VectorXd>(root_mean_square_error) {}
 };
 
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
@@ -89,7 +87,7 @@ static inline double standard_deviation(const Eigen::VectorXd &prediction,
 }
 
 struct StandardDeviation : public EvaluationMetric<Eigen::VectorXd> {
-  StandardDeviation() : EvaluationMetric<Eigen::VectorXd>(standard_deviation) { }
+  StandardDeviation() : EvaluationMetric<Eigen::VectorXd>(standard_deviation) {}
 };
 
 /*
@@ -121,7 +119,8 @@ negative_log_likelihood(const MarginalDistribution &prediction,
 
 template <typename PredictType = JointDistribution>
 struct NegativeLogLikelihood : public EvaluationMetric<PredictType> {
-  NegativeLogLikelihood() : EvaluationMetric<PredictType>(negative_log_likelihood) { }
+  NegativeLogLikelihood()
+      : EvaluationMetric<PredictType>(negative_log_likelihood) {}
 };
 
 } // namespace albatross

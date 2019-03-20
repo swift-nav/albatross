@@ -34,32 +34,51 @@ CACHE INTERNAL ""
 )
 
 set(albatross_HEADERS
-    albatross/tune.h
-    albatross/evaluate.h
-    albatross/crossvalidation.h
-    albatross/tuning_metrics.h
-    albatross/map_utils.h
-    albatross/csv_utils.h
-    albatross/core/keys.h
-    albatross/core/dataset.h
-    albatross/core/model.h
-    albatross/core/functional_model.h
-    albatross/core/model_adapter.h
-    albatross/core/traits.h
-    albatross/core/serialize.h
-    albatross/core/parameter_handling_mixin.h    
     albatross/cereal/eigen.h
-    albatross/eigen/serializable_ldlt.h
-    albatross/models/gp.h
-    albatross/models/ransac.h
-    albatross/models/ransac_gp.h
-    albatross/models/least_squares.h
+    albatross/cereal/traits.h
+    albatross/core/dataset.h
+    albatross/core/declarations.h
+    albatross/core/distribution.h
+    albatross/core/fit_model.h
+    albatross/core/indexing.h
+    albatross/core/keys.h
+    albatross/core/model.h
+    albatross/core/parameter_handling_mixin.h
+    albatross/core/parameter_macros.h
+    albatross/core/prediction.h
+    albatross/core/priors.h
+    albatross/core/serialize.h
+    albatross/core/traits.h
+    albatross/covariance_functions/call_trace.h
     albatross/covariance_functions/covariance_function.h
-    albatross/covariance_functions/covariance_functions.h
     albatross/covariance_functions/distance_metrics.h
     albatross/covariance_functions/noise.h
     albatross/covariance_functions/polynomials.h
     albatross/covariance_functions/radial.h
+    albatross/covariance_functions/scaling_function.h
+    albatross/covariance_functions/traits.h
+    albatross/csv_utils.h
+    albatross/eigen/serializable_diagonal_matrix.h
+    albatross/eigen/serializable_ldlt.h
+    albatross/eigen_utils.h
+    albatross/evaluation/cross_validation.h
+    albatross/evaluation/cross_validation_utils.h
+    albatross/evaluation/evaluate.h
+    albatross/evaluation/folds.h
+    albatross/map_utils.h
+    albatross/models/gp.h
+    albatross/models/least_squares.h
+    albatross/models/ransac.h
+    albatross/random_utils.h
+    albatross/tune.h
+    albatross/tuning_metrics.h
+    examples/example_utils.h
+    examples/sinc_example_utils.h
+    examples/temperature_example/temperature_example_utils.h
+    tests/mock_model.h
+    tests/test_core_distribution.h
+    tests/test_models.h
+    tests/test_serialize.h
     tests/test_utils.h
     CACHE INTERNAL ""
 )
@@ -68,4 +87,3 @@ add_custom_target(albatross DEPENDS ${albatross_SRCS} ${albatross_HEADERS} COMME
 
 add_subdirectory(tests)
 add_subdirectory(examples)
-

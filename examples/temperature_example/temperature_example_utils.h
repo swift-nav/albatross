@@ -14,16 +14,10 @@
 #define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
 #include "csv.h"
-#include <Eigen/Core>
 #include <fstream>
-#include <iostream>
-#include <random>
-#include <sstream>
 
-#include "core/model.h"
-#include "covariance_functions/covariance_functions.h"
+#include "GP"
 #include "csv_utils.h"
-#include "models/ransac_gp.h"
 
 namespace albatross {
 

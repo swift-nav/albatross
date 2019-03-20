@@ -13,9 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_DISTANCE_METRICS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_DISTANCE_METRICS_H
 
-#include "core/parameter_handling_mixin.h"
-#include <Eigen/Core>
-
 namespace albatross {
 
 constexpr double EPSILON = 1e-16;

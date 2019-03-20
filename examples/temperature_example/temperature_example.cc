@@ -10,11 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "evaluate.h"
 #include "gflags/gflags.h"
+
 #include "temperature_example_utils.h"
-#include "tune.h"
-#include <functional>
+
+#include "Tune"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(predict, "", "path to csv containing prediction locations.");

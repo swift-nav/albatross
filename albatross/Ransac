@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2019 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,14 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_KEYS_H
-#define ALBATROSS_CORE_KEYS_H
+#ifndef ALBATROSS_RANSAC_H
+#define ALBATROSS_RANSAC_H
 
-namespace albatross {
-namespace keys {
-const std::string YAML_MODEL_NAME = "model_name";
-const std::string YAML_MODEL_PARAMS = "model_params";
-} // namespace keys
-} // namespace albatross
+#include "models/ransac.h"
 
 #endif

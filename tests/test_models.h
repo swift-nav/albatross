@@ -15,6 +15,7 @@
 #include "test_utils.h"
 
 #include "GP"
+#include "Ransac"
 #include "models/least_squares.h"
 
 namespace albatross {
