@@ -53,7 +53,7 @@ public:
   };
 
   std::string name() const {
-    return "squared_exponential[" << this->distance_metric_.name() << "]";
+    return "squared_exponential[" + this->distance_metric_.get_name() + "]";
   }
 
   // This operator is only defined when the distance metric is also defined.
@@ -61,7 +61,7 @@ public:
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double call_impl_(const X &x, const X &y) const {
+  double _call_impl(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     return squared_exponential_covariance(
         distance, squared_exponential_length_scale.value,
@@ -95,7 +95,7 @@ public:
   };
 
   std::string name() const {
-    return "exponential[" << this->distance_metric_.get_name() << "]";
+    return "exponential[" + this->distance_metric_.get_name() + "]";
   }
 
   ~Exponential(){};
@@ -105,7 +105,7 @@ public:
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double call_impl_(const X &x, const X &y) const {
+  double _call_impl(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     return exponential_covariance(distance, exponential_length_scale.value,
                                   sigma_exponential.value);

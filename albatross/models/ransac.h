@@ -133,12 +133,12 @@ ransac(const RegressionDataset<FeatureType> &dataset,
 
   typename RansacFunctions<FitType>::Fitter fitter =
       [&](const std::vector<std::size_t> &inds) {
-        return model.get_fit_model(subset(dataset, inds));
+        return model.fit(subset(dataset, inds));
       };
 
   typename RansacFunctions<FitType>::InlierMetric inlier_metric = [&](
       const std::vector<std::size_t> &inds, const FitType &fit) {
-    const auto pred = fit.get_prediction(subset(dataset.features, inds));
+    const auto pred = fit.predict(subset(dataset.features, inds));
     const auto target = subset(dataset.targets, inds);
     const MetricPredictType prediction = pred.template get<MetricPredictType>();
     return metric(prediction, target);
@@ -214,8 +214,8 @@ public:
 
   template <typename FeatureType>
   Fit<Ransac<ModelType, MetricType>, FeatureType>
-  fit(const std::vector<FeatureType> &features,
-      const MarginalDistribution &targets) const {
+  _fit_impl(const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) const {
     // Remove outliers
     RegressionDataset<FeatureType> dataset(features, targets);
     const auto fold_indexer = leave_one_out_indexer(dataset.features);
@@ -224,18 +224,16 @@ public:
                random_sample_size_, min_inliers_, max_iterations_);
     // Then generate a fit.
     return Fit<Ransac<ModelType, MetricType>, FeatureType>(
-        sub_model_.get_fit_model(inliers));
+        sub_model_.fit(inliers));
   }
 
   template <typename PredictFeatureType, typename FitType, typename PredictType>
-  PredictType predict(const std::vector<PredictFeatureType> &features,
-                      const FitType &ransac_fit_,
-                      PredictTypeIdentity<PredictType> &&) const {
-    return ransac_fit_.fit_model.get_prediction(features)
-        .template get<PredictType>();
+  PredictType _predict_impl(const std::vector<PredictFeatureType> &features,
+                            const FitType &ransac_fit_,
+                            PredictTypeIdentity<PredictType> &&) const {
+    return ransac_fit_.fit_model.predict(features).template get<PredictType>();
   }
 
-  // Hide any inherited save/load methods.
   void save() const;
   void load();
 

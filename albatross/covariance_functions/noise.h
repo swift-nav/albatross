@@ -35,7 +35,7 @@ public:
    * This will create a scaled identity matrix, but only between
    * two different observations defined by the Observed type.
    */
-  double call_impl_(const Observed &x, const Observed &y) const {
+  double _call_impl(const Observed &x, const Observed &y) const {
     if (x == y) {
       return sigma_independent_noise.value * sigma_independent_noise.value;
     } else {

@@ -40,10 +40,11 @@ private:
   template <typename FeatureType,
             typename std::enable_if<
                 has_valid_fit<ModelType, FeatureType>::value, int>::type = 0>
-  auto fit_(const std::vector<FeatureType> &features,
+  auto _fit(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
-    auto fit = derived().fit(features, targets);
-    return FitModel<ModelType, decltype(fit)>(derived(), std::move(fit));
+    auto fit_output = derived()._fit_impl(features, targets);
+    return FitModel<ModelType, decltype(fit_output)>(derived(),
+                                                     std::move(fit_output));
   }
 
   template <
@@ -51,7 +52,7 @@ private:
       typename std::enable_if<has_possible_fit<ModelType, FeatureType>::value &&
                                   !has_valid_fit<ModelType, FeatureType>::value,
                               int>::type = 0>
-  void fit_(const std::vector<FeatureType> &features,
+  void _fit(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const = delete; // Invalid fit
 
   template <typename FeatureType,
@@ -60,7 +61,7 @@ private:
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
   void
-  fit_(const std::vector<FeatureType> &features,
+  _fit(const std::vector<FeatureType> &features,
        const MarginalDistribution &targets) const = delete; // No fit found.
 
   template <
@@ -69,9 +70,10 @@ private:
                                                 FitType, PredictType>::value,
                               int>::type = 0>
   PredictType predict_(const std::vector<PredictFeatureType> &features,
-                       const FitType &fit,
+                       const FitType &fit_,
                        PredictTypeIdentity<PredictType> &&) const {
-    return derived().predict(features, fit, PredictTypeIdentity<PredictType>());
+    return derived()._predict_impl(features, fit_,
+                                   PredictTypeIdentity<PredictType>());
   }
 
   template <
@@ -123,14 +125,14 @@ public:
   }
 
   template <typename FeatureType>
-  auto get_fit_model(const std::vector<FeatureType> &features,
-                     const MarginalDistribution &targets) const {
-    return fit_(features, targets);
+  auto fit(const std::vector<FeatureType> &features,
+           const MarginalDistribution &targets) const {
+    return _fit(features, targets);
   }
 
   template <typename FeatureType>
-  auto get_fit_model(const RegressionDataset<FeatureType> &dataset) const {
-    return fit_(dataset.features, dataset.targets);
+  auto fit(const RegressionDataset<FeatureType> &dataset) const {
+    return _fit(dataset.features, dataset.targets);
   }
 
   CrossValidation<ModelType> cross_validate() const;

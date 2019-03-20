@@ -25,7 +25,7 @@ TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
 
   LeaveOneOut leave_one_out;
   const auto prediction =
-      model.cross_validate().get_prediction(dataset, leave_one_out);
+      model.cross_validate().predict(dataset, leave_one_out);
 
   expect_predict_variants_consistent(prediction);
 }

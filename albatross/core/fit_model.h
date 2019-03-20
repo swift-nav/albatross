@@ -37,7 +37,7 @@ public:
 
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
-  get_prediction(const std::vector<PredictFeatureType> &features) const {
+  predict(const std::vector<PredictFeatureType> &features) const {
     return Prediction<ModelType, PredictFeatureType, Fit>(model_, fit_,
                                                           features);
   }

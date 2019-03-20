@@ -54,7 +54,7 @@ public:
    * so you can move one if you move the rest the same amount.
    */
   template <typename X, typename Y>
-  double call_impl_(const X &x __attribute__((unused)),
+  double _call_impl(const X &x __attribute__((unused)),
                     const Y &y __attribute__((unused))) const {
     return sigma_constant.value * sigma_constant.value;
   }
@@ -75,7 +75,7 @@ public:
 
   ~Polynomial(){};
 
-  double call_impl_(const double &x, const double &y) const {
+  double _call_impl(const double &x, const double &y) const {
     double cov = 0.;
     for (int i = 0; i < order + 1; i++) {
       const double sigma = this->get_param_value(param_names_.at(i));

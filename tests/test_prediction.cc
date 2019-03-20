@@ -20,14 +20,14 @@ struct X {};
 
 class MeanOnlyModel : public ModelBase<MeanOnlyModel> {
 public:
-  Fit<MeanOnlyModel> fit(const std::vector<X> &,
-                         const MarginalDistribution &) const {
+  Fit<MeanOnlyModel> _fit_impl(const std::vector<X> &,
+                               const MarginalDistribution &) const {
     return {};
   }
 
-  Eigen::VectorXd predict(const std::vector<X> &features,
-                          const Fit<MeanOnlyModel> &,
-                          PredictTypeIdentity<Eigen::VectorXd>) const {
+  Eigen::VectorXd _predict_impl(const std::vector<X> &features,
+                                const Fit<MeanOnlyModel> &,
+                                PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
   }
 };
@@ -39,22 +39,22 @@ TEST(test_prediction, test_mean_only) {
       Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
   MarginalDistribution targets(zeros);
 
-  const auto fit_model = m.get_fit_model(xs, targets);
-  const auto prediction = fit_model.get_prediction(xs);
+  const auto fit_model = m.fit(xs, targets);
+  const auto prediction = fit_model.predict(xs);
   auto mean = prediction.mean();
   EXPECT_TRUE(bool(std::is_same<Eigen::VectorXd, decltype(mean)>::value));
 }
 
 class MarginalOnlyModel : public ModelBase<MarginalOnlyModel> {
 public:
-  Fit<MarginalOnlyModel> fit(const std::vector<X> &,
-                             const MarginalDistribution &) const {
+  Fit<MarginalOnlyModel> _fit_impl(const std::vector<X> &,
+                                   const MarginalDistribution &) const {
     return {};
   }
 
   MarginalDistribution
-  predict(const std::vector<X> &features, const Fit<MarginalOnlyModel> &,
-          PredictTypeIdentity<MarginalDistribution>) const {
+  _predict_impl(const std::vector<X> &features, const Fit<MarginalOnlyModel> &,
+                PredictTypeIdentity<MarginalDistribution>) const {
     auto mean =
         Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
     return MarginalDistribution(mean);
@@ -68,8 +68,8 @@ TEST(test_prediction, test_marginal_only) {
       Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
   MarginalDistribution targets(zeros);
 
-  const auto fit_model = m.get_fit_model(xs, targets);
-  const auto prediction = fit_model.get_prediction(xs);
+  const auto fit_model = m.fit(xs, targets);
+  const auto prediction = fit_model.predict(xs);
   auto mean = prediction.mean();
   EXPECT_TRUE(bool(std::is_same<Eigen::VectorXd, decltype(mean)>::value));
 
@@ -80,14 +80,14 @@ TEST(test_prediction, test_marginal_only) {
 
 class JointOnlyModel : public ModelBase<JointOnlyModel> {
 public:
-  Fit<JointOnlyModel> fit(const std::vector<X> &,
-                          const MarginalDistribution &) const {
+  Fit<JointOnlyModel> _fit_impl(const std::vector<X> &,
+                                const MarginalDistribution &) const {
     return {};
   }
 
-  JointDistribution predict(const std::vector<X> &features,
-                            const Fit<JointOnlyModel> &,
-                            PredictTypeIdentity<JointDistribution>) const {
+  JointDistribution
+  _predict_impl(const std::vector<X> &features, const Fit<JointOnlyModel> &,
+                PredictTypeIdentity<JointDistribution>) const {
     auto mean =
         Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
     return JointDistribution(mean);
@@ -101,8 +101,8 @@ TEST(test_prediction, test_joint_only) {
       Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
   MarginalDistribution targets(zeros);
 
-  const auto fit_model = m.get_fit_model(xs, targets);
-  const auto prediction = fit_model.get_prediction(xs);
+  const auto fit_model = m.fit(xs, targets);
+  const auto prediction = fit_model.predict(xs);
 
   auto mean = prediction.mean();
   EXPECT_TRUE(bool(std::is_same<Eigen::VectorXd, decltype(mean)>::value));

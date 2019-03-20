@@ -106,7 +106,7 @@ public:
 
   ALBATROSS_DECLARE_PARAMS(foo, bar)
 
-  double call_impl_(const double &, const double &) const {
+  double _call_impl(const double &, const double &) const {
     return foo.value + bar.value;
   }
 

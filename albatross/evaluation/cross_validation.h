@@ -253,16 +253,16 @@ public:
 
   template <typename FeatureType>
   CVPrediction<ModelType, FeatureType>
-  get_prediction(const RegressionDataset<FeatureType> &dataset,
-                 const FoldIndexer &indexer) const {
+  predict(const RegressionDataset<FeatureType> &dataset,
+          const FoldIndexer &indexer) const {
     return CVPrediction<ModelType, FeatureType>(model_, dataset, indexer);
   }
 
   template <typename FeatureType, typename IndexFunc>
-  auto get_prediction(const RegressionDataset<FeatureType> &dataset,
-                      const IndexFunc &index_function) const {
+  auto predict(const RegressionDataset<FeatureType> &dataset,
+               const IndexFunc &index_function) const {
     const auto indexer = index_function(dataset);
-    return get_prediction(dataset, indexer);
+    return predict(dataset, indexer);
   }
 
   // Scores
@@ -280,7 +280,7 @@ public:
                          const RegressionDataset<FeatureType> &dataset,
                          const FoldIndexer &indexer) const {
     const auto folds = folds_from_fold_indexer(dataset, indexer);
-    const auto prediction = get_prediction(dataset, indexer);
+    const auto prediction = predict(dataset, indexer);
     const auto predictions =
         prediction.template get<std::vector<RequiredPredictType>>();
     return cross_validated_scores(metric, folds, predictions);

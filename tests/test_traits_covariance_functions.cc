@@ -54,21 +54,21 @@ TEST(test_traits_covariance, test_has_call_operator) {
 
 class HasPublicCallImpl {
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallImpl {
 protected:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallImpl {
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallImpl {};
 
-TEST(test_traits_covariance, test_has_any_call_impl_) {
+TEST(test_traits_covariance, test_has_any_call_impl) {
   EXPECT_TRUE(bool(has_any_call_impl<HasPublicCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasProtectedCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasPrivateCallImpl>::value));
@@ -76,19 +76,20 @@ TEST(test_traits_covariance, test_has_any_call_impl_) {
 }
 
 class HasMultiplePublicCallImpl {
+
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 
-  double call_impl_(const X &, const X &) const { return 1.; };
+  double _call_impl(const X &, const X &) const { return 1.; };
 
-  double call_impl_(const Y &, const Y &) const { return 1.; };
+  double _call_impl(const Y &, const Y &) const { return 1.; };
 
   // These are all invalid:
-  double call_impl_(const Z &, const X &) { return 1.; };
+  double _call_impl(const Z &, const X &) { return 1.; };
 
-  double call_impl_(Z &, const Y &) const { return 1.; };
+  double _call_impl(Z &, const Y &) const { return 1.; };
 
-  int call_impl_(const Z &, const Z &) const { return 1.; };
+  int _call_impl(const Z &, const Z &) const { return 1.; };
 };
 
 TEST(test_traits_covariance, test_has_valid_call_impl) {
@@ -108,7 +109,7 @@ TEST(test_traits_covariance, test_has_valid_call_impl) {
 
 /*
  * Here we test to make sure we can identify situations where
- * call_impl_ has been defined but not necessarily properly.
+ * _call_impl( has been defined but not necessarily properly.
  */
 TEST(test_traits_covariance, test_has_possible_call_impl) {
   EXPECT_TRUE(bool(has_possible_call_impl<HasPublicCallImpl, X, Y>::value));
