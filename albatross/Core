@@ -25,6 +25,4 @@
 #include "core/prediction.h"
 #include "core/model.h"
 
-//#include <cereal/types/map.hpp>
-
 #endif

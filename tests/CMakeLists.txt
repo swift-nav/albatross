@@ -36,7 +36,6 @@ EXCLUDE_FROM_ALL
 
 add_dependencies(albatross_unit_tests
     albatross
-    clang-format-all
 )
 
 target_link_libraries(albatross_unit_tests m gtest gtest_main pthread gflags nlopt)

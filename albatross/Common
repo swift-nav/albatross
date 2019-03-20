@@ -18,6 +18,7 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <cereal/types/map.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

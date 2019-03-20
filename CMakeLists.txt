@@ -29,10 +29,6 @@ set("LOG_LEVEL=8")
 include_directories("${PROJECT_SOURCE_DIR}/albatross")
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
 
-set(albatross_SRCS
-CACHE INTERNAL ""
-)
-
 set(albatross_HEADERS
     albatross/cereal/eigen.h
     albatross/cereal/traits.h
@@ -80,10 +76,9 @@ set(albatross_HEADERS
     tests/test_models.h
     tests/test_serialize.h
     tests/test_utils.h
-    CACHE INTERNAL ""
 )
 
-add_custom_target(albatross DEPENDS ${albatross_SRCS} ${albatross_HEADERS} COMMENT "albatross dependencies")
+add_custom_target(albatross DEPENDS ${albatross_HEADERS} COMMENT "albatross dependencies")
 
 add_subdirectory(tests)
 add_subdirectory(examples)
