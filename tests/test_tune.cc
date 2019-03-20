@@ -22,7 +22,7 @@ TEST(test_tune, test_single_dataset) {
   auto dataset = test_case.get_dataset();
   auto model = test_case.get_model();
 
-  LeaveOneOutLikelihood loo_nll;
+  LeaveOneOutLikelihood<> loo_nll;
   std::ostringstream output_stream;
   auto tuner =
       get_tuner(model, loo_nll, dataset, mean_aggregator, output_stream);
@@ -53,7 +53,7 @@ TEST(test_tune, test_with_prior_bounds) {
     model.set_param(pair.first, param);
   }
 
-  LeaveOneOutLikelihood loo_nll;
+  LeaveOneOutLikelihood<> loo_nll;
   std::ostringstream output_stream;
   auto tuner =
       get_tuner(model, loo_nll, dataset, mean_aggregator, output_stream);
@@ -69,6 +69,7 @@ TEST(test_tune, test_with_prior) {
   auto dataset = test_case.get_dataset();
   auto model_no_priors = test_case.get_model();
 
+  // Add priors to the parameters
   auto model_with_priors = test_case.get_model();
   for (const auto &pair : model_with_priors.get_params()) {
     model_with_priors.set_prior(
@@ -78,25 +79,33 @@ TEST(test_tune, test_with_prior) {
   auto param_names = map_keys(model_with_priors.get_params());
   model_with_priors.set_prior(param_names[0], std::make_shared<FixedPrior>());
 
-  LeaveOneOutLikelihood loo_nll;
+  std::cout << pretty_param_details(model_with_priors.get_params());
+
+  // Tune using likelihood which will include the parameter priors
+  LeaveOneOutLikelihood<> loo_nll;
   std::ostringstream output_stream;
   auto tuner = get_tuner(model_with_priors, loo_nll, dataset, mean_aggregator,
                          output_stream);
-  tuner.optimizer.set_maxeval(20);
+  tuner.optimizer.set_maxeval(50);
   auto params = tuner.tune();
-
-  auto tuner_no_priors = get_tuner(model_no_priors, loo_nll, dataset,
-                                   mean_aggregator, output_stream);
-  tuner_no_priors.optimizer.set_maxeval(20);
-  auto params_no_prior = tuner.tune();
-
   model_with_priors.set_params(params);
   double ll_with_prior = model_with_priors.prior_log_likelihood();
 
+  // Then tune without
+  auto tuner_no_priors = get_tuner(model_no_priors, loo_nll, dataset,
+                                   mean_aggregator, output_stream);
+  tuner_no_priors.optimizer.set_maxeval(50);
+  auto params_no_prior = tuner_no_priors.tune();
+
+  // Set the model with priors to have the parameters from tuning
+  // without.  These parameters should be inconsistent with the
+  // prior which should lead to a smaller likelihood.
   for (const auto &pair : params_no_prior) {
     model_with_priors.set_param(pair.first, pair.second.value);
   }
-  EXPECT_GT(ll_with_prior, model_with_priors.prior_log_likelihood());
+  double ll_without_prior = model_with_priors.prior_log_likelihood();
+
+  EXPECT_GT(ll_with_prior, ll_without_prior);
 }
 
 TEST(test_tune, test_multiple_datasets) {
@@ -108,7 +117,7 @@ TEST(test_tune, test_multiple_datasets) {
   std::vector<RegressionDataset<double>> datasets = {one_dataset,
                                                      another_dataset};
 
-  LeaveOneOutLikelihood loo_nll;
+  LeaveOneOutLikelihood<> loo_nll;
   std::ostringstream output_stream;
   auto tuner = get_tuner(model_no_priors, loo_nll, datasets, mean_aggregator,
                          output_stream);

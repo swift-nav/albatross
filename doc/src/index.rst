@@ -75,7 +75,7 @@ and plot the results (though this'll require a numerical python environment),
 
     1d-example
     temperature-example
-
+    workflow
 
 #########
 Credit

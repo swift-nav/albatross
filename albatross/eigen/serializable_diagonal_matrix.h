@@ -21,11 +21,6 @@
  * diagonal elements which in turn allows us to serialize it.
  */
 
-#include "Eigen/Cholesky"
-#include "Eigen/Dense"
-#include "cereal/cereal.hpp"
-#include <math.h>
-
 namespace Eigen {
 
 template <typename _Scalar, int SizeAtCompileTime>

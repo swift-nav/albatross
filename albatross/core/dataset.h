@@ -13,27 +13,7 @@
 #ifndef ALBATROSS_CORE_DATASET_H
 #define ALBATROSS_CORE_DATASET_H
 
-#include "core/distribution.h"
-#include "core/traits.h"
-#include <Eigen/Core>
-#include <cereal/archives/json.hpp>
-#include <map>
-#include <vector>
-
 namespace albatross {
-
-// A JointDistribution has a dense covariance matrix, which
-// contains the covariance between each variable and all others.
-using JointDistribution = Distribution<Eigen::MatrixXd>;
-
-// We use a wrapper around DiagonalMatrix in order to make
-// the resulting distribution serializable
-using DiagonalMatrixXd =
-    Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
-// A MarginalDistribution has only a digaonal covariance
-// matrix, so in turn only describes the variance of each
-// variable independent of all others.
-using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 /*
  * A RegressionDataset holds two vectors of data, the features
@@ -67,6 +47,8 @@ template <typename FeatureType> struct RegressionDataset {
             metadata == other.metadata);
   }
 
+  std::size_t size() const { return features.size(); }
+
   template <class Archive>
   typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
@@ -85,6 +67,17 @@ template <typename FeatureType> struct RegressionDataset {
                   "FeatureType must be serializable.");
   }
 };
+
+/*
+ * Convenience method which subsets the features and targets of a dataset.
+ */
+template <typename SizeType, typename FeatureType>
+inline RegressionDataset<FeatureType>
+subset(const RegressionDataset<FeatureType> &dataset,
+       const std::vector<SizeType> &indices) {
+  return RegressionDataset<FeatureType>(subset(dataset.features, indices),
+                                        subset(dataset.targets, indices));
+}
 
 } // namespace albatross
 

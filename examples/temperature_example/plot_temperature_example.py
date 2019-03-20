@@ -104,6 +104,7 @@ if __name__ == "__main__":
     lons = df['LON'].values
     lats = df['LAT'].values
 
+    import ipdb; ipdb.set_trace()
     norm = plt.Normalize(vmin=df['TEMP'].values.min(), vmax=df['TEMP'].values.max())
 
     ncols = np.nonzero(np.diff(preds['lat'].values) != 0)[0][0] + 1

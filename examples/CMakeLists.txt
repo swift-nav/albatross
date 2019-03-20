@@ -42,7 +42,7 @@ target_link_libraries(inspection_example m gflags pthread)
 add_custom_target(
     run_inspection_example ALL
     DEPENDS ${example_HEADERS}
-    COMMAND inspection_example -input ${PROJECT_SOURCE_DIR}/examples/inspection_input.csv -output ./inspection_predictions.csv
+    COMMAND inspection_example -input ${PROJECT_SOURCE_DIR}/examples/inspection_input.csv
     COMMENT "Running inspection_example"
 )
 

@@ -10,8 +10,6 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/parameter_handling_mixin.h"
-#include "core/parameter_macros.h"
 #include <gtest/gtest.h>
 
 #include "test_utils.h"

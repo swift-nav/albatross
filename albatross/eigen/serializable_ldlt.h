@@ -93,7 +93,7 @@ public:
   }
 
   std::vector<Eigen::MatrixXd>
-  inverse_blocks(const std::vector<albatross::FoldIndices> &blocks) const {
+  inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
 
     /*
      * The LDLT decomposition is stored such that,
@@ -121,10 +121,12 @@ public:
         this->vectorD().array().sqrt().inverse().matrix().asDiagonal();
     inverse_cholesky = sqrt_diag * inverse_cholesky;
 
+    assert(!inverse_cholesky.hasNaN());
+
     std::vector<Eigen::MatrixXd> output;
     for (const auto &block_indices : blocks) {
       Eigen::MatrixXd sub_matrix =
-          albatross::subset_cols(block_indices, inverse_cholesky);
+          albatross::subset_cols(inverse_cholesky, block_indices);
       Eigen::MatrixXd one_block =
           sub_matrix.transpose().lazyProduct(sub_matrix);
       output.push_back(one_block);
@@ -140,9 +142,9 @@ public:
     Eigen::Index n = this->rows();
 
     std::size_t size_n = static_cast<std::size_t>(n);
-    std::vector<albatross::FoldIndices> block_indices(size_n);
+    std::vector<std::vector<std::size_t>> block_indices(size_n);
     for (Eigen::Index i = 0; i < n; i++) {
-      block_indices[i] = {static_cast<albatross::FoldIndices::value_type>(i)};
+      block_indices[i] = {static_cast<std::size_t>(i)};
     }
 
     Eigen::VectorXd inv_diag(n);

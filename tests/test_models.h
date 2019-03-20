@@ -15,6 +15,7 @@
 #include "test_utils.h"
 
 #include "GP"
+#include "Ransac"
 #include "models/least_squares.h"
 
 namespace albatross {
@@ -30,6 +31,24 @@ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     return gp_from_covariance(covariance);
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(); }
+};
+
+class MakeRansacGaussianProcess {
+public:
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+
+    double inlier_threshold = 1.;
+    std::size_t sample_size = 3;
+    std::size_t min_inliers = 3;
+    std::size_t max_iterations = 20;
+    NegativeLogLikelihood<JointDistribution> nll;
+    const auto gp = gp_from_covariance(covariance);
+    return gp.ransac(nll, inlier_threshold, sample_size, min_inliers,
+                     max_iterations);
   }
 
   auto get_dataset() const { return make_toy_linear_data(); }
@@ -98,7 +117,7 @@ public:
 };
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
-                         MakeAdaptedGaussianProcess>
+                         MakeAdaptedGaussianProcess, MakeRansacGaussianProcess>
     ExampleModels;
 
 TYPED_TEST_CASE_P(RegressionModelTester);

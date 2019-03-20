@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_CORE_PRIORS_H
 #define ALBATROSS_CORE_PRIORS_H
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/types/polymorphic.hpp>
-
 namespace albatross {
 
 constexpr double LOG_2PI_ = 1.8378770664093453;

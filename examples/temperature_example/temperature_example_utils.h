@@ -14,16 +14,10 @@
 #define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
 #include "csv.h"
-#include <Eigen/Core>
 #include <fstream>
-#include <iostream>
-#include <random>
-#include <sstream>
 
-#include "core/model.h"
-#include "covariance_functions/covariance_functions.h"
+#include "GP"
 #include "csv_utils.h"
-#include "models/ransac_gp.h"
 
 namespace albatross {
 
@@ -83,7 +77,7 @@ public:
 
   std::string get_name() const { return "elevation_scaled"; }
 
-  double operator()(const Station &x) const {
+  double _call_impl((const Station &x) const {
     // This is the negative orientation rectifier function which
     // allows lower elevations to have a higher variance.
     double center = this->get_param_value("elevation_scaling_center");
@@ -126,9 +120,10 @@ inline bool file_exists(const std::string &name) {
   return f.good();
 }
 
+template <typename ModelType, typename FitType>
 void write_predictions(const std::string output_path,
                        const std::vector<Station> features,
-                       const albatross::RegressionModel<Station> &model) {
+                       const FitModel<ModelType, FitType> &fit_model) {
 
   std::ofstream ostream;
   ostream.open(output_path);
@@ -138,7 +133,7 @@ void write_predictions(const std::string output_path,
 
   albatross::RegressionDataset<Station> dataset(features, targets);
 
-  const auto predictions = model.predict<MarginalDistribution>(features);
+  const auto predictions = fit_model.predict(features).marginal();
   albatross::write_to_csv(ostream, dataset, predictions);
 }
 

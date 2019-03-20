@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) 2019 Swift Navigation Inc.
+ * Contact: Swift Navigation <dev@swiftnav.com>
+ *
+ * This source is subject to the license found in the file 'LICENSE' which must
+ * be distributed together with this source. All other rights reserved.
+ *
+ * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+#ifndef ALBATROSS_COVARIANCE_FUNCTIONS_H
+#define ALBATROSS_COVARIANCE_FUNCTIONS_H
+
+#include "Common"
+
+#include "core/declarations.h"
+#include "core/traits.h"
+#include "core/priors.h"
+#include "core/parameter_handling_mixin.h"
+#include "core/parameter_macros.h"
+
+#include "covariance_functions/traits.h"
+#include "covariance_functions/covariance_function.h"
+#include "covariance_functions/call_trace.h"
+#include "covariance_functions/distance_metrics.h"
+#include "covariance_functions/noise.h"
+#include "covariance_functions/polynomials.h"
+#include "covariance_functions/radial.h"
+#include "covariance_functions/scaling_function.h"
+
+#endif

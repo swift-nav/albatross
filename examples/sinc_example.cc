@@ -10,11 +10,15 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "evaluate.h"
-#include "example_utils.h"
 #include "gflags/gflags.h"
-#include "tune.h"
-#include <functional>
+
+#include "csv.h"
+#include <fstream>
+#include <iostream>
+
+#include "sinc_example_utils.h"
+
+#include "Tune"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
@@ -23,24 +27,20 @@ DEFINE_bool(tune, false, "a flag indication parameters should be tuned first.");
 
 using albatross::ParameterStore;
 using albatross::RegressionDataset;
-using albatross::RegressionModelCreator;
-using albatross::TuningMetric;
-using albatross::TuneModelConfig;
-using albatross::tune_regression_model;
+using albatross::get_tuner;
 
-albatross::ParameterStore
-tune_model(RegressionModelCreator<double> &model_creator,
-           RegressionDataset<double> &data) {
+template <typename ModelType>
+albatross::ParameterStore tune_model(ModelType &model,
+                                     RegressionDataset<double> &data) {
   /*
    * Now we tune the model by finding the hyper parameters that
    * maximize the likelihood (or minimize the negative log likelihood).
    */
   std::cout << "Tuning the model." << std::endl;
 
-  TuningMetric<double> metric = albatross::loo_nll;
+  albatross::LeaveOneOutLikelihood<> loo_nll;
 
-  TuneModelConfig<double> config(model_creator, data, metric);
-  return tune_regression_model<double>(config);
+  return get_tuner(model, loo_nll, data).tune();
 }
 
 int main(int argc, char *argv[]) {
@@ -52,6 +52,9 @@ int main(int argc, char *argv[]) {
   const double high = 13.;
   const double meas_noise = 1.;
 
+  if (FLAGS_input == "") {
+    FLAGS_input = "input.csv";
+  }
   maybe_create_training_data(FLAGS_input, n, low, high, meas_noise);
 
   using namespace albatross;
@@ -70,30 +73,18 @@ int main(int argc, char *argv[]) {
 
   std::cout << cov.pretty_string() << std::endl;
 
-  RegressionModelCreator<double> model_creator = [&]() {
-    /*
-     * A side effect of having statically composable covariance
-     * functions is that we don't explicitly know the type of the
-     * resulting Gaussian process, so to instantiate the model
-     * we need to ride off of template inferrence using a helper
-     * function.
-     */
-    auto model = gp_pointer_from_covariance<double>(cov);
-    return model;
-  };
-
-  auto model = model_creator();
+  auto model = gp_from_covariance(cov);
 
   if (FLAGS_tune) {
-    model->set_params(tune_model(model_creator, data));
+    model.set_params(tune_model(model, data));
   }
 
-  std::cout << pretty_param_details(model->get_params()) << std::endl;
-  model->fit(data);
+  std::cout << pretty_param_details(model.get_params()) << std::endl;
+  const auto fit_model = model.fit(data);
 
   /*
    * Make predictions at a bunch of locations which we can then
    * visualize if desired.
    */
-  write_predictions_to_csv(FLAGS_output, model.get(), low, high);
+  write_predictions_to_csv(FLAGS_output, fit_model, low, high);
 }

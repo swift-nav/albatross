@@ -9,9 +9,9 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-#include "assert.h"
-#include "random_utils.h"
 #include <gtest/gtest.h>
+
+#include "Common"
 
 namespace albatross {
 
