@@ -10,10 +10,20 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "core/traits.h"
+#include "CovarianceFunctions"
+
 #include <gtest/gtest.h>
 
 namespace albatross {
+
+class Complete {};
+
+class Incomplete;
+
+TEST(test_traits_covariance, test_is_complete) {
+  EXPECT_TRUE(bool(is_complete<Complete>::value));
+  EXPECT_FALSE(bool(is_complete<Incomplete>::value));
+}
 
 struct X {};
 struct Y {};
@@ -35,7 +45,7 @@ class HasPrivateCallOperator {
 
 class HasNoCallOperator {};
 
-TEST(test_traits, test_has_call_operator) {
+TEST(test_traits_covariance, test_has_call_operator) {
   EXPECT_TRUE(bool(has_call_operator<HasPublicCallOperator, X, Y>::value));
   EXPECT_FALSE(bool(has_call_operator<HasPrivateCallOperator, X, Y>::value));
   EXPECT_FALSE(bool(has_call_operator<HasProtectedCallOperator, X, Y>::value));
@@ -44,21 +54,21 @@ TEST(test_traits, test_has_call_operator) {
 
 class HasPublicCallImpl {
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallImpl {
 protected:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasPrivateCallImpl {
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasNoCallImpl {};
 
-TEST(test_traits, test_has_any_call_impl_) {
+TEST(test_traits_covariance, test_has_any_call_impl) {
   EXPECT_TRUE(bool(has_any_call_impl<HasPublicCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasProtectedCallImpl>::value));
   EXPECT_TRUE(bool(has_any_call_impl<HasPrivateCallImpl>::value));
@@ -66,22 +76,23 @@ TEST(test_traits, test_has_any_call_impl_) {
 }
 
 class HasMultiplePublicCallImpl {
+
 public:
-  double call_impl_(const X &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 1.; };
 
-  double call_impl_(const X &, const X &) const { return 1.; };
+  double _call_impl(const X &, const X &) const { return 1.; };
 
-  double call_impl_(const Y &, const Y &) const { return 1.; };
+  double _call_impl(const Y &, const Y &) const { return 1.; };
 
   // These are all invalid:
-  double call_impl_(const Z &, const X &) { return 1.; };
+  double _call_impl(const Z &, const X &) { return 1.; };
 
-  double call_impl_(Z &, const Y &) const { return 1.; };
+  double _call_impl(Z &, const Y &) const { return 1.; };
 
-  int call_impl_(const Z &, const Z &) const { return 1.; };
+  int _call_impl(const Z &, const Z &) const { return 1.; };
 };
 
-TEST(test_traits, test_has_valid_call_impl) {
+TEST(test_traits_covariance, test_has_valid_call_impl) {
   EXPECT_TRUE(bool(has_valid_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_valid_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_TRUE(
@@ -98,9 +109,9 @@ TEST(test_traits, test_has_valid_call_impl) {
 
 /*
  * Here we test to make sure we can identify situations where
- * call_impl_ has been defined but not necessarily properly.
+ * _call_impl( has been defined but not necessarily properly.
  */
-TEST(test_traits, test_has_possible_call_impl) {
+TEST(test_traits_covariance, test_has_possible_call_impl) {
   EXPECT_TRUE(bool(has_possible_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_possible_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_TRUE(
@@ -115,7 +126,7 @@ TEST(test_traits, test_has_possible_call_impl) {
       bool(has_possible_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
 }
 
-TEST(test_traits, test_has_invalid_call_impl) {
+TEST(test_traits_covariance, test_has_invalid_call_impl) {
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, Y, X>::value));
   EXPECT_FALSE(
@@ -128,75 +139,6 @@ TEST(test_traits, test_has_invalid_call_impl) {
       bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Y>::value));
   EXPECT_TRUE(
       bool(has_invalid_call_impl<HasMultiplePublicCallImpl, Z, Z>::value));
-}
-
-class ValidInOutSerializer {
-public:
-  template <typename Archive> void serialize(Archive &){};
-};
-
-class ValidSaveLoadSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
-
-  template <typename Archive> void load(Archive &){};
-};
-
-class ValidInSerializer {
-public:
-  template <typename Archive> void load(Archive &){};
-};
-
-class ValidOutSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
-};
-
-class InValidInOutSerializer {};
-
-TEST(test_traits, test_valid_in_out_serializer) {
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_in_out_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidInSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_in_out_serializer<InValidInOutSerializer, X>::value));
-}
-
-TEST(test_traits, test_valid_input_serializer) {
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_input_serializer<ValidInSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_input_serializer<InValidInOutSerializer, X>::value));
-}
-
-TEST(test_traits, test_valid_output_serializer) {
-  EXPECT_TRUE(bool(valid_output_serializer<ValidInOutSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidSaveLoadSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<ValidInSerializer, X>::value));
-  EXPECT_TRUE(bool(valid_output_serializer<ValidOutSerializer, X>::value));
-  EXPECT_FALSE(bool(valid_output_serializer<InValidInOutSerializer, X>::value));
-}
-
-class Complete {};
-
-class Incomplete;
-
-TEST(test_traits, test_is_complete) {
-  EXPECT_TRUE(bool(is_complete<Complete>::value));
-  EXPECT_FALSE(bool(is_complete<Incomplete>::value));
-}
-
-class HasName {
-public:
-  std::string name_;
-};
-
-class HasNoName {};
-
-TEST(test_traits, test_has_name) {
-  EXPECT_TRUE(bool(has_name_<HasName>::value));
-  EXPECT_FALSE(bool(has_name_<HasNoName>::value));
 }
 
 } // namespace albatross

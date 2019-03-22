@@ -9,14 +9,10 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-
-#include "core/parameter_macros.h"
-#include "covariance_functions/covariance_functions.h"
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <iostream>
-#include <vector>
+
+#include "Core"
+#include "CovarianceFunctions"
 
 namespace albatross {
 
@@ -106,7 +102,7 @@ public:
 
   ALBATROSS_DECLARE_PARAMS(foo, bar)
 
-  double call_impl_(const double &, const double &) const {
+  double _call_impl(const double &, const double &) const {
     return foo.value + bar.value;
   }
 

@@ -13,22 +13,14 @@
 #ifndef ALBATROSS_MODELS_LEAST_SQUARES_H
 #define ALBATROSS_MODELS_LEAST_SQUARES_H
 
-#include "core/model_adapter.h"
-#include "core/serialize.h"
-#include <Eigen/Dense>
-#include <cmath>
-#include <gtest/gtest.h>
-#include <iostream>
-#include <random>
-
 namespace albatross {
 
-struct LeastSquaresFit {
+template <typename ImplType> class LeastSquares;
+
+template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
-  bool operator==(const LeastSquaresFit &other) const {
-    return coefs == other.coefs;
-  }
+  bool operator==(const Fit &other) const { return (coefs == other.coefs); }
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(coefs);
@@ -36,22 +28,22 @@ struct LeastSquaresFit {
 };
 
 /*
- * This model supports a family of RegressionModels which consist of
+ * This model supports a family of models which consist of
  * first creating a design matrix, A, then solving least squares.  Ie,
  *
  *   min_x |y - Ax|_2^2
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-class LeastSquaresRegression
-    : public SerializableRegressionModel<Eigen::VectorXd, LeastSquaresFit> {
+template <typename ImplType>
+class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
 public:
-  LeastSquaresRegression(){};
-  std::string get_name() const override { return "least_squares"; };
+  using FitType = Fit<LeastSquares<ImplType>>;
 
-  LeastSquaresFit
-  serializable_fit_(const std::vector<Eigen::VectorXd> &features,
-                    const MarginalDistribution &targets) const override {
+  std::string get_name() const { return "least_squares"; }
+
+  FitType _fit_impl(const std::vector<Eigen::VectorXd> &features,
+                    const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
     assert(!targets.has_covariance());
@@ -62,36 +54,57 @@ public:
     for (int i = 0; i < m; i++) {
       A.row(i) = features[static_cast<std::size_t>(i)];
     }
-    // Solve for the coefficients using the QR decomposition.
-    LeastSquaresFit model_fit = {least_squares_solver(A, targets.mean)};
+
+    FitType model_fit = {least_squares_solver(A, targets.mean)};
     return model_fit;
   }
 
-protected:
-  Eigen::VectorXd
-  predict_mean_(const std::vector<Eigen::VectorXd> &features) const override {
+  template <typename FeatureType,
+            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
+                                    int>::type = 0>
+  FitType _fit_impl(const std::vector<FeatureType> &features,
+                    const MarginalDistribution &targets) const {
+    return impl()._fit_impl(features, targets);
+  }
+
+  Eigen::VectorXd _predict_impl(const std::vector<Eigen::VectorXd> &features,
+                                const FitType &least_squares_fit,
+                                PredictTypeIdentity<Eigen::VectorXd>) const {
     std::size_t n = features.size();
     Eigen::VectorXd mean(n);
     for (std::size_t i = 0; i < n; i++) {
       mean(static_cast<Eigen::Index>(i)) =
-          features[i].dot(this->model_fit_.coefs);
+          features[i].dot(least_squares_fit.coefs);
     }
-    return mean;
+    return Eigen::VectorXd(mean);
   }
 
-  JointDistribution
-  predict_(const std::vector<Eigen::VectorXd> &features) const override {
-    return JointDistribution(predict_mean_(features));
+  template <
+      typename FeatureType, typename FitType, typename PredictType,
+      typename std::enable_if<
+          has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
+          int>::type = 0>
+  PredictType _predict_impl(const std::vector<FeatureType> &features,
+                            const FitType &least_squares_fit,
+                            PredictTypeIdentity<PredictType>) const {
+    return impl()._predict_impl(features, least_squares_fit,
+                                PredictTypeIdentity<PredictType>());
   }
 
   /*
    * This lets you customize the least squares approach if need be,
    * default uses the QR decomposition.
    */
-  virtual Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
-                                               const Eigen::VectorXd &b) const {
+  Eigen::VectorXd least_squares_solver(const Eigen::MatrixXd &A,
+                                       const Eigen::VectorXd &b) const {
     return A.colPivHouseholderQr().solve(b);
   }
+
+  /*
+   * CRTP Helpers
+   */
+  ImplType &impl() { return *static_cast<ImplType *>(this); }
+  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
 };
 
 /*
@@ -103,39 +116,40 @@ protected:
  * Setup like this the resulting least squares solve will represent
  * an offset and slope.
  */
-using LinearRegressionBase =
-    AdaptedRegressionModel<double, LeastSquaresRegression>;
-
-class LinearRegression : public LinearRegressionBase {
+class LinearRegression : public LeastSquares<LinearRegression> {
 
 public:
-  LinearRegression(){};
-  std::string get_name() const override { return "linear_regression"; };
+  using Base = LeastSquares<LinearRegression>;
 
-  Eigen::VectorXd convert_feature(const double &x) const override {
+  std::string get_name() const { return "linear_regression"; }
+
+  Eigen::VectorXd convert_feature(const double &f) const {
     Eigen::VectorXd converted(2);
-    converted << 1., x;
+    converted << 1., f;
     return converted;
   }
 
-  /*
-   * save/load methods are inherited from the SerializableRegressionModel,
-   * but by defining them here and explicitly showing the inheritence
-   * through the use of `base_class` we can make use of cereal's
-   * polymorphic serialization.
-   */
-  template <class Archive> void save(Archive &archive) const {
-    archive(cereal::make_nvp("linear_regression",
-                             cereal::base_class<LinearRegressionBase>(this)));
+  std::vector<Eigen::VectorXd>
+  convert_features(const std::vector<double> &features) const {
+    std::vector<Eigen::VectorXd> output;
+    for (const auto &f : features) {
+      output.emplace_back(convert_feature(f));
+    }
+    return output;
   }
 
-  template <class Archive> void load(Archive &archive) {
-    archive(cereal::make_nvp("linear_regression",
-                             cereal::base_class<LinearRegressionBase>(this)));
+  Base::FitType _fit_impl(const std::vector<double> &features,
+                          const MarginalDistribution &targets) const {
+    return Base::_fit_impl(convert_features(features), targets);
+  }
+
+  Eigen::VectorXd _predict_impl(const std::vector<double> &features,
+                                const Base::FitType &least_squares_fit,
+                                PredictTypeIdentity<Eigen::VectorXd>) const {
+    return Base::_predict_impl(convert_features(features), least_squares_fit,
+                               PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
 } // namespace albatross
-
-CEREAL_REGISTER_TYPE(albatross::LinearRegression);
 
 #endif

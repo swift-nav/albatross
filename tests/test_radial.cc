@@ -10,13 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "covariance_functions/covariance_functions.h"
-#include "evaluate.h"
-#include "models/gp.h"
-#include "models/least_squares.h"
-#include "test_utils.h"
-#include <cereal/archives/json.hpp>
 #include <gtest/gtest.h>
+
+#include "test_utils.h"
+
+#include "CovarianceFunctions"
 
 namespace albatross {
 

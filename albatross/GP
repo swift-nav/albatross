@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2019 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,13 +10,14 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTIONS_H
-#define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTIONS_H
+#ifndef ALBATROSS_GP_H
+#define ALBATROSS_GP_H
 
-#include "covariance_function.h"
-#include "noise.h"
-#include "polynomials.h"
-#include "radial.h"
-#include "scaling_function.h"
+#include "CovarianceFunctions"
+#include "Evaluation"
+
+#include "eigen/serializable_ldlt.h"
+#include "evaluation/cross_validation_utils.h"
+#include "models/gp.h"
 
 #endif

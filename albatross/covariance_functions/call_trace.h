@@ -160,7 +160,7 @@ public:
   template <typename X, typename Y>
   std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
     std::vector<CallAndValue> calls;
-    calls.push_back({SumOfCovarianceFunctions<LHS, RHS>().name_, eval(x, y)});
+    calls.push_back({SumOfCovarianceFunctions<LHS, RHS>().name(), eval(x, y)});
 
     std::vector<CallAndValue> lhs_calls =
         CallTrace<LHS>(this->cov_func_.lhs_).get_trace(x, y);
@@ -207,7 +207,7 @@ public:
   std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
     std::vector<CallAndValue> calls;
     calls.push_back(
-        {ProductOfCovarianceFunctions<LHS, RHS>().name_, eval(x, y)});
+        {ProductOfCovarianceFunctions<LHS, RHS>().name(), eval(x, y)});
 
     std::vector<CallAndValue> lhs_calls =
         CallTrace<LHS>(this->cov_func_.lhs_).get_trace(x, y);

@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_POLYNOMIALS_H
 
-#include "covariance_function.h"
-
 namespace albatross {
 
 constexpr double default_sigma = 100.;
@@ -32,13 +30,15 @@ struct ConstantTerm {};
  */
 class Constant : public CovarianceFunction<Constant> {
 public:
-  Constant(double sigma_constant_ = default_sigma) : name_("constant") {
+  Constant(double sigma_constant_ = default_sigma) {
     sigma_constant = {sigma_constant_, std::make_shared<NonNegativePrior>()};
   };
 
   ALBATROSS_DECLARE_PARAMS(sigma_constant);
 
   ~Constant(){};
+
+  std::string name() const { return "constant"; }
 
   template <typename X>
   std::vector<ConstantTerm>
@@ -54,12 +54,10 @@ public:
    * so you can move one if you move the rest the same amount.
    */
   template <typename X, typename Y>
-  double call_impl_(const X &x __attribute__((unused)),
+  double _call_impl(const X &x __attribute__((unused)),
                     const Y &y __attribute__((unused))) const {
     return sigma_constant.value * sigma_constant.value;
   }
-
-  const std::string name_;
 };
 
 template <int order>
@@ -71,12 +69,13 @@ public:
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
     }
-    name_ = "polynomial_" + std::to_string(order);
   };
+
+  std::string name() const { return "polynomial_" + std::to_string(order); }
 
   ~Polynomial(){};
 
-  double call_impl_(const double &x, const double &y) const {
+  double _call_impl(const double &x, const double &y) const {
     double cov = 0.;
     for (int i = 0; i < order + 1; i++) {
       const double sigma = this->get_param_value(param_names_.at(i));
@@ -85,8 +84,6 @@ public:
     }
     return cov;
   }
-
-  std::string name_;
 
 private:
   std::map<int, std::string> param_names_;

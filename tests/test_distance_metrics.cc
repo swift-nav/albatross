@@ -10,13 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "covariance_functions/distance_metrics.h"
-#include "test_utils.h"
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <iostream>
-#include <vector>
+
+#include "CovarianceFunctions"
+
+#include "test_utils.h"
 
 namespace albatross {
 

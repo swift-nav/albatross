@@ -13,10 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_SCALING_FUNCTION_H
 
-#include "covariance_function.h"
-#include <sstream>
-#include <utility>
-
 namespace albatross {
 
 class ScalingFunction : public ParameterHandlingMixin {
@@ -26,7 +22,7 @@ public:
   // A scaling function should also implement calls
   // for whichever types it is intended to scale using
   // the signature:
-  //   double call_impl_(const X &x) const;
+  //   double _call_impl(const X &x) const;
 };
 
 /*
@@ -62,13 +58,11 @@ public:
 template <typename ScalingFunction>
 class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
 public:
-  ScalingTerm() : name_(), scaling_function_() {
-    name_ = scaling_function_.get_name();
-  };
+  ScalingTerm() : scaling_function_(){};
 
-  ScalingTerm(const ScalingFunction &func) : name_(), scaling_function_(func) {
-    name_ = scaling_function_.get_name();
-  };
+  ScalingTerm(const ScalingFunction &func) : scaling_function_(func){};
+
+  std::string get_name() const { return scaling_function_.get_name(); }
 
   void set_params(const ParameterStore &params) {
     scaling_function_.set_params(params);
@@ -96,9 +90,9 @@ public:
                 (has_valid_call_impl<ScalingFunction, X &>::value &&
                  has_valid_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &y) const {
-    return this->scaling_function_.call_impl_(x) *
-           this->scaling_function_.call_impl_(y);
+  double _call_impl(const X &x, const Y &y) const {
+    return this->scaling_function_._call_impl(x) *
+           this->scaling_function_._call_impl(y);
   }
 
   /*
@@ -109,8 +103,8 @@ public:
                 (!has_valid_call_impl<ScalingFunction, X &>::value &&
                  has_valid_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &, const Y &y) const {
-    return this->scaling_function_.call_impl_(y);
+  double _call_impl(const X &, const Y &y) const {
+    return this->scaling_function_._call_impl(y);
   }
 
   template <typename X, typename Y,
@@ -118,11 +112,9 @@ public:
                 (has_valid_call_impl<ScalingFunction, X &>::value &&
                  !has_valid_call_impl<ScalingFunction, Y &>::value),
                 int>::type = 0>
-  double call_impl_(const X &x, const Y &) const {
-    return this->scaling_function_.call_impl_(x);
+  double _call_impl(const X &x, const Y &) const {
+    return this->scaling_function_._call_impl(x);
   }
-
-  std::string name_;
 
 private:
   ScalingFunction scaling_function_;

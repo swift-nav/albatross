@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_RADIAL_H
 
-#include <sstream>
-
-#include "covariance_function.h"
-#include "distance_metrics.h"
-
 constexpr double default_length_scale = 100000.;
 constexpr double default_radial_sigma = 10.;
 
@@ -26,6 +21,10 @@ namespace albatross {
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
@@ -50,22 +49,23 @@ public:
 
   SquaredExponential(double length_scale_ = default_length_scale,
                      double sigma_squared_exponential_ = default_radial_sigma)
-      : distance_metric_(), name_() {
+      : distance_metric_() {
     squared_exponential_length_scale = {length_scale_,
                                         std::make_shared<PositivePrior>()};
     sigma_squared_exponential = {sigma_squared_exponential_,
                                  std::make_shared<NonNegativePrior>()};
-    std::ostringstream oss;
-    oss << "squared_exponential[" << this->distance_metric_.get_name() << "]";
-    name_ = oss.str();
   };
+
+  std::string name() const {
+    return "squared_exponential[" + this->distance_metric_.get_name() + "]";
+  }
 
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double call_impl_(const X &x, const X &y) const {
+  double _call_impl(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     return squared_exponential_covariance(
         distance, squared_exponential_length_scale.value,
@@ -73,11 +73,14 @@ public:
   }
 
   DistanceMetricType distance_metric_;
-  std::string name_;
 };
 
 inline double exponential_covariance(double distance, double length_scale,
                                      double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
   return sigma * sigma * exp(-fabs(distance / length_scale));
 }
 
@@ -92,15 +95,16 @@ public:
 
   Exponential(double length_scale_ = default_length_scale,
               double sigma_exponential_ = default_radial_sigma)
-      : distance_metric_(), name_() {
+      : distance_metric_() {
     exponential_length_scale = {length_scale_,
                                 std::make_shared<PositivePrior>()};
     sigma_exponential = {sigma_exponential_,
                          std::make_shared<NonNegativePrior>()};
-    std::ostringstream oss;
-    oss << "exponential[" << this->distance_metric_.get_name() << "]";
-    name_ = oss.str();
   };
+
+  std::string name() const {
+    return "exponential[" + this->distance_metric_.get_name() + "]";
+  }
 
   ~Exponential(){};
 
@@ -109,14 +113,13 @@ public:
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double call_impl_(const X &x, const X &y) const {
+  double _call_impl(const X &x, const X &y) const {
     double distance = this->distance_metric_(x, y);
     return exponential_covariance(distance, exponential_length_scale.value,
                                   sigma_exponential.value);
   }
 
   DistanceMetricType distance_metric_;
-  std::string name_;
 };
 
 } // namespace albatross

@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_NOISE_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_NOISE_H
 
-#include "covariance_function.h"
-
 constexpr double default_sigma_noise = 0.1;
 
 namespace albatross {
@@ -22,7 +20,7 @@ namespace albatross {
 template <typename Observed>
 class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
 public:
-  IndependentNoise(double sigma_noise = 0.1) : name_("independent_noise") {
+  IndependentNoise(double sigma_noise = 0.1) {
     sigma_independent_noise = {sigma_noise,
                                std::make_shared<NonNegativePrior>()};
   };
@@ -31,20 +29,19 @@ public:
 
   ~IndependentNoise(){};
 
-  std::string get_name() const { return "independent_noise"; }
+  std::string name() const { return "independent_noise"; }
 
   /*
    * This will create a scaled identity matrix, but only between
    * two different observations defined by the Observed type.
    */
-  double call_impl_(const Observed &x, const Observed &y) const {
+  double _call_impl(const Observed &x, const Observed &y) const {
     if (x == y) {
       return sigma_independent_noise.value * sigma_independent_noise.value;
     } else {
       return 0.;
     }
   }
-  std::string name_;
 };
 } // namespace albatross
 
