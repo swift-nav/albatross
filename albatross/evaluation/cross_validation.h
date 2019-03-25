@@ -35,7 +35,7 @@ public:
       typename DummyType = ModelType,
       typename std::enable_if<has_valid_cv_mean<DummyType, FeatureType>::value,
                               int>::type = 0>
-  std::vector<Eigen::VectorXd> means() const {
+  std::map<std::string, Eigen::VectorXd> means() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<Eigen::VectorXd>());
   }
@@ -48,7 +48,7 @@ public:
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
                     !has_valid_cv_mean<DummyType, FeatureType>::value,
                 int>::type = 0>
-  std::vector<Eigen::VectorXd> means() const {
+  std::map<std::string, Eigen::VectorXd> means() const {
     const auto folds = folds_from_fold_indexer(dataset_, indexer_);
     const auto predictions = albatross::get_predictions(model_, folds);
     return get_means(predictions);
@@ -62,7 +62,7 @@ public:
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
                     !has_valid_cv_mean<DummyType, FeatureType>::value,
                 int>::type = 0>
-  std::vector<Eigen::VectorXd> means() const = delete;
+  std::map<std::string, Eigen::VectorXd> means() const = delete;
 
   template <typename DummyType = ModelType,
             typename std::enable_if<
@@ -94,7 +94,7 @@ public:
       typename DummyType = ModelType,
       typename std::enable_if<
           has_valid_cv_marginal<DummyType, FeatureType>::value, int>::type = 0>
-  std::vector<MarginalDistribution> marginals() const {
+  std::map<std::string, MarginalDistribution> marginals() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<MarginalDistribution>());
   }
@@ -107,7 +107,7 @@ public:
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
                     !has_valid_cv_marginal<DummyType, FeatureType>::value,
                 int>::type = 0>
-  std::vector<MarginalDistribution> marginals() const {
+  std::map<std::string, MarginalDistribution> marginals() const {
     const auto folds = folds_from_fold_indexer(dataset_, indexer_);
     const auto predictions = albatross::get_predictions(model_, folds);
     return get_marginals(predictions);
@@ -153,7 +153,7 @@ public:
       typename DummyType = ModelType,
       typename std::enable_if<has_valid_cv_joint<DummyType, FeatureType>::value,
                               int>::type = 0>
-  std::vector<JointDistribution> joints() const {
+  std::map<std::string, JointDistribution> joints() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<JointDistribution>());
   }
@@ -166,7 +166,7 @@ public:
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
                     !has_valid_cv_joint<DummyType, FeatureType>::value,
                 int>::type = 0>
-  std::vector<JointDistribution> joints() const {
+  std::map<std::string, JointDistribution> joints() const {
     const auto folds = folds_from_fold_indexer(dataset_, indexer_);
     const auto predictions = albatross::get_predictions(model_, folds);
     return get_joints(predictions);
@@ -180,7 +180,7 @@ public:
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
                     !has_valid_cv_joint<DummyType, FeatureType>::value,
                 int>::type = 0>
-  std::vector<JointDistribution> joints() const = delete;
+  std::map<std::string, JointDistribution> joints() const = delete;
 
   template <typename DummyType = ModelType>
   JointDistribution joint() const =
@@ -197,19 +197,19 @@ private:
 
   auto get(get_type<Eigen::VectorXd>) const { return this->mean(); }
 
-  auto get(get_type<std::vector<Eigen::VectorXd>>) const {
+  auto get(get_type<std::map<std::string, Eigen::VectorXd>>) const {
     return this->means();
   }
 
   auto get(get_type<MarginalDistribution>) const { return this->marginal(); }
 
-  auto get(get_type<std::vector<MarginalDistribution>>) const {
+  auto get(get_type<std::map<std::string, MarginalDistribution>>) const {
     return this->marginals();
   }
 
   auto get(get_type<JointDistribution>) const { return this->joint(); }
 
-  auto get(get_type<std::vector<JointDistribution>>) const {
+  auto get(get_type<std::map<std::string, JointDistribution>>) const {
     return this->joints();
   }
 
@@ -281,7 +281,7 @@ public:
     const auto folds = folds_from_fold_indexer(dataset, indexer);
     const auto prediction = predict(dataset, indexer);
     const auto predictions =
-        prediction.template get<std::vector<RequiredPredictType>>();
+        prediction.template get<std::map<std::string, RequiredPredictType>>();
     return cross_validated_scores(metric, folds, predictions);
   }
 

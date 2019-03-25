@@ -27,7 +27,7 @@ class has_valid_cross_validated_predictions {
                     std::declval<const FoldIndexer &>(),
                     std::declval<PredictTypeIdentity<PredictType>>()))>
   static typename std::enable_if<
-      std::is_same<std::vector<PredictType>, ReturnType>::value,
+      std::is_same<std::map<std::string, PredictType>, ReturnType>::value,
       std::true_type>::type
   test(C *);
   template <typename> static std::false_type test(...);

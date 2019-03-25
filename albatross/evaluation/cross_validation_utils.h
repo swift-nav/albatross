@@ -21,9 +21,11 @@ get_predictions(const ModelType &model,
                 const std::vector<RegressionFold<FeatureType>> &folds) {
 
   using FitType = typename fit_type<ModelType, FeatureType>::type;
-  std::vector<Prediction<ModelType, FeatureType, FitType>> predictions;
+  std::map<std::string, Prediction<ModelType, FeatureType, FitType>>
+      predictions;
   for (const auto &fold : folds) {
-    predictions.emplace_back(
+    predictions.emplace(
+        fold.name,
         model.fit(fold.train_dataset).predict(fold.test_dataset.features));
   }
 
@@ -32,37 +34,37 @@ get_predictions(const ModelType &model,
 
 template <typename PredictType, typename Prediction>
 inline auto get_predict_types(
-    const std::vector<Prediction> &prediction_classes,
+    const std::map<std::string, Prediction> &prediction_classes,
     PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
-  std::vector<PredictType> predictions;
+  std::map<std::string, PredictType> predictions;
   for (const auto &pred : prediction_classes) {
-    predictions.emplace_back(pred.template get<PredictType>());
+    predictions.emplace(pred.first, pred.second.template get<PredictType>());
   }
   return predictions;
 }
 
 template <typename PredictionType>
-inline std::vector<Eigen::VectorXd>
-get_means(const std::vector<PredictionType> &predictions) {
+inline std::map<std::string, Eigen::VectorXd>
+get_means(const std::map<std::string, PredictionType> &predictions) {
   return get_predict_types<Eigen::VectorXd>(predictions);
 }
 
 template <typename PredictionType>
-inline std::vector<MarginalDistribution>
-get_marginals(const std::vector<PredictionType> &predictions) {
+inline std::map<std::string, MarginalDistribution>
+get_marginals(const std::map<std::string, PredictionType> &predictions) {
   return get_predict_types<MarginalDistribution>(predictions);
 }
 
 template <typename PredictionType>
-inline std::vector<JointDistribution>
-get_joints(const std::vector<PredictionType> &predictions) {
+inline std::map<std::string, JointDistribution>
+get_joints(const std::map<std::string, PredictionType> &predictions) {
   return get_predict_types<JointDistribution>(predictions);
 }
 
 template <typename FeatureType>
 inline Eigen::VectorXd concatenate_mean_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<Eigen::VectorXd> &means) {
+    const std::map<std::string, Eigen::VectorXd> &means) {
   assert(folds.size() == means.size());
 
   Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
@@ -70,9 +72,9 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (std::size_t i = 0; i < folds.size(); ++i) {
-    assert(means[i].size() ==
+    assert(means.at(folds[i].name).size() ==
            static_cast<Eigen::Index>(folds[i].test_dataset.size()));
-    set_subset(means[i], folds[i].test_indices, &pred);
+    set_subset(means.at(folds[i].name), folds[i].test_indices, &pred);
     number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
   }
   assert(number_filled == n);
@@ -82,14 +84,14 @@ inline Eigen::VectorXd concatenate_mean_predictions(
 template <typename FeatureType, typename PredType>
 inline Eigen::VectorXd concatenate_mean_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<PredType> &predictions) {
+    const std::map<std::string, PredType> &predictions) {
   return concatenate_mean_predictions(folds, get_means(predictions));
 }
 
 template <typename FeatureType>
 inline MarginalDistribution concatenate_marginal_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<MarginalDistribution> &marginals) {
+    const std::map<std::string, MarginalDistribution> &marginals) {
   assert(folds.size() == marginals.size());
 
   Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
@@ -99,10 +101,10 @@ inline MarginalDistribution concatenate_marginal_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (std::size_t i = 0; i < folds.size(); ++i) {
-    assert(marginals[i].size() == folds[i].test_dataset.size());
-    set_subset(marginals[i].mean, folds[i].test_indices, &mean);
-    set_subset(marginals[i].covariance.diagonal(), folds[i].test_indices,
-               &variance);
+    assert(marginals.at(folds[i].name).size() == folds[i].test_dataset.size());
+    set_subset(marginals.at(folds[i].name).mean, folds[i].test_indices, &mean);
+    set_subset(marginals.at(folds[i].name).covariance.diagonal(),
+               folds[i].test_indices, &variance);
     number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
   }
   assert(number_filled == n);
@@ -112,23 +114,24 @@ inline MarginalDistribution concatenate_marginal_predictions(
 template <typename FeatureType, typename PredType>
 inline MarginalDistribution concatenate_marginal_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::vector<PredType> &predictions) {
+    const std::map<std::string, PredType> &predictions) {
   return concatenate_marginal_predictions(folds, get_marginals(predictions));
 }
 
 template <typename EvaluationMetricType, typename FeatureType,
           typename PredictionType>
-Eigen::VectorXd
-cross_validated_scores(const EvaluationMetricType &metric,
-                       const std::vector<RegressionFold<FeatureType>> &folds,
-                       const std::vector<PredictionType> &predictions) {
+Eigen::VectorXd cross_validated_scores(
+    const EvaluationMetricType &metric,
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::map<std::string, PredictionType> &predictions) {
   assert(folds.size() == predictions.size());
   Eigen::Index n = static_cast<Eigen::Index>(predictions.size());
   Eigen::VectorXd output(n);
   for (Eigen::Index i = 0; i < n; ++i) {
     assert(static_cast<std::size_t>(folds[i].test_dataset.size()) ==
-           static_cast<std::size_t>(predictions[i].size()));
-    output[i] = metric(predictions[i], folds[i].test_dataset.targets);
+           static_cast<std::size_t>(predictions.at(folds[i].name).size()));
+    output[i] =
+        metric(predictions.at(folds[i].name), folds[i].test_dataset.targets);
   }
   return output;
 }
