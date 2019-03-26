@@ -25,64 +25,56 @@ struct Y {};
 class HasMeanPredictImpl {
 public:
   template <typename FeatureType>
-  std::vector<Eigen::VectorXd>
+  std::map<std::string, Eigen::VectorXd>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
                               const FoldIndexer &,
                               PredictTypeIdentity<Eigen::VectorXd>) const {
-    return {Eigen::VectorXd(0)};
+    return std::map<std::string, Eigen::VectorXd>();
   }
 };
 
 class HasMarginalPredictImpl {
 public:
   template <typename FeatureType>
-  std::vector<MarginalDistribution>
+  std::map<std::string, MarginalDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
                               const FoldIndexer &,
                               PredictTypeIdentity<MarginalDistribution>) const {
-
-    const auto mean = Eigen::VectorXd::Zero(0);
-    return {MarginalDistribution(mean)};
+    return std::map<std::string, MarginalDistribution>();
   }
 };
 
 class HasJointPredictImpl {
 public:
   template <typename FeatureType>
-  std::vector<JointDistribution>
+  std::map<std::string, JointDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
                               const FoldIndexer &,
                               PredictTypeIdentity<JointDistribution>) const {
-
-    const auto mean = Eigen::VectorXd::Zero(0);
-    return {JointDistribution(mean)};
+    return std::map<std::string, JointDistribution>();
   }
 };
 
 class HasAllPredictImpls {
 public:
-  std::vector<Eigen::VectorXd>
+  std::map<std::string, Eigen::VectorXd>
   cross_validated_predictions(const RegressionDataset<X> &, const FoldIndexer &,
                               PredictTypeIdentity<Eigen::VectorXd>) const {
-    return {Eigen::VectorXd(0)};
+    return std::map<std::string, Eigen::VectorXd>();
   }
 
   template <typename FeatureType>
-  std::vector<MarginalDistribution>
+  std::map<std::string, MarginalDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
                               const FoldIndexer &,
                               PredictTypeIdentity<MarginalDistribution>) const {
-
-    const auto mean = Eigen::VectorXd::Zero(0);
-    return {MarginalDistribution(mean)};
+    return std::map<std::string, MarginalDistribution>();
   }
 
-  std::vector<JointDistribution>
+  std::map<std::string, JointDistribution>
   cross_validated_predictions(const RegressionDataset<X> &, const FoldIndexer &,
                               PredictTypeIdentity<JointDistribution>) const {
-
-    const auto mean = Eigen::VectorXd::Zero(0);
-    return {JointDistribution(mean)};
+    return std::map<std::string, JointDistribution>();
   }
 };
 

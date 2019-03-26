@@ -80,7 +80,7 @@ TYPED_TEST_P(RegressionModelTester, test_loo_get_predictions) {
       model.cross_validate().get_predictions(dataset, leave_one_out);
 
   for (const auto &pred : predictions) {
-    expect_predict_variants_consistent(pred);
+    expect_predict_variants_consistent(pred.second);
   }
 }
 
