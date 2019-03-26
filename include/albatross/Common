@@ -34,8 +34,8 @@
 #include <vector>
 #include <numeric>
 
-#include "map_utils.h"
-#include "random_utils.h"
-#include "cereal/eigen.h"
+#include <albatross/utils/map_utils.h>
+#include <albatross/utils/random_utils.h>
+#include <albatross/cereal/eigen.h>
 
 #endif
