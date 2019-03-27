@@ -24,12 +24,66 @@ target_include_directories(albatross SYSTEM INTERFACE
   "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/"
   )
 
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -fexceptions -frtti")
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wpointer-arith -Wcast-align -Wformat=2 -Wredundant-decls ${CMAKE_CXX_FLAGS}")
-set("LOG_LEVEL=8")
-
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
 
 add_subdirectory(tests)
 add_subdirectory(examples)
+
+set(albatross_BINARIES
+  albatross_unit_tests
+  sinc_example
+  temperature_example
+  call_trace_example
+  inspection_example
+  )
+
+
+set(albatross_COMPILE_OPTIONS
+  -Werror
+  -Wall
+  -Wno-unused-value
+  -Wcast-align
+  -Wchar-subscripts
+  -Wcomment
+  -Wdisabled-optimization
+  -Wformat
+  -Wformat=2
+  -Wformat-nonliteral
+  -Wformat-security
+  -Wformat-y2k
+  -Wimport
+  -Winit-self
+  -Winvalid-pch
+  -Wmissing-braces
+  -Wmissing-field-initializers
+  -Wmissing-format-attribute
+  -Wmissing-include-dirs
+  -Wparentheses
+  -Wpointer-arith
+  -Wredundant-decls
+  -Wreturn-type
+  -Wsequence-point
+  -Wsign-compare
+  -Wstack-protector
+  -Wswitch
+  -Wtrigraphs
+  -Wuninitialized
+  -Wunknown-pragmas
+  -Wunused
+  -Wunused-function
+  -Wunused-label
+  -Wunused-variable
+  -Wunused-value
+  -Wunused-variable
+  -Wvolatile-register-var
+  -Wwrite-strings
+  )
+set_target_properties(
+  ${albatross_BINARIES}
+  PROPERTIES
+  CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON
+  )
+foreach(TARGET IN LISTS albatross_BINARIES)
+  target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
+endforeach()

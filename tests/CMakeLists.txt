@@ -44,7 +44,6 @@ target_link_libraries(albatross_unit_tests
   pthread
   gflags
   nlopt
-  m
   )
 add_custom_target(run_albatross_unit_tests ALL
   COMMAND albatross_unit_tests
