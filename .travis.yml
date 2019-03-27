@@ -23,13 +23,13 @@ matrix:
           - g++-6
           - libc++-dev
           - libc++abi-dev
-          - clang-3.8
-          - clang-format-3.8
-          - clang-tidy-3.8
+          - clang-4.0
+          - clang-format-4.0
+          - clang-tidy-4.0
           - libnlopt-dev
     env:
       - C_COMPILER=gcc-6 CXX_COMPILER=g++-6 COVERAGE=''
-  - compiler: clang-3.8
+  - compiler: clang-4.0
     addons:
       apt:
         sources:
@@ -37,12 +37,12 @@ matrix:
         packages:
           - libc++-dev
           - libc++abi-dev
-          - clang-3.8
-          - clang-format-3.8
-          - clang-tidy-3.8
+          - clang-4.0
+          - clang-format-4.0
+          - clang-tidy-4.0
           - libnlopt-dev
     env:
-      - C_COMPILER=clang-3.8 CXX_COMPILER=clang++-3.8 COVERAGE=''
+      - C_COMPILER=clang-4.0 CXX_COMPILER=clang++-4.0 COVERAGE=''
   - compiler: sphinx
     addons:
       apt:
