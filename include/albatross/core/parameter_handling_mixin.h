@@ -120,9 +120,8 @@ inline std::string pretty_param_details(const ParameterStore &params) {
        << " prior: " << std::setw(15) << prior_name << " bounds: ["
        << (pair.second.has_prior() ? pair.second.prior->lower_bound()
                                    : -INFINITY)
-       << ", "
-       << (pair.second.has_prior() ? pair.second.prior->upper_bound()
-                                   : INFINITY)
+       << ", " << (pair.second.has_prior() ? pair.second.prior->upper_bound()
+                                           : INFINITY)
        << "]" << std::endl;
   }
   return ss.str();

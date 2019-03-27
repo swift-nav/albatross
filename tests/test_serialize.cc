@@ -224,8 +224,9 @@ template <typename T> class model_types {
   static ModelType test_model(C *);
   template <typename> static void test_model(...);
 
-  template <typename C, typename DatasetType =
-                            decltype(std::declval<const T>().get_dataset())>
+  template <
+      typename C,
+      typename DatasetType = decltype(std::declval<const T>().get_dataset())>
   static typename feature_type<DatasetType>::type test_feature_type(C *);
   template <typename> static void test_feature_type(...);
 

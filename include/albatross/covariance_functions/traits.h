@@ -77,8 +77,9 @@ public:
  * case this trait can be used to warn the user.
  */
 template <typename T, typename... Args> class has_possible_call_impl {
-  template <typename C, typename = decltype(std::declval<C>()._call_impl(
-                            std::declval<Args &>()...))>
+  template <typename C,
+            typename = decltype(
+                std::declval<C>()._call_impl(std::declval<Args &>()...))>
   static std::true_type test(int);
   template <typename C> static std::false_type test(...);
 

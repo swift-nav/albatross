@@ -100,9 +100,10 @@ public:
  *                 MarginalDistribution &)`
  */
 template <typename T, typename FeatureType> class has_possible_fit {
-  template <typename C, typename = decltype(std::declval<C>()._fit_impl(
-                            std::declval<std::vector<FeatureType> &>(),
-                            std::declval<MarginalDistribution &>()))>
+  template <typename C,
+            typename = decltype(std::declval<C>()._fit_impl(
+                std::declval<std::vector<FeatureType> &>(),
+                std::declval<MarginalDistribution &>()))>
   static std::true_type test(C *);
   template <typename> static std::false_type test(...);
 

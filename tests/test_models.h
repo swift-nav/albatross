@@ -11,8 +11,8 @@
  */
 
 #include <albatross/GP>
-#include <albatross/Ransac>
 #include <albatross/LeastSquares>
+#include <albatross/Ransac>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"

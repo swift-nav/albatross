@@ -219,10 +219,11 @@ public:
    * types were attempted.
    */
 
-  template <typename X, typename std::enable_if<
-                            (!has_valid_call_impl<Derived, X &, X &>::value &&
-                             !has_possible_call_impl<Derived, X &, X &>::value),
-                            int>::type = 0>
+  template <typename X,
+            typename std::enable_if<
+                (!has_valid_call_impl<Derived, X &, X &>::value &&
+                 !has_possible_call_impl<Derived, X &, X &>::value),
+                int>::type = 0>
   // There don't appear to be any _call_impl( methods with signature
   // `double _call_impl(const X&, const X&) const`.
   double operator()(const X &x) const =
@@ -232,10 +233,11 @@ public:
    * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
    */
-  template <typename X, typename std::enable_if<
-                            (!has_valid_call_impl<Derived, X &, X &>::value &&
-                             has_invalid_call_impl<Derived, X &, X &>::value),
-                            int>::type = 0>
+  template <
+      typename X,
+      typename std::enable_if<(!has_valid_call_impl<Derived, X &, X &>::value &&
+                               has_invalid_call_impl<Derived, X &, X &>::value),
+                              int>::type = 0>
   // Here it seems there are no valid _call_impl( methods for these types
   // but there are some invalid ones.  Be sure that the _call_impl( is
   // defined in the form: `double _call_impl(const X&, const X&) const`.
