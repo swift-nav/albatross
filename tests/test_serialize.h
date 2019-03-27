@@ -71,4 +71,4 @@ TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_binary) {
   expect_roundtrip_serializable<cereal::BinaryInputArchive,
                                 cereal::BinaryOutputArchive, TypeParam>();
 }
-}
+} // namespace albatross

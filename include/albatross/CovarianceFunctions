@@ -13,21 +13,21 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_H
 
-#include "Common"
+#include <albatross/Common>
 
-#include "core/declarations.h"
-#include "core/traits.h"
-#include "core/priors.h"
-#include "core/parameter_handling_mixin.h"
-#include "core/parameter_macros.h"
+#include <albatross/core/declarations.h>
+#include <albatross/core/traits.h>
+#include <albatross/core/priors.h>
+#include <albatross/core/parameter_handling_mixin.h>
+#include <albatross/core/parameter_macros.h>
 
-#include "covariance_functions/traits.h"
-#include "covariance_functions/covariance_function.h"
-#include "covariance_functions/call_trace.h"
-#include "covariance_functions/distance_metrics.h"
-#include "covariance_functions/noise.h"
-#include "covariance_functions/polynomials.h"
-#include "covariance_functions/radial.h"
-#include "covariance_functions/scaling_function.h"
+#include <albatross/covariance_functions/traits.h>
+#include <albatross/covariance_functions/covariance_function.h>
+#include <albatross/covariance_functions/call_trace.h>
+#include <albatross/covariance_functions/distance_metrics.h>
+#include <albatross/covariance_functions/noise.h>
+#include <albatross/covariance_functions/polynomials.h>
+#include <albatross/covariance_functions/radial.h>
+#include <albatross/covariance_functions/scaling_function.h>
 
 #endif

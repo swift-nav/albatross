@@ -11,8 +11,8 @@
  */
 #include <gtest/gtest.h>
 
-#include "Core"
-#include "CovarianceFunctions"
+#include <albatross/Core>
+#include <albatross/CovarianceFunctions>
 
 namespace albatross {
 

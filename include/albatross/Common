@@ -33,8 +33,10 @@
 #include <memory>
 #include <vector>
 #include <numeric>
+#include <random>
 
 #include <albatross/utils/map_utils.h>
+#include <albatross/core/indexing.h>
 #include <albatross/utils/random_utils.h>
 #include <albatross/cereal/eigen.h>
 

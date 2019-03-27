@@ -10,24 +10,22 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "gflags/gflags.h"
-
-#include "csv.h"
+#include <albatross/Tune>
+#include <csv.h>
 #include <fstream>
+#include <gflags/gflags.h>
 #include <iostream>
 
 #include "sinc_example_utils.h"
-
-#include "Tune"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
 DEFINE_bool(tune, false, "a flag indication parameters should be tuned first.");
 
+using albatross::get_tuner;
 using albatross::ParameterStore;
 using albatross::RegressionDataset;
-using albatross::get_tuner;
 
 template <typename ModelType>
 albatross::ParameterStore tune_model(ModelType &model,

@@ -180,6 +180,6 @@ dataset_size_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
 
   return n + 1;
 }
-}
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_FOLDS_H */

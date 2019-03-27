@@ -10,13 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/GP>
+#include <albatross/Ransac>
+#include <albatross/models/least_squares.h>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
-
-#include "GP"
-#include "Ransac"
-#include "models/least_squares.h"
 
 namespace albatross {
 

@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "Dataset"
+#include <albatross/Dataset>
 #include <gtest/gtest.h>
 
 namespace albatross {

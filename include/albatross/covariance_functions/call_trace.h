@@ -228,5 +228,5 @@ template <typename Derived>
 inline CallTrace<Derived> CovarianceFunction<Derived>::call_trace() const {
   return CallTrace<Derived>(this->derived());
 };
-}
+} // namespace albatross
 #endif

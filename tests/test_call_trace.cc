@@ -9,8 +9,8 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-#include "Core"
-#include "CovarianceFunctions"
+#include <albatross/Core>
+#include <albatross/CovarianceFunctions>
 
 #include <gtest/gtest.h>
 

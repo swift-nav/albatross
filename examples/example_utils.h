@@ -13,12 +13,11 @@
 #ifndef ALBATROSS_EXAMPLE_UTILS_H
 #define ALBATROSS_EXAMPLE_UTILS_H
 
-#include "csv.h"
+#include <albatross/Core>
+#include <albatross/utils/csv_utils.h>
+#include <csv.h>
 #include <fstream>
 #include <iostream>
-
-#include "Core"
-#include "csv_utils.h"
 
 #define EXAMPLE_SLOPE_VALUE sqrt(2.)
 #define EXAMPLE_CONSTANT_VALUE 3.14159

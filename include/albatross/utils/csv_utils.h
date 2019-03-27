@@ -13,11 +13,8 @@
 #ifndef ALBATROSS_CSV_UTILS_H
 #define ALBATROSS_CSV_UTILS_H
 
-#include "core/model.h"
 #include <cereal/archives/xml.hpp>
-#include <sstream>
-
-#include "cereal/external/rapidxml/rapidxml.hpp"
+#include <cereal/external/rapidxml/rapidxml.hpp>
 
 /*
  * This contains some tools which facilitate writing datasets and
@@ -262,6 +259,6 @@ inline void write_to_csv(std::ostream &stream,
     }
   }
 }
-}
+} // namespace albatross
 
 #endif

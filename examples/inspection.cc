@@ -10,11 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "gflags/gflags.h"
+#include <albatross/GP>
+#include <gflags/gflags.h>
 
 #include "example_utils.h"
-
-#include "GP"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(n, "10", "number of training points to use.");

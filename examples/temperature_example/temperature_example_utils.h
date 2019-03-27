@@ -13,11 +13,10 @@
 #ifndef ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 #define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
-#include "csv.h"
+#include <albatross/GP>
+#include <albatross/utils/csv_utils.h>
+#include <csv.h>
 #include <fstream>
-
-#include "GP"
-#include "csv_utils.h"
 
 namespace albatross {
 

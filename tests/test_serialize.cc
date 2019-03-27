@@ -10,14 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/GP>
 #include <gtest/gtest.h>
 
 #include "test_models.h"
-#include "test_utils.h"
-
-#include "GP"
-
 #include "test_serialize.h"
+#include "test_utils.h"
 
 namespace albatross {
 

@@ -13,8 +13,8 @@
 
 #include "test_models.h"
 
-#include "Evaluation"
-#include "Ransac"
+#include <albatross/Evaluation>
+#include <albatross/Ransac>
 
 namespace albatross {
 

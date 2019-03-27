@@ -168,5 +168,5 @@ private:
   const FitType fit_;
   const std::vector<FeatureType> features_;
 };
-}
+} // namespace albatross
 #endif

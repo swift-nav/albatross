@@ -115,7 +115,7 @@ struct BaseWithPublicCallImpl {
 
 template <typename U>
 struct MultiInheritCallImpl : public U, public BaseWithPublicCallImpl {};
-}
+} // namespace detail
 
 template <typename U> class has_any_call_impl {
   template <typename T>
@@ -129,6 +129,6 @@ template <typename U> class has_any_call_impl {
 public:
   static constexpr bool value = decltype(test<U>(0))::value;
 };
-}
+} // namespace albatross
 
 #endif

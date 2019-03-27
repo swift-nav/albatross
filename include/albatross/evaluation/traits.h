@@ -47,6 +47,6 @@ using has_valid_cv_marginal =
 template <typename T, typename FeatureType>
 using has_valid_cv_joint =
     has_valid_cross_validated_predictions<T, FeatureType, JointDistribution>;
-}
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_TRAITS_H */

@@ -13,11 +13,11 @@
 #ifndef ALBATROSS_TUNE_INCLUDE_H
 #define ALBATROSS_TUNE_INCLUDE_H
 
-#include "Core"
-#include "Evaluation"
+#include <nlopt.hpp>
 
-#include "nlopt.hpp"
-#include "tuning_metrics.h"
-#include "tune.h"
+#include <albatross/Core>
+#include <albatross/Evaluation>
+#include <albatross/utils/tuning_metrics.h>
+#include <albatross/utils/tune.h>
 
 #endif

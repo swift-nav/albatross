@@ -13,11 +13,8 @@
 #ifndef ALBATROSS_TESTS_TEST_UTILS_H
 #define ALBATROSS_TESTS_TEST_UTILS_H
 
-#include "Core"
-
-#include "GP"
-
-#include <random>
+#include <albatross/Core>
+#include <albatross/GP>
 
 #include "mock_model.h"
 

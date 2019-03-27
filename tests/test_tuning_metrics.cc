@@ -10,10 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
-
-#include "Tune"
 #include "test_models.h"
+#include <albatross/Tune>
+#include <gtest/gtest.h>
 
 namespace albatross {
 

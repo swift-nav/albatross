@@ -119,6 +119,6 @@ mock_training_data(const int n = 10) {
   }
   return RegressionDataset<MockFeature>(features, targets);
 }
-}
+} // namespace albatross
 
 #endif
