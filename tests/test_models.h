@@ -12,7 +12,7 @@
 
 #include <albatross/GP>
 #include <albatross/Ransac>
-#include <albatross/models/least_squares.h>
+#include <albatross/LeastSquares>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"

@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Common>
+#include <albatross/Core>
 #include <albatross/eigen/serializable_ldlt.h>
 #include <gtest/gtest.h>
 

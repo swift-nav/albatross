@@ -13,11 +13,10 @@
 #ifndef ALBATROSS_GP_H
 #define ALBATROSS_GP_H
 
+#include "Core"
 #include "CovarianceFunctions"
-#include "Evaluation"
 
-#include "eigen/serializable_ldlt.h"
-#include "evaluation/cross_validation_utils.h"
-#include "models/gp.h"
+#include <albatross/eigen/serializable_ldlt.h>
+#include <albatross/models/gp.h>
 
 #endif

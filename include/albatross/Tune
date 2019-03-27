@@ -17,7 +17,7 @@
 
 #include <albatross/Core>
 #include <albatross/Evaluation>
-#include <albatross/utils/tuning_metrics.h>
-#include <albatross/utils/tune.h>
+#include <albatross/tune/tuning_metrics.h>
+#include <albatross/tune/tune.h>
 
 #endif

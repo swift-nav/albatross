@@ -10,11 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_LEAST_SQUARES_H
+#define ALBATROSS_LEAST_SQUARES_H
 
-#include <albatross/Distribution>
-
-#include <albatross/core/dataset.h>
+#include <albatross/models/least_squares.h>
 
 #endif

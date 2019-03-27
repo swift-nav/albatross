@@ -15,11 +15,11 @@
 
 #include "Common"
 
-#include "cereal/traits.h"
-#include "eigen/serializable_diagonal_matrix.h"
+#include <albatross/cereal/traits.h>
+#include <albatross/eigen/serializable_diagonal_matrix.h>
 
-#include "core/declarations.h"
-#include "core/indexing.h"
-#include "core/distribution.h"
+#include <albatross/core/declarations.h>
+#include <albatross/core/indexing.h>
+#include <albatross/core/distribution.h>
 
 #endif
