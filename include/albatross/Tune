@@ -15,8 +15,9 @@
 
 #include <nlopt.hpp>
 
-#include <albatross/Core>
-#include <albatross/Evaluation>
+#include "Core"
+#include "Evaluation"
+
 #include <albatross/tune/tuning_metrics.h>
 #include <albatross/tune/tune.h>
 

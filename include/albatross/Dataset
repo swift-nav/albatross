@@ -13,7 +13,7 @@
 #ifndef ALBATROSS_DATASET_H
 #define ALBATROSS_DATASET_H
 
-#include <albatross/Distribution>
+#include "Distribution"
 
 #include <albatross/core/dataset.h>
 

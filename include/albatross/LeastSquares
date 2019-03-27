@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_LEAST_SQUARES_H
 #define ALBATROSS_LEAST_SQUARES_H
 
+#include "Core"
+
 #include <albatross/models/least_squares.h>
 
 #endif
