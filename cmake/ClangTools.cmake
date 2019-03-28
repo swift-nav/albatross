@@ -22,8 +22,7 @@ endif(CMAKE_CROSSCOMPILING)
 set(CLANG_FORMAT_PATH "NOTSET" CACHE STRING "Absolute path to the clang-format executable")
 if("${CLANG_FORMAT_PATH}" STREQUAL "NOTSET")
   find_program(CLANG_FORMAT NAMES
-    clang-format-6.0
-    clang-format-4.0
+    clang-format-3.8
     )
   message(STATUS "Using clang format: ${CLANG_FORMAT}")
   if("${CLANG_FORMAT}" STREQUAL "CLANG_FORMAT-NOTFOUND")

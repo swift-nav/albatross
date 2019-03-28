@@ -136,14 +136,13 @@ ransac(const RegressionDataset<FeatureType> &dataset,
         return model.fit(subset(dataset, inds));
       };
 
-  typename RansacFunctions<FitType>::InlierMetric inlier_metric =
-      [&](const std::vector<std::size_t> &inds, const FitType &fit) {
-        const auto pred = fit.predict(subset(dataset.features, inds));
-        const auto target = subset(dataset.targets, inds);
-        const MetricPredictType prediction =
-            pred.template get<MetricPredictType>();
-        return metric(prediction, target);
-      };
+  typename RansacFunctions<FitType>::InlierMetric inlier_metric = [&](
+      const std::vector<std::size_t> &inds, const FitType &fit) {
+    const auto pred = fit.predict(subset(dataset.features, inds));
+    const auto target = subset(dataset.targets, inds);
+    const MetricPredictType prediction = pred.template get<MetricPredictType>();
+    return metric(prediction, target);
+  };
 
   typename RansacFunctions<FitType>::ModelMetric model_metric =
       [&](const std::vector<std::size_t> &inds) {

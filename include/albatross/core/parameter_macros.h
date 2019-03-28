@@ -96,37 +96,37 @@
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_1(_cond, _action, __VA_ARGS__)
+  _build_if_1(_cond, _action, __VA_ARGS__)
 #define _build_if_3(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_2(_cond, _action, __VA_ARGS__)
+  _build_if_2(_cond, _action, __VA_ARGS__)
 #define _build_if_4(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_3(_cond, _action, __VA_ARGS__)
+  _build_if_3(_cond, _action, __VA_ARGS__)
 #define _build_if_5(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_4(_cond, _action, __VA_ARGS__)
+  _build_if_4(_cond, _action, __VA_ARGS__)
 #define _build_if_6(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_5(_cond, _action, __VA_ARGS__)
+  _build_if_5(_cond, _action, __VA_ARGS__)
 #define _build_if_7(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_6(_cond, _action, __VA_ARGS__)
+  _build_if_6(_cond, _action, __VA_ARGS__)
 #define _build_if_8(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else                                                                       \
-    _build_if_7(_cond, _action, __VA_ARGS__)
+  _build_if_7(_cond, _action, __VA_ARGS__)
 
 #define BUILD_IF(cond, action, ...)                                            \
   _GET_NTH_ARG("ignored", ##__VA_ARGS__, _build_if_8, _build_if_7,             \

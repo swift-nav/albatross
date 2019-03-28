@@ -12,8 +12,8 @@
 
 #include <gtest/gtest.h>
 
-#include <albatross/Evaluation>
 #include "test_utils.h"
+#include <albatross/Evaluation>
 
 namespace albatross {
 
