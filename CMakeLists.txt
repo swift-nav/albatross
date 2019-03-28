@@ -26,18 +26,6 @@ target_include_directories(albatross SYSTEM INTERFACE
 
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
 
-add_subdirectory(tests)
-add_subdirectory(examples)
-
-set(albatross_BINARIES
-  albatross_unit_tests
-  sinc_example
-  temperature_example
-  call_trace_example
-  inspection_example
-  )
-
-
 set(albatross_COMPILE_OPTIONS
   -Werror
   -Wall
@@ -78,12 +66,6 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
-set_target_properties(
-  ${albatross_BINARIES}
-  PROPERTIES
-  CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON
-  )
-foreach(TARGET IN LISTS albatross_BINARIES)
-  target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
-endforeach()
+
+add_subdirectory(tests)
+add_subdirectory(examples)

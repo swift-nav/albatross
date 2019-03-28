@@ -1,5 +1,4 @@
-add_executable(albatross_unit_tests
-  EXCLUDE_FROM_ALL
+add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_call_trace.cc
   test_core_dataset.cc
   test_core_distribution.cc
@@ -52,3 +51,12 @@ add_custom_target(run_albatross_unit_tests ALL
 add_dependencies(run_albatross_unit_tests
   albatross_unit_tests
   )
+
+set_target_properties(
+  albatross_unit_tests
+  PROPERTIES
+  CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON
+  )
+
+target_compile_options(albatross_unit_tests PRIVATE ${albatross_COMPILE_OPTIONS})
