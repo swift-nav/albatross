@@ -47,6 +47,48 @@ using has_valid_cv_marginal =
 template <typename T, typename FeatureType>
 using has_valid_cv_joint =
     has_valid_cross_validated_predictions<T, FeatureType, JointDistribution>;
+
+/*
+ * ErrorMetrics
+ */
+template <typename T, typename PredictType>
+class is_error_metric {
+  template <typename C,
+            typename ReturnType =
+                decltype(std::declval<const C>().operator ()(
+                    std::declval<const PredictType &>(),
+                    std::declval<const MarginalDistribution &>()))>
+  static typename std::enable_if<
+      std::is_same<double, ReturnType>::value,
+      std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
+ * ModelMetric
+ */
+template <typename T, typename FeatureType, typename ModelType>
+class is_model_metric {
+  template <typename C,
+            typename ReturnType =
+                decltype(std::declval<const C>().operator ()(
+                    std::declval<const RegressionDataset<FeatureType> &>(),
+                    std::declval<const ModelType &>()))>
+  static typename std::enable_if<
+      std::is_same<double, ReturnType>::value,
+      std::true_type>::type
+  test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+
 } // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_TRAITS_H */

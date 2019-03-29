@@ -125,7 +125,7 @@ template <typename ModelType, typename FeatureType, typename MetricPredictType>
 RegressionDataset<FeatureType>
 ransac(const RegressionDataset<FeatureType> &dataset,
        const FoldIndexer &fold_indexer, const ModelBase<ModelType> &model,
-       const EvaluationMetric<MetricPredictType> &metric,
+       const ErrorMetric<MetricPredictType> &metric,
        double inlier_threshold, std::size_t random_sample_size,
        std::size_t min_inliers, int max_iterations) {
 
@@ -147,6 +147,7 @@ ransac(const RegressionDataset<FeatureType> &dataset,
   typename RansacFunctions<FitType>::ModelMetric model_metric =
       [&](const std::vector<std::size_t> &inds) {
         RegressionDataset<FeatureType> inlier_dataset = subset(dataset, inds);
+
         const auto inlier_loo = leave_one_out_indexer(inlier_dataset.features);
         double mean_score = model.cross_validate()
                                 .scores(metric, inlier_dataset, inlier_loo)
@@ -197,12 +198,12 @@ public:
         max_iterations_(max_iterations){};
 
   static_assert(
-      std::is_base_of<EvaluationMetric<Eigen::VectorXd>, MetricType>::value ||
-          std::is_base_of<EvaluationMetric<MarginalDistribution>,
+      std::is_base_of<ErrorMetric<Eigen::VectorXd>, MetricType>::value ||
+          std::is_base_of<ErrorMetric<MarginalDistribution>,
                           MetricType>::value ||
-          std::is_base_of<EvaluationMetric<JointDistribution>,
+          std::is_base_of<ErrorMetric<JointDistribution>,
                           MetricType>::value,
-      "MetricType must be an EvaluationMetric.");
+      "MetricType must be an ErrorMetric.");
 
   std::string get_name() const {
     return "ransac[" + sub_model_.get_name() + "]";

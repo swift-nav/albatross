@@ -12,6 +12,7 @@
 
 #include "test_models.h"
 #include <albatross/Tune>
+#include <albatross/GP>
 #include <gtest/gtest.h>
 
 namespace albatross {
@@ -27,7 +28,7 @@ public:
  */
 typedef ::testing::Types<LeaveOneOutLikelihood<JointDistribution>,
                          LeaveOneOutLikelihood<MarginalDistribution>,
-                         LeaveOneOutRMSE, GaussianProcessLikelihoodTuningMetric>
+                         LeaveOneOutRMSE, GaussianProcessLikelihood>
     MetricsToTest;
 
 TYPED_TEST_CASE(TuningMetricTester, MetricsToTest);

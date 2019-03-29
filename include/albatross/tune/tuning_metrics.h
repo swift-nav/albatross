@@ -15,8 +15,7 @@
 
 namespace albatross {
 
-using TuningMetricAggregator =
-    std::function<double(const std::vector<double> &metrics)>;
+using TuningMetricAggregator =double (*)(const std::vector<double> &);
 
 /*
  * Returns the mean of metrics computed across multiple datasets.
@@ -29,48 +28,6 @@ inline double mean_aggregator(const std::vector<double> &metrics) {
   mean /= static_cast<double>(metrics.size());
   return mean;
 }
-
-struct GaussianProcessLikelihoodTuningMetric {
-
-  template <typename FeatureType, typename CovFunc, typename GPImplType>
-  double
-  operator()(const RegressionDataset<FeatureType> &dataset,
-             const GaussianProcessBase<CovFunc, GPImplType> &model) const {
-    const auto gp_fit = model.fit(dataset).get_fit();
-    double nll =
-        negative_log_likelihood(dataset.targets.mean, gp_fit.train_ldlt);
-    nll -= model.prior_log_likelihood();
-    return nll;
-  }
-};
-
-template <typename PredictType = JointDistribution>
-struct LeaveOneOutLikelihood {
-
-  template <typename FeatureType, typename ModelType>
-  double operator()(const RegressionDataset<FeatureType> &dataset,
-                    const ModelBase<ModelType> &model) const {
-    NegativeLogLikelihood<PredictType> nll;
-    LeaveOneOut loo;
-    const auto scores = model.cross_validate().scores(nll, dataset, loo);
-    double data_nll = scores.sum();
-    double prior_nll = model.prior_log_likelihood();
-    return data_nll - prior_nll;
-  }
-};
-
-struct LeaveOneOutRMSE {
-  template <typename FeatureType, typename ModelType>
-  double operator()(const RegressionDataset<FeatureType> &dataset,
-                    const ModelBase<ModelType> &model) const {
-    RootMeanSquareError rmse;
-    LeaveOneOut loo;
-
-    double rmse_score =
-        model.cross_validate().scores(rmse, dataset, loo).mean();
-    return rmse_score;
-  }
-};
 
 } // namespace albatross
 #endif
