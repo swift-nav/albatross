@@ -143,5 +143,5 @@ public:
          std::size_t min_inliers, std::size_t random_sample_size,
          std::size_t max_iterations) const;
 };
-}
+} // namespace albatross
 #endif

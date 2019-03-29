@@ -10,14 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_GP_H
-#define ALBATROSS_GP_H
+#ifndef ALBATROSS_LEAST_SQUARES_H
+#define ALBATROSS_LEAST_SQUARES_H
 
-#include "CovarianceFunctions"
-#include "Evaluation"
+#include "Core"
 
-#include "eigen/serializable_ldlt.h"
-#include "evaluation/cross_validation_utils.h"
-#include "models/gp.h"
+#include <albatross/models/least_squares.h>
 
 #endif

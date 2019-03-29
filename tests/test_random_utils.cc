@@ -11,7 +11,10 @@
  */
 #include <gtest/gtest.h>
 
-#include "Common"
+#include <albatross/Common>
+
+#include <albatross/core/indexing.h>
+#include <albatross/utils/random_utils.h>
 
 namespace albatross {
 

@@ -66,6 +66,6 @@ template <typename X, typename Archive> class valid_in_out_serializer {
 public:
   static constexpr bool value = decltype(test<X>(0))::value;
 };
-}
+} // namespace albatross
 
 #endif

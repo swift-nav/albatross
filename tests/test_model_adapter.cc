@@ -102,4 +102,4 @@ TEST(test_model_adapter, test_fit) {
   EXPECT_EQ(adapted_fit.information, fit.information);
   EXPECT_EQ(adapted_fit.train_ldlt, fit.train_ldlt);
 }
-}
+} // namespace albatross

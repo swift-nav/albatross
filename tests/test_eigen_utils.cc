@@ -11,10 +11,9 @@
  */
 
 #include <Eigen/Dense>
+#include <albatross/utils/eigen_utils.h>
 #include <gtest/gtest.h>
 #include <iostream>
-
-#include "eigen_utils.h"
 
 TEST(test_eigen_utils, test_dense_block_diag) {
   Eigen::MatrixXd A = Eigen::MatrixXd::Random(2, 2);

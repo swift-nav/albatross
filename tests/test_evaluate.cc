@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
+#include <albatross/Evaluation>
 
 namespace albatross {
 

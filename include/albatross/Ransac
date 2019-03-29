@@ -10,16 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DISTRIBUTION_H
-#define ALBATROSS_DISTRIBUTION_H
+#ifndef ALBATROSS_RANSAC_H
+#define ALBATROSS_RANSAC_H
 
-#include "Common"
+#include "Core"
+#include "Evaluation"
 
-#include "cereal/traits.h"
-#include "eigen/serializable_diagonal_matrix.h"
-
-#include "core/declarations.h"
-#include "core/indexing.h"
-#include "core/distribution.h"
+#include <albatross/utils/random_utils.h>
+#include <albatross/models/ransac.h>
 
 #endif

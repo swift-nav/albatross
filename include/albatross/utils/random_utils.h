@@ -13,10 +13,6 @@
 #ifndef ALBATROSS_RANDOM_UTILS_H
 #define ALBATROSS_RANDOM_UTILS_H
 
-#include "core/indexing.h"
-#include <random>
-#include <set>
-
 namespace albatross {
 /*
  * Samples integers between low and high (inclusive) with replacement.
@@ -60,6 +56,6 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
   }
   return std::vector<std::size_t>(samples.begin(), samples.end());
 }
-}
+} // namespace albatross
 
 #endif

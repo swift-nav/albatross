@@ -15,11 +15,11 @@
 
 #include "Core"
 
-#include "evaluation/likelihood.h"
-#include "evaluation/traits.h"
-#include "evaluation/folds.h"
-#include "evaluation/evaluate.h"
-#include "evaluation/cross_validation_utils.h"
-#include "evaluation/cross_validation.h"
+#include <albatross/evaluation/likelihood.h>
+#include <albatross/evaluation/traits.h>
+#include <albatross/evaluation/folds.h>
+#include <albatross/evaluation/evaluate.h>
+#include <albatross/evaluation/cross_validation_utils.h>
+#include <albatross/evaluation/cross_validation.h>
 
 #endif

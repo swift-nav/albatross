@@ -52,5 +52,5 @@ private:
   ModelType model_;
   Fit fit_;
 };
-}
+} // namespace albatross
 #endif

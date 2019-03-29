@@ -10,9 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_RANSAC_H
-#define ALBATROSS_RANSAC_H
+#ifndef ALBATROSS_GP_H
+#define ALBATROSS_GP_H
 
-#include "models/ransac.h"
+#include "Core"
+#include "CovarianceFunctions"
+
+#include <albatross/eigen/serializable_ldlt.h>
+#include <albatross/models/gp.h>
 
 #endif

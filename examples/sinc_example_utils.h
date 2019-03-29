@@ -13,7 +13,8 @@
 #ifndef ALBATROSS_SINC_EXAMPLE_UTILS_H
 #define ALBATROSS_SINC_EXAMPLE_UTILS_H
 
-#include "GP"
+#include <albatross/GP>
+
 #include "example_utils.h"
 
 namespace albatross {

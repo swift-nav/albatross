@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "CovarianceFunctions"
+#include <albatross/CovarianceFunctions>
 
 namespace albatross {
 
@@ -18,8 +18,7 @@ class LinearScalar : public ScalingFunction {
 public:
   std::string get_name() const override { return "linear_scalar"; }
 
-  double _call_impl((const double &x) const {
-    return 1. + 3. * x; }
+  double _call_impl(const double &x) const { return 1. + 3. * x; }
 };
 
 auto complicated_covariance_function() {
@@ -30,7 +29,7 @@ auto complicated_covariance_function() {
 
   return (constant + squared_exp) * linear_scalar;
 }
-}
+} // namespace albatross
 
 int main() {
 

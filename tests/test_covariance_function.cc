@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "CovarianceFunctions"
+#include <albatross/CovarianceFunctions>
 
 #include <gtest/gtest.h>
 

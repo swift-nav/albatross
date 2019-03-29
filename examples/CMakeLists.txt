@@ -1,96 +1,79 @@
-include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/")
-
-set(example_HEADERS
-    example_utils.h
-    sinc_example_utils.h
-    CACHE INTERNAL ""
-)
-
 add_executable(sinc_example
-    EXCLUDE_FROM_ALL
-    sinc_example.cc
-)
+  sinc_example.cc
+  )
+target_link_libraries(sinc_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_sinc_example
+  DEPENDS sinc_example
+  COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
+  COMMENT "Running sinc_example"
+  )
 
-add_dependencies(sinc_example
-    albatross
-)
-
-target_link_libraries(sinc_example m gflags pthread nlopt)
-
-add_custom_target(
-    run_sinc_example ALL
-    DEPENDS ${example_HEADERS}
-    COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
-    COMMENT "Running sinc_example"
-)
-
-add_dependencies(run_sinc_example
-    sinc_example
-)
 
 add_executable(inspection_example
-    EXCLUDE_FROM_ALL
-    inspection.cc
-)
-
-add_dependencies(inspection_example
-    albatross
-)
-
-target_link_libraries(inspection_example m gflags pthread)
-
-add_custom_target(
-    run_inspection_example ALL
-    DEPENDS ${example_HEADERS}
-    COMMAND inspection_example -input ${PROJECT_SOURCE_DIR}/examples/inspection_input.csv
-    COMMENT "Running inspection_example"
-)
-
-add_dependencies(run_inspection_example
-    inspection_example
-)
+  inspection.cc
+  )
+target_link_libraries(inspection_example
+  albatross
+  gflags
+  pthread
+  )
+add_custom_target(run_inspection_example
+  DEPENDS inspection_example
+  COMMAND inspection_example -input ${PROJECT_SOURCE_DIR}/examples/inspection_input.csv
+  COMMENT "Running inspection_example"
+  )
 
 
 add_executable(temperature_example
-    EXCLUDE_FROM_ALL
-    temperature_example/temperature_example.cc
-)
+  temperature_example/temperature_example.cc
+  )
+target_link_libraries(temperature_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_temperature_example
+  DEPENDS temperature_example
+  COMMAND temperature_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/gsod.csv -predict ${PROJECT_SOURCE_DIR}/examples/temperature_example/prediction_locations.csv -output ./test_temperature_predictions.csv -thin 5
+  COMMENT "Running temperature_example"
+  )
 
-add_dependencies(temperature_example
-    albatross
-)
-
-target_link_libraries(temperature_example m gflags pthread nlopt)
-
-add_custom_target(
-    run_temperature_example ALL
-    DEPENDS ${example_HEADERS}
-    COMMAND temperature_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/gsod.csv -predict ${PROJECT_SOURCE_DIR}/examples/temperature_example/prediction_locations.csv -output ./test_temperature_predictions.csv -thin 5
-    COMMENT "Running temperature_example"
-)
-
-add_dependencies(run_temperature_example
-    temperature_example
-)
 
 add_executable(call_trace_example
-    EXCLUDE_FROM_ALL
-    call_trace_example.cc
-)
+  call_trace_example.cc
+  )
+target_link_libraries(call_trace_example
+  albatross
+  gflags
+  pthread
+  )
+add_custom_target(run_call_trace_example
+  DEPENDS call_trace_example
+  COMMAND call_trace_example
+  COMMENT "Running call_trace_example"
+  )
 
-add_dependencies(call_trace_example
-    albatross
-)
+set(albatross_example_BINARIES
+  sinc_example
+  temperature_example
+  call_trace_example
+  inspection_example
+  )
 
-target_link_libraries(call_trace_example m gflags pthread)
 
-add_custom_target(
-    run_call_trace_example ALL
-    DEPENDS ${example_HEADERS}
-    COMMAND call_trace_example
-    COMMENT "Running call_trace_example"
-)
+set_target_properties(
+  ${albatross_example_BINARIES}
+  PROPERTIES
+  CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON
+  )
+foreach(TARGET IN LISTS albatross_example_BINARIES)
+  target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
+endforeach()
 
-add_dependencies(run_call_trace_example
-    call_trace_example
-)

@@ -13,12 +13,6 @@
 #ifndef ALBATROSS_EIGEN_SERIALIZABLE_LDLT_H
 #define ALBATROSS_EIGEN_SERIALIZABLE_LDLT_H
 
-#include "Eigen/Cholesky"
-#include "Eigen/Dense"
-#include "cereal/cereal.hpp"
-#include "core/indexing.h"
-#include <math.h>
-
 namespace Eigen {
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
@@ -175,6 +169,6 @@ public:
   }
 };
 
-} // namesapce Eigen
+} // namespace Eigen
 
 #endif

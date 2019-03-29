@@ -10,11 +10,15 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_TUNE_INCLUDE_H
+#define ALBATROSS_TUNE_INCLUDE_H
 
-#include "Distribution"
+#include <nlopt.hpp>
 
-#include "core/dataset.h"
+#include "Core"
+#include "Evaluation"
+
+#include <albatross/tune/tuning_metrics.h>
+#include <albatross/tune/tune.h>
 
 #endif

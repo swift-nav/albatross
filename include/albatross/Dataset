@@ -10,19 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_H
-#define ALBATROSS_CORE_H
+#ifndef ALBATROSS_DATASET_H
+#define ALBATROSS_DATASET_H
 
-#include "Dataset"
+#include "Distribution"
 
-#include <type_traits>
-#include "core/declarations.h"
-#include "core/traits.h"
-#include "core/priors.h"
-#include "core/parameter_handling_mixin.h"
-#include "core/parameter_macros.h"
-#include "core/fit_model.h"
-#include "core/prediction.h"
-#include "core/model.h"
+#include <albatross/core/dataset.h>
 
 #endif

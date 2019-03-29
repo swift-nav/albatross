@@ -10,11 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "gflags/gflags.h"
+#include <albatross/Tune>
+#include <gflags/gflags.h>
 
 #include "temperature_example_utils.h"
-
-#include "Tune"
 
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(predict, "", "path to csv containing prediction locations.");

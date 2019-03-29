@@ -10,14 +10,21 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_TUNE_INCLUDE_H
-#define ALBATROSS_TUNE_INCLUDE_H
+#ifndef ALBATROSS_CORE_H
+#define ALBATROSS_CORE_H
 
-#include "Core"
-#include "Evaluation"
+#include "Dataset"
 
-#include "nlopt.hpp"
-#include "tuning_metrics.h"
-#include "tune.h"
+#include <type_traits>
+
+#include <albatross/core/declarations.h>
+#include <albatross/core/indexing.h>
+#include <albatross/core/traits.h>
+#include <albatross/core/priors.h>
+#include <albatross/core/parameter_handling_mixin.h>
+#include <albatross/core/parameter_macros.h>
+#include <albatross/core/fit_model.h>
+#include <albatross/core/prediction.h>
+#include <albatross/core/model.h>
 
 #endif

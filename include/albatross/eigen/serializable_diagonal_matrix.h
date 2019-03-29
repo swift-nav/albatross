@@ -44,6 +44,6 @@ public:
   }
 };
 
-} // namesapce Eigen
+} // namespace Eigen
 
 #endif
