@@ -15,15 +15,45 @@
 
 namespace albatross {
 
-template <typename FeatureType, typename ModelType>
-using ModelMetricFunction = double (*)(const RegressionDataset<FeatureType> &,
-                                       const ModelType &);
+template <typename MetricType> class ModelMetric {
+public:
+  template <typename FeatureType, typename ModelType,
+            typename std::enable_if<
+                has_valid_call_impl<MetricType, RegressionDataset<FeatureType>,
+                                    ModelType>::value,
+                int>::type = 0>
+  double operator()(const RegressionDataset<FeatureType> &dataset,
+                    const ModelBase<ModelType> &model) const {
+    return derived()._call_impl(dataset, model);
+  }
+
+  template <typename FeatureType, typename ModelType,
+            typename std::enable_if<
+                !has_valid_call_impl<MetricType, RegressionDataset<FeatureType>,
+                                     ModelType>::value,
+                int>::type = 0>
+  double operator()(const RegressionDataset<FeatureType> &dataset,
+                    const ModelBase<ModelType> &model) const =
+      delete; // Metric Not Valid for these types.
+
+  template <class Archive> void serialize(Archive &){};
+
+protected:
+  /*
+   * CRTP Helpers
+   */
+  MetricType &derived() { return *static_cast<MetricType *>(this); }
+  const MetricType &derived() const {
+    return *static_cast<const MetricType *>(this);
+  }
+};
 
 template <typename PredictType = JointDistribution>
-struct LeaveOneOutLikelihood {
+struct LeaveOneOutLikelihood
+    : public ModelMetric<LeaveOneOutLikelihood<PredictType>> {
 
   template <typename FeatureType, typename ModelType>
-  double operator()(const RegressionDataset<FeatureType> &dataset,
+  double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
     NegativeLogLikelihood<PredictType> nll;
     LeaveOneOut loo;
@@ -34,9 +64,9 @@ struct LeaveOneOutLikelihood {
   }
 };
 
-struct LeaveOneOutRMSE {
+struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
   template <typename FeatureType, typename ModelType>
-  double operator()(const RegressionDataset<FeatureType> &dataset,
+  double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
     RootMeanSquareError rmse;
     LeaveOneOut loo;

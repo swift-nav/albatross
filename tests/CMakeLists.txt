@@ -15,6 +15,7 @@ add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_model_adapter.cc
   test_model_metrics.cc  
   test_models.cc
+  test_model_metrics.cc
   test_parameter_handling_mixin.cc
   test_prediction.cc
   test_radial.cc

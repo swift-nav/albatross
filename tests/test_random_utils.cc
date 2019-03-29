@@ -39,6 +39,9 @@ TEST(test_random_utils, randint_without_replacement) {
 TEST(test_random_utils, randint_without_replacement_full_set) {
   std::default_random_engine gen;
   const auto inds = randint_without_replacement(10, 0, 9, gen);
+  EXPECT_EQ(inds.size(), 10);
+  std::set<std::size_t> unique_inds(inds.begin(), inds.end());
+  EXPECT_EQ(unique_inds.size(), inds.size());
 }
 
 } // namespace albatross

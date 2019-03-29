@@ -28,23 +28,28 @@ TEST(test_outlier, test_ransac_direct) {
     dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
   }
 
-  NegativeLogLikelihood<JointDistribution> nll;
-
   const auto indexer = leave_one_out_indexer(dataset.features);
+  NegativeLogLikelihood<JointDistribution> nll;
+  LeaveOneOutLikelihood<> loo_nll;
+
+  auto ransac_functions =
+      get_generic_ransac_functions(model, dataset, indexer, nll, loo_nll);
+
   double inlier_threshold = 1.;
   std::size_t sample_size = 3;
-  std::size_t min_inliers = 3;
+  std::size_t min_consensus_size = 3;
   std::size_t max_iterations = 20;
-  const auto inliers = ransac(dataset, indexer, model, nll, inlier_threshold,
-                              sample_size, min_inliers, max_iterations);
 
-  EXPECT_EQ(inliers.features.size(), dataset.features.size() - bad_inds.size());
+  const auto inliers = ransac(ransac_functions, indexer, inlier_threshold,
+                              sample_size, min_consensus_size, max_iterations);
+
+  EXPECT_EQ(inliers.size(), dataset.features.size() - bad_inds.size());
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
-    EXPECT_EQ(std::find(inliers.features.begin(), inliers.features.end(),
-                        dataset.features[i]),
-              inliers.features.end());
+    EXPECT_EQ(std::find(inliers.begin(), inliers.end(),
+                        std::to_string(dataset.features[i])),
+              inliers.end());
   }
 }
 
@@ -58,27 +63,35 @@ TEST(test_outlier, test_ransac_model) {
     dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
   }
 
-  NegativeLogLikelihood<JointDistribution> nll;
+  DefaultRansacStrategy ransac_strategy;
 
   double inlier_threshold = 1.;
   std::size_t sample_size = 3;
-  std::size_t min_inliers = 3;
+  std::size_t min_consensus_size = 3;
   std::size_t max_iterations = 20;
-  const auto ransac_model = model.ransac(nll, inlier_threshold, sample_size,
-                                         min_inliers, max_iterations);
+  const auto ransac_model =
+      model.ransac(ransac_strategy, inlier_threshold, sample_size,
+                   min_consensus_size, max_iterations);
   const auto fit_model = ransac_model.fit(dataset);
 
   const auto pred = fit_model.predict(dataset.features);
   expect_predict_variants_consistent(pred);
 
-  const auto indexer = leave_one_out_indexer(dataset.features);
-  const auto inliers = ransac(dataset, indexer, model, nll, inlier_threshold,
-                              sample_size, min_inliers, max_iterations);
-  const auto direct_pred = model.fit(inliers).predict(dataset.features);
+  const auto ransac_functions = ransac_strategy(model, dataset);
+
+  const auto indexer = ransac_strategy.get_indexer(dataset);
+  const auto inlier_names =
+      ransac(ransac_functions, indexer, inlier_threshold, sample_size,
+             min_consensus_size, max_iterations);
+  const auto inlier_inds = indices_from_names(indexer, inlier_names);
+  const auto inlier_dataset = subset(dataset, inlier_inds);
+
+  const auto direct_pred = model.fit(inlier_dataset).predict(dataset.features);
   expect_predict_variants_consistent(direct_pred);
 
   EXPECT_EQ(pred.mean(), direct_pred.mean());
 
+  NegativeLogLikelihood<JointDistribution> nll;
   const auto cv_nll =
       ransac_model.cross_validate().scores(nll, dataset, indexer);
 
@@ -106,11 +119,17 @@ TEST(test_outlier, test_ransac_groups) {
   dataset.targets.mean[5] = -300.;
 
   NegativeLogLikelihood<JointDistribution> nll;
-  const auto fold_indexer =
-      leave_one_group_out_indexer<double>(dataset.features, group_by_modulo);
-  const auto modified = ransac(dataset, fold_indexer, model, nll, 0., 1, 1, 20);
+  LeaveOneGroupOut<double> logo(group_by_modulo);
+  LeaveOneOutLikelihood<> consensus_metric;
 
-  EXPECT_LE(modified.features.size(), dataset.features.size());
+  const auto ransac_strategy =
+      get_generic_ransac_strategy(nll, consensus_metric, logo);
+  const auto indexer = ransac_strategy.get_indexer(dataset);
+  const auto ransac_functions = ransac_strategy(model, dataset);
+
+  const auto inlier_groups = ransac(ransac_functions, indexer, 0., 1, 1, 20);
+
+  EXPECT_LE(inlier_groups.size(), indexer.size());
 }
 
 } // namespace albatross

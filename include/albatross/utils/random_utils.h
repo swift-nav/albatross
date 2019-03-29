@@ -56,6 +56,18 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
   }
   return std::vector<std::size_t>(samples.begin(), samples.end());
 }
+
+template <typename X>
+inline std::vector<X>
+random_without_replacement(const std::vector<X> &xs, std::size_t n,
+                           std::default_random_engine &gen) {
+  std::vector<X> random_sample;
+  for (const auto &i : randint_without_replacement(n, 0, xs.size() - 1, gen)) {
+    random_sample.emplace_back(xs[i]);
+  }
+  return random_sample;
+}
+
 } // namespace albatross
 
 #endif
