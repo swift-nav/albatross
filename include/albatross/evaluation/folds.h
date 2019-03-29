@@ -58,6 +58,11 @@ struct LeaveOneOut {
   FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
     return leave_one_out_indexer(dataset);
   }
+
+  template <typename FeatureType>
+  FoldIndexer operator()(const std::vector<FeatureType> &features) const {
+    return leave_one_out_indexer(features);
+  }
 };
 
 /*
@@ -89,6 +94,10 @@ leave_one_group_out_indexer(const std::vector<FeatureType> &features,
 template <typename FeatureType> struct LeaveOneGroupOut {
 
   LeaveOneGroupOut(GroupFunction<FeatureType> grouper_) : grouper(grouper_){};
+
+  FoldIndexer operator()(const std::vector<FeatureType> &features) const {
+    return leave_one_group_out_indexer(features, grouper);
+  }
 
   FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
     return leave_one_group_out_indexer(dataset.features, grouper);
@@ -141,45 +150,60 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
 }
 
 /*
+ * Extracts the fold indexer that would have created a set of folds
+ */
+template <typename FeatureType>
+static inline FoldIndexer
+fold_indexer_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
+  FoldIndexer output;
+  for (const auto &fold : folds) {
+    assert(!map_contains(output, fold.name));
+    output[fold.name] = fold.test_indices;
+  }
+  return output;
+}
+
+/*
  * Inspects a bunch of folds and creates a set of all the indicies
  * in an original dataset that comprise the test_datasets and the folds.
  */
-template <typename FeatureType>
-inline std::set<std::size_t>
-unique_test_indices(const std::vector<RegressionFold<FeatureType>> &folds) {
+inline std::set<std::size_t> unique_indices(const FoldIndexer &indexer) {
   std::set<std::size_t> indices;
-  for (const auto &fold : folds) {
-    indices.insert(fold.test_indices.begin(), fold.test_indices.end());
+  for (const auto &pair : indexer) {
+    indices.insert(pair.second.begin(), pair.second.end());
   }
   return indices;
 }
 
-template <typename FeatureType>
-inline std::size_t
-dataset_size_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
-  const auto unique_indices = unique_test_indices(folds);
+inline std::size_t dataset_size_from_indexer(const FoldIndexer &indexer) {
+  const auto unique_inds = unique_indices(indexer);
 
   // Make sure there were no duplicate test indices.
   std::size_t count = 0;
-  for (const auto &fold : folds) {
-    count += fold.test_indices.size();
+  for (const auto &pair : indexer) {
+    count += pair.second.size();
   };
-  assert(count == unique_indices.size());
+  assert(count == unique_inds.size());
 
   // Make sure the minimum was zero
-  std::size_t zero =
-      *std::min_element(unique_indices.begin(), unique_indices.end());
+  std::size_t zero = *std::min_element(unique_inds.begin(), unique_inds.end());
   if (zero != 0) {
     assert(false);
   }
 
   // And the maximum agrees with the size;
-  std::size_t n =
-      *std::max_element(unique_indices.begin(), unique_indices.end());
-  assert(unique_indices.size() == n + 1);
+  std::size_t n = *std::max_element(unique_inds.begin(), unique_inds.end());
+  assert(unique_inds.size() == n + 1);
 
   return n + 1;
 }
+
+template <typename FeatureType>
+inline std::size_t
+dataset_size_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
+  return dataset_size_from_indexer(fold_indexer_from_folds(folds));
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_FOLDS_H */
