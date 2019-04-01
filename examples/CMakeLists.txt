@@ -65,14 +65,6 @@ set(albatross_example_BINARIES
   call_trace_example
   inspection_example
   )
-
-
-set_target_properties(
-  ${albatross_example_BINARIES}
-  PROPERTIES
-  CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON
-  )
 foreach(TARGET IN LISTS albatross_example_BINARIES)
   target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
 endforeach()

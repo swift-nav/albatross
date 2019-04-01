@@ -36,6 +36,9 @@ target_include_directories(albatross_unit_tests SYSTEM PRIVATE
 target_compile_definitions(albatross_unit_tests PRIVATE
   CSV_IO_NO_THREAD
   )
+target_compile_options(albatross_unit_tests PRIVATE
+  ${albatross_COMPILE_OPTIONS}
+  )
 target_link_libraries(albatross_unit_tests
   albatross
   gtest
@@ -51,12 +54,3 @@ add_custom_target(run_albatross_unit_tests ALL
 add_dependencies(run_albatross_unit_tests
   albatross_unit_tests
   )
-
-set_target_properties(
-  albatross_unit_tests
-  PROPERTIES
-  CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON
-  )
-
-target_compile_options(albatross_unit_tests PRIVATE ${albatross_COMPILE_OPTIONS})
