@@ -72,8 +72,7 @@ public:
                     has_valid_cv_mean<DummyType, FeatureType>::value,
                 int>::type = 0>
   Eigen::VectorXd mean() const {
-    const auto folds = folds_from_fold_indexer(dataset_, indexer_);
-    return concatenate_mean_predictions(folds, means());
+    return concatenate_mean_predictions(indexer_, means());
   }
 
   // No valid method of computing the means.
@@ -132,8 +131,7 @@ public:
                     has_valid_cv_marginal<DummyType, FeatureType>::value,
                 int>::type = 0>
   MarginalDistribution marginal() const {
-    const auto folds = folds_from_fold_indexer(dataset_, indexer_);
-    return concatenate_marginal_predictions(folds, marginals());
+    return concatenate_marginal_predictions(indexer_, marginals());
   }
 
   // No valid way of computing marginals.

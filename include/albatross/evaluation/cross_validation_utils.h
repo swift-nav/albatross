@@ -61,61 +61,46 @@ get_joints(const std::map<std::string, PredictionType> &predictions) {
   return get_predict_types<JointDistribution>(predictions);
 }
 
-template <typename FeatureType>
 inline Eigen::VectorXd concatenate_mean_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
+    const FoldIndexer &indexer,
     const std::map<std::string, Eigen::VectorXd> &means) {
-  assert(folds.size() == means.size());
+  assert(indexer.size() == means.size());
 
-  Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
+  Eigen::Index n =
+      static_cast<Eigen::Index>(dataset_size_from_indexer(indexer));
   Eigen::VectorXd pred(n);
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
-  for (std::size_t i = 0; i < folds.size(); ++i) {
-    assert(means.at(folds[i].name).size() ==
-           static_cast<Eigen::Index>(folds[i].test_dataset.size()));
-    set_subset(means.at(folds[i].name), folds[i].test_indices, &pred);
-    number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
+  for (const auto &pair : indexer) {
+    assert(means.at(pair.first).size() ==
+           static_cast<Eigen::Index>(pair.second.size()));
+    set_subset(means.at(pair.first), pair.second, &pred);
+    number_filled += static_cast<Eigen::Index>(pair.second.size());
   }
   assert(number_filled == n);
   return pred;
 }
 
-template <typename FeatureType, typename PredType>
-inline Eigen::VectorXd concatenate_mean_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::map<std::string, PredType> &predictions) {
-  return concatenate_mean_predictions(folds, get_means(predictions));
-}
-
-template <typename FeatureType>
 inline MarginalDistribution concatenate_marginal_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
+    const FoldIndexer &indexer,
     const std::map<std::string, MarginalDistribution> &marginals) {
-  assert(folds.size() == marginals.size());
+  assert(indexer.size() == marginals.size());
 
-  Eigen::Index n = static_cast<Eigen::Index>(dataset_size_from_folds(folds));
-  assert(folds.size() == marginals.size());
+  Eigen::Index n =
+      static_cast<Eigen::Index>(dataset_size_from_indexer(indexer));
   Eigen::VectorXd mean(n);
   Eigen::VectorXd variance(n);
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
-  for (std::size_t i = 0; i < folds.size(); ++i) {
-    assert(marginals.at(folds[i].name).size() == folds[i].test_dataset.size());
-    set_subset(marginals.at(folds[i].name).mean, folds[i].test_indices, &mean);
-    set_subset(marginals.at(folds[i].name).covariance.diagonal(),
-               folds[i].test_indices, &variance);
-    number_filled += static_cast<Eigen::Index>(folds[i].test_indices.size());
+  for (const auto &pair : indexer) {
+    assert(marginals.at(pair.first).size() == pair.second.size());
+    set_subset(marginals.at(pair.first).mean, pair.second, &mean);
+    set_subset(marginals.at(pair.first).covariance.diagonal(), pair.second,
+               &variance);
+    number_filled += static_cast<Eigen::Index>(pair.second.size());
   }
   assert(number_filled == n);
   return MarginalDistribution(mean, variance.asDiagonal());
-}
-
-template <typename FeatureType, typename PredType>
-inline MarginalDistribution concatenate_marginal_predictions(
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::map<std::string, PredType> &predictions) {
-  return concatenate_marginal_predictions(folds, get_marginals(predictions));
 }
 
 template <typename EvaluationMetricType, typename FeatureType,
@@ -134,6 +119,18 @@ Eigen::VectorXd cross_validated_scores(
         metric(predictions.at(folds[i].name), folds[i].test_dataset.targets);
   }
   return output;
+}
+
+template <typename FeatureType, typename CovarianceType>
+static inline Eigen::VectorXd cross_validated_scores(
+    const EvaluationMetric<Eigen::VectorXd> &metric,
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::map<std::string, Distribution<CovarianceType>> &predictions) {
+  std::map<std::string, Eigen::VectorXd> converted;
+  for (const auto &pred : predictions) {
+    converted[pred.first] = pred.second.mean;
+  }
+  return cross_validated_scores(metric, folds, converted);
 }
 
 } // namespace albatross
