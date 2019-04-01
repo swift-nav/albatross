@@ -15,7 +15,7 @@
 
 namespace albatross {
 
-using TuningMetricAggregator =double (*)(const std::vector<double> &);
+using TuningMetricAggregator = double (*)(const std::vector<double> &);
 
 /*
  * Returns the mean of metrics computed across multiple datasets.

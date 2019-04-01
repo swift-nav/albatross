@@ -46,7 +46,6 @@ struct LeaveOneOutRMSE {
     return rmse_score;
   }
 };
-
 }
 
 #endif /* ALBATROSS_EVALUATION_MODEL_METRICS_H_ */

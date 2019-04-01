@@ -119,7 +119,7 @@ template <typename CovFunc, typename ImplType>
 class GaussianProcessBase
     : public ModelBase<GaussianProcessBase<CovFunc, ImplType>> {
 
- protected:
+protected:
   template <typename FitFeatureType>
   using GPFitType = Fit<GaussianProcessBase<CovFunc, ImplType>, FitFeatureType>;
 
@@ -404,7 +404,6 @@ struct GaussianProcessLikelihood {
     return nll;
   }
 };
-
 
 } // namespace albatross
 

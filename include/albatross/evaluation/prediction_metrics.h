@@ -32,13 +32,14 @@ namespace albatross {
 
 template <typename RequiredPredictType>
 using PredictionMetricFunction = double (*)(const RequiredPredictType &,
-                             const MarginalDistribution &);
+                                            const MarginalDistribution &);
 
 template <typename RequiredPredictType> struct PredictionMetric {
 
   PredictionMetricFunction<RequiredPredictType> eval_;
 
-  PredictionMetric(PredictionMetricFunction<RequiredPredictType> eval) : eval_(eval) {}
+  PredictionMetric(PredictionMetricFunction<RequiredPredictType> eval)
+      : eval_(eval) {}
 
   double operator()(const RequiredPredictType &prediction,
                     const MarginalDistribution &truth) const {
@@ -122,7 +123,6 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
       : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
-
 }
 
 #endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */
