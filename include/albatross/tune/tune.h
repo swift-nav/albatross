@@ -88,6 +88,9 @@ struct ModelTuner {
   std::ostream &output_stream;
   nlopt::opt optimizer;
 
+  static_assert(is_model_metric<MetricType, FeatureType, ModelType>::value,
+                "metric is not valid for this feature/model pair");
+
   ModelTuner(const ModelType &model_, const MetricType &metric_,
              const std::vector<RegressionDataset<FeatureType>> &datasets_,
              const TuningMetricAggregator &aggregator_,

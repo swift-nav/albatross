@@ -119,6 +119,7 @@ template <typename CovFunc, typename ImplType>
 class GaussianProcessBase
     : public ModelBase<GaussianProcessBase<CovFunc, ImplType>> {
 
+protected:
   template <typename FitFeatureType>
   using GPFitType = Fit<GaussianProcessBase<CovFunc, ImplType>, FitFeatureType>;
 
@@ -385,6 +386,23 @@ template <typename CovFunc>
 auto gp_from_covariance(CovFunc covariance_function) {
   return GaussianProcessRegression<CovFunc>(covariance_function,
                                             covariance_function.get_name());
+};
+
+/*
+ * Model Metric
+ */
+struct GaussianProcessLikelihood {
+
+  template <typename FeatureType, typename CovFunc, typename GPImplType>
+  double
+  operator()(const RegressionDataset<FeatureType> &dataset,
+             const GaussianProcessBase<CovFunc, GPImplType> &model) const {
+    const auto gp_fit = model.fit(dataset).get_fit();
+    double nll =
+        negative_log_likelihood(dataset.targets.mean, gp_fit.train_ldlt);
+    nll -= model.prior_log_likelihood();
+    return nll;
+  }
 };
 
 } // namespace albatross

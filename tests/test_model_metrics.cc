@@ -11,28 +11,29 @@
  */
 
 #include "test_models.h"
+#include <albatross/GP>
 #include <albatross/Tune>
 #include <gtest/gtest.h>
 
 namespace albatross {
 
 template <typename TestMetric>
-class TuningMetricTester : public ::testing::Test {
+class ModelMetricTester : public ::testing::Test {
 public:
   TestMetric test_metric;
 };
 
 /*
- * Add any new tuning metrics here:
+ * Add any new model metrics here:
  */
 typedef ::testing::Types<LeaveOneOutLikelihood<JointDistribution>,
                          LeaveOneOutLikelihood<MarginalDistribution>,
-                         LeaveOneOutRMSE, GaussianProcessLikelihoodTuningMetric>
+                         LeaveOneOutRMSE, GaussianProcessLikelihood>
     MetricsToTest;
 
-TYPED_TEST_CASE(TuningMetricTester, MetricsToTest);
+TYPED_TEST_CASE(ModelMetricTester, MetricsToTest);
 
-TYPED_TEST(TuningMetricTester, test_sanity) {
+TYPED_TEST(ModelMetricTester, test_sanity) {
   MakeGaussianProcess test_case;
   auto dataset = test_case.get_dataset();
   auto model = test_case.get_model();

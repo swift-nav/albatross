@@ -266,14 +266,14 @@ public:
 
   template <typename RequiredPredictType, typename FeatureType>
   Eigen::VectorXd
-  scores(const EvaluationMetric<RequiredPredictType> &metric,
+  scores(const PredictionMetric<RequiredPredictType> &metric,
          const std::vector<RegressionFold<FeatureType>> &folds) const {
     const auto preds = get_predictions(folds);
     return cross_validated_scores(metric, folds, preds);
   }
 
   template <typename RequiredPredictType, typename FeatureType>
-  Eigen::VectorXd scores(const EvaluationMetric<RequiredPredictType> &metric,
+  Eigen::VectorXd scores(const PredictionMetric<RequiredPredictType> &metric,
                          const RegressionDataset<FeatureType> &dataset,
                          const FoldIndexer &indexer) const {
     const auto folds = folds_from_fold_indexer(dataset, indexer);
@@ -285,7 +285,7 @@ public:
 
   template <typename RequiredPredictType, typename FeatureType,
             typename IndexFunc>
-  Eigen::VectorXd scores(const EvaluationMetric<RequiredPredictType> &metric,
+  Eigen::VectorXd scores(const PredictionMetric<RequiredPredictType> &metric,
                          const RegressionDataset<FeatureType> &dataset,
                          const IndexFunc &index_function) const {
     const auto indexer = index_function(dataset);

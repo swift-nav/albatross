@@ -13,6 +13,7 @@ add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_indexing.cc
   test_map_utils.cc
   test_model_adapter.cc
+  test_model_metrics.cc  
   test_models.cc
   test_parameter_handling_mixin.cc
   test_prediction.cc
@@ -27,7 +28,6 @@ add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_traits_covariance_functions.cc
   test_traits_evaluation.cc
   test_tune.cc
-  test_tuning_metrics.cc
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE
   "${gtest_SOURCE_DIR}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2019 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,18 +10,18 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_EVALUATE_H
-#define ALBATROSS_EVALUATE_H
+#ifndef ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
+#define ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
 
 namespace albatross {
 
 /*
- * An EvaluationMetric is basically just a wrapper around a
+ * An PredictionMetric is basically just a wrapper around a
  * function which enforces a signature used in evaluation.  One
  * alternative would be to use std::function.  Ie,
  *
  *   template <typename RequiredPredictType>
- *   using EvaluationMetric =
+ *   using PredictionMetric =
  *         std::function<double(const RequiredPredictType &,
  *                              const MarginalDistribution &);
  *
@@ -31,14 +31,15 @@ namespace albatross {
  */
 
 template <typename RequiredPredictType>
-using Evaluator = double (*)(const RequiredPredictType &,
-                             const MarginalDistribution &);
+using PredictionMetricFunction = double (*)(const RequiredPredictType &,
+                                            const MarginalDistribution &);
 
-template <typename RequiredPredictType> struct EvaluationMetric {
+template <typename RequiredPredictType> struct PredictionMetric {
 
-  Evaluator<RequiredPredictType> eval_;
+  PredictionMetricFunction<RequiredPredictType> eval_;
 
-  EvaluationMetric(Evaluator<RequiredPredictType> eval) : eval_(eval) {}
+  PredictionMetric(PredictionMetricFunction<RequiredPredictType> eval)
+      : eval_(eval) {}
 
   double operator()(const RequiredPredictType &prediction,
                     const MarginalDistribution &truth) const {
@@ -67,9 +68,9 @@ static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
   return root_mean_square_error(prediction, truth.mean);
 }
 
-struct RootMeanSquareError : public EvaluationMetric<Eigen::VectorXd> {
+struct RootMeanSquareError : public PredictionMetric<Eigen::VectorXd> {
   RootMeanSquareError()
-      : EvaluationMetric<Eigen::VectorXd>(root_mean_square_error) {}
+      : PredictionMetric<Eigen::VectorXd>(root_mean_square_error) {}
 };
 
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
@@ -86,8 +87,8 @@ static inline double standard_deviation(const Eigen::VectorXd &prediction,
   return standard_deviation(prediction, truth.mean);
 }
 
-struct StandardDeviation : public EvaluationMetric<Eigen::VectorXd> {
-  StandardDeviation() : EvaluationMetric<Eigen::VectorXd>(standard_deviation) {}
+struct StandardDeviation : public PredictionMetric<Eigen::VectorXd> {
+  StandardDeviation() : PredictionMetric<Eigen::VectorXd>(standard_deviation) {}
 };
 
 /*
@@ -118,11 +119,10 @@ negative_log_likelihood(const MarginalDistribution &prediction,
 }
 
 template <typename PredictType = JointDistribution>
-struct NegativeLogLikelihood : public EvaluationMetric<PredictType> {
+struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
-      : EvaluationMetric<PredictType>(negative_log_likelihood) {}
+      : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
+}
 
-} // namespace albatross
-
-#endif
+#endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */
