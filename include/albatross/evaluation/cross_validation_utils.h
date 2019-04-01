@@ -103,10 +103,10 @@ inline MarginalDistribution concatenate_marginal_predictions(
   return MarginalDistribution(mean, variance.asDiagonal());
 }
 
-template <typename EvaluationMetricType, typename FeatureType,
+template <typename PredictionMetricType, typename FeatureType,
           typename PredictionType>
 Eigen::VectorXd cross_validated_scores(
-    const EvaluationMetricType &metric,
+    const PredictionMetricType &metric,
     const std::vector<RegressionFold<FeatureType>> &folds,
     const std::map<std::string, PredictionType> &predictions) {
   assert(folds.size() == predictions.size());
@@ -123,7 +123,7 @@ Eigen::VectorXd cross_validated_scores(
 
 template <typename FeatureType, typename CovarianceType>
 static inline Eigen::VectorXd cross_validated_scores(
-    const EvaluationMetric<Eigen::VectorXd> &metric,
+    const PredictionMetric<Eigen::VectorXd> &metric,
     const std::vector<RegressionFold<FeatureType>> &folds,
     const std::map<std::string, Distribution<CovarianceType>> &predictions) {
   std::map<std::string, Eigen::VectorXd> converted;

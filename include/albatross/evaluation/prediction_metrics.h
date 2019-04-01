@@ -10,18 +10,18 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_EVALUATION_ERROR_METRICS_H_
-#define ALBATROSS_EVALUATION_ERROR_METRICS_H_
+#ifndef ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
+#define ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
 
 namespace albatross {
 
 /*
- * An ErrorMetric is basically just a wrapper around a
+ * An PredictionMetric is basically just a wrapper around a
  * function which enforces a signature used in evaluation.  One
  * alternative would be to use std::function.  Ie,
  *
  *   template <typename RequiredPredictType>
- *   using ErrorMetric =
+ *   using PredictionMetric =
  *         std::function<double(const RequiredPredictType &,
  *                              const MarginalDistribution &);
  *
@@ -31,14 +31,14 @@ namespace albatross {
  */
 
 template <typename RequiredPredictType>
-using ErrorMetricFunction = double (*)(const RequiredPredictType &,
+using PredictionMetricFunction = double (*)(const RequiredPredictType &,
                              const MarginalDistribution &);
 
-template <typename RequiredPredictType> struct ErrorMetric {
+template <typename RequiredPredictType> struct PredictionMetric {
 
-  ErrorMetricFunction<RequiredPredictType> eval_;
+  PredictionMetricFunction<RequiredPredictType> eval_;
 
-  ErrorMetric(ErrorMetricFunction<RequiredPredictType> eval) : eval_(eval) {}
+  PredictionMetric(PredictionMetricFunction<RequiredPredictType> eval) : eval_(eval) {}
 
   double operator()(const RequiredPredictType &prediction,
                     const MarginalDistribution &truth) const {
@@ -67,9 +67,9 @@ static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
   return root_mean_square_error(prediction, truth.mean);
 }
 
-struct RootMeanSquareError : public ErrorMetric<Eigen::VectorXd> {
+struct RootMeanSquareError : public PredictionMetric<Eigen::VectorXd> {
   RootMeanSquareError()
-      : ErrorMetric<Eigen::VectorXd>(root_mean_square_error) {}
+      : PredictionMetric<Eigen::VectorXd>(root_mean_square_error) {}
 };
 
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
@@ -86,8 +86,8 @@ static inline double standard_deviation(const Eigen::VectorXd &prediction,
   return standard_deviation(prediction, truth.mean);
 }
 
-struct StandardDeviation : public ErrorMetric<Eigen::VectorXd> {
-  StandardDeviation() : ErrorMetric<Eigen::VectorXd>(standard_deviation) {}
+struct StandardDeviation : public PredictionMetric<Eigen::VectorXd> {
+  StandardDeviation() : PredictionMetric<Eigen::VectorXd>(standard_deviation) {}
 };
 
 /*
@@ -118,11 +118,11 @@ negative_log_likelihood(const MarginalDistribution &prediction,
 }
 
 template <typename PredictType = JointDistribution>
-struct NegativeLogLikelihood : public ErrorMetric<PredictType> {
+struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
-      : ErrorMetric<PredictType>(negative_log_likelihood) {}
+      : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
 
 }
 
-#endif /* ALBATROSS_EVALUATION_ERROR_METRICS_H_ */
+#endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */

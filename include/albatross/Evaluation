@@ -18,7 +18,7 @@
 #include <albatross/evaluation/likelihood.h>
 #include <albatross/evaluation/traits.h>
 #include <albatross/evaluation/folds.h>
-#include <albatross/evaluation/error_metrics.h>
+#include <albatross/evaluation/prediction_metrics.h>
 #include <albatross/evaluation/model_metrics.h>
 #include <albatross/evaluation/cross_validation_utils.h>
 #include <albatross/evaluation/cross_validation.h>

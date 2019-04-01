@@ -49,7 +49,7 @@ using has_valid_cv_joint =
     has_valid_cross_validated_predictions<T, FeatureType, JointDistribution>;
 
 /*
- * ErrorMetrics
+ * PredictionMetrics
  */
 template <typename T, typename PredictType>
 class is_error_metric {
