@@ -139,8 +139,8 @@
 #define SET_PARAMS_ACTION(x) x = value
 
 #define DEFINE_SET_PARAMS_UNCHECKED(...)                                       \
-  void unchecked_set_param(const ParameterKey &key, const Parameter &value)    \
-      override {                                                               \
+  void unchecked_set_param(const ::albatross::ParameterKey &key,               \
+                           const ::albatross::Parameter &value) override {     \
     BUILD_IF(SET_PARAMS_CONDITION, SET_PARAMS_ACTION, __VA_ARGS__);            \
   };
 
@@ -151,7 +151,7 @@
  *   Parameter $2;
  *
  */
-#define DECLARE_PARAM(x) Parameter x;
+#define DECLARE_PARAM(x) ::albatross::Parameter x;
 
 #define DECLARE_PARAMS(...) CALL_MACRO_X_FOR_EACH(DECLARE_PARAM, ##__VA_ARGS__)
 
