@@ -66,6 +66,7 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
+target_compile_features(albatross INTERFACE cxx_std_14)
 
 add_subdirectory(tests)
 add_subdirectory(examples)
