@@ -27,7 +27,8 @@ namespace cereal {
  */
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void save(Archive &archive,
-                 const Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
+                 const Eigen::Matrix<_Scalar, _Rows, _Cols> &v,
+                 const std::uint32_t) {
   size_type rows = static_cast<size_type>(v.rows());
   size_type cols = static_cast<size_type>(v.cols());
   archive(cereal::make_size_tag(rows));
@@ -42,7 +43,8 @@ inline void save(Archive &archive,
 };
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
-inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
+inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v,
+                 const std::uint32_t) {
   size_type rows_plus_two, rows, cols;
   archive(cereal::make_size_tag(rows_plus_two));
   archive(rows);
@@ -66,7 +68,8 @@ inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
  * In this case each scalar value is serialized.
  */
 template <class Archive, typename _Scalar, int _Rows>
-inline void save(Archive &archive, const Eigen::Matrix<_Scalar, _Rows, 1> &v) {
+inline void save(Archive &archive, const Eigen::Matrix<_Scalar, _Rows, 1> &v,
+    const std::uint32_t version) {
   size_type rows = static_cast<size_type>(v.rows());
   archive(cereal::make_size_tag(rows));
   for (size_type i = 0; i < rows; i++) {
@@ -75,7 +78,8 @@ inline void save(Archive &archive, const Eigen::Matrix<_Scalar, _Rows, 1> &v) {
 };
 
 template <class Archive, typename _Scalar, int _Rows>
-inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, 1> &v) {
+inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, 1> &v,
+    const std::uint32_t version) {
   size_type rows;
   archive(cereal::make_size_tag(rows));
   v.resize(rows);
@@ -89,7 +93,8 @@ template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
 inline void
 serialize(Archive &archive,
           Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                _StorageIndex> &v) {
+                                _StorageIndex> &v,
+          const std::uint32_t version) {
   archive(v.indices());
 }
 
