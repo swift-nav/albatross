@@ -14,82 +14,69 @@
 #define ALBATROSS_CEREAL_EIGEN_H
 
 #include "Eigen/Dense"
-#include "cereal/cereal.hpp"
+#include <gzip/compress.hpp>
+#include <gzip/decompress.hpp>
+#include <cereal/cereal.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/vector.hpp>
 
 namespace cereal {
 
-/*
- * The subsequent save/load methods catch the serialization methods
- * for arbitrary Eigen::Matrix* types.  The general idea is that each
- * row is saved as a Eigen::Vector.
- */
-template <class Archive, typename _Scalar, int _Rows, int _Cols>
-inline void save(Archive &archive,
-                 const Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-  size_type rows = static_cast<size_type>(v.rows());
-  size_type cols = static_cast<size_type>(v.cols());
-  archive(cereal::make_size_tag(rows));
-  // Storing the rows and columns is redundant information but
-  // makes loading a lot easier.
-  archive(rows);
-  archive(cols);
-  for (size_type i = 0; i < rows; i++) {
-    Eigen::Matrix<_Scalar, _Cols, 1> row = v.row(i);
-    archive(row);
-  }
-};
+template <class Archive, class _Scalar, int _Rows, int _Cols>
+inline
+void
+  save(Archive & ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const & m, const std::uint32_t )
+  {
+    Eigen::Index rows = m.rows();
+    Eigen::Index cols = m.cols();
+    std::size_t size_in_bytes = static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
 
-template <class Archive, typename _Scalar, int _Rows, int _Cols>
-inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-  size_type rows_plus_two, rows, cols;
-  archive(cereal::make_size_tag(rows_plus_two));
-  archive(rows);
-  archive(cols);
-  /*
-   * In order to determine the size of a matrix, we have to first determine
-   * how many rows, then inspect the size of the first row to get the
-   * number of columns.
-   */
-  v.resize(rows, cols);
-  for (size_type i = 0; i < rows; i++) {
-    Eigen::Matrix<_Scalar, _Cols, 1> row;
-    archive(row);
-    v.row(i) = row;
-  }
-};
+    ar(rows);
+    ar(cols);
 
-/*
- * The subsequent save/load methods catch the serialization methods
- * for arbitrary Eigen::Vector* types through template specialization.
- * In this case each scalar value is serialized.
- */
-template <class Archive, typename _Scalar, int _Rows>
-inline void save(Archive &archive, const Eigen::Matrix<_Scalar, _Rows, 1> &v) {
-  size_type rows = static_cast<size_type>(v.rows());
-  archive(cereal::make_size_tag(rows));
-  for (size_type i = 0; i < rows; i++) {
-    archive(v(i));
-  }
-};
+    _Scalar *data = static_cast<_Scalar*>(std::malloc(size_in_bytes));
+    Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data, m.rows(), m.cols()) = m;
+    char *char_data = reinterpret_cast<char *>(data);
 
-template <class Archive, typename _Scalar, int _Rows>
-inline void load(Archive &archive, Eigen::Matrix<_Scalar, _Rows, 1> &v) {
-  size_type rows;
-  archive(cereal::make_size_tag(rows));
-  v.resize(rows);
-  for (size_type i = 0; i < rows; i++) {
-    archive(v(i));
+    const std::string compressed = gzip::compress(char_data, size_in_bytes);
+    auto base64string = base64::encode(reinterpret_cast<const unsigned char *>(compressed.data()), compressed.size());
+
+    ar(base64string);
   }
-};
+
+template <class Archive, class _Scalar, int _Rows, int _Cols> inline
+void
+  load(Archive & ar, Eigen::Matrix<_Scalar, _Rows, _Cols> & m, const std::uint32_t)
+  {
+    Eigen::Index rows;
+    Eigen::Index cols;
+    ar(rows);
+    ar(cols);
+
+    std::size_t size_in_bytes = static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
+
+    std::string base64string;
+    ar(base64string);
+
+    auto decoded = base64::decode(base64string);
+
+    const std::string decompressed = gzip::decompress(decoded.data(), decoded.size());
+
+    assert(size_in_bytes == decompressed.size());
+
+    _Scalar *decoded_data = static_cast<_Scalar*>(std::malloc(size_in_bytes));
+    std::memcpy(decoded_data, decompressed.data(), size_in_bytes);
+
+    m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(decoded_data, rows, cols);
+  }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
 inline void
 serialize(Archive &archive,
           Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                _StorageIndex> &v) {
+                                _StorageIndex> &v,
+          const std::uint32_t) {
   archive(v.indices());
 }
 
