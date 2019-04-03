@@ -93,7 +93,7 @@ template <typename ModelType> class CrossValidation;
 /*
  * RANSAC
  */
-template <typename ModelType, typename MetricType> class Ransac;
+template <typename ModelType, typename StrategyType> class Ransac;
 } // namespace albatross
 
 #endif

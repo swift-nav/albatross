@@ -51,7 +51,8 @@ using has_valid_cv_joint =
 /*
  * PredictionMetrics
  */
-template <typename T, typename PredictType> class is_prediction_metric {
+template <typename T, typename PredictType>
+class is_specific_prediction_metric {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().operator()(
                 std::declval<const PredictType &>(),
@@ -63,6 +64,13 @@ template <typename T, typename PredictType> class is_prediction_metric {
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T> struct is_prediction_metric {
+  static constexpr bool value =
+      (is_specific_prediction_metric<T, Eigen::VectorXd>::value ||
+       is_specific_prediction_metric<T, MarginalDistribution>::value ||
+       is_specific_prediction_metric<T, JointDistribution>::value);
 };
 
 /*

@@ -172,6 +172,16 @@ indices_complement(const std::vector<std::size_t> &indices,
   return vector_set_difference(all_indices, indices);
 }
 
+inline FoldIndices indices_from_names(const FoldIndexer &indexer,
+                                      const std::vector<FoldName> &names) {
+  FoldIndices output;
+  for (const auto &name : names) {
+    output.insert(output.end(), indexer.at(name).begin(),
+                  indexer.at(name).end());
+  }
+  return output;
+}
+
 } // namespace albatross
 
 #endif

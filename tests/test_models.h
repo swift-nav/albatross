@@ -46,10 +46,12 @@ public:
     std::size_t sample_size = 3;
     std::size_t min_inliers = 3;
     std::size_t max_iterations = 20;
-    NegativeLogLikelihood<JointDistribution> nll;
+
+    DefaultRansacStrategy ransac_strategy;
     const auto gp = gp_from_covariance(covariance);
-    return gp.ransac(nll, inlier_threshold, sample_size, min_inliers,
-                     max_iterations);
+
+    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
+                     min_inliers, max_iterations);
   }
 
   auto get_dataset() const { return make_toy_linear_data(); }

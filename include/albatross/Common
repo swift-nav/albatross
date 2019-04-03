@@ -35,6 +35,7 @@
 #include <numeric>
 #include <random>
 
+#include <albatross/core/declarations.h>
 #include <albatross/utils/map_utils.h>
 #include <albatross/cereal/eigen.h>
 
