@@ -18,5 +18,6 @@
 
 #include <albatross/utils/random_utils.h>
 #include <albatross/models/ransac.h>
+#include <albatross/models/ransac_gp.h>
 
 #endif

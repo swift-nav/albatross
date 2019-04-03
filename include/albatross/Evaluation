@@ -16,6 +16,7 @@
 #include "Core"
 
 #include <albatross/evaluation/likelihood.h>
+#include <albatross/evaluation/differential_entropy.h>
 #include <albatross/covariance_functions/traits.h>
 #include <albatross/evaluation/traits.h>
 #include <albatross/evaluation/folds.h>
