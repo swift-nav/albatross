@@ -47,9 +47,9 @@ public:
     std::size_t min_inliers = 3;
     std::size_t max_iterations = 20;
 
-    DefaultRansacStrategy ransac_strategy;
     const auto gp = gp_from_covariance(covariance);
 
+    DefaultGPRansacStrategy ransac_strategy;
     return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
                      min_inliers, max_iterations);
   }

@@ -19,7 +19,6 @@ template <typename FitType> struct RansacFunctions {
   // A function which takes a bunch of keys and fits a model
   // to the corresponding subset of data.
   using FitterFunc = std::function<FitType(const std::vector<FoldName> &)>;
-  //  using FitterFunc = FitType (*) (const std::vector<FoldName> &);
 
   // A function which takes a fit and a set of indices
   // and returns a metric which represents how well the model

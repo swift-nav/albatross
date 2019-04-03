@@ -168,5 +168,12 @@ private:
   const FitType fit_;
   const std::vector<FeatureType> features_;
 };
+
+template <typename ModelType, typename FeatureType, typename FitType>
+auto get_prediction(const ModelType &model, const FitType &fit,
+                    const std::vector<FeatureType> &features) {
+  return Prediction<ModelType, FeatureType, FitType>(model, fit, features);
+}
+
 } // namespace albatross
 #endif
