@@ -59,7 +59,7 @@ public:
     return sigma_constant.value * sigma_constant.value;
   }
 
-  const std::string name_;
+  std::string name_;
 };
 
 template <int order>
