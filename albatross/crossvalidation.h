@@ -13,11 +13,11 @@
 #ifndef ALBATROSS_CROSSVALIDATION_H
 #define ALBATROSS_CROSSVALIDATION_H
 
-#include "core/indexing.h"
-#include "core/model.h"
 #include <functional>
 #include <map>
 #include <memory>
+#include "core/indexing.h"
+#include "core/model.h"
 
 namespace albatross {
 
@@ -35,10 +35,10 @@ using EvaluationMetric = std::function<double(
  * returns a vector of scores for each fold.
  */
 template <typename FeatureType, typename PredictType = JointDistribution>
-static inline Eigen::VectorXd
-compute_scores(const EvaluationMetric<PredictType> &metric,
-               const std::vector<RegressionFold<FeatureType>> &folds,
-               const std::vector<PredictType> &predictions) {
+static inline Eigen::VectorXd compute_scores(
+    const EvaluationMetric<PredictType> &metric,
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::vector<PredictType> &predictions) {
   // Create a vector of metrics, one for each fold.
   Eigen::VectorXd metrics(static_cast<Eigen::Index>(folds.size()));
   // Loop over each fold, making predictions then evaluating them
@@ -50,15 +50,26 @@ compute_scores(const EvaluationMetric<PredictType> &metric,
 }
 
 template <typename FeatureType, typename CovarianceType>
-static inline Eigen::VectorXd
-compute_scores(const EvaluationMetric<Eigen::VectorXd> &metric,
-               const std::vector<RegressionFold<FeatureType>> &folds,
-               const std::vector<Distribution<CovarianceType>> &predictions) {
+static inline Eigen::VectorXd compute_scores(
+    const EvaluationMetric<Eigen::VectorXd> &metric,
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    const std::vector<Distribution<CovarianceType>> &predictions,
+    std::vector<RegressionFold<FeatureType>> *stripped_folds = nullptr) {
   std::vector<Eigen::VectorXd> converted;
+  s32 i = 0;
   for (const auto &pred : predictions) {
-    converted.push_back(pred.mean);
+    if (stripped_folds) {
+      if (pred.get_diagonal(i) < 1e4) {
+        stripped_folds->push_back(folds[i]);
+        converted.push_back(pred.mean);
+      }
+      ++i;
+    } else {
+      converted.push_back(pred.mean);
+    }
   }
-  return compute_scores(metric, folds, converted);
+  return compute_scores(metric, stripped_folds ? *stripped_folds : folds,
+                        converted);
 }
 
 /*
@@ -66,10 +77,10 @@ compute_scores(const EvaluationMetric<Eigen::VectorXd> &metric,
  * scores the fold, returning a vector of scores for each fold.
  */
 template <typename FeatureType, typename PredictType = JointDistribution>
-static inline Eigen::VectorXd
-cross_validated_scores(const EvaluationMetric<PredictType> &metric,
-                       const std::vector<RegressionFold<FeatureType>> &folds,
-                       RegressionModel<FeatureType> *model) {
+static inline Eigen::VectorXd cross_validated_scores(
+    const EvaluationMetric<PredictType> &metric,
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    RegressionModel<FeatureType> *model) {
   // Create a vector of predictions.
   std::vector<PredictType> predictions =
       model->template cross_validated_predictions<PredictType>(folds);
@@ -81,11 +92,10 @@ cross_validated_scores(const EvaluationMetric<PredictType> &metric,
  * scores the fold, returning a vector of scores for each fold.
  */
 template <typename FeatureType, typename PredictType = JointDistribution>
-static inline Eigen::VectorXd
-cross_validated_scores(const EvaluationMetric<PredictType> &metric,
-                       const RegressionDataset<FeatureType> &dataset,
-                       const FoldIndexer &fold_indexer,
-                       RegressionModel<FeatureType> *model) {
+static inline Eigen::VectorXd cross_validated_scores(
+    const EvaluationMetric<PredictType> &metric,
+    const RegressionDataset<FeatureType> &dataset,
+    const FoldIndexer &fold_indexer, RegressionModel<FeatureType> *model) {
   // Create a vector of predictions.
   std::vector<PredictType> predictions =
       model->template cross_validated_predictions<PredictType>(dataset,
@@ -142,7 +152,6 @@ template <typename FeatureType, typename PredictType>
 static inline MarginalDistribution concatenate_fold_predictions(
     const std::vector<RegressionFold<FeatureType>> &folds,
     const std::vector<PredictType> &predictions) {
-
   // Convert to map variants of the inputs.
   FoldIndexer fold_indexer;
   std::map<FoldName, PredictType> prediction_map;
@@ -155,9 +164,9 @@ static inline MarginalDistribution concatenate_fold_predictions(
 }
 
 template <typename FeatureType>
-static inline MarginalDistribution
-cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
-                        RegressionModel<FeatureType> *model) {
+static inline MarginalDistribution cross_validated_predict(
+    const std::vector<RegressionFold<FeatureType>> &folds,
+    RegressionModel<FeatureType> *model) {
   // Get the cross validated predictions, note however that
   // depending on the type of folds, these predictions may
   // be shuffled.
@@ -166,6 +175,6 @@ cross_validated_predict(const std::vector<RegressionFold<FeatureType>> &folds,
   return concatenate_fold_predictions(folds, predictions);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif
