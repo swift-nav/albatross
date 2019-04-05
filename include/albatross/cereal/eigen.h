@@ -31,17 +31,21 @@ void
     Eigen::Index cols = m.cols();
     std::size_t size_in_bytes = static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
 
-    ar(rows);
-    ar(cols);
-
+    // Turn the Eigen::Matrix in to an array of characters
     _Scalar *data = static_cast<_Scalar*>(std::malloc(size_in_bytes));
-    Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data, m.rows(), m.cols()) = m;
+    Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data, rows, cols) = m;
     char *char_data = reinterpret_cast<char *>(data);
 
-    const std::string compressed = gzip::compress(char_data, size_in_bytes);
-    auto base64string = base64::encode(reinterpret_cast<const unsigned char *>(compressed.data()), compressed.size());
+    std::string payload = gzip::compress(char_data, size_in_bytes);
 
-    ar(base64string);
+    if (::cereal::traits::is_text_archive<Archive>::value) {
+      payload = base64::encode(reinterpret_cast<const unsigned char *>(payload.data()),
+                               payload.size());
+    }
+
+    ar(CEREAL_NVP(rows));
+    ar(CEREAL_NVP(cols));
+    ar(CEREAL_NVP(payload));
   }
 
 template <class Archive, class _Scalar, int _Rows, int _Cols> inline
@@ -50,17 +54,19 @@ void
   {
     Eigen::Index rows;
     Eigen::Index cols;
-    ar(rows);
-    ar(cols);
+    std::string payload;
+
+    ar(CEREAL_NVP(rows));
+    ar(CEREAL_NVP(cols));
+    ar(CEREAL_NVP(payload));
 
     std::size_t size_in_bytes = static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
 
-    std::string base64string;
-    ar(base64string);
+    if (::cereal::traits::is_text_archive<Archive>::value) {
+      payload = base64::decode(payload);
+    }
 
-    auto decoded = base64::decode(base64string);
-
-    const std::string decompressed = gzip::decompress(decoded.data(), decoded.size());
+    const std::string decompressed = gzip::decompress(payload.data(), payload.size());
 
     assert(size_in_bytes == decompressed.size());
 
@@ -77,7 +83,7 @@ serialize(Archive &archive,
           Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
                                 _StorageIndex> &v,
           const std::uint32_t) {
-  archive(v.indices());
+  archive(cereal::make_nvp("indices", v.indices()));
 }
 
 } // namespace cereal

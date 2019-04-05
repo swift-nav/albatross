@@ -27,7 +27,7 @@ inline void save_lower_triangle(Archive &archive,
       data[cnt++] = v(i, j);
     }
   }
-  archive(data);
+  archive(cereal::make_nvp("lower_triangle", data));
 }
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
@@ -35,7 +35,7 @@ inline void load_lower_triangle(Archive &archive,
                                 Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
 
   Eigen::VectorXd data;
-  archive(data);
+  archive(cereal::make_nvp("lower_triangle", data));
   // We assume the matrix is square and compute the number of rows from the
   // storage size using the quadratic formula.
   //     rows^2 + rows - 2 * storage_size = 0
@@ -68,12 +68,14 @@ public:
 
   template <typename Archive> void save(Archive &archive, const std::uint32_t) const {
     save_lower_triangle(archive, this->m_matrix);
-    archive(this->m_transpositions, this->m_isInitialized);
+    archive(cereal::make_nvp("transpositions", this->m_transpositions),
+            cereal::make_nvp("is_initialized", this->m_isInitialized));
   }
 
   template <typename Archive> void load(Archive &archive, const std::uint32_t) {
     load_lower_triangle(archive, this->m_matrix);
-    archive(this->m_transpositions, this->m_isInitialized);
+    archive(cereal::make_nvp("transpositions", this->m_transpositions),
+            cereal::make_nvp("is_initialized", this->m_isInitialized));
   }
 
   std::vector<Eigen::MatrixXd>
