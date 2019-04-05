@@ -54,7 +54,7 @@ template <typename CovarianceType> struct Distribution {
   template <class Archive>
   typename std::enable_if<
       valid_in_out_serializer<CovarianceType, Archive>::value, void>::type
-  serialize(Archive &archive) {
+  serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("mean", mean));
     archive(cereal::make_nvp("covariance", covariance));
   }

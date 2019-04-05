@@ -30,7 +30,7 @@ public:
   FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
 
-  template <class Archive> void serialize(Archive &archive) {
+  template <class Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("model", model_));
     archive(cereal::make_nvp("fit", fit_));
   }

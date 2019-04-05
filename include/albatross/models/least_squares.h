@@ -22,7 +22,7 @@ template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
 
   bool operator==(const Fit &other) const { return (coefs == other.coefs); }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(coefs);
   }
 };

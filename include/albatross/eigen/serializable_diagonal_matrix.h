@@ -35,7 +35,7 @@ public:
   inline SerializableDiagonalMatrix(const DiagonalBase<OtherDerived> &other)
       : BaseClass(other){};
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("diagonal", this->m_diagonal));
   }
 

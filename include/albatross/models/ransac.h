@@ -246,7 +246,7 @@ struct Fit<Ransac<ModelType, StrategyType>, FeatureType> {
     return fit_model == other.fit_model;
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("fit_model", fit_model));
     archive(cereal::make_nvp("inliers", inliers));
     archive(cereal::make_nvp("outliers", outliers));
@@ -330,7 +330,7 @@ public:
   void save() const;
   void load();
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("sub_model", sub_model_));
     archive(cereal::make_nvp("strategy", strategy_));
     archive(cereal::make_nvp("inlier_threshold", inlier_threshold_));
