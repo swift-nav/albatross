@@ -32,7 +32,8 @@ struct Parameter {
   /*
    * For serialization through cereal.
    */
-  template <class Archive> void serialize(Archive &archive, const std::uint32_t) {
+  template <class Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("value", value));
     archive(cereal::make_nvp("prior", prior));
   };
@@ -264,7 +265,8 @@ public:
   /*
    * For serialization through cereal.
    */
-  template <class Archive> void save(Archive &archive, const std::uint32_t) const {
+  template <class Archive>
+  void save(Archive &archive, const std::uint32_t) const {
     archive(cereal::make_nvp("parameters", params_));
   };
 

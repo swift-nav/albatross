@@ -66,7 +66,8 @@ public:
       // Can we get around copying here?
       : LDLT<MatrixXd, Lower>(ldlt){};
 
-  template <typename Archive> void save(Archive &archive, const std::uint32_t) const {
+  template <typename Archive>
+  void save(Archive &archive, const std::uint32_t) const {
     save_lower_triangle(archive, this->m_matrix);
     archive(cereal::make_nvp("transpositions", this->m_transpositions),
             cereal::make_nvp("is_initialized", this->m_isInitialized));

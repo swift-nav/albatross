@@ -94,7 +94,8 @@ private:
   }
 
 public:
-  template <class Archive> void save(Archive &archive, const std::uint32_t) const {
+  template <class Archive>
+  void save(Archive &archive, const std::uint32_t) const {
     archive(cereal::make_nvp("params", derived().get_params()));
     archive(cereal::make_nvp("insights", insights_));
   }
