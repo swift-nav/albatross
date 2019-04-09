@@ -41,4 +41,20 @@ TYPED_TEST(ModelMetricTester, test_sanity) {
   EXPECT_FALSE(std::isnan(metric));
 }
 
+TEST(test_gp_from_prediction, test_model_from_prediction) {
+  MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
+  std::vector<double> test_features = {0.1, 1.1, 2.2};
+  auto joint_prediction = model.fit(dataset).predict(test_features).joint();
+  auto joint_prediction_from_prediction =
+      model.fit_from_prediction(test_features, joint_prediction)
+          .predict(test_features)
+          .joint();
+  EXPECT_TRUE(joint_prediction_from_prediction.mean.isApprox(
+      joint_prediction.mean, 1e-16));
+  EXPECT_TRUE(joint_prediction_from_prediction.covariance.isApprox(
+      joint_prediction.covariance, 1e-8));
+}
+
 } // namespace albatross

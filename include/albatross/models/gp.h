@@ -58,8 +58,36 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
     information = train_ldlt.solve(targets.mean);
   }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
+  // Create a fit that will replicate the given prediction states and
+  // covariances (targets) for the given features on the basis that k_uu is the
+  // prior covariance matrix relating them. This is useful because it allows us
+  // to create a model based on all the data we wish to include (and therefore
+  // be most accurate), then predict a few selected points based on this full
+  // model (getting the most accuracy possible) but after that only require a
+  // small amount of CPU load and memory to compute predictions close to those
+  // initial selected points while still, presumably, getting excellent
+  // accuracy. At least, predictions arbitrarily close to the initially
+  // requested predictions in the feature domain will also be arbitrarily close
+  // in the prediction distribution domain.
+  Fit(const std::vector<FeatureType> &features,
+      const JointDistribution &targets, const Eigen::MatrixXd &k_uu) {
+    // This construction is based on the formulae that ensure the new sub-model
+    // will obtain the same results as the full model for the initially
+    // predicted data points:
+    // information = K_uu^{-1}*targets.mean
+    // train_ldlt = LDLt(K_uu*(K_uu-cov)^{-1}*K_uu)
+    train_features = features;
+    Eigen::MatrixXd k_uu_minus_cov(k_uu - targets.covariance);
+    Eigen::SerializableLDLT k_uu_minus_cov_ldlt(k_uu_minus_cov.ldlt());
+    Eigen::MatrixXd cov(k_uu * k_uu_minus_cov_ldlt.solve(k_uu));
+    assert(!cov.hasNaN());
+    train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+    // Precompute the information vector
+    Eigen::SerializableLDLT k_uu_ldlt(k_uu.ldlt());
+    information = k_uu_ldlt.solve(targets.mean);
+  }
+
+  template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("information", information));
     archive(cereal::make_nvp("train_ldlt", train_ldlt));
     archive(cereal::make_nvp("train_features", train_features));
@@ -141,6 +169,19 @@ public:
       : covariance_function_(), model_name_(model_name){};
 
   ~GaussianProcessBase(){};
+
+  // Create a fit based on a subset of predicted features (with the given joint
+  // distribution) - the fit type also requires the prior covariance of the
+  // features to determine the model that will give the same mean and covariance
+  // for the initially predicted features
+  template <typename FeatureType>
+  auto fit_from_prediction(const std::vector<FeatureType> &features,
+                           const JointDistribution &joint) {
+    using FitType = typename fit_type<ImplType, FeatureType>::type;
+    using FitModelType = typename fit_model_type<ImplType, FeatureType>::type;
+    return FitModelType(
+        impl(), FitType(features, joint, covariance_function_(features)));
+  }
 
   std::string get_name() const { return model_name_; };
 
