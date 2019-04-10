@@ -143,6 +143,6 @@ private:
 using DefaultGPRansacStrategy =
     GaussianProcessRansacStrategy<NegativeLogLikelihood<JointDistribution>,
                                   LeaveOneOut>;
-}
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_RANSAC_GP_H_ */

@@ -45,6 +45,6 @@ inline double differential_entropy(const Eigen::MatrixXd &cov) {
   Eigen::LDLT<Eigen::MatrixXd> ldlt(cov);
   return differential_entropy(ldlt);
 }
-}
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_EVALUATION_DIFFERENTIAL_ENTROPY_H_ */
