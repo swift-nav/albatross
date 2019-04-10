@@ -123,6 +123,6 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
       : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
-}
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */

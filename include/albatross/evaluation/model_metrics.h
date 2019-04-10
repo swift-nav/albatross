@@ -76,6 +76,6 @@ struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
     return rmse_score;
   }
 };
-}
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_MODEL_METRICS_H_ */
