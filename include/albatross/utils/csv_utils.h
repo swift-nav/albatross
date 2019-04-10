@@ -26,7 +26,8 @@
  *
  * 1) Add the appropriate cereal serialization routines.  For example,
  *
- *   template <typename Archive> void serialize(Archive &archive) {
+ *   template <typename Archive> void serialize(Archive &archive, const
+ * std::uint32_t) {
  *       archive(cereal::make_nvp("foo", foo));
  *       archive(cereal::make_nvp("bar", bar));
  *   }

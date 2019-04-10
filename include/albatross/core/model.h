@@ -94,12 +94,13 @@ private:
   }
 
 public:
-  template <class Archive> void save(Archive &archive) const {
+  template <class Archive>
+  void save(Archive &archive, const std::uint32_t) const {
     archive(cereal::make_nvp("params", derived().get_params()));
     archive(cereal::make_nvp("insights", insights_));
   }
 
-  template <class Archive> void load(Archive &archive) {
+  template <class Archive> void load(Archive &archive, const std::uint32_t) {
     ParameterStore params;
     archive(cereal::make_nvp("params", params));
     derived().set_params(params);

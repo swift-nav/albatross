@@ -38,7 +38,7 @@ public:
   }
   bool operator!=(const Prior &other) { return !((*this) == other); }
 
-  template <typename Archive> void serialize(Archive &) {}
+  template <typename Archive> void serialize(Archive &, const std::uint32_t) {}
 };
 
 class UninformativePrior : public Prior {
@@ -46,7 +46,8 @@ public:
   std::string get_name() const override { return "uninformative"; };
   double log_pdf(double) const override { return 0.; }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this));
   }
 };
@@ -58,7 +59,8 @@ public:
 
   bool is_fixed() const override { return true; }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this));
   }
 };
@@ -70,7 +72,8 @@ public:
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this));
   }
 };
@@ -82,7 +85,8 @@ public:
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this));
   }
 };
@@ -105,7 +109,8 @@ public:
 
   double log_pdf(double) const override { return -log(upper_ - lower_); }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this), lower_, upper_);
   }
 
@@ -140,7 +145,8 @@ public:
     return -0.5 * (LOG_2PI_ * 2 * log(sigma_) + deviation * deviation);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this), mu_, sigma_);
   }
 
@@ -175,7 +181,8 @@ public:
     return -0.5 * LOG_2PI_ - log(sigma_) - log(x) - deviation * deviation;
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::base_class<Prior>(this), mu_, sigma_);
   }
 

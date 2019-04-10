@@ -13,3 +13,6 @@
 [submodule "third_party/cereal"]
 	path = third_party/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "third_party/gzip-hpp"]
+	path = third_party/gzip-hpp
+	url = https://github.com/mapbox/gzip-hpp.git

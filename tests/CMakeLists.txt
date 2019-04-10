@@ -15,7 +15,6 @@ add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_model_adapter.cc
   test_model_metrics.cc  
   test_models.cc
-  test_model_metrics.cc
   test_parameter_handling_mixin.cc
   test_prediction.cc
   test_radial.cc
@@ -47,6 +46,7 @@ target_link_libraries(albatross_unit_tests
   pthread
   gflags
   nlopt
+  z
   )
 add_custom_target(run_albatross_unit_tests ALL
   COMMAND albatross_unit_tests

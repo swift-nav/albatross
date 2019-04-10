@@ -54,7 +54,7 @@ template <typename FeatureType> struct RegressionDataset {
   template <class Archive>
   typename std::enable_if<valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
-  serialize(Archive &archive) {
+  serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("features", features));
     archive(cereal::make_nvp("targets", targets));
     archive(cereal::make_nvp("metadata", metadata));
@@ -63,7 +63,7 @@ template <typename FeatureType> struct RegressionDataset {
   template <class Archive>
   typename std::enable_if<!valid_in_out_serializer<FeatureType, Archive>::value,
                           void>::type
-  serialize(Archive &) {
+  serialize(Archive &, const std::uint32_t) {
     static_assert(delay_static_assert<Archive>::value,
                   "In order to serialize a RegressionDataset the corresponding "
                   "FeatureType must be serializable.");

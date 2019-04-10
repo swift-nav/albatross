@@ -58,7 +58,8 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
     information = train_ldlt.solve(targets.mean);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("information", information));
     archive(cereal::make_nvp("train_ldlt", train_ldlt));
     archive(cereal::make_nvp("train_features", train_features));

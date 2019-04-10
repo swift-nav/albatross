@@ -22,6 +22,7 @@ target_include_directories(albatross SYSTEM INTERFACE
   "${PROJECT_SOURCE_DIR}/third_party/eigen/"
   "${PROJECT_SOURCE_DIR}/third_party/cereal/include"
   "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/"
+  "${PROJECT_SOURCE_DIR}/third_party/gzip-hpp/include"
   )
 
 include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)

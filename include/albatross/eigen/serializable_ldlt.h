@@ -18,52 +18,42 @@ namespace Eigen {
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void save_lower_triangle(Archive &archive,
                                 const Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-  cereal::size_type rows = static_cast<cereal::size_type>(v.rows());
-  cereal::size_type storage_size = (rows * rows + rows) / 2;
-  archive(cereal::make_size_tag(storage_size));
-  for (cereal::size_type i = 0; i < rows; i++) {
-    for (cereal::size_type j = 0; j <= i; j++) {
-      archive(v(i, j));
+  Eigen::Index storage_size = (v.rows() * v.rows() + v.rows()) / 2;
+  Eigen::VectorXd data(storage_size);
+
+  Eigen::Index cnt = 0;
+  for (Eigen::Index i = 0; i < v.rows(); i++) {
+    for (Eigen::Index j = 0; j <= i; j++) {
+      data[cnt++] = v(i, j);
     }
   }
+  archive(cereal::make_nvp("lower_triangle", data));
 }
-
-inline void adjust_storage_size(__attribute__((unused))
-                                cereal::JSONInputArchive &archive,
-                                cereal::size_type *storage_size) {
-  // TODO: understand why the storage size upon load is always augmented by two
-  // when using a JSON archive.
-  *storage_size -= 2;
-}
-
-template <class Archive>
-inline void adjust_storage_size(__attribute__((unused)) Archive &archive,
-                                __attribute__((unused))
-                                cereal::size_type *storage_size) {}
 
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void load_lower_triangle(Archive &archive,
                                 Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-  cereal::size_type storage_size;
-  archive(cereal::make_size_tag(storage_size));
-  adjust_storage_size(archive, &storage_size);
+
+  Eigen::VectorXd data;
+  archive(cereal::make_nvp("lower_triangle", data));
   // We assume the matrix is square and compute the number of rows from the
   // storage size using the quadratic formula.
   //     rows^2 + rows - 2 * storage_size = 0
   double a = 1;
   double b = 1;
-  double c = -2. * static_cast<double>(storage_size);
+  double c = -2. * static_cast<double>(data.size());
   double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
   assert(rows_as_double -
                  static_cast<Eigen::Index>(std::lround(rows_as_double)) ==
              0. &&
          "inferred a non integer number of rows");
-  cereal::size_type rows =
-      static_cast<cereal::size_type>(std::lround(rows_as_double));
+  Eigen::Index rows = static_cast<Eigen::Index>(std::lround(rows_as_double));
+
   v.resize(rows, rows);
-  for (cereal::size_type i = 0; i < rows; i++) {
-    for (cereal::size_type j = 0; j <= i; j++) {
-      archive(v(i, j));
+  Eigen::Index cnt = 0;
+  for (Eigen::Index i = 0; i < rows; i++) {
+    for (Eigen::Index j = 0; j <= i; j++) {
+      v(i, j) = data[cnt++];
     }
   }
 }
@@ -76,14 +66,17 @@ public:
       // Can we get around copying here?
       : LDLT<MatrixXd, Lower>(ldlt){};
 
-  template <typename Archive> void save(Archive &archive) const {
+  template <typename Archive>
+  void save(Archive &archive, const std::uint32_t) const {
     save_lower_triangle(archive, this->m_matrix);
-    archive(this->m_transpositions, this->m_isInitialized);
+    archive(cereal::make_nvp("transpositions", this->m_transpositions),
+            cereal::make_nvp("is_initialized", this->m_isInitialized));
   }
 
-  template <typename Archive> void load(Archive &archive) {
+  template <typename Archive> void load(Archive &archive, const std::uint32_t) {
     load_lower_triangle(archive, this->m_matrix);
-    archive(this->m_transpositions, this->m_isInitialized);
+    archive(cereal::make_nvp("transpositions", this->m_transpositions),
+            cereal::make_nvp("is_initialized", this->m_isInitialized));
   }
 
   std::vector<Eigen::MatrixXd>
@@ -162,6 +155,7 @@ public:
         MatrixXd(MatrixXd(this->matrixLDLT()).triangularView<Eigen::Lower>());
     auto rhs_lower =
         MatrixXd(MatrixXd(rhs.matrixLDLT()).triangularView<Eigen::Lower>());
+
     return (this->m_isInitialized == rhs.m_isInitialized &&
             this_lower == rhs_lower &&
             this->transpositionsP().indices() ==

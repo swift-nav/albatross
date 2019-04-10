@@ -38,7 +38,7 @@ public:
   template <class Archive>
   typename std::enable_if<valid_output_serializer<ModelFit, Archive>::value,
                           void>::type
-  save(Archive &archive) const {
+  save(Archive &archive, const std::uint32_t) const {
     archive(cereal::make_nvp(
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
@@ -49,7 +49,7 @@ public:
   template <class Archive>
   typename std::enable_if<valid_input_serializer<ModelFit, Archive>::value,
                           void>::type
-  load(Archive &archive) {
+  load(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp(
         "model_definition",
         cereal::base_class<RegressionModel<FeatureType>>(this)));
@@ -64,7 +64,7 @@ public:
   template <class Archive>
   typename std::enable_if<!valid_output_serializer<ModelFit, Archive>::value,
                           void>::type
-  save(Archive &) const {
+  save(Archive &, const std::uint32_t) const {
     static_assert(delay_static_assert<Archive>::value,
                   "SerializableRegressionModel requires a ModelFit type which "
                   "is serializable.");
@@ -73,7 +73,7 @@ public:
   template <class Archive>
   typename std::enable_if<!valid_input_serializer<ModelFit, Archive>::value,
                           void>::type
-  load(Archive &) const {
+  load(Archive &, const std::uint32_t) const {
     static_assert(delay_static_assert<Archive>::value,
                   "SerializableRegressionModel requires a ModelFit type which "
                   "is serializable.");
