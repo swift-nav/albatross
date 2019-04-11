@@ -59,11 +59,29 @@ add_custom_target(run_call_trace_example
   COMMENT "Running call_trace_example"
   )
 
+
+add_executable(sparse_example
+  sparse_example.cc
+  )
+target_link_libraries(sparse_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_sparse_example
+  DEPENDS sparse_example
+  COMMAND sparse_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv
+  COMMENT "Running inspection_example"
+  )
+
+
 set(albatross_example_BINARIES
   sinc_example
   temperature_example
   call_trace_example
   inspection_example
+  sparse_example
   )
 foreach(TARGET IN LISTS albatross_example_BINARIES)
   target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})

@@ -23,6 +23,7 @@ add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
   test_scaling_function.cc
   test_serializable_ldlt.cc
   test_serialize.cc
+  test_sparse_gp.cc
   test_traits_cereal.cc
   test_traits_core.cc
   test_traits_covariance_functions.cc
