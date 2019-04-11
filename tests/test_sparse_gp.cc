@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "test_models.h"
+#include <chrono>
 
 #include <albatross/models/sparse_gp.h>
 
@@ -55,4 +56,31 @@ TEST(test_sparse_gp, test_sanity) {
   EXPECT_LT(really_sparse_cov_diff, 0.5);
   EXPECT_GT(really_sparse_cov_diff, sparse_cov_diff);
 }
+
+TEST(test_sparse_gp, test_scales) {
+  auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
+
+  auto covariance = make_simple_covariance_function();
+
+  auto direct = gp_from_covariance(covariance, "direct");
+
+  using namespace std::chrono;
+  high_resolution_clock::time_point start = high_resolution_clock::now();
+  auto direct_fit = direct.fit(large_dataset);
+  high_resolution_clock::time_point end = high_resolution_clock::now();
+  auto direct_duration = duration_cast<microseconds>(end - start).count();
+
+  LeaveOneOut loo;
+  UniformlySpacedInducingPoints strategy(100);
+  auto sparse = sparse_gp_from_covariance(covariance, strategy, loo, "sparse");
+
+  start = high_resolution_clock::now();
+  auto sparse_fit = sparse.fit(large_dataset);
+  end = high_resolution_clock::now();
+  auto sparse_duration = duration_cast<microseconds>(end - start).count();
+
+  // Make sure the sparse version is a lot faster.
+  EXPECT_LT(sparse_duration, 0.2 * direct_duration);
+}
+
 } // namespace albatross

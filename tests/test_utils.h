@@ -20,6 +20,25 @@
 
 namespace albatross {
 
+static inline auto make_toy_sine_data(const double a = 5., const double b = 10.,
+                                      const double sigma = 0.1,
+                                      const std::size_t n = 10) {
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  gen.seed(3);
+  std::normal_distribution<> d{0., sigma};
+  std::vector<double> features;
+  Eigen::VectorXd targets(n);
+
+  for (std::size_t i = 0; i < n; i++) {
+    double x = static_cast<double>(i);
+    features.push_back(x);
+    targets[i] = a * sin(x * b) + d(gen);
+  }
+
+  return RegressionDataset<double>(features, targets);
+}
+
 static inline auto make_toy_linear_data(const double a = 5.,
                                         const double b = 1.,
                                         const double sigma = 0.1,
