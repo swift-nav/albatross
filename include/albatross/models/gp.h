@@ -45,8 +45,14 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
 
   Fit(){};
 
+  Fit(const std::vector<FeatureType> &features_,
+      const Eigen::SerializableLDLT &ldlt_, const Eigen::VectorXd &information_)
+      : train_features(features_), train_ldlt(ldlt_),
+        information(information_) {}
+
   Fit(const std::vector<FeatureType> &features,
       const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets) {
+
     train_features = features;
     Eigen::MatrixXd cov(train_cov);
     if (targets.has_covariance()) {
