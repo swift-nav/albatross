@@ -52,8 +52,8 @@ if __name__ == "__main__":
              predictions_data['target'].astype('float'), color='black',
              label='truth')
     # Show the training points
-    plt.scatter(train_data['x'],
-                train_data['y'], color='k',
+    plt.scatter(train_data['feature'],
+                train_data['target'], color='k',
                 label='training points')
 
     y_min = np.min(predictions_data['target'].astype('float'))
