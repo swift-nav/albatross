@@ -148,7 +148,7 @@ public:
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu L^-T L^-1 K_uf
-    //          = P P^T
+    //          = P^T P
     Eigen::MatrixXd P = K_uu_llt.matrixL().solve(K_fu.transpose());
 
     // Efficiently compute the diagonal diag[Q_ff].
