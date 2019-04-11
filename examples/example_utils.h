@@ -19,8 +19,13 @@
 #include <fstream>
 #include <iostream>
 
+#ifndef EXAMPLE_SLOPE_VALUE
 #define EXAMPLE_SLOPE_VALUE sqrt(2.)
+#endif
+
+#ifndef EXAMPLE_CONSTANT_VALUE
 #define EXAMPLE_CONSTANT_VALUE 3.14159
+#endif
 
 /*
  * Randomly samples n points between low and high.
@@ -88,13 +93,15 @@ read_csv_input(const std::string &file_path) {
   std::vector<double> xs;
   std::vector<double> ys;
 
-  io::CSVReader<2> file_in(file_path);
+  io::CSVReader<5> file_in(file_path);
 
-  file_in.read_header(io::ignore_extra_column, "x", "y");
-  double x, y;
+  file_in.read_header(io::ignore_extra_column, "feature", "prediction",
+                      "prediction_variance", "target", "target_variance");
+  double x, pred, y;
+  std::string pred_var, target_var;
   bool more_to_parse = true;
   while (more_to_parse) {
-    more_to_parse = file_in.read_row(x, y);
+    more_to_parse = file_in.read_row(x, pred, pred_var, y, target_var);
     if (more_to_parse) {
       xs.push_back(x);
       ys.push_back(y);
@@ -122,11 +129,9 @@ void maybe_create_training_data(const std::string &input_path, const int n,
     std::cout << "creating training data and writing it to : " << input_path
               << std::endl;
     auto data = create_train_data(n, low, high, meas_noise);
-    std::ofstream train;
-    train.open(input_path);
-    train << "x,y" << std::endl;
-    for (int i = 0; i < static_cast<int>(data.features.size()); i++) {
-      train << data.features[i] << ", " << data.targets.mean[i] << std::endl;
+    {
+      std::ofstream train_file(input_path);
+      albatross::write_to_csv(train_file, data);
     }
   }
 }
