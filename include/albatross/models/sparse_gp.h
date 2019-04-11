@@ -228,7 +228,8 @@ public:
   IndexingFunction independent_group_indexing_function;
 };
 
-template <typename CovFunc, typename InducingPointStrategy, typename IndexingFunction>
+template <typename CovFunc, typename InducingPointStrategy,
+          typename IndexingFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
                                InducingPointStrategy &strategy,
                                IndexingFunction &index_function,
@@ -237,6 +238,6 @@ auto sparse_gp_from_covariance(CovFunc covariance_function,
                                          IndexingFunction>(
       covariance_function, strategy, index_function, model_name);
 };
-}
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_ */
