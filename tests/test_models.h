@@ -69,6 +69,15 @@ public:
   using Base::_predict_impl;
   using Base::Base;
 
+  template <typename FeatureType, typename PredictType>
+  std::map<std::string, PredictType>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                              const FoldIndexer &fold_indexer,
+                              PredictTypeIdentity<PredictType> identity) const {
+    return gp_cross_validated_predictions(dataset, fold_indexer, *this,
+                                          identity);
+  }
+
   template <typename FitFeatureType>
   using GPFitType = Fit<Base, FitFeatureType>;
 

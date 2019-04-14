@@ -153,17 +153,13 @@ TEST(test_traits_core, test_fit_type) {
   //                        fit_type<HasPrivateValidFitImpl, X>::type>::value));
 }
 
-template <typename T> struct Base {};
+template <typename T> struct Base : public ModelBase<T> {};
 
 struct Derived : public Base<Derived> {};
 
 TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, X>>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, Y>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, X>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, Y>>::value));
   // If a Derived class which inherits from Base<Derived> has a fit
   // which returns Fit<Base<Derived>> consider that a valid fit type.
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>, X>>::value));

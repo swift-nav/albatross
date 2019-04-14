@@ -283,74 +283,6 @@ public:
                             PredictTypeIdentity<PredictType> &&) const =
       delete; // Covariance Function isn't defined for FeatureType.
 
-  template <typename FeatureType>
-  std::map<std::string, JointDistribution>
-  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const FoldIndexer &fold_indexer,
-                              PredictTypeIdentity<JointDistribution>) const {
-
-    const auto fit_model = impl().fit(dataset);
-    const auto gp_fit = fit_model.get_fit();
-
-    const std::vector<FoldIndices> indices = map_values(fold_indexer);
-    const std::vector<std::string> fold_names = map_keys(fold_indexer);
-    const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
-
-    std::map<std::string, JointDistribution> output;
-    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
-      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-      const auto A_inv = inverse_blocks[i].inverse();
-      output[fold_names[i]] = JointDistribution(yi - A_inv * vi, A_inv);
-    }
-    return output;
-  }
-
-  template <typename FeatureType>
-  std::map<std::string, MarginalDistribution>
-  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const FoldIndexer &fold_indexer,
-                              PredictTypeIdentity<MarginalDistribution>) const {
-
-    const auto fit_model = impl().fit(dataset);
-    const auto gp_fit = fit_model.get_fit();
-
-    const std::vector<FoldIndices> indices = map_values(fold_indexer);
-    const std::vector<std::string> fold_names = map_keys(fold_indexer);
-    const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
-
-    std::map<std::string, MarginalDistribution> output;
-    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
-      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-      const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-      output[fold_names[i]] = MarginalDistribution(
-          yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal());
-    }
-    return output;
-  }
-
-  template <typename FeatureType>
-  std::map<std::string, Eigen::VectorXd>
-  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const FoldIndexer &fold_indexer,
-                              PredictTypeIdentity<Eigen::VectorXd>) const {
-    const auto fit_model = impl().fit(dataset);
-    const auto gp_fit = fit_model.get_fit();
-    const std::vector<FoldIndices> indices = map_values(fold_indexer);
-    const std::vector<std::string> fold_names = map_keys(fold_indexer);
-    const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
-
-    std::map<std::string, Eigen::VectorXd> output;
-    for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-      Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
-      Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-      const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-      output[fold_names[i]] = yi - A_ldlt.solve(vi);
-    }
-    return output;
-  }
-
   CovFunc get_covariance() const { return covariance_function_; }
 
 protected:
@@ -364,6 +296,77 @@ protected:
   std::string model_name_;
 };
 
+template <typename FeatureType, typename GPType>
+std::map<std::string, JointDistribution>
+gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                               const FoldIndexer &fold_indexer,
+                               const GPType &model,
+                               PredictTypeIdentity<JointDistribution>) {
+
+  const auto fit_model = model.fit(dataset);
+  const auto gp_fit = fit_model.get_fit();
+
+  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<std::string> fold_names = map_keys(fold_indexer);
+  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+
+  std::map<std::string, JointDistribution> output;
+  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+    Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+    Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
+    const auto A_inv = inverse_blocks[i].inverse();
+    output[fold_names[i]] = JointDistribution(yi - A_inv * vi, A_inv);
+  }
+  return output;
+}
+
+template <typename FeatureType, typename GPType>
+std::map<std::string, MarginalDistribution>
+gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                               const FoldIndexer &fold_indexer,
+                               const GPType &model,
+                               PredictTypeIdentity<MarginalDistribution>) {
+
+  const auto fit_model = model.fit(dataset);
+  const auto gp_fit = fit_model.get_fit();
+
+  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<std::string> fold_names = map_keys(fold_indexer);
+  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+
+  std::map<std::string, MarginalDistribution> output;
+  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+    Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+    Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
+    const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
+    output[fold_names[i]] = MarginalDistribution(
+        yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal());
+  }
+  return output;
+}
+
+template <typename FeatureType, typename GPType>
+std::map<std::string, Eigen::VectorXd>
+gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                               const FoldIndexer &fold_indexer,
+                               const GPType &model,
+                               PredictTypeIdentity<Eigen::VectorXd>) {
+  const auto fit_model = model.fit(dataset);
+  const auto gp_fit = fit_model.get_fit();
+  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<std::string> fold_names = map_keys(fold_indexer);
+  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+
+  std::map<std::string, Eigen::VectorXd> output;
+  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
+    Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
+    Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
+    const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
+    output[fold_names[i]] = yi - A_ldlt.solve(vi);
+  }
+  return output;
+}
+
 /*
  * Generic Gaussian Process Implementation.
  */
@@ -373,6 +376,15 @@ class GaussianProcessRegression
 public:
   using Base = GaussianProcessBase<CovFunc, GaussianProcessRegression<CovFunc>>;
   using Base::Base;
+
+  template <typename FeatureType, typename PredictType>
+  std::map<std::string, PredictType>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                              const FoldIndexer &fold_indexer,
+                              PredictTypeIdentity<PredictType> identity) const {
+    return gp_cross_validated_predictions(dataset, fold_indexer, *this,
+                                          identity);
+  }
 };
 
 template <typename CovFunc>
