@@ -185,14 +185,17 @@ public:
      *     C^-1 = (K_uu^-1 - S)^-1
      *                                                  (Expansion of S)
      *          = (K_uu^-1 - (K_uu + K_uf A^-1 K_fu)^-1)^-1
-     *                                          (Matrix Inversion Lemma)
-     *          = (K_uu^-1 K_uf (A + K_fu K_uu^-1 K_uf)^-1 K_fu K_uu-1)
+     *                                        (Woodbury Matrix Identity)
+     *          = (K_uu^-1 K_uf (A + K_fu K_uu^-1 K_uf)^-1 K_fu K_uu^-1)
      *                                   (LL^T = K_uu and P = L^-1 K_uf)
      *          = L^-T P (A + P^T P)^-1 P^T L^-1
      *                                        (Searle Set of Identities)
-     *          = L^-T C A^-1 P^T (I + P A^-1 P)^-1 L^-1
-     *                           (B = (I + P A^-1 P) and R = A^-1/2 P^T)
+     *          = L^-T P A^-1 P^T (I + P A^-1 P^T)^-1 L^-1
+     *                         (B = (I + P A^-1 P^T) and R = A^-1/2 P^T)
      *          = L^-T R^T R B^-1 L^-1
+     *
+     *  taking the inverse of that then gives us:
+     *      C   = L B (R^T R)^-1 L^T
      *
      *  reusing some of the precomputed values there leads to:
      *
@@ -212,8 +215,8 @@ public:
     Eigen::MatrixXd L_uu_inv =
         K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
     Eigen::MatrixXd RtRBiLi = RtR * B_ldlt.solve(L_uu_inv);
-    Eigen::MatrixXd C =
-        (K_uu_llt.matrixL().transpose().solve(RtRBiLi)).inverse();
+    Eigen::MatrixXd LT = K_uu_llt.matrixL().transpose();
+    Eigen::MatrixXd C = K_uu_llt.matrixL() * B * RtR.ldlt().solve(LT);
 
     return typename Base::template GPFitType<FeatureType>(u, C.ldlt(), v);
   }
