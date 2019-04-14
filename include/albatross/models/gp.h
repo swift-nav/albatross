@@ -145,8 +145,7 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
  * to define a custom ImplType.  See test_models.cc for an example.
  */
 template <typename CovFunc, typename ImplType>
-class GaussianProcessBase
-    : public ModelBase<GaussianProcessBase<CovFunc, ImplType>> {
+class GaussianProcessBase : public ModelBase<ImplType> {
 
 protected:
   template <typename FitFeatureType>
@@ -214,8 +213,7 @@ public:
   // FeatureType but the CovarianceFunction does.
   template <typename FeatureType,
             typename std::enable_if<
-                has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
-                    !has_valid_fit<ImplType, FeatureType>::value,
+                has_call_operator<CovFunc, FeatureType, FeatureType>::value,
                 int>::type = 0>
   GPFitType<FeatureType> _fit_impl(const std::vector<FeatureType> &features,
                                    const MarginalDistribution &targets) const {
@@ -223,22 +221,11 @@ public:
     return GPFitType<FeatureType>(features, cov, targets);
   }
 
-  template <typename FeatureType,
-            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
-                                    int>::type = 0>
-  auto _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const {
-    return impl()._fit_impl(features, targets);
-  }
-
   template <
       typename FeatureType, typename FitFeaturetype,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
-              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value &&
-              !has_valid_predict<ImplType, FeatureType,
-                                 GPFitType<FitFeaturetype>,
-                                 JointDistribution>::value,
+              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
   JointDistribution
   _predict_impl(const std::vector<FeatureType> &features,
@@ -255,10 +242,7 @@ public:
       typename FeatureType, typename FitFeaturetype,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
-              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value &&
-              !has_valid_predict<ImplType, FeatureType,
-                                 GPFitType<FitFeaturetype>,
-                                 MarginalDistribution>::value,
+              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
   MarginalDistribution
   _predict_impl(const std::vector<FeatureType> &features,
@@ -278,10 +262,7 @@ public:
       typename FeatureType, typename FitFeaturetype,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
-              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value &&
-              !has_valid_predict<ImplType, FeatureType,
-                                 GPFitType<FitFeaturetype>,
-                                 Eigen::VectorXd>::value,
+              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
   Eigen::VectorXd _predict_impl(const std::vector<FeatureType> &features,
                                 const GPFitType<FitFeaturetype> &gp_fit,
@@ -291,25 +272,11 @@ public:
     return gp_mean_prediction(cross_cov, gp_fit.information);
   }
 
-  template <typename FeatureType, typename FitFeatureType, typename PredictType,
-            typename std::enable_if<has_valid_predict<ImplType, FeatureType,
-                                                      GPFitType<FitFeatureType>,
-                                                      PredictType>::value,
-                                    int>::type = 0>
-  PredictType _predict_impl(const std::vector<FeatureType> &features,
-                            const GPFitType<FitFeatureType> &gp_fit,
-                            PredictTypeIdentity<PredictType> &&) const {
-    return impl()._predict_impl(features, gp_fit,
-                                PredictTypeIdentity<PredictType>());
-  }
-
   template <
       typename FeatureType, typename FitFeatureType, typename PredictType,
       typename std::enable_if<
-          (!has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
-           !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value) &&
-              !has_valid_predict<ImplType, FeatureType,
-                                 GPFitType<FitFeatureType>, PredictType>::value,
+          !has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
+              !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
           int>::type = 0>
   PredictType _predict_impl(const std::vector<FeatureType> &features,
                             const GPFitType<FitFeatureType> &gp_fit,
@@ -405,17 +372,7 @@ class GaussianProcessRegression
     : public GaussianProcessBase<CovFunc, GaussianProcessRegression<CovFunc>> {
 public:
   using Base = GaussianProcessBase<CovFunc, GaussianProcessRegression<CovFunc>>;
-
-  GaussianProcessRegression() : Base(){};
-  GaussianProcessRegression(CovFunc &covariance_function)
-      : Base(covariance_function){};
-  GaussianProcessRegression(CovFunc &covariance_function,
-                            const std::string &model_name)
-      : Base(covariance_function, model_name){};
-
-  // The only reason these are here is to hide the base class implementations.
-  void _fit_impl() const = delete;
-  void _predict_impl() const = delete;
+  using Base::Base;
 };
 
 template <typename CovFunc>
