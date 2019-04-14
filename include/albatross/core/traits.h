@@ -54,18 +54,16 @@ public:
 /*
  * Like std::is_base_of<T, U> except compares the first template parameter.  Ie,
  *
- *  first_template_param_is_base_of<C<T, X>, C<U, Y>>::value == is_base_of<T,
+ *  first_template_param_is_base_of<T, C<U, X>>::value == is_base_of<T,
  * U>::value
  */
 template <typename T, typename U>
 struct first_template_param_is_base_of : public std::false_type {};
 
 template <template <typename, typename> class Base, typename T, typename U,
-          typename P, typename Q>
-struct first_template_param_is_base_of<Base<T, P>, Base<U, Q>>
+          typename P>
+struct first_template_param_is_base_of<T, Base<U, P>>
     : public std::is_base_of<T, U> {};
-
-struct is_valid_fit_type_dummy_type {};
 
 /*
  * A valid fit for a ModelType is defined as Fit<AnyBaseOfModelType,
@@ -73,8 +71,7 @@ struct is_valid_fit_type_dummy_type {};
  */
 template <typename ModelType, typename FitType>
 struct is_valid_fit_type
-    : public first_template_param_is_base_of<
-          FitType, Fit<ModelType, is_valid_fit_type_dummy_type>> {};
+    : public first_template_param_is_base_of<ModelBase<ModelType>, FitType> {};
 
 /*
  * This determines whether or not a class (T) has a method defined for,
