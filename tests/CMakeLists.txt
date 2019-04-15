@@ -1,4 +1,5 @@
 add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
+  test_block_utils.cc
   test_call_trace.cc
   test_core_dataset.cc
   test_core_distribution.cc

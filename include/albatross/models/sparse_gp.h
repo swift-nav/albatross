@@ -81,7 +81,7 @@ struct UniformlySpacedInducingPoints {
  * that it is block diagonal.  These assumptions lead to an efficient way of
  * inferring the posterior distribution for some new location f*,
  *
- *     [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** − Q_** + K_*u S K_u*)
+ *     [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
  *
  *  Where S = (K_uu + K_uf A^-1 K_fu)^-1 and A = diag(K_ff - Q_ff) and "diag"
  * may mean diagonal or block diagonal.  Regardless we end up with O(m^2n)
@@ -124,23 +124,34 @@ public:
       : Base(covariance_function, model_name){};
 
   template <typename FeatureType>
-  auto _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const {
-    static_assert(std::is_same<IndexingFunction, LeaveOneOut>::value,
-                  "Only FITC is currently implemented, but by allowing "
-                  "arbitrary groups this could turn into PITC");
+  auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
+                 const MarginalDistribution &out_of_order_targets) const {
+
+    const auto indexer =
+        independent_group_indexing_function(out_of_order_features);
+
+    std::vector<std::size_t> reordered_inds;
+    BlockDiagonal K_ff;
+
+    for (const auto &pair : indexer) {
+      reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
+                            pair.second.end());
+      auto subset_features = subset(out_of_order_features, pair.second);
+      K_ff.blocks.emplace_back(this->covariance_function_(subset_features));
+      if (out_of_order_targets.has_covariance()) {
+        K_ff.blocks.back().diagonal() +=
+            subset(out_of_order_targets.covariance.diagonal(), pair.second);
+      }
+    }
+
+    const auto features = subset(out_of_order_features, reordered_inds);
+    const auto targets = subset(out_of_order_targets, reordered_inds);
 
     // Determine the set of inducing points, u.
     auto u = inducing_point_strategy(features);
 
-    Eigen::Index n = targets.mean.size();
     Eigen::Index m = static_cast<Eigen::Index>(u.size());
 
-    // Create the covariance matrices we need.
-    Eigen::VectorXd K_ff_diag = this->covariance_function_.diagonal(features);
-    if (targets.has_covariance()) {
-      K_ff_diag += targets.covariance.diagonal();
-    }
     Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
     Eigen::MatrixXd K_uu = this->covariance_function_(u);
 
@@ -154,13 +165,24 @@ public:
     // Efficiently compute the diagonal diag[Q_ff].
     Eigen::VectorXd Q_ff_diag = P.colwise().squaredNorm();
 
-    Eigen::VectorXd A = K_ff_diag - Q_ff_diag;
+    BlockDiagonal Q_ff;
+    Eigen::Index i = 0;
+    for (const auto &pair : indexer) {
+      Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
+      auto P_cols = P.block(0, i, P.rows(), cols);
+      Q_ff.blocks.emplace_back(P_cols.transpose() * P_cols);
+      i += cols;
+    }
 
-    if (A.minCoeff() < 1e-6) {
+    auto A = K_ff - Q_ff;
+
+    if (A.diagonal().minCoeff() < 1e-6) {
       // It's possible that the inducing points will perfectly describe
       // some of the data, in which case we need to add a bit of extra
       // noise to make sure lambda is invertible.
-      A += 1e-6 * Eigen::VectorXd::Ones(n);
+      for (auto &b : A.blocks) {
+        b.diagonal() += 1e-6 * Eigen::VectorXd::Ones(b.rows());
+      }
     }
     /*
      *
@@ -175,7 +197,7 @@ public:
      *
      *  we can find v easily,
      *
-     *     v = S K_uf^-1 A^-1 y
+     *     v = S K_uf A^-1 y
      *
      *  and to get C we need to do some algebra,
      *
@@ -202,14 +224,15 @@ public:
      *
      *     v = L^-T B^-1 P * A^-1 y
      */
-    Eigen::VectorXd A_sqrt = A.array().sqrt();
-    Eigen::MatrixXd RtR = A_sqrt.asDiagonal().inverse() * P.transpose();
+    auto A_llt = A.llt();
+    Eigen::MatrixXd Pt = P.transpose();
+    Eigen::MatrixXd RtR = A_llt.matrixL().llt().solve(Pt);
     RtR = RtR.transpose() * RtR;
     Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
     auto B_ldlt = B.ldlt();
 
-    Eigen::VectorXd v = P * (A.asDiagonal().inverse() * targets.mean);
+    Eigen::VectorXd v = P * A_llt.solve(targets.mean);
     v = B_ldlt.solve(v);
     v = K_uu_llt.matrixL().transpose().solve(v);
 
@@ -221,8 +244,6 @@ public:
 
     return typename Base::template GPFitType<FeatureType>(u, C.ldlt(), v);
   }
-
-  using Base::_predict_impl;
 
   InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;

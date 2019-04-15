@@ -12,8 +12,7 @@
 
 #include <albatross/Tune>
 
-#include <albatross/GP>
-#include <albatross/models/sparse_gp.h>
+#include <albatross/SparseGP>
 
 #include <csv.h>
 #include <fstream>
