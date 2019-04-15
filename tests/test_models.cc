@@ -43,9 +43,16 @@ TYPED_TEST_P(RegressionModelTester, test_predict_variants) {
   expect_predict_variants_consistent(pred);
 }
 
+TYPED_TEST_P(RegressionModelTester, test_currect_derived_type) {
+  const auto model = this->test_case.get_model();
+  const auto derived = model.derived();
+  bool same = std::is_same<decltype(model), decltype(derived)>::value;
+  EXPECT_TRUE(same);
+}
+
 REGISTER_TYPED_TEST_CASE_P(RegressionModelTester,
                            test_performs_reasonably_on_linear_data,
-                           test_predict_variants);
+                           test_predict_variants, test_currect_derived_type);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_models, RegressionModelTester,
                               ExampleModels);

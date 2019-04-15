@@ -38,9 +38,8 @@ public:
     return converted;
   }
 
-  typename fit_type<Base, double>::type
-  _fit_impl(const std::vector<AdaptedFeature> &features,
-            const MarginalDistribution &targets) const {
+  auto _fit_impl(const std::vector<AdaptedFeature> &features,
+                 const MarginalDistribution &targets) const {
     return Base::_fit_impl(convert(features), targets);
   }
 

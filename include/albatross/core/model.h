@@ -23,15 +23,8 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
   template <typename T, typename FeatureType> friend class fit_model_type;
 
-private:
-  // Declaring these private makes it impossible to accidentally do things like:
-  //     class A : public ModelBase<B> {}
-  // or
-  //     using A = ModelBase<B>;
-  //
-  // which if unchecked can lead to some very strange behavior.
+protected:
   ModelBase() : insights_(){};
-  friend ModelType;
   Insights insights_;
 
   /*
@@ -60,9 +53,8 @@ private:
                 !has_possible_fit<ModelType, FeatureType>::value &&
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  void
-  _fit(const std::vector<FeatureType> &features,
-       const MarginalDistribution &targets) const = delete; // No fit found.
+  void _fit(const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) const = delete;
 
   template <
       typename PredictFeatureType, typename FitType, typename PredictType,
@@ -85,6 +77,7 @@ private:
       const std::vector<PredictFeatureType> &features, const FitType &fit,
       PredictTypeIdentity<PredictType> &&) const = delete; // No valid predict.
 
+public:
   /*
    * CRTP Helpers
    */
@@ -93,7 +86,6 @@ private:
     return *static_cast<const ModelType *>(this);
   }
 
-public:
   template <class Archive>
   void save(Archive &archive, const std::uint32_t) const {
     archive(cereal::make_nvp("params", derived().get_params()));

@@ -65,14 +65,24 @@ public:
   using Base = GaussianProcessBase<CovarianceFunc,
                                    AdaptedGaussianProcess<CovarianceFunc>>;
 
+  using Base::_fit_impl;
+  using Base::_predict_impl;
   using Base::Base;
+
+  template <typename FeatureType, typename PredictType>
+  std::map<std::string, PredictType>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
+                              const FoldIndexer &fold_indexer,
+                              PredictTypeIdentity<PredictType> identity) const {
+    return gp_cross_validated_predictions(dataset, fold_indexer, *this,
+                                          identity);
+  }
 
   template <typename FitFeatureType>
   using GPFitType = Fit<Base, FitFeatureType>;
 
-  typename fit_type<Base, double>::type
-  _fit_impl(const std::vector<AdaptedFeature> &features,
-            const MarginalDistribution &targets) const {
+  auto _fit_impl(const std::vector<AdaptedFeature> &features,
+                 const MarginalDistribution &targets) const {
     std::vector<double> converted;
     for (const auto &f : features) {
       converted.push_back(f.value);

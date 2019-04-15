@@ -221,11 +221,7 @@ public:
     return typename Base::template GPFitType<FeatureType>(u, C.ldlt(), v);
   }
 
-  // This hides the inherited _predict_impl definitions from the base class
-  // Which makes the base class think nothing is defined and in turn leads
-  // it to using the default GP `_predict_impl`.
-  void _predict_impl() = delete;
-  void cross_validated_predictions() = delete;
+  using Base::_predict_impl;
 
   InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;
