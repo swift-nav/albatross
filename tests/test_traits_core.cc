@@ -153,17 +153,13 @@ TEST(test_traits_core, test_fit_type) {
   //                        fit_type<HasPrivateValidFitImpl, X>::type>::value));
 }
 
-template <typename T> struct Base {};
+template <typename T> struct Base : public ModelBase<T> {};
 
 struct Derived : public Base<Derived> {};
 
 TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, X>>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, Y>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, X>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Base<Derived>, Fit<Base<Derived>, Y>>::value));
   // If a Derived class which inherits from Base<Derived> has a fit
   // which returns Fit<Base<Derived>> consider that a valid fit type.
   EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>, X>>::value));
@@ -178,36 +174,18 @@ template <typename T> struct Adaptable;
 template <typename T, typename FeatureType>
 struct Fit<Adaptable<T>, FeatureType> {};
 
-template <typename ImplType>
-struct Adaptable : public ModelBase<Adaptable<ImplType>> {
+template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
 
   Fit<Adaptable<ImplType>, X> _fit_impl(const std::vector<X> &,
                                         const MarginalDistribution &) const {
     return Fit<Adaptable<ImplType>, X>();
   }
-
-  /*
-   * This forwards on `fit` definitions from the implementing class
-   * to this class so it can be picked up by ModelBase.
-   */
-  template <typename FeatureType,
-            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
-                                    int>::type = 0>
-  auto _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const {
-    return impl()._fit_impl(features, targets);
-  }
-
-  /*
-   * CRTP Helpers
-   */
-  ImplType &impl() { return *static_cast<ImplType *>(this); }
-  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
 };
 
 struct Extended : public Adaptable<Extended> {
 
   using Base = Adaptable<Extended>;
+  using Base::_fit_impl;
 
   auto _fit_impl(const std::vector<Y> &,
                  const MarginalDistribution &targets) const {
@@ -233,8 +211,17 @@ TEST(test_traits_core, test_adaptable_fit_type) {
 }
 
 TEST(test_traits_core, test_adaptable_has_valid_fit) {
-  EXPECT_FALSE(bool(has_valid_fit<Extended, X>::value));
+  EXPECT_TRUE(bool(has_valid_fit<Extended, X>::value));
   EXPECT_TRUE(bool(has_valid_fit<Extended, Y>::value));
+
+  EXPECT_TRUE(bool(has_valid_fit<OtherExtended, X>::value));
+  EXPECT_FALSE(bool(has_valid_fit<OtherExtended, Y>::value));
+
+  EXPECT_FALSE(bool(has_valid_fit<Adaptable<Extended>, X>::value));
+  EXPECT_FALSE(bool(has_valid_fit<Adaptable<Extended>, Y>::value));
+}
+
+TEST(test_traits_core, test_adaptable_is_valid_fit) {
   EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, X>>::value));
   EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, Y>>::value));
   EXPECT_TRUE(

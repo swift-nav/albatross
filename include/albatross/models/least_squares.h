@@ -36,8 +36,7 @@ template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-template <typename ImplType>
-class LeastSquares : public ModelBase<LeastSquares<ImplType>> {
+template <typename ImplType> class LeastSquares : public ModelBase<ImplType> {
 public:
   using FitType = Fit<LeastSquares<ImplType>>;
 
@@ -60,14 +59,6 @@ public:
     return model_fit;
   }
 
-  template <typename FeatureType,
-            typename std::enable_if<has_valid_fit<ImplType, FeatureType>::value,
-                                    int>::type = 0>
-  FitType _fit_impl(const std::vector<FeatureType> &features,
-                    const MarginalDistribution &targets) const {
-    return impl()._fit_impl(features, targets);
-  }
-
   Eigen::VectorXd _predict_impl(const std::vector<Eigen::VectorXd> &features,
                                 const FitType &least_squares_fit,
                                 PredictTypeIdentity<Eigen::VectorXd>) const {
@@ -80,18 +71,6 @@ public:
     return Eigen::VectorXd(mean);
   }
 
-  template <
-      typename FeatureType, typename FitType, typename PredictType,
-      typename std::enable_if<
-          has_valid_predict<ImplType, FeatureType, FitType, PredictType>::value,
-          int>::type = 0>
-  PredictType _predict_impl(const std::vector<FeatureType> &features,
-                            const FitType &least_squares_fit,
-                            PredictTypeIdentity<PredictType>) const {
-    return impl()._predict_impl(features, least_squares_fit,
-                                PredictTypeIdentity<PredictType>());
-  }
-
   /*
    * This lets you customize the least squares approach if need be,
    * default uses the QR decomposition.
@@ -100,12 +79,6 @@ public:
                                        const Eigen::VectorXd &b) const {
     return A.colPivHouseholderQr().solve(b);
   }
-
-  /*
-   * CRTP Helpers
-   */
-  ImplType &impl() { return *static_cast<ImplType *>(this); }
-  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
 };
 
 /*
