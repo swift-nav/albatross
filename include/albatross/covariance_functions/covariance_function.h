@@ -209,6 +209,25 @@ public:
   }
 
   /*
+   * Diagonal of the covariance matrix.
+   */
+  template <typename X,
+            typename std::enable_if<
+                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
+  Eigen::VectorXd diagonal(const std::vector<X> &xs) const {
+    int n = static_cast<int>(xs.size());
+    Eigen::VectorXd diag(n);
+
+    int i;
+    std::size_t si;
+    for (i = 0; i < n; i++) {
+      si = static_cast<std::size_t>(i);
+      diag[i] = this->operator()(xs[si], xs[si]);
+    }
+    return diag;
+  }
+
+  /*
    * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
    *
@@ -268,6 +287,14 @@ public:
   double operator()(const X &x,
                     const Y &y) const =
       delete; // Invalid _call_impl(.  See comments for help.
+
+  /*
+   * Covariance between each element and every other in a vector.
+   */
+  template <typename X,
+            typename std::enable_if<
+                !has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
+  DiagonalMatrixXd diagonal(const std::vector<X> &xs) const = delete;
 
   CallTrace<Derived> call_trace() const;
 
