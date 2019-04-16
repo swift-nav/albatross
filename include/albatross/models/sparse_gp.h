@@ -81,7 +81,7 @@ struct UniformlySpacedInducingPoints {
  * that it is block diagonal.  These assumptions lead to an efficient way of
  * inferring the posterior distribution for some new location f*,
  *
- *     [f*|f=y] ~ N(K_*u S K_uf^-1 A^-1 y, K_** − Q_** + K_*u S K_u*)
+ *     [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** − Q_** + K_*u S K_u*)
  *
  *  Where S = (K_uu + K_uf A^-1 K_fu)^-1 and A = diag(K_ff - Q_ff) and "diag"
  * may mean diagonal or block diagonal.  Regardless we end up with O(m^2n)
@@ -179,12 +179,12 @@ public:
      *
      *  and to get C we need to do some algebra,
      *
-     *     K_** - K_*u * C * K_u* = K_** - Q_** + K_*u S K_u*
-     *                            = K_** - K_*u (K_uu^-1 - S) K_u*
+     *     K_** - K_*u * C^-1 * K_u* = K_** - Q_** + K_*u S K_u*
+     *                               = K_** - K_*u (K_uu^-1 - S) K_u*
      *  which leads to:
-     *     C^-1 = (K_uu^-1 - S)^-1
+     *     C^-1 = K_uu^-1 - S
      *                                                  (Expansion of S)
-     *          = (K_uu^-1 - (K_uu + K_uf A^-1 K_fu)^-1)^-1
+     *          = K_uu^-1 - (K_uu + K_uf A^-1 K_fu)^-1
      *                                        (Woodbury Matrix Identity)
      *          = (K_uu^-1 K_uf (A + K_fu K_uu^-1 K_uf)^-1 K_fu K_uu^-1)
      *                                   (LL^T = K_uu and P = L^-1 K_uf)
@@ -195,6 +195,7 @@ public:
      *          = L^-T R^T R B^-1 L^-1
      *
      *  taking the inverse of that then gives us:
+     *
      *      C   = L B (R^T R)^-1 L^T
      *
      *  reusing some of the precomputed values there leads to:
