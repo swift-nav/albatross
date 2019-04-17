@@ -291,6 +291,12 @@ public:
 
   CovFunc get_covariance() const { return covariance_function_; }
 
+  template <typename FeatureType>
+  Eigen::MatrixXd
+  compute_covariance(const std::vector<FeatureType> &features) const {
+    return covariance_function_(features);
+  }
+
 protected:
   /*
    * CRTP Helpers

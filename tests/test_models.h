@@ -57,6 +57,38 @@ public:
   auto get_dataset() const { return make_toy_linear_data(); }
 };
 
+namespace adapted {
+
+inline std::vector<double>
+convert_features(const std::vector<AdaptedFeature> &features) {
+  std::vector<double> converted;
+  for (const auto &f : features) {
+    converted.push_back(f.value);
+  }
+  return converted;
+}
+
+} // namespace adapted
+
+template <typename CovarianceFunc> class AdaptedGaussianProcess;
+
+template <typename CovFunc, typename FeatureType>
+struct Fit<AdaptedGaussianProcess<CovFunc>, FeatureType>
+    : public Fit<GaussianProcessBase<CovFunc, AdaptedGaussianProcess<CovFunc>>,
+                 FeatureType> {
+
+  Fit(){};
+
+  using Base =
+      Fit<GaussianProcessBase<CovFunc, AdaptedGaussianProcess<CovFunc>>,
+          FeatureType>;
+  using Base::Base;
+
+  Fit(const std::vector<AdaptedFeature> &features,
+      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets)
+      : Base(adapted::convert_features(features), train_cov, targets) {}
+};
+
 template <typename CovarianceFunc>
 class AdaptedGaussianProcess
     : public GaussianProcessBase<CovarianceFunc,
@@ -68,6 +100,9 @@ public:
   using Base::_fit_impl;
   using Base::_predict_impl;
   using Base::Base;
+  using Base::compute_covariance;
+
+  using FitType = Fit<AdaptedGaussianProcess<CovarianceFunc>, double>;
 
   template <typename FeatureType, typename PredictType>
   std::map<std::string, PredictType>
@@ -78,29 +113,25 @@ public:
                                           identity);
   }
 
-  template <typename FitFeatureType>
-  using GPFitType = Fit<Base, FitFeatureType>;
-
   auto _fit_impl(const std::vector<AdaptedFeature> &features,
                  const MarginalDistribution &targets) const {
-    std::vector<double> converted;
-    for (const auto &f : features) {
-      converted.push_back(f.value);
-    }
-    return Base::_fit_impl(converted, targets);
+    const auto converted = adapted::convert_features(features);
+    Eigen::MatrixXd cov = this->covariance_function_(converted);
+    return FitType(converted, cov, targets);
   }
 
-  template <typename FitFeatureType>
-  JointDistribution
-  _predict_impl(const std::vector<AdaptedFeature> &features,
-                const GPFitType<FitFeatureType> &gp_fit,
-                PredictTypeIdentity<JointDistribution> &&) const {
-    std::vector<double> converted;
-    for (const auto &f : features) {
-      converted.push_back(f.value);
-    }
-    return Base::_predict_impl(converted, gp_fit,
-                               PredictTypeIdentity<JointDistribution>());
+  template <typename PredictType>
+  PredictType _predict_impl(const std::vector<AdaptedFeature> &features,
+                            const FitType &adapted_gp_fit,
+                            PredictTypeIdentity<PredictType> &&) const {
+    return Base::_predict_impl(adapted::convert_features(features),
+                               adapted_gp_fit,
+                               PredictTypeIdentity<PredictType>());
+  }
+
+  Eigen::MatrixXd
+  compute_covariance(const std::vector<AdaptedFeature> &features) const {
+    return this->covariance_function_(adapted::convert_features(features));
   }
 };
 
@@ -110,6 +141,26 @@ public:
     auto covariance = make_simple_covariance_function();
     AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
     return gp;
+  }
+
+  auto get_dataset() const { return make_adapted_toy_linear_data(); }
+};
+
+class MakeRansacAdaptedGaussianProcess {
+public:
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+
+    double inlier_threshold = 1.;
+    std::size_t sample_size = 3;
+    std::size_t min_inliers = 3;
+    std::size_t max_iterations = 20;
+
+    AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
+
+    DefaultGPRansacStrategy ransac_strategy;
+    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
+                     min_inliers, max_iterations);
   }
 
   auto get_dataset() const { return make_adapted_toy_linear_data(); }
@@ -131,7 +182,8 @@ public:
 };
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
-                         MakeAdaptedGaussianProcess, MakeRansacGaussianProcess>
+                         MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
+                         MakeRansacAdaptedGaussianProcess>
     ExampleModels;
 
 TYPED_TEST_CASE_P(RegressionModelTester);

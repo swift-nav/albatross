@@ -91,7 +91,7 @@ get_gp_ransac_functions(const ModelType &model,
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
-  const auto full_cov = model.get_covariance()(dataset.features);
+  const auto full_cov = model.compute_covariance(dataset.features);
 
   const auto fitter =
       get_gp_ransac_fitter<ModelType, FeatureType>(dataset, indexer, full_cov);
@@ -135,7 +135,7 @@ struct GaussianProcessRansacStrategy {
     archive(cereal::make_nvp("indexing_function", indexing_function_));
   }
 
-private:
+protected:
   InlierMetric inlier_metric_;
   IndexingFunction indexing_function_;
 };
