@@ -81,10 +81,11 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   return pred;
 }
 
+template <typename CovarianceType>
 inline MarginalDistribution concatenate_marginal_predictions(
     const FoldIndexer &indexer,
-    const std::map<std::string, MarginalDistribution> &marginals) {
-  assert(indexer.size() == marginals.size());
+    const std::map<std::string, Distribution<CovarianceType>> &preds) {
+  assert(indexer.size() == preds.size());
 
   Eigen::Index n =
       static_cast<Eigen::Index>(dataset_size_from_indexer(indexer));
@@ -93,9 +94,9 @@ inline MarginalDistribution concatenate_marginal_predictions(
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (const auto &pair : indexer) {
-    assert(marginals.at(pair.first).size() == pair.second.size());
-    set_subset(marginals.at(pair.first).mean, pair.second, &mean);
-    set_subset(marginals.at(pair.first).covariance.diagonal(), pair.second,
+    assert(preds.at(pair.first).size() == pair.second.size());
+    set_subset(preds.at(pair.first).mean, pair.second, &mean);
+    set_subset(preds.at(pair.first).covariance.diagonal(), pair.second,
                &variance);
     number_filled += static_cast<Eigen::Index>(pair.second.size());
   }
