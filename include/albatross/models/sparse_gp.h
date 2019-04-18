@@ -132,7 +132,6 @@ public:
 
     std::vector<std::size_t> reordered_inds;
     BlockDiagonal K_ff;
-
     for (const auto &pair : indexer) {
       reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
                             pair.second.end());
@@ -148,22 +147,19 @@ public:
     const auto targets = subset(out_of_order_targets, reordered_inds);
 
     // Determine the set of inducing points, u.
-    auto u = inducing_point_strategy(features);
+    const auto u = inducing_point_strategy(features);
 
     Eigen::Index m = static_cast<Eigen::Index>(u.size());
 
-    Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
-    Eigen::MatrixXd K_uu = this->covariance_function_(u);
+    const Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
+    const Eigen::MatrixXd K_uu = this->covariance_function_(u);
 
-    auto K_uu_llt = K_uu.llt();
+    const auto K_uu_llt = K_uu.llt();
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu L^-T L^-1 K_uf
     //          = P^T P
-    Eigen::MatrixXd P = K_uu_llt.matrixL().solve(K_fu.transpose());
-
-    // Efficiently compute the diagonal diag[Q_ff].
-    Eigen::VectorXd Q_ff_diag = P.colwise().squaredNorm();
+    const Eigen::MatrixXd P = K_uu_llt.matrixL().solve(K_fu.transpose());
 
     BlockDiagonal Q_ff;
     Eigen::Index i = 0;
@@ -224,23 +220,24 @@ public:
      *
      *     v = L^-T B^-1 P * A^-1 y
      */
-    auto A_llt = A.llt();
+    const auto A_llt = A.llt();
     Eigen::MatrixXd Pt = P.transpose();
-    Eigen::MatrixXd RtR = A_llt.matrixL().llt().solve(Pt);
+    const auto A_sqrt = A_llt.matrixL();
+    Eigen::MatrixXd RtR = A_sqrt.llt().solve(Pt);
     RtR = RtR.transpose() * RtR;
-    Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
+    const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
-    auto B_ldlt = B.ldlt();
+    const auto B_ldlt = B.ldlt();
 
     Eigen::VectorXd v = P * A_llt.solve(targets.mean);
     v = B_ldlt.solve(v);
     v = K_uu_llt.matrixL().transpose().solve(v);
 
-    Eigen::MatrixXd L_uu_inv =
+    const Eigen::MatrixXd L_uu_inv =
         K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
-    Eigen::MatrixXd RtRBiLi = RtR * B_ldlt.solve(L_uu_inv);
-    Eigen::MatrixXd LT = K_uu_llt.matrixL().transpose();
-    Eigen::MatrixXd C = K_uu_llt.matrixL() * B * RtR.ldlt().solve(LT);
+    const Eigen::MatrixXd RtRBiLi = RtR * B_ldlt.solve(L_uu_inv);
+    const Eigen::MatrixXd LT = K_uu_llt.matrixL().transpose();
+    const Eigen::MatrixXd C = K_uu_llt.matrixL() * B * RtR.ldlt().solve(LT);
 
     return typename Base::template GPFitType<FeatureType>(u, C.ldlt(), v);
   }

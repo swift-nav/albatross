@@ -23,7 +23,7 @@ struct BlockDiagonalLLT {
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
-  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs);
+  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
   BlockDiagonal matrixL() const;
 
@@ -54,7 +54,7 @@ struct BlockDiagonal {
 
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) {
+BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   assert(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
