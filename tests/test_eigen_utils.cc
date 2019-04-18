@@ -11,7 +11,10 @@
  */
 
 #include <Eigen/Dense>
-#include <albatross/utils/eigen_utils.h>
+
+#include <vector>
+
+#include <albatross/src/utils/eigen_utils.h>
 #include <gtest/gtest.h>
 #include <iostream>
 

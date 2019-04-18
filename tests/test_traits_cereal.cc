@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/cereal/traits.h>
+#include <albatross/src/cereal/traits.h>
 #include <gtest/gtest.h>
 
 namespace albatross {

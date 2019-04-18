@@ -11,7 +11,8 @@
  */
 
 #include <albatross/Core>
-#include <albatross/eigen/serializable_ldlt.h>
+#include <albatross/src/eigen/serializable_ldlt.h>
+
 #include <gtest/gtest.h>
 
 namespace albatross {

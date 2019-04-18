@@ -17,13 +17,13 @@
 
 #include <type_traits>
 
-#include <albatross/core/indexing.h>
-#include <albatross/core/traits.h>
-#include <albatross/core/priors.h>
-#include <albatross/core/parameter_handling_mixin.h>
-#include <albatross/core/parameter_macros.h>
-#include <albatross/core/fit_model.h>
-#include <albatross/core/prediction.h>
-#include <albatross/core/model.h>
+#include "src/core/indexing.h"
+#include "src/core/traits.h"
+#include "src/core/priors.h"
+#include "src/core/parameter_handling_mixin.h"
+#include "src/core/parameter_macros.h"
+#include "src/core/fit_model.h"
+#include "src/core/prediction.h"
+#include "src/core/model.h"
 
 #endif

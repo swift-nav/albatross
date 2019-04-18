@@ -15,7 +15,7 @@
 
 #include "GP"
 
-#include <albatross/utils/block_utils.h>
-#include <albatross/models/sparse_gp.h>
+#include "src/utils/block_utils.h"
+#include "src/models/sparse_gp.h"
 
 #endif

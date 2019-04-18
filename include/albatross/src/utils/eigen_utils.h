@@ -13,11 +13,6 @@
 #ifndef ALBATROSS_EIGEN_UTILS_H
 #define ALBATROSS_EIGEN_UTILS_H
 
-#include <functional>
-#include <map>
-#include <unordered_map>
-#include <vector>
-
 namespace albatross {
 
 /*

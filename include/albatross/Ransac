@@ -16,8 +16,8 @@
 #include "Core"
 #include "Evaluation"
 
-#include <albatross/utils/random_utils.h>
-#include <albatross/models/ransac.h>
-#include <albatross/models/ransac_gp.h>
+#include "src/utils/random_utils.h"
+#include "src/models/ransac.h"
+#include "src/models/ransac_gp.h"
 
 #endif
