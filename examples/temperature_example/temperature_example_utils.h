@@ -14,7 +14,7 @@
 #define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
 #include <albatross/GP>
-#include <albatross/utils/csv_utils.h>
+#include <albatross/src/utils/csv_utils.hpp>
 #include <csv.h>
 #include <fstream>
 

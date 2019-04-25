@@ -13,7 +13,7 @@
 
 #include <albatross/Core>
 
-#include <albatross/src/utils/random_utils.h>
+#include <albatross/src/utils/random_utils.hpp>
 
 namespace albatross {
 

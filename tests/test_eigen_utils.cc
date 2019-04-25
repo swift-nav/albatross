@@ -14,7 +14,7 @@
 
 #include <vector>
 
-#include <albatross/src/utils/eigen_utils.h>
+#include <albatross/src/utils/eigen_utils.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
 
