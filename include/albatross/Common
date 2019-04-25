@@ -39,8 +39,8 @@
 #include <numeric>
 #include <random>
 
-#include "src/core/declarations.h"
-#include "src/utils/map_utils.h"
-#include "src/cereal/eigen.h"
+#include "src/core/declarations.hpp"
+#include "src/utils/map_utils.hpp"
+#include "src/cereal/eigen.hpp"
 
 #endif

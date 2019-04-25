@@ -17,13 +17,13 @@
 
 #include <type_traits>
 
-#include "src/core/indexing.h"
-#include "src/core/traits.h"
-#include "src/core/priors.h"
-#include "src/core/parameter_handling_mixin.h"
-#include "src/core/parameter_macros.h"
-#include "src/core/fit_model.h"
-#include "src/core/prediction.h"
-#include "src/core/model.h"
+#include "src/core/indexing.hpp"
+#include "src/core/traits.hpp"
+#include "src/core/priors.hpp"
+#include "src/core/parameter_handling_mixin.hpp"
+#include "src/core/parameter_macros.hpp"
+#include "src/core/fit_model.hpp"
+#include "src/core/prediction.hpp"
+#include "src/core/model.hpp"
 
 #endif

@@ -16,8 +16,8 @@
 #include "Core"
 #include "CovarianceFunctions"
 
-#include "src/evaluation/likelihood.h"
-#include "src/eigen/serializable_ldlt.h"
-#include "src/models/gp.h"
+#include "src/evaluation/likelihood.hpp"
+#include "src/eigen/serializable_ldlt.hpp"
+#include "src/models/gp.hpp"
 
 #endif

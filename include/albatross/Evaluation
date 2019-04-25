@@ -15,14 +15,14 @@
 
 #include "Core"
 
-#include "src/evaluation/likelihood.h"
-#include "src/evaluation/differential_entropy.h"
-#include "src/covariance_functions/traits.h"
-#include "src/evaluation/traits.h"
-#include "src/evaluation/folds.h"
-#include "src/evaluation/prediction_metrics.h"
-#include "src/evaluation/model_metrics.h"
-#include "src/evaluation/cross_validation_utils.h"
-#include "src/evaluation/cross_validation.h"
+#include "src/evaluation/likelihood.hpp"
+#include "src/evaluation/differential_entropy.hpp"
+#include "src/covariance_functions/traits.hpp"
+#include "src/evaluation/traits.hpp"
+#include "src/evaluation/folds.hpp"
+#include "src/evaluation/prediction_metrics.hpp"
+#include "src/evaluation/model_metrics.hpp"
+#include "src/evaluation/cross_validation_utils.hpp"
+#include "src/evaluation/cross_validation.hpp"
 
 #endif

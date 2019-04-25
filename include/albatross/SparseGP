@@ -15,7 +15,7 @@
 
 #include "GP"
 
-#include "src/utils/block_utils.h"
-#include "src/models/sparse_gp.h"
+#include "src/utils/block_utils.hpp"
+#include "src/models/sparse_gp.hpp"
 
 #endif

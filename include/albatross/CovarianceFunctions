@@ -15,19 +15,19 @@
 
 #include "Common"
 
-#include "src/core/declarations.h"
-#include "src/core/traits.h"
-#include "src/core/priors.h"
-#include "src/core/parameter_handling_mixin.h"
-#include "src/core/parameter_macros.h"
+#include "src/core/declarations.hpp"
+#include "src/core/traits.hpp"
+#include "src/core/priors.hpp"
+#include "src/core/parameter_handling_mixin.hpp"
+#include "src/core/parameter_macros.hpp"
 
-#include "src/covariance_functions/traits.h"
-#include "src/covariance_functions/covariance_function.h"
-#include "src/covariance_functions/call_trace.h"
-#include "src/covariance_functions/distance_metrics.h"
-#include "src/covariance_functions/noise.h"
-#include "src/covariance_functions/polynomials.h"
-#include "src/covariance_functions/radial.h"
-#include "src/covariance_functions/scaling_function.h"
+#include "src/covariance_functions/traits.hpp"
+#include "src/covariance_functions/covariance_function.hpp"
+#include "src/covariance_functions/call_trace.hpp"
+#include "src/covariance_functions/distance_metrics.hpp"
+#include "src/covariance_functions/noise.hpp"
+#include "src/covariance_functions/polynomials.hpp"
+#include "src/covariance_functions/radial.hpp"
+#include "src/covariance_functions/scaling_function.hpp"
 
 #endif

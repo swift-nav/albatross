@@ -16,8 +16,8 @@
 #include "Core"
 #include "Evaluation"
 
-#include "src/utils/random_utils.h"
-#include "src/models/ransac.h"
-#include "src/models/ransac_gp.h"
+#include "src/utils/random_utils.hpp"
+#include "src/models/ransac.hpp"
+#include "src/models/ransac_gp.hpp"
 
 #endif
