@@ -15,6 +15,6 @@
 
 #include "Distribution"
 
-#include <albatross/core/dataset.h>
+#include "src/core/dataset.hpp"
 
 #endif

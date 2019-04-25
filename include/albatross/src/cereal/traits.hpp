@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_CEREAL_TRAITS_H
 #define ALBATROSS_CEREAL_TRAITS_H
 
-#include "cereal/details/traits.hpp"
-
 namespace albatross {
 
 /*

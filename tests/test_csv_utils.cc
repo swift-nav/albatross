@@ -11,7 +11,8 @@
  */
 
 #include <albatross/Core>
-#include <albatross/utils/csv_utils.h>
+
+#include <albatross/src/utils/csv_utils.hpp>
 #include <csv.h>
 #include <gtest/gtest.h>
 

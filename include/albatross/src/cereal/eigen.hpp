@@ -13,13 +13,6 @@
 #ifndef ALBATROSS_CEREAL_EIGEN_H
 #define ALBATROSS_CEREAL_EIGEN_H
 
-#include "Eigen/Dense"
-#include <cereal/cereal.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/vector.hpp>
-#include <gzip/compress.hpp>
-#include <gzip/decompress.hpp>
-
 namespace cereal {
 
 template <class Archive, class _Scalar, int _Rows, int _Cols>
