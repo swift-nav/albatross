@@ -15,23 +15,44 @@
 #include "test_models.h"
 #include <chrono>
 
-#include <albatross/models/sparse_gp.h>
+#include <albatross/SparseGP>
 
 namespace albatross {
 
-TEST(test_sparse_gp, test_sanity) {
+std::string get_group(const double &f) {
+  return std::to_string(static_cast<int>(f) / 10);
+}
+
+struct LeaveOneIntervalOut : public LeaveOneGroupOut<double> {
+  LeaveOneIntervalOut() : LeaveOneGroupOut<double>(get_group){};
+};
+
+template <typename IndexerType>
+class SparseGaussianProcessTest : public ::testing::Test {
+public:
+  IndexerType indexer;
+};
+
+typedef ::testing::Types<LeaveOneOut, LeaveOneIntervalOut>
+    IndependenceAssumptions;
+TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
+
+TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
+
+  auto indexer = this->indexer;
+
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
   auto direct = gp_from_covariance(covariance, "direct");
 
-  LeaveOneOut loo;
   UniformlySpacedInducingPoints strategy(10);
-  auto sparse = sparse_gp_from_covariance(covariance, strategy, loo, "sparse");
+  auto sparse =
+      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
 
-  UniformlySpacedInducingPoints bad_strategy(2);
-  auto really_sparse =
-      sparse_gp_from_covariance(covariance, bad_strategy, loo, "really_sparse");
+  UniformlySpacedInducingPoints bad_strategy(4);
+  auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
+                                                 indexer, "really_sparse");
 
   auto test_features = linspace(0.01, 9.9, 11);
 
@@ -57,7 +78,10 @@ TEST(test_sparse_gp, test_sanity) {
   EXPECT_GT(really_sparse_cov_diff, sparse_cov_diff);
 }
 
-TEST(test_sparse_gp, test_scales) {
+TYPED_TEST(SparseGaussianProcessTest, test_scales) {
+
+  auto indexer = this->indexer;
+
   auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
 
   auto covariance = make_simple_covariance_function();
@@ -70,9 +94,9 @@ TEST(test_sparse_gp, test_scales) {
   high_resolution_clock::time_point end = high_resolution_clock::now();
   auto direct_duration = duration_cast<microseconds>(end - start).count();
 
-  LeaveOneOut loo;
   UniformlySpacedInducingPoints strategy(100);
-  auto sparse = sparse_gp_from_covariance(covariance, strategy, loo, "sparse");
+  auto sparse =
+      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
 
   start = high_resolution_clock::now();
   auto sparse_fit = sparse.fit(large_dataset);
@@ -80,7 +104,7 @@ TEST(test_sparse_gp, test_scales) {
   auto sparse_duration = duration_cast<microseconds>(end - start).count();
 
   // Make sure the sparse version is a lot faster.
-  EXPECT_LT(sparse_duration, 0.2 * direct_duration);
+  EXPECT_LT(sparse_duration, 0.3 * direct_duration);
 }
 
 } // namespace albatross
