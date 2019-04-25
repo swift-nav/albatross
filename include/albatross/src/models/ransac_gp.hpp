@@ -28,17 +28,14 @@ inline
     get_gp_ransac_fitter(const RegressionDataset<FeatureType> &dataset,
                          const FoldIndexer &indexer,
                          const Eigen::MatrixXd &cov) {
-  return [&, indexer, cov](const std::vector<FoldName> &groups) {
+  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
     auto inds = indices_from_names(indexer, groups);
-
     const auto train_dataset = subset(dataset, inds);
     const auto train_cov = symmetric_subset(cov, inds);
 
     using GPFitType = typename FitAndIndices<ModelType, FeatureType>::FitType;
-
     const GPFitType fit(train_dataset.features, train_cov,
                         train_dataset.targets);
-
     FitAndIndices<ModelType, FeatureType> fit_and_indices = {fit, inds};
     return fit_and_indices;
   };
@@ -52,8 +49,7 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
                             const Eigen::MatrixXd &cov, const ModelType &model,
                             const InlierMetricType &metric) {
 
-  return [&, indexer, cov,
-          model](const FoldName &group,
+  return [&, indexer, cov, model, dataset](const FoldName &group,
                  const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
     auto inds = indexer.at(group);
 

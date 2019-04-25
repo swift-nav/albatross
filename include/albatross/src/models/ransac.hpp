@@ -80,6 +80,7 @@ ransac(const RansacFunctions<FitType> &ransac_functions,
         random_without_replacement(groups, random_sample_size, gen);
     const auto fit = ransac_functions.fitter(candidate_groups);
 
+
     std::vector<FoldName> candidate_consensus;
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
