@@ -14,7 +14,7 @@
 
 #include <Eigen/Cholesky>
 
-#include <albatross/src/utils/block_utils.h>
+#include <albatross/src/utils/block_utils.hpp>
 
 namespace albatross {
 
