@@ -46,22 +46,22 @@ endif()
 
 if (EXISTS ${CLANG_FORMAT_PATH})
   # Format all files .cc files (and their headers) in project
-  add_custom_target(clang-format-all
-    COMMAND git ls-files -- '../*.cc' '../*.h'
+  add_custom_target(clang-format-all-albatross
+    COMMAND git ls-files -- '../*.cc' '../*.h' '../*.hpp'
     | sed 's/^...//' | sed 's\#^\#${CMAKE_SOURCE_DIR}/\#'
     | xargs "${CLANG_FORMAT_PATH}" -i
     )
   # In-place format *.cc files that differ from master, and are not listed as
   # being DELETED.
-  add_custom_target(clang-format-diff
-    COMMAND git diff --diff-filter=ACMRTUXB --name-only master -- '../*.cc' '../*.h'
+  add_custom_target(clang-format-diff-albatross
+    COMMAND git diff --diff-filter=ACMRTUXB --name-only master -- '../*.cc' '../*.h' '../*.hpp'
     | sed 's\#^\#${CMAKE_SOURCE_DIR}/\#'
     | xargs "${CLANG_FORMAT_PATH}" -i
     )
 endif()
 if (EXISTS ${CPPCHECK_PATH})
-  add_custom_target(cppcheck-all
-    COMMAND git ls-files -- '../*.cc' '../*.h'
+  add_custom_target(cppcheck-all-albatross
+    COMMAND git ls-files -- '../*.cc' '../*.h' '../*.hpp'
     | ${CPPCHECK_PATH} --enable=all --std=c++14 -I../include -isystem../third_party/eigen -q --file-list=-
     )
 endif()

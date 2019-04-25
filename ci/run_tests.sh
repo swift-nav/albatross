@@ -13,7 +13,7 @@ run_tests() {
 ensure_clang_format()
 {
     cd build
-    make clang-format-all
+    make clang-format-all-albatross
     if [[ $(git --no-pager diff --name-only HEAD) ]]; then
         echo "######################################################"
         echo "####### clang-format warning found! Exiting... #######"
