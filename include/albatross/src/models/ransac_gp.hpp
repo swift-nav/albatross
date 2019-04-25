@@ -49,8 +49,9 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
                             const Eigen::MatrixXd &cov, const ModelType &model,
                             const InlierMetricType &metric) {
 
-  return [&, indexer, cov, model, dataset](const FoldName &group,
-                 const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
+  return [&, indexer, cov, model, dataset](
+             const FoldName &group,
+             const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
     auto inds = indexer.at(group);
 
     const auto test_dataset = subset(dataset, inds);

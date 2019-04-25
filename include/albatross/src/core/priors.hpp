@@ -111,7 +111,8 @@ public:
 
   template <typename Archive>
   void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), lower_, upper_);
+    archive(cereal::base_class<Prior>(this), cereal::make_nvp("lower", lower_),
+            cereal::make_nvp("upper", upper_));
   }
 
 private:
@@ -147,7 +148,8 @@ public:
 
   template <typename Archive>
   void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), mu_, sigma_);
+    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
+            cereal::make_nvp("sigma", sigma_));
   }
 
 private:
@@ -183,7 +185,8 @@ public:
 
   template <typename Archive>
   void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), mu_, sigma_);
+    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
+            cereal::make_nvp("sigma", sigma_));
   }
 
 private:

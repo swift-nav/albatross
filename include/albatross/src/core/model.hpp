@@ -133,8 +133,8 @@ public:
   template <typename MetricType>
   Ransac<ModelType, MetricType>
   ransac(const MetricType &metric, double inlier_threshold,
-         std::size_t min_inliers, std::size_t random_sample_size,
-         std::size_t max_iterations) const;
+         std::size_t random_sample_size, std::size_t min_consensus_size,
+         std::size_t max_iteration) const;
 };
 } // namespace albatross
 #endif
