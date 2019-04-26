@@ -45,6 +45,8 @@ public:
 
   Fit get_fit() const { return fit_; }
 
+  ModelType get_model() const { return model_; };
+
   bool operator==(const FitModel &other) const {
     return (model_ == other.model_ && fit_ == other.fit_);
   }
