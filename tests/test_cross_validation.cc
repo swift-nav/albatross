@@ -34,6 +34,12 @@ std::string group_by_interval(const AdaptedFeature &x) {
   return group_by_interval(x.value);
 }
 
+TEST(test_cross_validation, test_fold_creation) {
+  const auto dataset = make_toy_linear_data();
+  const auto folds = folds_from_grouper<double>(dataset, group_by_interval);
+  EXPECT_EQ(folds.size(), 3);
+}
+
 bool is_monotonic_increasing(const Eigen::VectorXd &x) {
   for (Eigen::Index i = 0; i < x.size() - 1; i++) {
     if (x[i + 1] - x[i] <= 0.) {

@@ -168,6 +168,15 @@ fold_indexer_from_folds(const std::vector<RegressionFold<FeatureType>> &folds) {
   return output;
 }
 
+template <typename FeatureType>
+static inline std::vector<RegressionFold<FeatureType>>
+folds_from_grouper(const RegressionDataset<FeatureType> &dataset,
+                   const GroupFunction<FeatureType> &grouper) {
+  const LeaveOneGroupOut<FeatureType> by_group(grouper);
+  const auto indexer = by_group(dataset);
+  return folds_from_fold_indexer(dataset, indexer);
+}
+
 /*
  * Inspects a bunch of folds and creates a set of all the indicies
  * in an original dataset that comprise the test_datasets and the folds.
