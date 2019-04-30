@@ -23,11 +23,12 @@ namespace albatross {
 template <typename CovarianceType> struct Distribution {
   Eigen::VectorXd mean;
   CovarianceType covariance;
+  std::map<std::string, std::string> metadata;
 
-  Distribution() : mean(), covariance(){};
-  Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(){};
+  Distribution() : mean(), covariance(), metadata() {};
+  Distribution(const Eigen::VectorXd &mean_) : mean(mean_), covariance(), metadata() {};
   Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
-      : mean(mean_), covariance(covariance_){};
+      : mean(mean_), covariance(covariance_), metadata() {};
 
   std::size_t size() const;
 
@@ -57,6 +58,7 @@ template <typename CovarianceType> struct Distribution {
   serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("mean", mean));
     archive(cereal::make_nvp("covariance", covariance));
+    archive(cereal::make_nvp("metadata", metadata));
   }
 };
 
