@@ -13,11 +13,23 @@ endif()
 
 find_package(Googletest REQUIRED)
 find_package(GFlags REQUIRED)
+set(JUST_INSTALL_CEREAL YES CACHE BOOL "" FORCE) #Don't generate docs, it conflicts with Eigen
+find_package(Cereal REQUIRED)
+find_package(Eigen REQUIRED)
+find_package(FastCSV REQUIRED)
+find_package(Gzip-Hpp REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
   "${PROJECT_SOURCE_DIR}/include"
   )
+target_link_libraries(albatross
+    INTERFACE
+    eigen
+    cereal
+    fast-csv
+    gzip-hpp
+    )
 target_include_directories(albatross SYSTEM INTERFACE
   "${PROJECT_SOURCE_DIR}/third_party/eigen/"
   "${PROJECT_SOURCE_DIR}/third_party/cereal/include"
