@@ -1,8 +1,7 @@
 project(albatross)
 cmake_minimum_required(VERSION 2.8.7)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(ClangTools)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
 option(ENABLE_AUTOFORMAT "Enable automatic formatting and replacement with clang-format." ON)
 option(ENABLE_AUTOLINT "Enable automatic linting and warning with clang-tidy. " OFF)
@@ -12,7 +11,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
-add_subdirectory(third_party/googletest)
+find_package(Googletest REQUIRED)
+find_package(GFlags REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
@@ -24,8 +24,6 @@ target_include_directories(albatross SYSTEM INTERFACE
   "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/"
   "${PROJECT_SOURCE_DIR}/third_party/gzip-hpp/include"
   )
-
-include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
 
 set(albatross_COMPILE_OPTIONS
   -Werror

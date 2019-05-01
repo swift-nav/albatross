@@ -2,7 +2,7 @@
 	path = third_party/eigen
 	url = https://github.com/PX4/eigen.git
 [submodule "third_party/gflags"]
-	path = third_party/gflags
+	path = third_party/googleflags
 	url = https://github.com/gflags/gflags.git
 [submodule "third_party/googletest"]
 	path = third_party/googletest
@@ -16,3 +16,6 @@
 [submodule "third_party/gzip-hpp"]
 	path = third_party/gzip-hpp
 	url = https://github.com/mapbox/gzip-hpp.git
+[submodule "cmake/cmake"]
+	path = cmake/common
+	url = git@github.com:swift-nav/cmake.git
