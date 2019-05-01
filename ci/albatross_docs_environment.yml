@@ -1,6 +1,7 @@
 name: albatross
 dependencies:
-- python=3.4
+- python=3.7
+- pip
 - numpy
 - pandas
 - pip:
