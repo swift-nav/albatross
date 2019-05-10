@@ -81,3 +81,12 @@ target_compile_features(albatross INTERFACE cxx_std_14)
 
 add_subdirectory(tests)
 add_subdirectory(examples)
+
+# This is just a temporary hack until we have proper clang tools support again
+function(define_if_not_exist target)
+  if(NOT TARGET ${target})
+    add_custom_target(${target})
+  endif()
+endfunction()
+define_if_not_exist(clang-format-all-albatross)
+define_if_not_exist(clang-format-all)
