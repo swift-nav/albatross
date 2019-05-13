@@ -64,6 +64,28 @@ struct LeaveOneOutLikelihood
   }
 };
 
+template <typename PredictType, typename FeatureType>
+class LeaveOneGroupOutLikelihood
+    : public ModelMetric<LeaveOneGroupOutLikelihood<PredictType, FeatureType>>{
+
+public:
+    explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper):logo_(grouper){};
+
+    template <typename ModelType>
+    double _call_impl(const RegressionDataset<FeatureType> &dataset,
+                      const ModelBase<ModelType> &model) const {
+      const auto scores = model.cross_validate().scores(nll_, dataset, logo_);
+      double data_nll = scores.sum();
+      double prior_nll = model.prior_log_likelihood();
+      return data_nll - prior_nll;
+    }
+
+private:
+    albatross::NegativeLogLikelihood<PredictType> nll_;
+    albatross::LeaveOneGroupOut<FeatureType> logo_;
+};
+
+
 struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
   template <typename FeatureType, typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
