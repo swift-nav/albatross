@@ -15,9 +15,8 @@
 
 namespace albatross {
 
-template <typename MetricType>
-class ModelMetric {
- public:
+template <typename MetricType> class ModelMetric {
+public:
   template <typename FeatureType, typename ModelType,
             typename std::enable_if<
                 has_valid_call_impl<MetricType, RegressionDataset<FeatureType>,
@@ -35,12 +34,11 @@ class ModelMetric {
                 int>::type = 0>
   double operator()(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const =
-      delete;  // Metric Not Valid for these types.
+      delete; // Metric Not Valid for these types.
 
-  template <class Archive>
-  void serialize(Archive &){};
+  template <class Archive> void serialize(Archive &){};
 
- protected:
+protected:
   /*
    * CRTP Helpers
    */
@@ -68,7 +66,7 @@ struct LeaveOneOutLikelihood
 template <typename FeatureType, typename PredictType = JointDistribution>
 class LeaveOneGroupOutLikelihood
     : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
- public:
+public:
   explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
       : logo_(grouper){};
 
@@ -81,7 +79,7 @@ class LeaveOneGroupOutLikelihood
     return data_nll - prior_nll;
   }
 
- private:
+private:
   albatross::NegativeLogLikelihood<PredictType> nll_;
   albatross::LeaveOneGroupOut<FeatureType> logo_;
 };
@@ -98,6 +96,6 @@ struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
     return rmse_score;
   }
 };
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_MODEL_METRICS_H_ */
