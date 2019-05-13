@@ -15,8 +15,9 @@
 
 namespace albatross {
 
-template <typename MetricType> class ModelMetric {
-public:
+template <typename MetricType>
+class ModelMetric {
+ public:
   template <typename FeatureType, typename ModelType,
             typename std::enable_if<
                 has_valid_call_impl<MetricType, RegressionDataset<FeatureType>,
@@ -34,11 +35,12 @@ public:
                 int>::type = 0>
   double operator()(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const =
-      delete; // Metric Not Valid for these types.
+      delete;  // Metric Not Valid for these types.
 
-  template <class Archive> void serialize(Archive &){};
+  template <class Archive>
+  void serialize(Archive &){};
 
-protected:
+ protected:
   /*
    * CRTP Helpers
    */
@@ -51,7 +53,6 @@ protected:
 template <typename PredictType = JointDistribution>
 struct LeaveOneOutLikelihood
     : public ModelMetric<LeaveOneOutLikelihood<PredictType>> {
-
   template <typename FeatureType, typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
@@ -66,25 +67,24 @@ struct LeaveOneOutLikelihood
 
 template <typename PredictType, typename FeatureType>
 class LeaveOneGroupOutLikelihood
-    : public ModelMetric<LeaveOneGroupOutLikelihood<PredictType, FeatureType>>{
+    : public ModelMetric<LeaveOneGroupOutLikelihood<PredictType, FeatureType>> {
+ public:
+  explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
+      : logo_(grouper){};
 
-public:
-    explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper):logo_(grouper){};
+  template <typename ModelType>
+  double _call_impl(const RegressionDataset<FeatureType> &dataset,
+                    const ModelBase<ModelType> &model) const {
+    const auto scores = model.cross_validate().scores(nll_, dataset, logo_);
+    double data_nll = scores.sum();
+    double prior_nll = model.prior_log_likelihood();
+    return data_nll - prior_nll;
+  }
 
-    template <typename ModelType>
-    double _call_impl(const RegressionDataset<FeatureType> &dataset,
-                      const ModelBase<ModelType> &model) const {
-      const auto scores = model.cross_validate().scores(nll_, dataset, logo_);
-      double data_nll = scores.sum();
-      double prior_nll = model.prior_log_likelihood();
-      return data_nll - prior_nll;
-    }
-
-private:
-    albatross::NegativeLogLikelihood<PredictType> nll_;
-    albatross::LeaveOneGroupOut<FeatureType> logo_;
+ private:
+  albatross::NegativeLogLikelihood<PredictType> nll_;
+  albatross::LeaveOneGroupOut<FeatureType> logo_;
 };
-
 
 struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
   template <typename FeatureType, typename ModelType>
@@ -98,6 +98,6 @@ struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
     return rmse_score;
   }
 };
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_MODEL_METRICS_H_ */
