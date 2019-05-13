@@ -65,9 +65,9 @@ struct LeaveOneOutLikelihood
   }
 };
 
-template <typename PredictType, typename FeatureType>
+template <typename FeatureType, typename PredictType = JointDistribution>
 class LeaveOneGroupOutLikelihood
-    : public ModelMetric<LeaveOneGroupOutLikelihood<PredictType, FeatureType>> {
+    : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
  public:
   explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
       : logo_(grouper){};
