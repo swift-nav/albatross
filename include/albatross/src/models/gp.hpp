@@ -181,7 +181,7 @@ public:
   // for the initially predicted features
   template <typename FeatureType>
   auto fit_from_prediction(const std::vector<FeatureType> &features,
-                           const JointDistribution &joint) {
+                           const JointDistribution &joint) const {
     using FitType = typename fit_type<ImplType, FeatureType>::type;
     using FitModelType = typename fit_model_type<ImplType, FeatureType>::type;
     return FitModelType(
