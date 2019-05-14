@@ -51,7 +51,6 @@ protected:
 template <typename PredictType = JointDistribution>
 struct LeaveOneOutLikelihood
     : public ModelMetric<LeaveOneOutLikelihood<PredictType>> {
-
   template <typename FeatureType, typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
@@ -62,6 +61,27 @@ struct LeaveOneOutLikelihood
     double prior_nll = model.prior_log_likelihood();
     return data_nll - prior_nll;
   }
+};
+
+template <typename FeatureType, typename PredictType = JointDistribution>
+class LeaveOneGroupOutLikelihood
+    : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
+public:
+  explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
+      : logo_(grouper){};
+
+  template <typename ModelType>
+  double _call_impl(const RegressionDataset<FeatureType> &dataset,
+                    const ModelBase<ModelType> &model) const {
+    const auto scores = model.cross_validate().scores(nll_, dataset, logo_);
+    double data_nll = scores.sum();
+    double prior_nll = model.prior_log_likelihood();
+    return data_nll - prior_nll;
+  }
+
+private:
+  albatross::NegativeLogLikelihood<PredictType> nll_;
+  albatross::LeaveOneGroupOut<FeatureType> logo_;
 };
 
 struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
