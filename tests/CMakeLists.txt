@@ -1,4 +1,4 @@
-add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
+add_executable(albatross_unit_tests 
   test_block_utils.cc
   test_call_trace.cc
   test_core_dataset.cc
@@ -50,10 +50,4 @@ target_link_libraries(albatross_unit_tests
   nlopt
   z
   )
-add_custom_target(run_albatross_unit_tests ALL
-  COMMAND albatross_unit_tests
-  COMMENT "Running unit tests"
-  )
-add_dependencies(run_albatross_unit_tests
-  albatross_unit_tests
-  )
+add_test(NAME albatross_unit_tests COMMAND albatross_unit_tests)

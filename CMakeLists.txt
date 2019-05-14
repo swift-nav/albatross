@@ -4,16 +4,16 @@ cmake_minimum_required(VERSION 2.8.7)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
 include(SwiftCmakeOptions)
+swift_create_project_options(
+    TESTS 
+    EXAMPLES
+    TEST_PACKAGES "Googletest" "GFlags"
+    )
 
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
-
-if(albatross_BUILD_TESTS)
-  find_package(Googletest REQUIRED)
-  find_package(GFlags REQUIRED)
 endif()
 
 if(albatross_BUILD_EXAMPLES)
@@ -80,6 +80,7 @@ set(albatross_COMPILE_OPTIONS
   )
 
 if(albatross_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(tests)
 endif()
 if(albatross_BUILD_EXAMPLES)
