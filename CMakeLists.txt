@@ -29,6 +29,7 @@ find_package(Gzip-Hpp REQUIRED)
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
   "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/tests"
   )
 target_link_libraries(albatross
     INTERFACE
