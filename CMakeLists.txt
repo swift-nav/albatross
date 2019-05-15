@@ -5,8 +5,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DI
 
 include(SwiftCmakeOptions)
 swift_create_project_options(
-    TESTS 
-    EXAMPLES
+    HAS_TESTS 
+    HAS_EXAMPLES
     TEST_PACKAGES "Googletest" "GFlags"
     )
 
