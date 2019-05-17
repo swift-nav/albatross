@@ -20,13 +20,13 @@ inline void save(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const &m,
                  const std::uint32_t) {
   Eigen::Index rows = m.rows();
   Eigen::Index cols = m.cols();
-  std::size_t size_in_bytes =
-      static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
+  std::size_t size = static_cast<std::size_t>(rows * cols);
+  std::size_t size_in_bytes = static_cast<std::size_t>(size * sizeof(_Scalar));
 
   // Turn the Eigen::Matrix in to an array of characters
-  _Scalar *data = static_cast<_Scalar *>(std::malloc(size_in_bytes));
-  Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data, rows, cols) = m;
-  char *char_data = reinterpret_cast<char *>(data);
+  std::vector<_Scalar> data(size);
+  Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data.data(), rows, cols) = m;
+  char *char_data = reinterpret_cast<char *>(data.data());
 
   std::string payload = gzip::compress(char_data, size_in_bytes);
 
@@ -52,8 +52,8 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   ar(CEREAL_NVP(cols));
   ar(CEREAL_NVP(payload));
 
-  std::size_t size_in_bytes =
-      static_cast<std::size_t>(rows * cols * sizeof(_Scalar));
+  std::size_t size = static_cast<std::size_t>(rows * cols);
+  std::size_t size_in_bytes = static_cast<std::size_t>(size * sizeof(_Scalar));
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload = base64::decode(payload);
@@ -64,11 +64,11 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
 
   assert(size_in_bytes == decompressed.size());
 
-  _Scalar *decoded_data = static_cast<_Scalar *>(std::malloc(size_in_bytes));
-  std::memcpy(decoded_data, decompressed.data(), size_in_bytes);
+  std::vector<_Scalar> decoded_data(size);
+  std::memcpy(decoded_data.data(), decompressed.data(), size_in_bytes);
 
-  m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(decoded_data, rows,
-                                                       cols);
+  m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(decoded_data.data(),
+                                                       rows, cols);
 }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
