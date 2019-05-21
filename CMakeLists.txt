@@ -81,7 +81,6 @@ set(albatross_COMPILE_OPTIONS
   )
 
 if(albatross_BUILD_TESTS)
-  enable_testing()
   add_subdirectory(tests)
 endif()
 if(albatross_BUILD_EXAMPLES)

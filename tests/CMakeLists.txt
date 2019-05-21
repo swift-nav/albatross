@@ -50,4 +50,10 @@ target_link_libraries(albatross_unit_tests
   nlopt
   z
   )
-add_test(NAME albatross_unit_tests COMMAND albatross_unit_tests)
+add_custom_target(run_albatross_unit_tests ALL
+  COMMAND albatross_unit_tests
+  COMMENT "Running unit tests"
+  )
+add_dependencies(run_albatross_unit_tests
+  albatross_unit_tests
+  )
