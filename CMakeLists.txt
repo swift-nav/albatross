@@ -12,10 +12,6 @@ swift_create_project_options(
 
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
-
 if(albatross_BUILD_EXAMPLES)
   find_package(GFlags REQUIRED)
 endif()
@@ -79,6 +75,7 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
+target_compile_features(albatross INTERFACE cxx_std_14)
 
 if(albatross_BUILD_TESTS)
   add_subdirectory(tests)
