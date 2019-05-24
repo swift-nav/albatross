@@ -75,7 +75,6 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
-target_compile_features(albatross INTERFACE cxx_std_14)
 
 if(albatross_BUILD_TESTS)
   add_subdirectory(tests)
