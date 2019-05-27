@@ -10,6 +10,9 @@ swift_create_project_options(
     TEST_PACKAGES "Googletest" "GFlags"
     )
 
+include(ClangFormat)
+swift_setup_clang_format()
+
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
 if(albatross_BUILD_EXAMPLES)
