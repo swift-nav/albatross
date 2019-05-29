@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.7)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
+include(CCache)
 include(SwiftCmakeOptions)
 swift_create_project_options(
     HAS_TESTS 
@@ -85,12 +86,3 @@ endif()
 if(albatross_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
-
-# This is just a temporary hack until we have proper clang tools support again
-function(define_if_not_exist target)
-  if(NOT TARGET ${target})
-    add_custom_target(${target})
-  endif()
-endfunction()
-define_if_not_exist(clang-format-all-albatross)
-define_if_not_exist(clang-format-all)
