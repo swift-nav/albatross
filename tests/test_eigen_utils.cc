@@ -10,11 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <Eigen/Dense>
-
 #include <vector>
 
+#include <albatross/Core>
+
 #include <albatross/src/utils/eigen_utils.hpp>
+
 #include <gtest/gtest.h>
 #include <iostream>
 
@@ -74,4 +75,45 @@ TEST(test_eigen_utils, test_vertical_stack_vector) {
   Eigen::VectorXd expected(15);
   expected << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15;
   EXPECT_EQ(expected, C);
+}
+
+TEST(test_eigen_utils, test_truncated_solve_sanity) {
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(3, 3);
+  A = A.transpose() * A;
+
+  Eigen::VectorXd soln(3);
+  soln << 1., 2., 3.;
+  Eigen::VectorXd rhs = A * soln;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> evd(A);
+
+  auto actual = albatross::truncated_psd_solve(evd, rhs);
+
+  for (Eigen::Index i = 0; i < soln.size(); ++i) {
+    EXPECT_LT(fabs(soln[i] - actual[i]), 1e-6);
+  }
+}
+
+TEST(test_eigen_utils, test_truncated_solve_low_rank) {
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(2, 3);
+  A = A.transpose() * A;
+
+  // Here we project the arbitrary solution vector
+  // to remove anything in the nullspace of A since
+  // we can never expect to be able to recover
+  // those components.
+  Eigen::VectorXd soln(3);
+  soln << 1., 2., 3.;
+  Eigen::VectorXd k = A.fullPivLu().kernel().col(0);
+  k.normalize();
+  double scale = soln.transpose() * k;
+  soln = soln - scale * k;
+
+  Eigen::VectorXd rhs = A * soln;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> evd(A);
+
+  auto actual = albatross::truncated_psd_solve(evd, rhs);
+
+  for (Eigen::Index i = 0; i < soln.size(); ++i) {
+    EXPECT_LT(fabs(soln[i] - actual[i]), 1e-6);
+  }
 }
