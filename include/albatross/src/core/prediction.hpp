@@ -143,7 +143,7 @@ public:
       typename std::enable_if<!can_predict_mean<MeanPredictor, ModelType,
                                                 DummyType, FitType>::value,
                               int>::type = 0>
-  auto mean() const
+  void mean() const
       ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
                                 "mean with FitType and FeatureType.");
 
@@ -164,7 +164,7 @@ public:
                 !can_predict_marginal<MarginalPredictor, ModelType, DummyType,
                                       FitType>::value,
                 int>::type = 0>
-  auto marginal() const
+  void marginal() const
       ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
                                 "marginal with FitType and FeatureType.");
 
@@ -185,7 +185,7 @@ public:
       typename std::enable_if<!can_predict_joint<JointPredictor, ModelType,
                                                  DummyType, FitType>::value,
                               int>::type = 0>
-  auto joint() const
+  void joint() const
       ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
                                 "joint with FitType and FeatureType.");
 

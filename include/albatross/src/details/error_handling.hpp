@@ -15,10 +15,10 @@
 
 namespace albatross {
 
-//#define ALBATROSS_FAIL(dummy, msg)
-//   {static_assert(delay_static_assert<dummy>::value, msg);}
+#define ALBATROSS_FAIL(dummy, msg)                                             \
+  { static_assert(delay_static_assert<dummy>::value, msg); }
 
-#define ALBATROSS_FAIL(dummy, msg) = delete
+//#define ALBATROSS_FAIL(dummy, msg) = delete
 
 } // namespace albatross
 

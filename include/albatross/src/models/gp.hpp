@@ -295,7 +295,9 @@ public:
   auto _predict_impl(const std::vector<FeatureType> &features,
                      const GPFitType<FitFeatureType> &gp_fit,
                      PredictTypeIdentity<PredictType> &&) const
-    ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType and FitFeatureType");
+      ALBATROSS_FAIL(
+          FeatureType,
+          "CovFunc is not defined for FeatureType and FitFeatureType");
 
   CovFunc get_covariance() const { return covariance_function_; }
 
