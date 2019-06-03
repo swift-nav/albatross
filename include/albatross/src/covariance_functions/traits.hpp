@@ -15,18 +15,22 @@
 
 namespace albatross {
 
-/*
- * In CovarianceFunction we frequently inspect for definitions of
- * _call_impl( which MUST be defined for const references to objects
- * (so that repeated covariance matrix evaluations return the same thing
- *  and so the computations are not repeatedly copying.)
- * This type conversion utility will turn a type `T` into `const T&`
- */
-template <class T> struct call_impl_arg_type {
-  typedef
-      typename std::add_lvalue_reference<typename std::add_const<T>::type>::type
-          type;
+MAKE_HAS_ANY_TRAIT(_call_impl);
+
+// A helper rename to avoid duplicate underscores.
+template <typename U> class has_any_call_impl : public has_any__call_impl<U> {};
+
+HAS_METHOD_WITH_RETURN_TYPE(_call_impl);
+
+template <typename U, typename... Args>
+class has_valid_call_impl : public has__call_impl_with_return_type<
+                                U, double, typename const_ref<Args>::type...> {
 };
+
+HAS_METHOD(_call_impl);
+
+template <typename U, typename... Args>
+class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 
 /*
  * This determines whether or not a class has a method defined for,
@@ -35,52 +39,10 @@ template <class T> struct call_impl_arg_type {
  */
 template <typename T, typename... Args> class has_call_operator {
 
-  template <typename C,
-            typename = decltype(std::declval<C>()(
-                std::declval<typename call_impl_arg_type<Args>::type>()...))>
+  template <typename C, typename = decltype(std::declval<C>()(
+                            std::declval<typename const_ref<Args>::type>()...))>
   static std::true_type test(C *);
   template <typename> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-/*
- * This determines whether or not a class has a method defined for,
- *   `double _call_impl(const X &x, const Y &y, const Z &z, ...)`
- * The result of the inspection gets stored in the member `value`.
- */
-template <typename T, typename... Args> class has_valid_call_impl {
-
-  template <typename C>
-  static typename std::is_same<
-      decltype(std::declval<const C>()._call_impl(
-          std::declval<typename call_impl_arg_type<Args>::type>()...)),
-      double>::type
-  test(C *);
-  template <typename> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-/*
- * This determines whether or not a class has a method defined for
- * something close to, but not quite, a valid _call_impl(.  For example
- * if a class has:
- *   double _call_impl(const X x)
- * or
- *   double _call_impl(X &x)
- * or
- *   int _call_impl(const X &x)
- * those are nearly correct but the required `const X &x` in which
- * case this trait can be used to warn the user.
- */
-template <typename T, typename... Args> class has_possible_call_impl {
-  template <typename C, typename = decltype(std::declval<C>()._call_impl(
-                            std::declval<Args &>()...))>
-  static std::true_type test(int);
-  template <typename C> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
@@ -93,42 +55,6 @@ public:
                                  !has_valid_call_impl<T, Args...>::value);
 };
 
-/*
- * This set of trait logic checks if a type has any _call_impl( method
- * implemented (including private methods) by hijacking name hiding.
- * Namely if a derived class overloads a method the base methods will
- * be hidden.  So by starting with a base class with a known method
- * then extending that class you can determine if the derived class
- * included any other methods with that name.
- *
- * https://stackoverflow.com/questions/1628768/why-does-an-overridden-function-in-the-derived-class-hide-other-overloads-of-the
- */
-namespace detail {
-
-struct DummyType {};
-
-struct BaseWithPublicCallImpl {
-  // This method will be accessible in `MultiInherit` only if
-  // the class U doesn't contain any methods with the same name.
-  double _call_impl(const DummyType &) const { return -1.; }
-};
-
-template <typename U>
-struct MultiInheritCallImpl : public U, public BaseWithPublicCallImpl {};
-} // namespace detail
-
-template <typename U> class has_any_call_impl {
-  template <typename T>
-  static typename std::enable_if<
-      has_valid_call_impl<detail::MultiInheritCallImpl<T>,
-                          detail::DummyType>::value,
-      std::false_type>::type
-  test(int);
-  template <typename T> static std::true_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<U>(0))::value;
-};
 } // namespace albatross
 
 #endif

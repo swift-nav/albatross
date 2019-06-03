@@ -16,25 +16,6 @@
 namespace albatross {
 
 /*
- * Checks if a class type is complete by using sizeof.
- *
- * https://stackoverflow.com/questions/25796126/static-assert-that-template-typename-t-is-not-complete
- */
-template <typename X> class is_complete {
-  template <typename T, typename = decltype(!sizeof(T))>
-  static std::true_type test(int);
-  template <typename T> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<X>(0))::value;
-};
-
-template <typename T> struct is_vector : public std::false_type {};
-
-template <typename T>
-struct is_vector<std::vector<T>> : public std::true_type {};
-
-/*
  * This determines whether or not a class, T, has a method,
  *   `std::string T.name() const`
  */
@@ -91,21 +72,11 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-/*
- * This determines whether or not a class (T) has a method defined for,
- *   `Anything _fit_impl(std::vector<FeatureType>&,
- *                 MarginalDistribution &)`
- */
-template <typename T, typename FeatureType> class has_possible_fit {
-  template <typename C, typename = decltype(std::declval<C>()._fit_impl(
-                            std::declval<std::vector<FeatureType> &>(),
-                            std::declval<MarginalDistribution &>()))>
-  static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+HAS_METHOD(_fit_impl);
 
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
+template <typename T, typename FeatureType>
+class has_possible_fit : public has__fit_impl<T, std::vector<FeatureType> &,
+                                              MarginalDistribution &> {};
 
 /*
  * Determines which object would be returned from a call to:
@@ -143,29 +114,16 @@ template <typename M, typename F>
 struct fit_type<M, F>
     : public fit_type<typename fit_model_type<M, F>::type, F> {};
 
-/*
- * A valid predict method has a signature that looks like:
- *
- *   PredictType _predict_impl(const std::vector<FeatureType> &,
- *                       const FitType &,
- *                       const PredictTypeIdentity<PredictType>) const;
- */
+MAKE_HAS_ANY_TRAIT(_predict_impl);
+
+HAS_METHOD_WITH_RETURN_TYPE(_predict_impl);
+
 template <typename T, typename FeatureType, typename FitType,
           typename PredictType>
-class has_valid_predict {
-  template <
-      typename C,
-      typename ReturnType = decltype(std::declval<const C>()._predict_impl(
-          std::declval<const std::vector<FeatureType> &>(),
-          std::declval<const FitType &>(),
-          std::declval<PredictTypeIdentity<PredictType>>()))>
-  static typename std::enable_if<std::is_same<PredictType, ReturnType>::value,
-                                 std::true_type>::type
-  test(C *);
-  template <typename> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
+class has_valid_predict
+    : public has__predict_impl_with_return_type<
+          T, PredictType, typename const_ref<std::vector<FeatureType>>::type,
+          typename const_ref<FitType>::type, PredictTypeIdentity<PredictType>> {
 };
 
 template <typename T, typename FeatureType, typename FitType>
@@ -179,6 +137,34 @@ using has_valid_predict_marginal =
 template <typename T, typename FeatureType, typename FitType>
 using has_valid_predict_joint =
     has_valid_predict<T, FeatureType, FitType, JointDistribution>;
+
+HAS_METHOD(_mean);
+
+template <typename T, typename ModelType, typename FeatureType,
+          typename FitType>
+struct can_predict_mean
+    : public has__mean<T, typename const_ref<ModelType>::type,
+                       typename const_ref<FitType>::type,
+                       typename const_ref<std::vector<FeatureType>>::type> {};
+
+HAS_METHOD(_marginal);
+
+template <typename T, typename ModelType, typename FeatureType,
+          typename FitType>
+struct can_predict_marginal
+    : public has__marginal<T, typename const_ref<ModelType>::type,
+                           typename const_ref<FitType>::type,
+                           typename const_ref<std::vector<FeatureType>>::type> {
+};
+
+HAS_METHOD(_joint);
+
+template <typename T, typename ModelType, typename FeatureType,
+          typename FitType>
+struct can_predict_joint
+    : public has__joint<T, typename const_ref<ModelType>::type,
+                        typename const_ref<FitType>::type,
+                        typename const_ref<std::vector<FeatureType>>::type> {};
 
 /*
  * Methods for inspecting `Prediction` types.

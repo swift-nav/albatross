@@ -16,15 +16,6 @@
 namespace albatross {
 
 /*
- * This little trick was borrowed from cereal, you can think of it as
- * a function that will always return false ... but that doesn't
- * get resolved until template instantiation, which when combined
- * with a static assert let's you include a static assert that
- * only triggers with a particular template parameter is used.
- */
-template <class T> struct delay_static_assert : std::false_type {};
-
-/*
  * The following helper functions let you inspect a type and cereal Archive
  * and determine if the type has a valid serialization method for that Archive
  * type.
