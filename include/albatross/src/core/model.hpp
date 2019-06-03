@@ -19,7 +19,9 @@ using Insights = std::map<std::string, std::string>;
 
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
-  template <typename X, typename Y, typename Z> friend class Prediction;
+  friend class JointPredictor;
+  friend class MarginalPredictor;
+  friend class MeanPredictor;
 
   template <typename T, typename FeatureType> friend class fit_model_type;
 
