@@ -70,25 +70,6 @@ convert_features(const std::vector<AdaptedFeature> &features) {
 
 } // namespace adapted
 
-template <typename CovarianceFunc> class AdaptedGaussianProcess;
-
-template <typename CovFunc, typename FeatureType>
-struct Fit<AdaptedGaussianProcess<CovFunc>, FeatureType>
-    : public Fit<GaussianProcessBase<CovFunc, AdaptedGaussianProcess<CovFunc>>,
-                 FeatureType> {
-
-  Fit(){};
-
-  using Base =
-      Fit<GaussianProcessBase<CovFunc, AdaptedGaussianProcess<CovFunc>>,
-          FeatureType>;
-  using Base::Base;
-
-  Fit(const std::vector<AdaptedFeature> &features,
-      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets)
-      : Base(adapted::convert_features(features), train_cov, targets) {}
-};
-
 template <typename CovarianceFunc>
 class AdaptedGaussianProcess
     : public GaussianProcessBase<CovarianceFunc,
@@ -102,7 +83,7 @@ public:
   using Base::Base;
   using Base::compute_covariance;
 
-  using FitType = Fit<AdaptedGaussianProcess<CovarianceFunc>, double>;
+  using FitType = Fit<GPFit<Eigen::SerializableLDLT, double>>;
 
   template <typename FeatureType, typename PredictType>
   std::map<std::string, PredictType>
@@ -146,6 +127,22 @@ public:
   auto get_dataset() const { return make_adapted_toy_linear_data(); }
 };
 
+struct AdaptedRansacStrategy
+    : public GaussianProcessRansacStrategy<
+          NegativeLogLikelihood<JointDistribution>, LeaveOneOut> {
+
+  template <typename ModelType>
+  RansacFunctions<FitAndIndices<ModelType, double>>
+  operator()(const ModelType &model,
+             const RegressionDataset<AdaptedFeature> &dataset) const {
+    const RegressionDataset<double> converted(
+        adapted::convert_features(dataset.features), dataset.targets);
+    const auto indexer = get_indexer(converted);
+    return get_gp_ransac_functions(model, converted, indexer,
+                                   this->inlier_metric_);
+  }
+};
+
 class MakeRansacAdaptedGaussianProcess {
 public:
   auto get_model() const {
@@ -158,7 +155,7 @@ public:
 
     AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
 
-    DefaultGPRansacStrategy ransac_strategy;
+    AdaptedRansacStrategy ransac_strategy;
     return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
                      min_inliers, max_iterations);
   }

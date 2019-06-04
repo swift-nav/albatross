@@ -15,6 +15,8 @@
 
 namespace albatross {
 
+template <typename Decomposition, typename FeatureType> struct GPFit {};
+
 /*
  * The Gaussian Process needs to store the training data and the
  * prior covariance for those data points.  One way to do that would
@@ -36,18 +38,19 @@ namespace albatross {
  * Furthermore, rather than store the entire prior covariance we just
  * store the cholesky (LDLT).
  */
-template <typename CovFunc, typename ImplType, typename FeatureType>
-struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
+template <typename Decomposition, typename FeatureType>
+struct Fit<GPFit<Decomposition, FeatureType>> {
 
   std::vector<FeatureType> train_features;
-  Eigen::SerializableLDLT train_ldlt;
+  Decomposition train_covariance;
   Eigen::VectorXd information;
 
   Fit(){};
 
   Fit(const std::vector<FeatureType> &features_,
-      const Eigen::SerializableLDLT &ldlt_, const Eigen::VectorXd &information_)
-      : train_features(features_), train_ldlt(ldlt_),
+      const Decomposition &train_covariance_,
+      const Eigen::VectorXd &information_)
+      : train_features(features_), train_covariance(train_covariance_),
         information(information_) {}
 
   Fit(const std::vector<FeatureType> &features,
@@ -59,9 +62,9 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
       cov += targets.covariance;
     }
     assert(!cov.hasNaN());
-    train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+    train_covariance = Decomposition(cov);
     // Precompute the information vector
-    information = train_ldlt.solve(targets.mean);
+    information = train_covariance.solve(targets.mean);
   }
 
   // Create a fit that will replicate the given prediction states and
@@ -81,13 +84,14 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
     // will obtain the same results as the full model for the initially
     // predicted data points:
     // information = K_uu^{-1}*targets.mean
-    // train_ldlt = LDLt(K_uu*(K_uu-cov)^{-1}*K_uu)
+    // train_covariance = LDLt(K_uu*(K_uu-cov)^{-1}*K_uu)
     train_features = features;
     Eigen::MatrixXd k_uu_minus_cov(k_uu - targets.covariance);
     Eigen::SerializableLDLT k_uu_minus_cov_ldlt(k_uu_minus_cov.ldlt());
     Eigen::MatrixXd cov(k_uu * k_uu_minus_cov_ldlt.solve(k_uu));
     assert(!cov.hasNaN());
-    train_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+
+    train_covariance = Decomposition(cov);
     // Precompute the information vector
     Eigen::SerializableLDLT k_uu_ldlt(k_uu.ldlt());
     information = k_uu_ldlt.solve(targets.mean);
@@ -95,15 +99,14 @@ struct Fit<GaussianProcessBase<CovFunc, ImplType>, FeatureType> {
 
   template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("information", information));
-    archive(cereal::make_nvp("train_ldlt", train_ldlt));
+    archive(cereal::make_nvp("train_covariance", train_covariance));
     archive(cereal::make_nvp("train_features", train_features));
   }
 
-  template <typename OtherImplType>
-  bool operator==(const Fit<GaussianProcessBase<CovFunc, OtherImplType>,
-                            FeatureType> &other) const {
+  bool operator==(const Fit<GPFit<Decomposition, FeatureType>> &other) const {
     return (train_features == other.train_features &&
-            train_ldlt == other.train_ldlt && information == other.information);
+            train_covariance == other.train_covariance &&
+            information == other.information);
   }
 };
 
@@ -119,11 +122,11 @@ inline MarginalDistribution
 gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
                        const Eigen::VectorXd &prior_variance,
                        const Eigen::VectorXd &information,
-                       const Eigen::SerializableLDLT &train_ldlt) {
+                       const Eigen::SerializableLDLT &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   // Here we efficiently only compute the diagonal of the posterior
   // covariance matrix.
-  Eigen::MatrixXd explained = train_ldlt.solve(cross_cov);
+  Eigen::MatrixXd explained = train_covariance.solve(cross_cov);
   Eigen::VectorXd explained_variance =
       explained.cwiseProduct(cross_cov).array().colwise().sum();
   Eigen::VectorXd marginal_variance = prior_variance - explained_variance;
@@ -134,10 +137,10 @@ inline JointDistribution
 gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
                     const Eigen::MatrixXd &prior_cov,
                     const Eigen::VectorXd &information,
-                    const Eigen::SerializableLDLT &train_ldlt) {
+                    const Eigen::SerializableLDLT &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   Eigen::MatrixXd explained_cov =
-      cross_cov.transpose() * train_ldlt.solve(cross_cov);
+      cross_cov.transpose() * train_covariance.solve(cross_cov);
   return JointDistribution(pred, prior_cov - explained_cov);
 }
 
@@ -155,7 +158,7 @@ class GaussianProcessBase : public ModelBase<ImplType> {
 
 protected:
   template <typename FitFeatureType>
-  using GPFitType = Fit<GaussianProcessBase<CovFunc, ImplType>, FitFeatureType>;
+  using GPFitType = Fit<GPFit<Eigen::SerializableLDLT, FitFeatureType>>;
 
 public:
   GaussianProcessBase()
@@ -175,18 +178,20 @@ public:
 
   ~GaussianProcessBase(){};
 
-  // Create a fit based on a subset of predicted features (with the given joint
-  // distribution) - the fit type also requires the prior covariance of the
-  // features to determine the model that will give the same mean and covariance
-  // for the initially predicted features
-  template <typename FeatureType>
-  auto fit_from_prediction(const std::vector<FeatureType> &features,
-                           const JointDistribution &joint) const {
-    using FitType = typename fit_type<ImplType, FeatureType>::type;
-    using FitModelType = typename fit_model_type<ImplType, FeatureType>::type;
-    return FitModelType(
-        impl(), FitType(features, joint, covariance_function_(features)));
-  }
+  //  // Create a fit based on a subset of predicted features (with the given
+  //  joint
+  //  // distribution) - the fit type also requires the prior covariance of the
+  //  // features to determine the model that will give the same mean and
+  //  covariance
+  //  // for the initially predicted features
+  //  template <typename FeatureType>
+  //  auto fit_from_prediction(const std::vector<FeatureType> &features,
+  //                           const JointDistribution &joint) const {
+  //    using FitType = typename fit_type<ImplType, FeatureType>::type;
+  //    using FitModelType = typename fit_model_type<ImplType,
+  //    FeatureType>::type; return FitModelType(
+  //        impl(), FitType(features, joint, covariance_function_(features)));
+  //  }
 
   std::string get_name() const { return model_name_; };
 
@@ -249,7 +254,7 @@ public:
         covariance_function_(gp_fit.train_features, features);
     Eigen::MatrixXd prior_cov = covariance_function_(features);
     return gp_joint_prediction(cross_cov, prior_cov, gp_fit.information,
-                               gp_fit.train_ldlt);
+                               gp_fit.train_covariance);
   }
 
   template <
@@ -269,7 +274,7 @@ public:
       prior_variance[i] = covariance_function_(features[i], features[i]);
     }
     return gp_marginal_prediction(cross_cov, prior_variance, gp_fit.information,
-                                  gp_fit.train_ldlt);
+                                  gp_fit.train_covariance);
   }
 
   template <
@@ -330,7 +335,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
 
   const std::vector<FoldIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
-  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<std::string, JointDistribution> output;
   for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
@@ -354,7 +359,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
 
   const std::vector<FoldIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
-  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<std::string, MarginalDistribution> output;
   for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
@@ -377,7 +382,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto gp_fit = fit_model.get_fit();
   const std::vector<FoldIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
-  const auto inverse_blocks = gp_fit.train_ldlt.inverse_blocks(indices);
+  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<std::string, Eigen::VectorXd> output;
   for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
@@ -432,7 +437,7 @@ struct GaussianProcessLikelihood {
              const GaussianProcessBase<CovFunc, GPImplType> &model) const {
     const auto gp_fit = model.fit(dataset).get_fit();
     double nll =
-        negative_log_likelihood(dataset.targets.mean, gp_fit.train_ldlt);
+        negative_log_likelihood(dataset.targets.mean, gp_fit.train_covariance);
     nll -= model.prior_log_likelihood();
     return nll;
   }

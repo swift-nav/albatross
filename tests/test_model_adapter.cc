@@ -21,9 +21,8 @@ class TestAdaptedModel
 public:
   using Base = GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>;
 
-  template <typename FitFeatureType>
-  using FitType = Fit<GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>,
-                      FitFeatureType>;
+  template <typename FeatureType>
+  using FitType = typename Base::template GPFitType<FeatureType>;
 
   TestAdaptedModel() {
     this->params_["center"] = {1., std::make_shared<UniformPrior>(-10., 10.)};
@@ -99,6 +98,6 @@ TEST(test_model_adapter, test_fit) {
   // The train_features will actually be different because the adapted model
   // subtracts off a center value.
   EXPECT_EQ(adapted_fit.information, fit.information);
-  EXPECT_EQ(adapted_fit.train_ldlt, fit.train_ldlt);
+  EXPECT_EQ(adapted_fit.train_covariance, fit.train_covariance);
 }
 } // namespace albatross
