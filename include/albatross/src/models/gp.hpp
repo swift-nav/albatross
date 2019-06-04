@@ -215,8 +215,7 @@ public:
     return ss.str();
   }
 
-  // If the implementing class doesn't have a fit method for this
-  // FeatureType but the CovarianceFunction does.
+  // If the CovarianceFunction is defined.
   template <typename FeatureType,
             typename std::enable_if<
                 has_call_operator<CovFunc, FeatureType, FeatureType>::value,
@@ -226,6 +225,15 @@ public:
     Eigen::MatrixXd cov = covariance_function_(features);
     return GPFitType<FeatureType>(features, cov, targets);
   }
+
+  // If the CovarianceFunction is NOT defined.
+  template <typename FeatureType,
+            typename std::enable_if<
+                !has_call_operator<CovFunc, FeatureType, FeatureType>::value,
+                int>::type = 0>
+  auto _fit_impl(const std::vector<FeatureType> &features,
+                 const MarginalDistribution &targets) const
+      ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType");
 
   template <
       typename FeatureType, typename FitFeaturetype,
@@ -284,10 +292,12 @@ public:
           !has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
               !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
           int>::type = 0>
-  PredictType _predict_impl(const std::vector<FeatureType> &features,
-                            const GPFitType<FitFeatureType> &gp_fit,
-                            PredictTypeIdentity<PredictType> &&) const =
-      delete; // Covariance Function isn't defined for FeatureType.
+  auto _predict_impl(const std::vector<FeatureType> &features,
+                     const GPFitType<FitFeatureType> &gp_fit,
+                     PredictTypeIdentity<PredictType> &&) const
+      ALBATROSS_FAIL(
+          FeatureType,
+          "CovFunc is not defined for FeatureType and FitFeatureType");
 
   CovFunc get_covariance() const { return covariance_function_; }
 

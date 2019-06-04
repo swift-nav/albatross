@@ -19,7 +19,9 @@ using Insights = std::map<std::string, std::string>;
 
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
-  template <typename X, typename Y, typename Z> friend class Prediction;
+  friend class JointPredictor;
+  friend class MarginalPredictor;
+  friend class MeanPredictor;
 
   template <typename T, typename FeatureType> friend class fit_model_type;
 
@@ -46,7 +48,10 @@ protected:
                                   !has_valid_fit<ModelType, FeatureType>::value,
                               int>::type = 0>
   void _fit(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const = delete; // Invalid fit
+            const MarginalDistribution &targets) const
+      ALBATROSS_FAIL(FeatureType,
+                     "The ModelType *almost* has a _fit_impl method for "
+                     "FeatureType, but it appears to be invalid");
 
   template <typename FeatureType,
             typename std::enable_if<
@@ -54,7 +59,10 @@ protected:
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
   void _fit(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const = delete;
+            const MarginalDistribution &targets) const
+      ALBATROSS_FAIL(
+          FeatureType,
+          "The ModelType is missing a _fit_impl method for FeatureType.");
 
   template <
       typename PredictFeatureType, typename FitType, typename PredictType,
@@ -73,9 +81,12 @@ protected:
       typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
                                                  FitType, PredictType>::value,
                               int>::type = 0>
-  PredictType predict_(
-      const std::vector<PredictFeatureType> &features, const FitType &fit,
-      PredictTypeIdentity<PredictType> &&) const = delete; // No valid predict.
+  PredictType predict_(const std::vector<PredictFeatureType> &features,
+                       const FitType &fit,
+                       PredictTypeIdentity<PredictType> &&) const
+      ALBATROSS_FAIL(PredictFeatureType,
+                     "The ModelType is missing a _predict_impl method for "
+                     "PredictFeatureType, FitType, PredictType.");
 
 public:
   /*
