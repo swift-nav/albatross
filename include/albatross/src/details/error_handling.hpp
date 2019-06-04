@@ -18,6 +18,16 @@ namespace albatross {
 #define ALBATROSS_FAIL(dummy, msg)                                             \
   { static_assert(delay_static_assert<dummy>::value, msg); }
 
+/*
+ * Setting ALBATROSS_FAIL to "= delete" as below will slightly
+ * change the behavior of failures.  In some situations
+ * inspection of return types can trigger the delay_static_assert
+ * approach above, while the deleted function approach may
+ * work fine.  In general however the deleted function approach
+ * leads to slightly more confusing compile errors since it
+ * isn't possible to include an error message.
+ */
+
 //#define ALBATROSS_FAIL(dummy, msg) = delete
 
 } // namespace albatross

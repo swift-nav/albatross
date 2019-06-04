@@ -48,7 +48,8 @@ template <typename X> class is_complete {
   template <typename T> static std::false_type test(...);
 
 public:
-  static constexpr bool value = decltype(test<X>(0))::value;
+  static constexpr bool value =
+      decltype(test<typename std::decay<X>::type>(0))::value;
 };
 
 template <typename T> struct is_vector : public std::false_type {};
