@@ -22,7 +22,7 @@ public:
   using Base = GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>;
 
   template <typename FeatureType>
-  using FitType = typename Base::template GPFitType<FeatureType>;
+  using FitType = typename Base::template CholeskyFit<FeatureType>;
 
   TestAdaptedModel() {
     this->params_["center"] = {1., std::make_shared<UniformPrior>(-10., 10.)};
