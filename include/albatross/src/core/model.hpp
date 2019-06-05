@@ -141,9 +141,9 @@ public:
 
   CrossValidation<ModelType> cross_validate() const;
 
-  template <typename MetricType>
-  Ransac<ModelType, MetricType>
-  ransac(const MetricType &metric, double inlier_threshold,
+  template <typename Strategy>
+  Ransac<ModelType, Strategy>
+  ransac(const Strategy &strategy, double inlier_threshold,
          std::size_t random_sample_size, std::size_t min_consensus_size,
          std::size_t max_iteration) const;
 };

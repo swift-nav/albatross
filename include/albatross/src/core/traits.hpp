@@ -33,26 +33,15 @@ public:
 };
 
 /*
- * Like std::is_base_of<T, U> except compares the first template parameter.  Ie,
+ * A valid fit is defined as simply anything which matches the pattern:
  *
- *  first_template_param_is_base_of<T, C<U, X>>::value == is_base_of<T,
- * U>::value
+ *     Fit<Anything>.
  */
-template <typename T, typename U>
-struct first_template_param_is_base_of : public std::false_type {};
+template <typename FitType>
+struct is_valid_fit_type : public std::false_type {};
 
-template <template <typename, typename> class Base, typename T, typename U,
-          typename P>
-struct first_template_param_is_base_of<T, Base<U, P>>
-    : public std::is_base_of<T, U> {};
-
-/*
- * A valid fit for a ModelType is defined as Fit<AnyBaseOfModelType,
- * AnyFeatureType>.
- */
-template <typename ModelType, typename FitType>
-struct is_valid_fit_type
-    : public first_template_param_is_base_of<ModelBase<ModelType>, FitType> {};
+template <typename FitParameter>
+struct is_valid_fit_type<Fit<FitParameter>> : public std::true_type {};
 
 /*
  * This determines whether or not a class (T) has a method defined for,
@@ -65,7 +54,7 @@ template <typename T, typename FeatureType> class has_valid_fit {
             typename FitType = decltype(std::declval<const C>()._fit_impl(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
-  static typename is_valid_fit_type<T, FitType>::type test(C *);
+  static typename is_valid_fit_type<FitType>::type test(C *);
   template <typename> static std::false_type test(...);
 
 public:

@@ -55,6 +55,8 @@ public:
                                  !has_valid_call_impl<T, Args...>::value);
 };
 
+HAS_METHOD(solve);
+
 } // namespace albatross
 
 #endif

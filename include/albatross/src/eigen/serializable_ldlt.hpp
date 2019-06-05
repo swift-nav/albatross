@@ -62,6 +62,8 @@ class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
   SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
 
+  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()){};
+
   SerializableLDLT(const LDLT<MatrixXd, Lower> &ldlt)
       // Can we get around copying here?
       : LDLT<MatrixXd, Lower>(ldlt){};

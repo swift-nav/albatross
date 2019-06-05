@@ -208,7 +208,7 @@ struct GenericRansacStrategy {
     archive(cereal::make_nvp("indexing_function", indexing_function_));
   }
 
-private:
+protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
   IndexingFunction indexing_function_;
@@ -228,11 +228,14 @@ auto get_generic_ransac_strategy(const InlierMetric &inlier_metric,
       inlier_metric, consensus_metric, indexing_function);
 }
 
+template <typename ModelType, typename StrategyType, typename FeatureType>
+struct RansacFit {};
+
 /*
  * Ransac Model Implementation.
  */
 template <typename ModelType, typename StrategyType, typename FeatureType>
-struct Fit<Ransac<ModelType, StrategyType>, FeatureType> {
+struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
 
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
@@ -288,7 +291,7 @@ public:
   }
 
   template <typename FeatureType>
-  Fit<Ransac<ModelType, StrategyType>, FeatureType>
+  Fit<RansacFit<ModelType, StrategyType, FeatureType>>
   _fit_impl(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
 
@@ -316,7 +319,7 @@ public:
     }
 
     // Then generate a fit.
-    return Fit<Ransac<ModelType, StrategyType>, FeatureType>(
+    return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
         sub_model_.fit(consensus_set), inliers, outliers);
   }
 
