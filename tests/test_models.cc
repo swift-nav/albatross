@@ -86,7 +86,7 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
   expect_predict_variants_inconsistent(pred);
 }
 
- TEST(test_models, test_model_from_prediction) {
+TEST(test_models, test_model_from_prediction) {
   MakeGaussianProcess test_case;
   auto dataset = test_case.get_dataset();
   auto model = test_case.get_model();
@@ -118,18 +118,15 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
  * errors.  This simply makes sure those errors are properly dealth with.
  */
 
- enum InducingFeatureType {
-  ConstantEverywhereType,
-  ConstantPerIntervalType
-};
+enum InducingFeatureType { ConstantEverywhereType, ConstantPerIntervalType };
 
- struct InducingFeature {
+struct InducingFeature {
   InducingFeatureType type;
   long location;
 };
 
- std::vector<InducingFeature> create_inducing_points(const std::vector<double>
- &features) {
+std::vector<InducingFeature>
+create_inducing_points(const std::vector<double> &features) {
 
   std::vector<InducingFeature> inducing_points;
   double min = *std::min_element(features.begin(), features.end());
@@ -150,9 +147,9 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
   return inducing_points;
 }
 
- class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
- public:
-  ConstantEverywhere() {};
+class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
+public:
+  ConstantEverywhere(){};
   ~ConstantEverywhere(){};
 
   double variance = 10.;
@@ -163,9 +160,7 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
    * which is saying all observations are perfectly correlated,
    * so you can move one if you move the rest the same amount.
    */
-  double _call_impl(const double &x, const double &y) const {
-    return variance;
-  }
+  double _call_impl(const double &x, const double &y) const { return variance; }
 
   double _call_impl(const InducingFeature &x, const double &y) const {
     if (x.type == ConstantEverywhereType) {
@@ -175,21 +170,18 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
     }
   }
 
-  double _call_impl(const InducingFeature &x, const InducingFeature &y) const
-  {
-    if (x.type == ConstantEverywhereType && y.type == ConstantEverywhereType)
-    {
+  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
+    if (x.type == ConstantEverywhereType && y.type == ConstantEverywhereType) {
       return variance;
     } else {
       return 0.;
     }
   }
-
 };
 
- class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
- public:
-  ConstantPerInterval() {};
+class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
+public:
+  ConstantPerInterval(){};
   ~ConstantPerInterval(){};
 
   double variance = 5.;
@@ -216,20 +208,17 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
     }
   }
 
-  double _call_impl(const InducingFeature &x, const InducingFeature &y) const
-  {
+  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
     if (x.type == ConstantPerIntervalType &&
-        y.type == ConstantPerIntervalType &&
-        x.location == y.location) {
+        y.type == ConstantPerIntervalType && x.location == y.location) {
       return variance;
     } else {
       return 0.;
     }
   }
-
 };
 
- TEST(test_models, test_model_from_prediction_low_rank) {
+TEST(test_models, test_model_from_prediction_low_rank) {
   MakeGaussianProcess test_case;
 
   Eigen::Index k = 10;
@@ -261,8 +250,8 @@ TEST(test_models, test_expect_predict_variants_consistent_fails) {
           .predict(perturbed_features)
           .joint();
 
-  EXPECT_TRUE(joint_prediction_from_prediction.mean.isApprox(
-      model_pred.mean, 1e-12));
+  EXPECT_TRUE(
+      joint_prediction_from_prediction.mean.isApprox(model_pred.mean, 1e-12));
   EXPECT_TRUE(joint_prediction_from_prediction.covariance.isApprox(
       model_pred.covariance, 1e-8));
 }

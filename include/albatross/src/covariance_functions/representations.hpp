@@ -63,9 +63,10 @@ namespace albatross {
  */
 struct ExplainedCovariance {
 
-  ExplainedCovariance() {};
+  ExplainedCovariance(){};
 
-  ExplainedCovariance(const Eigen::MatrixXd &outer, const Eigen::MatrixXd &inner_) {
+  ExplainedCovariance(const Eigen::MatrixXd &outer,
+                      const Eigen::MatrixXd &inner_) {
     outer_ldlt = outer.ldlt();
     inner = inner_;
   }
@@ -81,6 +82,6 @@ struct ExplainedCovariance {
   Eigen::MatrixXd inner;
 };
 
-}
+} // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTION_REPRESENTATIONS_HPP_ */

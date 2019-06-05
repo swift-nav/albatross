@@ -15,7 +15,8 @@
 
 namespace albatross {
 
-template <typename CovarianceRepresentation, typename FeatureType> struct GPFit {};
+template <typename CovarianceRepresentation, typename FeatureType>
+struct GPFit {};
 
 /*
  * The Gaussian Process needs to store the training data and the
@@ -40,6 +41,9 @@ template <typename CovarianceRepresentation, typename FeatureType> struct GPFit 
  */
 template <typename CovarianceRepresentation, typename FeatureType>
 struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
+
+  static_assert(has_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
+                "CovarianceRepresentation must have a solve method");
 
   std::vector<FeatureType> train_features;
   CovarianceRepresentation train_covariance;
@@ -73,7 +77,8 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     archive(cereal::make_nvp("train_features", train_features));
   }
 
-  bool operator==(const Fit<GPFit<CovarianceRepresentation, FeatureType>> &other) const {
+  bool operator==(
+      const Fit<GPFit<CovarianceRepresentation, FeatureType>> &other) const {
     return (train_features == other.train_features &&
             train_covariance == other.train_covariance &&
             information == other.information);
@@ -116,7 +121,6 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
   return JointDistribution(pred, prior_cov - explained_cov);
 }
 
-
 /*
  * These functions create a covariance matrix solver which
  * is used when building a new Gaussian process based off a
@@ -142,14 +146,14 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
  * GP which recovers the prediction.
  */
 template <typename FeatureType>
-inline
-Fit<GPFit<ExplainedCovariance, FeatureType>>
+inline Fit<GPFit<ExplainedCovariance, FeatureType>>
 gp_fit_from_prediction(const std::vector<FeatureType> &features,
                        const Eigen::MatrixXd &prior,
                        const JointDistribution &prediction) {
   Fit<GPFit<ExplainedCovariance, FeatureType>> fit;
   fit.train_features = features;
-  fit.train_covariance = ExplainedCovariance(prior, prior-prediction.covariance);
+  fit.train_covariance =
+      ExplainedCovariance(prior, prior - prediction.covariance);
   fit.information = prior.ldlt().solve(prediction.mean);
   return fit;
 }
@@ -200,7 +204,9 @@ public:
                            const JointDistribution &prediction) const {
 
     using FitType = Fit<GPFit<ExplainedCovariance, FeatureType>>;
-    return FitModel<ImplType, FitType>(impl(), gp_fit_from_prediction(features, covariance_function_(features), prediction));
+    return FitModel<ImplType, FitType>(
+        impl(), gp_fit_from_prediction(features, covariance_function_(features),
+                                       prediction));
   }
 
   std::string get_name() const { return model_name_; };
@@ -236,8 +242,9 @@ public:
             typename std::enable_if<
                 has_call_operator<CovFunc, FeatureType, FeatureType>::value,
                 int>::type = 0>
-  CholeskyFit<FeatureType> _fit_impl(const std::vector<FeatureType> &features,
-                                   const MarginalDistribution &targets) const {
+  CholeskyFit<FeatureType>
+  _fit_impl(const std::vector<FeatureType> &features,
+            const MarginalDistribution &targets) const {
     Eigen::MatrixXd cov = covariance_function_(features);
     return CholeskyFit<FeatureType>(features, cov, targets);
   }
@@ -252,15 +259,16 @@ public:
       ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType");
 
   template <
-      typename FeatureType, typename FitFeaturetype, typename CovarianceRepresentation,
+      typename FeatureType, typename FitFeaturetype,
+      typename CovarianceRepresentation,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
               has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
-  JointDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
-                PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
+      PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     Eigen::MatrixXd prior_cov = covariance_function_(features);
@@ -269,15 +277,16 @@ public:
   }
 
   template <
-      typename FeatureType, typename FitFeaturetype, typename CovarianceRepresentation,
+      typename FeatureType, typename FitFeaturetype,
+      typename CovarianceRepresentation,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
               has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
-  MarginalDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
-                PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
+      PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     Eigen::VectorXd prior_variance(static_cast<Eigen::Index>(features.size()));
@@ -289,28 +298,32 @@ public:
   }
 
   template <
-      typename FeatureType, typename FitFeaturetype, typename CovarianceRepresentation,
+      typename FeatureType, typename FitFeaturetype,
+      typename CovarianceRepresentation,
       typename std::enable_if<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
               has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
           int>::type = 0>
-  Eigen::VectorXd _predict_impl(const std::vector<FeatureType> &features,
-                                const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
-                                PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd _predict_impl(
+      const std::vector<FeatureType> &features,
+      const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
+      PredictTypeIdentity<Eigen::VectorXd> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
     return gp_mean_prediction(cross_cov, gp_fit.information);
   }
 
   template <
-      typename FeatureType, typename FitFeatureType, typename PredictType, typename CovarianceRepresentation,
+      typename FeatureType, typename FitFeatureType, typename PredictType,
+      typename CovarianceRepresentation,
       typename std::enable_if<
           !has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
               !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
           int>::type = 0>
-  PredictType _predict_impl(const std::vector<FeatureType> &features,
-                     const GPFitType<FitFeatureType> &gp_fit,
-                     PredictTypeIdentity<PredictType> &&) const
+  PredictType _predict_impl(
+      const std::vector<FeatureType> &features,
+      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit,
+      PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(
           FeatureType,
           "CovFunc is not defined for FeatureType and FitFeatureType");

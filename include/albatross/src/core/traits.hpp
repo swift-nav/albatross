@@ -32,30 +32,11 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-///*
-// * Like std::is_base_of<T, U> except compares the first template parameter.
-// Ie,
-// *
-// *  first_template_param_is_base_of<T, C<U, X>>::value == is_base_of<T,
-// * U>::value
-// */
-// template <typename T, typename U>
-// struct first_template_param_is_base_of : public std::false_type {};
-//
-// template <template <typename, typename> class Base, typename T, typename U,
-//          typename P>
-// struct first_template_param_is_base_of<T, Base<U, P>>
-//    : public std::is_base_of<T, U> {};
-//
-///*
-// * A valid fit for a ModelType is defined as Fit<AnyBaseOfModelType,
-// * AnyFeatureType>.
-// */
-// template <typename ModelType, typename FitType>
-// struct is_valid_fit_type
-//    : public first_template_param_is_base_of<ModelBase<ModelType>, FitType>
-//    {};
-
+/*
+ * A valid fit is defined as simply anything which matches the pattern:
+ *
+ *     Fit<Anything>.
+ */
 template <typename FitType>
 struct is_valid_fit_type : public std::false_type {};
 
