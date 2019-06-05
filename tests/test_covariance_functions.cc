@@ -27,6 +27,49 @@ std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
   return xs;
 }
 
+TEST(test_covariance_functions, test_measurement_noise_wrapper) {
+
+  SquaredExponential<EuclideanDistance> radial;
+  MeasurementOnly<IndependentNoise<double>> meas_noise;
+  auto sum = radial + meas_noise;
+  auto prod = meas_noise * radial;
+
+  std::vector<double> features = {0., 1., 2.};
+
+  std::vector<Measurement<double>> measurements;
+  for (const auto &f : features) {
+    measurements.emplace_back(Measurement<double>(f));
+  }
+
+  const auto f = features[0];
+  const auto m = measurements[0];
+
+  // The measurement noise should only get applied to
+  // features marked as measurements.
+  EXPECT_EQ(meas_noise(f, f), 0.);
+  EXPECT_GT(meas_noise(m, m), 0.);
+
+  // The radial covariance function should behave the same
+  // regardless of whether it's given features or measurements.
+  EXPECT_GT(radial(f, f), 0.);
+  EXPECT_GT(radial(m, m), 0.);
+  EXPECT_EQ(radial(m, m), radial(f, f));
+
+  // When you add covariance functions you should get
+  // the sum of the individual calls.
+  EXPECT_GT(sum(f, f), 0.);
+  EXPECT_GT(sum(m, m), 0.);
+  EXPECT_GT(sum(m, m), sum(f, f));
+  EXPECT_EQ(sum(m, m), radial(m, m) + meas_noise(m, m));
+
+  // When you multiply a measurement only covariance with a
+  // fully defined one the measurement only property
+  // propagates
+  EXPECT_EQ(prod(f, f), 0.);
+  EXPECT_GT(prod(m, m), 0.);
+  EXPECT_EQ(prod(m, m), radial(m, m) * meas_noise(m, m));
+}
+
 TEST(test_covariance_functions, test_build_covariance) {
   using Feature = Eigen::Vector3d;
   IndependentNoise<Feature> noise;
