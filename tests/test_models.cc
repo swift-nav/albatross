@@ -138,7 +138,6 @@ create_inducing_points(const std::vector<double> &features) {
   InducingFeature interval_feature = {ConstantPerIntervalType, 0};
   long interval = lround(min);
   while (interval <= lround(max)) {
-    std::cout << interval << std::endl;
     interval_feature.location = interval;
     inducing_points.push_back(interval_feature);
     interval += 1;

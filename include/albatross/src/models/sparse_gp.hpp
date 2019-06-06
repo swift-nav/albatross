@@ -130,12 +130,22 @@ public:
     const auto indexer =
         independent_group_indexing_function(out_of_order_features);
 
+    // Determine the set of inducing points, u.
+    const auto u = inducing_point_strategy(out_of_order_features);
+
+    std::vector<Measurement<FeatureType>> out_of_order_measurement_features;
+    for (const auto &f : out_of_order_features) {
+      out_of_order_measurement_features.emplace_back(
+          Measurement<FeatureType>(f));
+    }
+
     std::vector<std::size_t> reordered_inds;
     BlockDiagonal K_ff;
     for (const auto &pair : indexer) {
       reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
                             pair.second.end());
-      auto subset_features = subset(out_of_order_features, pair.second);
+      auto subset_features =
+          subset(out_of_order_measurement_features, pair.second);
       K_ff.blocks.emplace_back(this->covariance_function_(subset_features));
       if (out_of_order_targets.has_covariance()) {
         K_ff.blocks.back().diagonal() +=
@@ -143,11 +153,9 @@ public:
       }
     }
 
-    const auto features = subset(out_of_order_features, reordered_inds);
+    const auto features =
+        subset(out_of_order_measurement_features, reordered_inds);
     const auto targets = subset(out_of_order_targets, reordered_inds);
-
-    // Determine the set of inducing points, u.
-    const auto u = inducing_point_strategy(features);
 
     Eigen::Index m = static_cast<Eigen::Index>(u.size());
 

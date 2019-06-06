@@ -37,13 +37,7 @@ template <typename ModelType, typename FitType> class FitModel;
 
 template <typename Derived> class Fit {};
 
-template <typename X> struct Measurement {
-
-  Measurement(const X &x) { value = x; }
-
-  X value;
-};
-
+template <typename X> struct Measurement;
 /*
  * Parameter Handling
  */

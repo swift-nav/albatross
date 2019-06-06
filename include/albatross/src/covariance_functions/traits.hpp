@@ -34,6 +34,12 @@ class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 
 HAS_METHOD_WITH_RETURN_TYPE(call);
 
+template <typename U, typename Caller, typename... Args>
+class has_valid_cov_caller
+    : public has_call_with_return_type<Caller, double,
+                                       typename const_ref<U>::type,
+                                       typename const_ref<Args>::type...> {};
+
 /*
  * This determines whether or not a class has a method defined for,
  *   `operator() (const X &x, const Y &y, const Z &z, ...)`

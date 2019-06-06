@@ -48,12 +48,12 @@ int main(int argc, char *argv[]) {
   int n = std::stoi(FLAGS_n);
   const double low = -3.;
   const double high = 13.;
-  const double meas_noise = 1.;
+  const double meas_noise_sd = 1.;
 
   if (FLAGS_input == "") {
     FLAGS_input = "input.csv";
   }
-  maybe_create_training_data(FLAGS_input, n, low, high, meas_noise);
+  maybe_create_training_data(FLAGS_input, n, low, high, meas_noise_sd);
 
   using namespace albatross;
 
@@ -65,9 +65,10 @@ int main(int argc, char *argv[]) {
   using SquaredExp = SquaredExponential<EuclideanDistance>;
 
   Polynomial<1> polynomial(100.);
-  Noise noise(meas_noise);
+
+  Noise indep_noise(meas_noise_sd);
   SquaredExp squared_exponential(3.5, 5.7);
-  auto cov = polynomial + noise + squared_exponential;
+  auto cov = polynomial + squared_exponential + measurement_only(noise);
 
   std::cout << cov.pretty_string() << std::endl;
 

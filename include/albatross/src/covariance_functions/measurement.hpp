@@ -15,15 +15,32 @@
 
 namespace albatross {
 
+template <typename X> struct Measurement {
+
+  Measurement(){};
+
+  Measurement(const X &x) { value = x; }
+
+  X value;
+};
+
 template <typename SubCovariance>
 class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {
 
 public:
-  ~MeasurementOnly(){};
+  MeasurementOnly(){};
+  MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov){};
 
   std::string name() const {
     return "measurement[" + sub_cov_.get_name() + "]";
+  }
+
+  ParameterStore get_params() const override { return sub_cov_.get_params(); }
+
+  void unchecked_set_param(const ParameterKey &name,
+                           const Parameter &param) override {
+    sub_cov_.set_param(name, param);
   }
 
   /*
@@ -53,6 +70,14 @@ public:
 private:
   SubCovariance sub_cov_;
 };
+
+/*
+ * Utility function to act as a constructor but with template param resolution.
+ */
+template <typename SubCovariance>
+MeasurementOnly<SubCovariance> measurement_only(const SubCovariance &cov) {
+  return MeasurementOnly<SubCovariance>(cov);
+}
 
 } // namespace albatross
 
