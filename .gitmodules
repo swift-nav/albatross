@@ -1,18 +1,21 @@
 [submodule "third_party/eigen"]
 	path = third_party/eigen
-	url = https://github.com/PX4/eigen.git
+	url = https://github.com/swift-nav/eigen.git
 [submodule "third_party/gflags"]
-	path = third_party/gflags
+	path = third_party/googleflags
 	url = https://github.com/gflags/gflags.git
 [submodule "third_party/googletest"]
 	path = third_party/googletest
 	url = https://github.com/google/googletest.git
 [submodule "third_party/fast-cpp-csv-parser"]
 	path = third_party/fast-cpp-csv-parser
-	url = https://github.com/ben-strasser/fast-cpp-csv-parser.git
+	url = https://github.com/swift-nav/fast-cpp-csv-parser.git
 [submodule "third_party/cereal"]
 	path = third_party/cereal
 	url = https://github.com/USCiLab/cereal.git
 [submodule "third_party/gzip-hpp"]
 	path = third_party/gzip-hpp
 	url = https://github.com/mapbox/gzip-hpp.git
+[submodule "cmake/cmake"]
+	path = cmake/common
+	url = https://github.com/swift-nav/cmake.git

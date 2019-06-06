@@ -1,4 +1,4 @@
-add_executable(albatross_unit_tests EXCLUDE_FROM_ALL
+add_executable(albatross_unit_tests 
   test_block_utils.cc
   test_call_trace.cc
   test_core_dataset.cc
@@ -50,6 +50,8 @@ target_link_libraries(albatross_unit_tests
   nlopt
   z
   )
+set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
+
 add_custom_target(run_albatross_unit_tests ALL
   COMMAND albatross_unit_tests
   COMMENT "Running unit tests"

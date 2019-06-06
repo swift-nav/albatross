@@ -1,31 +1,43 @@
 project(albatross)
 cmake_minimum_required(VERSION 2.8.7)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(ClangTools)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
-option(ENABLE_AUTOFORMAT "Enable automatic formatting and replacement with clang-format." ON)
-option(ENABLE_AUTOLINT "Enable automatic linting and warning with clang-tidy. " OFF)
+include(CCache)
+include(SwiftCmakeOptions)
+swift_create_project_options(
+    HAS_TESTS 
+    HAS_EXAMPLES
+    TEST_PACKAGES "Googletest" "GFlags"
+    )
+
+include(ClangFormat)
+swift_setup_clang_format()
+
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+if(albatross_BUILD_EXAMPLES)
+  find_package(GFlags REQUIRED)
 endif()
 
-add_subdirectory(third_party/googletest)
+set(JUST_INSTALL_CEREAL YES CACHE BOOL "" FORCE) #Don't generate docs, it conflicts with Eigen
+find_package(Cereal REQUIRED)
+find_package(Eigen REQUIRED)
+find_package(FastCSV REQUIRED)
+find_package(Gzip-Hpp REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
   "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/tests"
   )
-target_include_directories(albatross SYSTEM INTERFACE
-  "${PROJECT_SOURCE_DIR}/third_party/eigen/"
-  "${PROJECT_SOURCE_DIR}/third_party/cereal/include"
-  "${PROJECT_SOURCE_DIR}/third_party/fast-cpp-csv-parser/"
-  "${PROJECT_SOURCE_DIR}/third_party/gzip-hpp/include"
-  )
-
-include(${PROJECT_SOURCE_DIR}/cmake/FindGFlags.cmake)
+target_link_libraries(albatross
+    INTERFACE
+    eigen
+    cereal
+    fast-csv
+    gzip-hpp
+    )
 
 set(albatross_COMPILE_OPTIONS
   -Werror
@@ -67,7 +79,10 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
-target_compile_features(albatross INTERFACE cxx_std_14)
 
-add_subdirectory(tests)
-add_subdirectory(examples)
+if(albatross_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
+if(albatross_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
