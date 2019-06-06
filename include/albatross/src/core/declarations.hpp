@@ -35,7 +35,7 @@ class Prediction;
 
 template <typename ModelType, typename FitType> class FitModel;
 
-template <typename ModelType, typename FeatureType = void> class Fit {};
+template <typename Derived> class Fit {};
 
 /*
  * Parameter Handling

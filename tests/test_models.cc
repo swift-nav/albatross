@@ -102,4 +102,158 @@ TEST(test_models, test_model_from_prediction) {
       joint_prediction.covariance, 1e-8));
 }
 
+/*
+ * In what follows we create a small problem which contains unobservable
+ * components.  The model consists of a constant term for each nearest
+ * integer, and another constant term for all values.  Ie, measurements
+ * from the same integer wide bin will share a bias and all measurements
+ * will share another bias.  The result is that the model can't
+ * differentiate between the global bias and the average of all integer
+ * biases (if you add 1 to the global bias and subtract 1 from all interval
+ * biases you end up with the same measurements).  This is handled
+ * properly by the direct Gaussian process, but if you first make a
+ * prediction of each of the biases, then try to use that prediction to
+ * make a new model you end up dealing with a low rank system of
+ * equations which if not handled properly can lead to very large
+ * errors.  This simply makes sure those errors are properly dealth with.
+ */
+
+enum InducingFeatureType { ConstantEverywhereType, ConstantPerIntervalType };
+
+struct InducingFeature {
+  InducingFeatureType type;
+  long location;
+};
+
+std::vector<InducingFeature>
+create_inducing_points(const std::vector<double> &features) {
+
+  std::vector<InducingFeature> inducing_points;
+  double min = *std::min_element(features.begin(), features.end());
+  double max = *std::max_element(features.begin(), features.end());
+
+  InducingFeature everywhere = {ConstantEverywhereType, 0};
+  inducing_points.push_back(everywhere);
+
+  InducingFeature interval_feature = {ConstantPerIntervalType, 0};
+  long interval = lround(min);
+  while (interval <= lround(max)) {
+    std::cout << interval << std::endl;
+    interval_feature.location = interval;
+    inducing_points.push_back(interval_feature);
+    interval += 1;
+  }
+
+  return inducing_points;
+}
+
+class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
+public:
+  ConstantEverywhere(){};
+  ~ConstantEverywhere(){};
+
+  double variance = 10.;
+
+  /*
+   * This will create a covariance matrix that looks like,
+   *     sigma_mean^2 * ones(m, n)
+   * which is saying all observations are perfectly correlated,
+   * so you can move one if you move the rest the same amount.
+   */
+  double _call_impl(const double &x, const double &y) const { return variance; }
+
+  double _call_impl(const InducingFeature &x, const double &y) const {
+    if (x.type == ConstantEverywhereType) {
+      return variance;
+    } else {
+      return 0.;
+    }
+  }
+
+  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
+    if (x.type == ConstantEverywhereType && y.type == ConstantEverywhereType) {
+      return variance;
+    } else {
+      return 0.;
+    }
+  }
+};
+
+class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
+public:
+  ConstantPerInterval(){};
+  ~ConstantPerInterval(){};
+
+  double variance = 5.;
+
+  /*
+   * This will create a covariance matrix that looks like,
+   *     sigma_mean^2 * ones(m, n)
+   * which is saying all observations are perfectly correlated,
+   * so you can move one if you move the rest the same amount.
+   */
+  double _call_impl(const double &x, const double &y) const {
+    if (lround(x) == lround(y)) {
+      return variance;
+    } else {
+      return 0.;
+    }
+  }
+
+  double _call_impl(const InducingFeature &x, const double &y) const {
+    if (x.type == ConstantPerIntervalType && x.location == lround(y)) {
+      return variance;
+    } else {
+      return 0.;
+    }
+  }
+
+  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
+    if (x.type == ConstantPerIntervalType &&
+        y.type == ConstantPerIntervalType && x.location == y.location) {
+      return variance;
+    } else {
+      return 0.;
+    }
+  }
+};
+
+TEST(test_models, test_model_from_prediction_low_rank) {
+  MakeGaussianProcess test_case;
+
+  Eigen::Index k = 10;
+  Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
+  Eigen::VectorXd variance = 0.1 * Eigen::VectorXd::Ones(k);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+
+  std::vector<double> train_features;
+  for (Eigen::Index i = 0; i < k; ++i) {
+    train_features.push_back(static_cast<double>(i) * 0.3);
+  }
+
+  ConstantEverywhere constant;
+  ConstantPerInterval per_interval;
+
+  auto model = gp_from_covariance(constant + per_interval, "unobservable");
+  const auto fit_model = model.fit(train_features, targets);
+
+  const auto inducing_points = create_inducing_points(train_features);
+
+  auto joint_prediction = fit_model.predict(inducing_points).joint();
+
+  std::vector<double> perturbed_features = {50.01, 51.01, 52.01};
+
+  const auto model_pred = fit_model.predict(perturbed_features).joint();
+
+  auto joint_prediction_from_prediction =
+      model.fit_from_prediction(inducing_points, joint_prediction)
+          .predict(perturbed_features)
+          .joint();
+
+  EXPECT_TRUE(
+      joint_prediction_from_prediction.mean.isApprox(model_pred.mean, 1e-12));
+  EXPECT_TRUE(joint_prediction_from_prediction.covariance.isApprox(
+      model_pred.covariance, 1e-8));
+}
+
 } // namespace albatross

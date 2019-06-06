@@ -16,6 +16,7 @@
 #include "GP"
 
 #include "src/utils/block_utils.hpp"
+#include "src/utils/eigen_utils.hpp"
 #include "src/models/sparse_gp.hpp"
 
 #endif

@@ -43,4 +43,8 @@
 #include "src/utils/map_utils.hpp"
 #include "src/cereal/eigen.hpp"
 
+#include "src/details/traits.hpp"
+#include "src/details/has_any_macros.hpp"
+#include "src/details/error_handling.hpp"
+
 #endif

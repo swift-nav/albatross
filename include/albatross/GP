@@ -18,6 +18,7 @@
 
 #include "src/evaluation/likelihood.hpp"
 #include "src/eigen/serializable_ldlt.hpp"
+#include "src/covariance_functions/representations.hpp"
 #include "src/models/gp.hpp"
 
 #endif

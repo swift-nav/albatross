@@ -26,84 +26,83 @@ struct Z {};
 
 class HasValidFitImpl : public ModelBase<HasValidFitImpl> {
 public:
-  Fit<HasValidFitImpl, X> _fit_impl(const std::vector<X> &,
-                                    const MarginalDistribution &) const {
+  Fit<HasValidFitImpl> _fit_impl(const std::vector<X> &,
+                                 const MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasWrongReturnTypeFitImpl : public ModelBase<HasWrongReturnTypeFitImpl> {
 public:
-  Fit<X, X> _fit_impl(const std::vector<X> &,
-                      const MarginalDistribution &) const {
+  double _fit_impl(const std::vector<X> &, const MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasNonConstFitImpl : public ModelBase<HasNonConstFitImpl> {
 public:
-  Fit<HasNonConstFitImpl, X> _fit_impl(const std::vector<X> &,
-                                       const MarginalDistribution &) {
+  Fit<HasNonConstFitImpl> _fit_impl(const std::vector<X> &,
+                                    const MarginalDistribution &) {
     return {};
   };
 };
 
 class HasNonConstArgsFitImpl : public ModelBase<HasNonConstFitImpl> {
 public:
-  Fit<HasNonConstArgsFitImpl, X> _fit_impl(std::vector<X> &,
-                                           const MarginalDistribution &) const {
+  Fit<HasNonConstArgsFitImpl> _fit_impl(std::vector<X> &,
+                                        const MarginalDistribution &) const {
     return {};
   };
 
-  Fit<HasNonConstArgsFitImpl, X> _fit_impl(const std::vector<X> &,
-                                           MarginalDistribution &) const {
+  Fit<HasNonConstArgsFitImpl> _fit_impl(const std::vector<X> &,
+                                        MarginalDistribution &) const {
     return {};
   };
 
-  Fit<HasNonConstArgsFitImpl, X> _fit_impl(std::vector<X> &,
-                                           MarginalDistribution &) const {
+  Fit<HasNonConstArgsFitImpl> _fit_impl(std::vector<X> &,
+                                        MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasProtectedValidFitImpl : public ModelBase<HasNonConstFitImpl> {
 protected:
-  Fit<HasProtectedValidFitImpl, X>
-  _fit_impl(const std::vector<X> &, const MarginalDistribution &) const {
+  Fit<HasProtectedValidFitImpl> _fit_impl(const std::vector<X> &,
+                                          const MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasPrivateValidFitImpl : public ModelBase<HasPrivateValidFitImpl> {
 private:
-  Fit<HasPrivateValidFitImpl, X> _fit_impl(const std::vector<X> &,
-                                           const MarginalDistribution &) const {
+  Fit<HasPrivateValidFitImpl> _fit_impl(const std::vector<X> &,
+                                        const MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasValidAndInvalidFitImpl : public ModelBase<HasValidAndInvalidFitImpl> {
 public:
-  Fit<HasValidAndInvalidFitImpl, X>
-  _fit_impl(const std::vector<X> &, const MarginalDistribution &) const {
+  Fit<HasValidAndInvalidFitImpl> _fit_impl(const std::vector<X> &,
+                                           const MarginalDistribution &) const {
     return {};
   };
 
-  Fit<HasValidAndInvalidFitImpl, X> _fit_impl(const std::vector<X> &,
-                                              const MarginalDistribution &) {
+  Fit<HasValidAndInvalidFitImpl> _fit_impl(const std::vector<X> &,
+                                           const MarginalDistribution &) {
     return {};
   };
 };
 
 class HasValidXYFitImpl : public ModelBase<HasValidXYFitImpl> {
 public:
-  Fit<HasValidXYFitImpl, X> _fit_impl(const std::vector<X> &,
-                                      const MarginalDistribution &) const {
+  Fit<HasValidXYFitImpl> _fit_impl(const std::vector<X> &,
+                                   const MarginalDistribution &) const {
     return {};
   };
 
-  Fit<HasValidXYFitImpl, Y> _fit_impl(const std::vector<Y> &,
-                                      const MarginalDistribution &) const {
+  Fit<HasValidXYFitImpl> _fit_impl(const std::vector<Y> &,
+                                   const MarginalDistribution &) const {
     return {};
   };
 };
@@ -121,7 +120,6 @@ TEST(test_traits_core, test_has_valid_fit) {
   EXPECT_TRUE(bool(has_valid_fit<HasValidXYFitImpl, X>::value));
   EXPECT_TRUE(bool(has_valid_fit<HasValidXYFitImpl, Y>::value));
   EXPECT_FALSE(bool(has_valid_fit<HasNoFitImpl, X>::value));
-  //  EXPECT_TRUE(bool(has_valid_fit<HasInheritedFitImpl, Y>::value));
 }
 
 TEST(test_traits_core, test_has_possible_fit_impl) {
@@ -139,18 +137,15 @@ TEST(test_traits_core, test_has_possible_fit_impl) {
 
 TEST(test_traits_core, test_fit_type) {
   EXPECT_TRUE(bool(std::is_same<Z, fit_type<FitModel<X, Z>, Y>::type>::value));
-  EXPECT_TRUE(bool(std::is_same<Fit<HasValidFitImpl, X>,
+  EXPECT_TRUE(bool(std::is_same<Fit<HasValidFitImpl>,
                                 fit_type<HasValidFitImpl, X>::type>::value));
-  EXPECT_TRUE(bool(std::is_same<Fit<HasValidXYFitImpl, X>,
+  EXPECT_TRUE(bool(std::is_same<Fit<HasValidXYFitImpl>,
                                 fit_type<HasValidXYFitImpl, X>::type>::value));
-  EXPECT_TRUE(bool(std::is_same<Fit<HasValidXYFitImpl, Y>,
+  EXPECT_TRUE(bool(std::is_same<Fit<HasValidXYFitImpl>,
                                 fit_type<HasValidXYFitImpl, Y>::type>::value));
   EXPECT_TRUE(
-      bool(std::is_same<Fit<HasValidAndInvalidFitImpl, X>,
+      bool(std::is_same<Fit<HasValidAndInvalidFitImpl>,
                         fit_type<HasValidAndInvalidFitImpl, X>::type>::value));
-  //  EXPECT_FALSE(
-  //      bool(std::is_same<Fit<HasPrivateValidFitImpl, X>,
-  //                        fit_type<HasPrivateValidFitImpl, X>::type>::value));
 }
 
 template <typename T> struct Base : public ModelBase<T> {};
@@ -158,27 +153,26 @@ template <typename T> struct Base : public ModelBase<T> {};
 struct Derived : public Base<Derived> {};
 
 TEST(test_traits_core, test_is_valid_fit_type) {
-  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, X>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Derived, Y>>::value));
-  // If a Derived class which inherits from Base<Derived> has a fit
-  // which returns Fit<Base<Derived>> consider that a valid fit type.
-  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>, X>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Derived, Fit<Base<Derived>, Y>>::value));
-  // However a fit_impl which returns
-  EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>, Fit<Derived, X>>::value));
-  EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>, Fit<Derived, Y>>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Fit<Derived>>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Fit<Derived>>::value));
+
+  EXPECT_TRUE(bool(is_valid_fit_type<Fit<Base<Derived>>>::value));
+  EXPECT_TRUE(bool(is_valid_fit_type<Fit<Base<Derived>>>::value));
+
+  EXPECT_FALSE(bool(is_valid_fit_type<Derived>::value));
+  EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>>::value));
 }
 
-template <typename T> struct Adaptable;
+template <typename T, typename FeatureType> struct AdaptableFit;
 
 template <typename T, typename FeatureType>
-struct Fit<Adaptable<T>, FeatureType> {};
+struct Fit<AdaptableFit<T, FeatureType>> {};
 
 template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
 
-  Fit<Adaptable<ImplType>, X> _fit_impl(const std::vector<X> &,
-                                        const MarginalDistribution &) const {
-    return Fit<Adaptable<ImplType>, X>();
+  Fit<AdaptableFit<ImplType, X>> _fit_impl(const std::vector<X> &,
+                                           const MarginalDistribution &) const {
+    return Fit<AdaptableFit<ImplType, X>>();
   }
 };
 
@@ -193,7 +187,8 @@ struct Extended : public Adaptable<Extended> {
     return Base::_fit_impl(xs, targets);
   }
 
-  Z _predict_impl(const std::vector<Y> &, const Fit<Adaptable<Extended>, X> &,
+  Z _predict_impl(const std::vector<Y> &,
+                  const Fit<AdaptableFit<Extended, X>> &,
                   PredictTypeIdentity<Z>) const {
     return {};
   }
@@ -201,37 +196,12 @@ struct Extended : public Adaptable<Extended> {
 
 struct OtherExtended : public Adaptable<OtherExtended> {};
 
-TEST(test_traits_core, test_adaptable_fit_type) {
-  EXPECT_TRUE(bool(std::is_base_of<Fit<Adaptable<Extended>, X>,
-                                   fit_type<Extended, Y>::type>::value));
-  EXPECT_TRUE(bool(std::is_base_of<Fit<Adaptable<Extended>, X>,
-                                   fit_type<Extended, X>::type>::value));
-  EXPECT_TRUE(bool(
-      has_valid_predict<Extended, Y, Fit<Adaptable<Extended>, X>, Z>::value));
-}
-
 TEST(test_traits_core, test_adaptable_has_valid_fit) {
   EXPECT_TRUE(bool(has_valid_fit<Extended, X>::value));
   EXPECT_TRUE(bool(has_valid_fit<Extended, Y>::value));
 
   EXPECT_TRUE(bool(has_valid_fit<OtherExtended, X>::value));
   EXPECT_FALSE(bool(has_valid_fit<OtherExtended, Y>::value));
-
-  EXPECT_FALSE(bool(has_valid_fit<Adaptable<Extended>, X>::value));
-  EXPECT_FALSE(bool(has_valid_fit<Adaptable<Extended>, Y>::value));
-}
-
-TEST(test_traits_core, test_adaptable_is_valid_fit) {
-  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, X>>::value));
-  EXPECT_TRUE(bool(is_valid_fit_type<Extended, Fit<Extended, Y>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, X>>::value));
-  EXPECT_TRUE(
-      bool(is_valid_fit_type<Extended, Fit<Adaptable<Extended>, Y>>::value));
-  EXPECT_FALSE(bool(
-      is_valid_fit_type<OtherExtended, Fit<Adaptable<Extended>, Y>>::value));
-  EXPECT_FALSE(bool(
-      is_valid_fit_type<Extended, Fit<Adaptable<OtherExtended>, Y>>::value));
 }
 
 /*

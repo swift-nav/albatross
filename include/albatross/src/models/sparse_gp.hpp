@@ -240,7 +240,7 @@ public:
     const Eigen::MatrixXd C = K_uu_llt.matrixL() * B * RtR.ldlt().solve(LT);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
-    return typename Base::template GPFitType<InducingPointFeatureType>(
+    return typename Base::template CholeskyFit<InducingPointFeatureType>(
         u, C.ldlt(), v);
   }
 
