@@ -17,7 +17,7 @@ namespace albatross {
 
 template <typename X> struct Measurement {
 
-  Measurement(){};
+  Measurement() : value() {};
 
   Measurement(const X &x) { value = x; }
 
@@ -29,7 +29,7 @@ class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {
 
 public:
-  MeasurementOnly(){};
+  MeasurementOnly() : sub_cov_() {};
   MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov){};
 
   std::string name() const {
@@ -43,10 +43,6 @@ public:
     sub_cov_.set_param(name, param);
   }
 
-  /*
-   * This will create a scaled identity matrix, but only between
-   * two different observations defined by the Observed type.
-   */
   template <
       typename X, typename Y,
       typename std::enable_if<
@@ -55,10 +51,6 @@ public:
     return 0.;
   };
 
-  /*
-   * This will create a scaled identity matrix, but only between
-   * two different observations defined by the Observed type.
-   */
   template <
       typename X, typename Y,
       typename std::enable_if<

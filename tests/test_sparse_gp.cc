@@ -76,9 +76,6 @@ TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
   double really_sparse_cov_diff =
       (really_sparse_pred.covariance - direct_pred.covariance).norm();
 
-  std::cout << direct_pred.covariance << std::endl;
-  std::cout << sparse_pred.covariance << std::endl;
-
   EXPECT_LT(sparse_cov_diff, 1e-2);
   EXPECT_LT(really_sparse_cov_diff, 0.5);
   EXPECT_GT(really_sparse_cov_diff, sparse_cov_diff);
