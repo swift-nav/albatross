@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
   Noise indep_noise(meas_noise_sd);
   SquaredExp squared_exponential(3.5, 5.7);
-  auto cov = polynomial + squared_exponential + measurement_only(noise);
+  auto cov = polynomial + squared_exponential + measurement_only(indep_noise);
 
   std::cout << cov.pretty_string() << std::endl;
 

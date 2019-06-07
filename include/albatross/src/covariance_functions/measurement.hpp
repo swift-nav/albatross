@@ -17,7 +17,7 @@ namespace albatross {
 
 template <typename X> struct Measurement {
 
-  Measurement() : value() {};
+  Measurement() : value(){};
 
   Measurement(const X &x) { value = x; }
 
@@ -29,7 +29,7 @@ class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {
 
 public:
-  MeasurementOnly() : sub_cov_() {};
+  MeasurementOnly() : sub_cov_(){};
   MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov){};
 
   std::string name() const {
