@@ -113,11 +113,11 @@ struct LDLT : public SerializableType<Eigen::SerializableLDLT> {
   Eigen::Index n = 3;
 
   RepresentationType create() const override {
-    // This looks weird, but without forcing this to a Eigen::MatrixXd
+    // Without forcing this to a Eigen::MatrixXd
     // type every time `part` is accessed it'll have new random values!
     // so part.tranpose() will not be the transpose of `part` but the
     // transpose of some new random matrix.  Seems like a bug to me.
-    const auto part = Eigen::MatrixXd(Eigen::MatrixXd::Random(n, n));
+    const Eigen::MatrixXd part = Eigen::MatrixXd::Random(n, n);
     auto cov = part * part.transpose();
     auto ldlt = cov.ldlt();
     auto information = Eigen::VectorXd::Ones(n);
@@ -127,6 +127,29 @@ struct LDLT : public SerializableType<Eigen::SerializableLDLT> {
     EXPECT_EQ(ldlt.solve(information), serializable_ldlt.solve(information));
 
     return serializable_ldlt;
+  }
+
+  bool are_equal(const RepresentationType &lhs,
+                 const RepresentationType &rhs) const override {
+    auto information = Eigen::VectorXd::Ones(n);
+    return (lhs == rhs && lhs.solve(information) == rhs.solve(information));
+  };
+};
+
+struct ExplainedCovarianceRepresentation
+    : public SerializableType<ExplainedCovariance> {
+  Eigen::Index n = 3;
+
+  RepresentationType create() const override {
+    // Without forcing this to a Eigen::MatrixXd
+    // type every time `part` is accessed it'll have new random values!
+    // so part.tranpose() will not be the transpose of `part` but the
+    // transpose of some new random matrix.  Seems like a bug to me.
+    const Eigen::MatrixXd part = Eigen::MatrixXd::Random(n, n);
+    auto cov = part * part.transpose();
+
+    ExplainedCovariance representation(cov, cov);
+    return representation;
   }
 
   bool are_equal(const RepresentationType &lhs,
@@ -195,12 +218,13 @@ struct DatasetWithMetadata
 REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
                            test_roundtrip_serialize_binary);
 
-typedef ::testing::Types<
-    LDLT, EigenMatrix3d, SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
-    EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd, FullJointDistribution,
-    MeanOnlyJointDistribution, FullMarginalDistribution,
-    MeanOnlyMarginalDistribution, ParameterStoreType, Dataset,
-    DatasetWithMetadata, SerializableType<MockModel>>
+typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
+                         SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
+                         EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
+                         FullJointDistribution, MeanOnlyJointDistribution,
+                         FullMarginalDistribution, MeanOnlyMarginalDistribution,
+                         ParameterStoreType, Dataset, DatasetWithMetadata,
+                         SerializableType<MockModel>>
     ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);

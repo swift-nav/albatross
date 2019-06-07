@@ -78,6 +78,16 @@ struct ExplainedCovariance {
     return outer_ldlt.solve(inner * outer_ldlt.solve(rhs));
   }
 
+  bool operator==(const ExplainedCovariance &rhs) const {
+    return (outer_ldlt == rhs.outer_ldlt && inner == rhs.inner);
+  }
+
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
+    archive(cereal::make_nvp("outer_ldlt", outer_ldlt),
+            cereal::make_nvp("inner", inner));
+  }
+
   Eigen::SerializableLDLT outer_ldlt;
   Eigen::MatrixXd inner;
 };
