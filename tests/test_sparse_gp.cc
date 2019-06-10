@@ -46,20 +46,23 @@ TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
 
   auto direct = gp_from_covariance(covariance, "direct");
 
-  UniformlySpacedInducingPoints strategy(10);
+  UniformlySpacedInducingPoints strategy(8);
   auto sparse =
       sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
 
-  UniformlySpacedInducingPoints bad_strategy(4);
+  UniformlySpacedInducingPoints bad_strategy(3);
   auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
                                                  indexer, "really_sparse");
 
   auto test_features = linspace(0.01, 9.9, 11);
 
-  auto sparse_pred = sparse.fit(dataset).predict(test_features).joint();
-  auto really_sparse_pred =
-      really_sparse.fit(dataset).predict(test_features).joint();
-  auto direct_pred = direct.fit(dataset).predict(test_features).joint();
+  auto sparse_pred =
+      sparse.fit(dataset).predict_with_measurement_noise(test_features).joint();
+  auto really_sparse_pred = really_sparse.fit(dataset)
+                                .predict_with_measurement_noise(test_features)
+                                .joint();
+  auto direct_pred =
+      direct.fit(dataset).predict_with_measurement_noise(test_features).joint();
 
   double sparse_error = (sparse_pred.mean - direct_pred.mean).norm();
   double really_sparse_error =

@@ -43,6 +43,18 @@ public:
                                                           features);
   }
 
+  template <typename PredictFeatureType>
+  Prediction<ModelType, Measurement<PredictFeatureType>, Fit>
+  predict_with_measurement_noise(
+      const std::vector<PredictFeatureType> &features) const {
+    std::vector<Measurement<PredictFeatureType>> measurements;
+    for (const auto &f : features) {
+      measurements.emplace_back(Measurement<PredictFeatureType>(f));
+    }
+    return Prediction<ModelType, Measurement<PredictFeatureType>, Fit>(
+        model_, fit_, measurements);
+  }
+
   Fit get_fit() const { return fit_; }
 
   ModelType get_model() const { return model_; };

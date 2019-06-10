@@ -147,7 +147,8 @@ void write_predictions_to_csv(
   const std::size_t k = 161;
   auto grid_xs = uniform_points_on_line(k, low - 2., high + 2.);
 
-  auto prediction = fit_model.predict(grid_xs).marginal();
+  auto prediction =
+      fit_model.predict_with_measurement_noise(grid_xs).marginal();
 
   Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
   for (std::size_t i = 0; i < k; i++) {

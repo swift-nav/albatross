@@ -22,6 +22,136 @@ template <typename X, typename Y> class ProductOfCovarianceFunctions;
 template <typename Derived> class CallTrace;
 
 /*
+ * Implementing a CovarianceFunction requires defining a method with
+ * signature:
+ *
+ *     double _call_impl(const X &x, const Y &y) const
+ *
+ * There are often different sets of arguments for which the covariance
+ * function should be equivalent.  For example, we know that covariance
+ * funcitons are symmetric, so a call to cov(x, y) will be equivalent
+ * to cov(y, x).
+ *
+ * This and some additional desired behavior, the ability to distinguish
+ * between a measurement and measurement noise free feature for example,
+ * led to an intermediary step which use Callers.  These callers
+ * can be strung together to avoid repeated trait inspection.
+ */
+
+namespace internal {
+
+/*
+ * This Caller just directly call the underlying CovFunc.
+ */
+template <typename CovFunc> struct DirectCaller {
+
+  template <typename X, typename Y,
+            typename std::enable_if<has_valid_call_impl<CovFunc, X, Y>::value,
+                                    int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return cov_func._call_impl(x, y);
+  }
+};
+
+/*
+ * This Caller turns any CovFunc defined for argument types X, Y into
+ * one valid for Y, X as well.
+ */
+template <typename CovFunc, typename Caller> struct SymmetricCaller {
+
+  /*
+   * CovFunc has a direct call implementation for X and Y
+   */
+  template <
+      typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return Caller::call(cov_func, x, y);
+  }
+
+  /*
+   * CovFunc has a call for Y and X but not X and Y
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_cov_caller<CovFunc, Caller, Y, X>::value &&
+                 !has_valid_cov_caller<CovFunc, Caller, X, Y>::value),
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return Caller::call(cov_func, y, x);
+  }
+};
+
+/*
+ * This Caller maps any call with type Measurement<X> to one which
+ * just uses the underlying type (X) UNLESS a call is actually defined
+ * for Measurement<X> in which case that is used.  This makes it possible
+ * to define a covariance function which behaves differently when presented
+ * with training data (measurements) versus test data where you may
+ * actually be interested in the underlying process.
+ */
+template <typename CovFunc, typename Caller> struct MeasurementForwarder {
+
+  template <
+      typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return Caller::call(cov_func, x, y);
+  }
+
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_cov_caller<CovFunc, Caller, X, Y>::value &&
+                 !has_valid_cov_caller<CovFunc, Caller, Measurement<X>,
+                                       Measurement<Y>>::value),
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const Measurement<X> &x,
+                     const Measurement<Y> &y) {
+    return Caller::call(cov_func, x.value, y.value);
+  }
+
+  template <
+      typename X, typename Y,
+      typename std::enable_if<
+          (has_valid_cov_caller<CovFunc, Caller, X, Y>::value &&
+           !has_valid_cov_caller<CovFunc, Caller, Measurement<X>, Y>::value),
+          int>::type = 0>
+  static double call(const CovFunc &cov_func, const Measurement<X> &x,
+                     const Y &y) {
+    return Caller::call(cov_func, x.value, y);
+  }
+
+  template <
+      typename X, typename Y,
+      typename std::enable_if<
+          (has_valid_cov_caller<CovFunc, Caller, X, Y>::value &&
+           !has_valid_cov_caller<CovFunc, Caller, X, Measurement<Y>>::value),
+          int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x,
+                     const Measurement<Y> &y) {
+    return Caller::call(cov_func, x, y.value);
+  }
+};
+
+} // namespace internal
+
+/*
+ * This defines the order of operations of the covariance function Callers.
+ */
+template <typename CovFunc>
+using Caller = internal::MeasurementForwarder<
+    CovFunc,
+    internal::SymmetricCaller<CovFunc, internal::DirectCaller<CovFunc>>>;
+
+template <typename CovFunc, typename... Args>
+class has_valid_caller
+    : public has_call_with_return_type<Caller<CovFunc>, double,
+                                       typename const_ref<CovFunc>::type,
+                                       typename const_ref<Args>::type...> {};
+
+/*
  * CovarianceFunction is a CRTP base class which can be used in a
  * way similar to a polymorphic abstract class.  For example if
  * you want to implement a new covariance function you'll need to
@@ -79,6 +209,10 @@ private:
   CovarianceFunction() : ParameterHandlingMixin(){};
   friend Derived;
 
+  template <typename X, typename Y> double call(const X &x, const Y &y) const {
+    return Caller<Derived>::call(derived(), x, y);
+  }
+
 public:
   static_assert(!is_complete<Derived>::value,
                 "\n\nPassing a complete type in as template parameter "
@@ -119,41 +253,18 @@ public:
    * are 0. and ones that are just not defined (read: possibly bugs).
    */
   template <typename X, typename Y,
-            typename std::enable_if<
-                has_valid_call_impl<Derived, X &, Y &>::value, int>::type = 0>
+            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
+                                    int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
-    return derived()._call_impl(x, y);
-  }
-
-  /*
-   * Use the symmetric property of covariance functions to find C(X, Y)
-   * when only C(Y, X) is defined.
-   */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<Derived, Y &, X &>::value &&
-                               !has_valid_call_impl<Derived, X &, Y &>::value),
-                              int>::type = 0>
-  auto operator()(const X &x, const Y &y) const {
-    return derived()._call_impl(y, x);
+    return call(x, y);
   }
 
   /*
    * Covariance between each element and every other in a vector.
    */
   template <typename X,
-            typename std::enable_if<
-                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
-  double operator()(const X &x) const {
-    return derived()._call_impl(x, x);
-  }
-
-  /*
-   * Covariance between each element and every other in a vector.
-   */
-  template <typename X,
-            typename std::enable_if<
-                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
+            typename std::enable_if<has_valid_caller<Derived, X, X>::value,
+                                    int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
     int n = static_cast<int>(xs.size());
     Eigen::MatrixXd C(n, n);
@@ -164,7 +275,7 @@ public:
       si = static_cast<std::size_t>(i);
       for (j = 0; j <= i; j++) {
         sj = static_cast<std::size_t>(j);
-        C(i, j) = this->operator()(xs[si], xs[sj]);
+        C(i, j) = call(xs[si], xs[sj]);
         C(j, i) = C(i, j);
       }
     }
@@ -175,8 +286,8 @@ public:
    * Cross covariance between two vectors of (possibly) different types.
    */
   template <typename X, typename Y,
-            typename std::enable_if<
-                (has_valid_call_impl<Derived, X &, Y &>::value), int>::type = 0>
+            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
+                                    int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              const std::vector<Y> &ys) const {
     int m = static_cast<int>(xs.size());
@@ -189,31 +300,18 @@ public:
       si = static_cast<std::size_t>(i);
       for (j = 0; j < n; j++) {
         sj = static_cast<std::size_t>(j);
-        C(i, j) = this->operator()(xs[si], ys[sj]);
+        C(i, j) = call(xs[si], ys[sj]);
       }
     }
     return C;
   }
 
   /*
-   * Use the symmetric property to compute the cross covariance.
-   */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<Derived, Y &, X &>::value &&
-                               !has_valid_call_impl<Derived, X &, Y &>::value),
-                              int>::type = 0>
-  Eigen::MatrixXd operator()(const std::vector<X> &xs,
-                             const std::vector<Y> &ys) const {
-    return this->operator()(ys, xs).transpose();
-  }
-
-  /*
    * Diagonal of the covariance matrix.
    */
   template <typename X,
-            typename std::enable_if<
-                has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
+            typename std::enable_if<has_valid_caller<Derived, X, X>::value,
+                                    int>::type = 0>
   Eigen::VectorXd diagonal(const std::vector<X> &xs) const {
     int n = static_cast<int>(xs.size());
     Eigen::VectorXd diag(n);
@@ -222,7 +320,7 @@ public:
     std::size_t si;
     for (i = 0; i < n; i++) {
       si = static_cast<std::size_t>(i);
-      diag[i] = this->operator()(xs[si], xs[si]);
+      diag[i] = call(xs[si], xs[si]);
     }
     return diag;
   }
@@ -230,71 +328,29 @@ public:
   /*
    * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
-   *
-   * If you encounter a deleted function error below it implies that you've
-   * attempted to call a covariance function with arguments X, Y that are
-   * undefined (or invalid) for the corresponding CovarianceFunction(s).
-   * The subsequent compiler errors should give you an indication of which
-   * types were attempted.
-   */
-
-  template <typename X, typename std::enable_if<
-                            (!has_valid_call_impl<Derived, X &, X &>::value &&
-                             !has_possible_call_impl<Derived, X &, X &>::value),
-                            int>::type = 0>
-  // There don't appear to be any _call_impl( methods with signature
-  // `double _call_impl(const X&, const X&) const`.
-  double operator()(const X &x) const =
-      delete; // No _call_impl(.  See comments for help.
-
-  /*
-   * Stubs to catch the case where a covariance function was called
-   * with arguments that aren't supported.
    */
   template <typename X, typename std::enable_if<
-                            (!has_valid_call_impl<Derived, X &, X &>::value &&
-                             has_invalid_call_impl<Derived, X &, X &>::value),
+                            (!has_valid_caller<Derived, X, X>::value &&
+                             !has_possible_call_impl<Derived, X, X>::value),
                             int>::type = 0>
-  // Here it seems there are no valid _call_impl( methods for these types
-  // but there are some invalid ones.  Be sure that the _call_impl( is
-  // defined in the form: `double _call_impl(const X&, const X&) const`.
-  double operator()(const X &x) const =
-      delete; // Invalid _call_impl(.  See comments for help.
+  void operator()(const X &x) const
+      ALBATROSS_FAIL(X, "No public method with signature 'double "
+                        "Derived::_call_impl(const X&, const X&) const'");
 
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (!has_valid_call_impl<Derived, X &, Y &>::value &&
-                 !has_valid_call_impl<Derived, Y &, X &>::value) &&
-                    (!has_possible_call_impl<Derived, X &, Y &>::value &&
-                     !has_possible_call_impl<Derived, Y &, X &>::value),
-                int>::type = 0>
-  // There don't appear to be any _call_impl( methods with signature
-  // `double _call_impl(const X&, const Y&) const`.
-  double operator()(const X &x,
-                    const Y &y) const =
-      delete; // No _call_impl(.  See comments for help.
+  template <typename X, typename std::enable_if<
+                            (!has_valid_caller<Derived, X, X>::value &&
+                             has_invalid_call_impl<Derived, X, X>::value),
+                            int>::type = 0>
+  void operator()(const X &x) const
+      ALBATROSS_FAIL(X, "Incorrectly defined method 'double "
+                        "Derived::_call_impl(const X&, const X&) const'");
 
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (!has_valid_call_impl<Derived, X &, Y &>::value &&
-                 !has_valid_call_impl<Derived, Y &, X &>::value) &&
-                    (has_invalid_call_impl<Derived, X &, Y &>::value ||
-                     has_invalid_call_impl<Derived, Y &, X &>::value),
-                int>::type = 0>
-  // Here it seems there are no valid _call_impl( methods for these types
-  // but there are some invalid ones.  Be sure that the _call_impl( is
-  // defined in the form: `double _call_impl(const X&, const X&) const`.
-  double operator()(const X &x,
-                    const Y &y) const =
-      delete; // Invalid _call_impl(.  See comments for help.
-
-  /*
-   * Covariance between each element and every other in a vector.
-   */
   template <typename X,
-            typename std::enable_if<
-                !has_valid_call_impl<Derived, X &, X &>::value, int>::type = 0>
-  DiagonalMatrixXd diagonal(const std::vector<X> &xs) const = delete;
+            typename std::enable_if<!has_valid_caller<Derived, X, X>::value,
+                                    int>::type = 0>
+  void diagonal(const std::vector<X> &xs) const
+      ALBATROSS_FAIL(X, "No public method with signature 'double "
+                        "Derived::_call_impl(const X&, const X&) const'");
 
   CallTrace<Derived> call_trace() const;
 
@@ -343,11 +399,10 @@ public:
    * If both LHS and RHS have a valid call method for the types X and Y
    * this will return the sum of the two.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
-                               has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
@@ -355,11 +410,10 @@ public:
   /*
    * If only LHS has a valid call method we ignore R.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
-                               !has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     !has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
@@ -367,11 +421,10 @@ public:
   /*
    * If only RHS has a valid call method we ignore L.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(!has_valid_call_impl<LHS, X &, Y &>::value &&
-                               has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
@@ -415,11 +468,10 @@ public:
    * If both LHS and RHS have a valid call method for the types X and Y
    * this will return the product of the two.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
-                               has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     double output = this->lhs_(x, y);
     if (output != 0.) {
@@ -431,11 +483,10 @@ public:
   /*
    * If only LHS has a valid call method we ignore R.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<LHS, X &, Y &>::value &&
-                               !has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     !has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
@@ -443,11 +494,10 @@ public:
   /*
    * If only RHS has a valid call method we ignore L.
    */
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(!has_valid_call_impl<LHS, X &, Y &>::value &&
-                               has_valid_call_impl<RHS, X &, Y &>::value),
-                              int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }

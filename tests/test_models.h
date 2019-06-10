@@ -22,7 +22,7 @@ namespace albatross {
 inline auto make_simple_covariance_function() {
   SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
   IndependentNoise<double> noise(0.1);
-  return squared_exponential + noise;
+  return squared_exponential + measurement_only(noise);
 }
 
 class MakeGaussianProcess {
@@ -97,8 +97,7 @@ public:
   auto _fit_impl(const std::vector<AdaptedFeature> &features,
                  const MarginalDistribution &targets) const {
     const auto converted = adapted::convert_features(features);
-    Eigen::MatrixXd cov = this->covariance_function_(converted);
-    return FitType(converted, cov, targets);
+    return Base::_fit_impl(converted, targets);
   }
 
   template <typename PredictType>
