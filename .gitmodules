@@ -21,4 +21,4 @@
 	url = https://github.com/swift-nav/cmake.git
 [submodule "third_party/variant"]
 	path = third_party/variant
-	url = git@github.com:swift-nav/variant
+	url = https://github.com/swift-nav/variant.git

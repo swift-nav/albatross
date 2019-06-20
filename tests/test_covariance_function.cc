@@ -52,11 +52,11 @@ class HasNone : public CovarianceFunction<HasNone> {};
 
 class HasMultiple : public CovarianceFunction<HasMultiple> {
 public:
-  double _call_impl(const X &, const Y &) const { return 1.; };
-
   double _call_impl(const X &, const X &) const { return 1.; };
 
-  double _call_impl(const Y &, const Y &) const { return 1.; };
+  double _call_impl(const X &, const Y &) const { return 3.; };
+
+  double _call_impl(const Y &, const Y &) const { return 5.; };
 
   std::string name_ = "has_multiple";
 };
@@ -127,6 +127,37 @@ TEST(test_covariance_function, test_covariance_matrix) {
   EXPECT_EQ(cov(std::vector<Y>({{}, {}})).size(), 4);
   EXPECT_EQ(cov(std::vector<X>({{}, {}, {}}), std::vector<Y>({{}, {}})).size(),
             6);
+}
+
+TEST(test_covariance_function, test_works_with_variants) {
+  HasMultiple cov;
+
+  X x;
+  Y y;
+
+  EXPECT_EQ(cov(x, x), 1.);
+  EXPECT_EQ(cov(x, y), 3.);
+  EXPECT_EQ(cov(y, x), 3.);
+  EXPECT_EQ(cov(y, y), 5.);
+
+  variant<X, Y> vx = x;
+  variant<X, Y> vy = y;
+
+  EXPECT_EQ(cov(vx, x), cov(x, x));
+  EXPECT_EQ(cov(vx, vx), cov(x, x));
+  EXPECT_EQ(cov(x, vx), cov(x, x));
+
+  EXPECT_EQ(cov(vx, y), cov(x, y));
+  EXPECT_EQ(cov(vx, vy), cov(x, y));
+  EXPECT_EQ(cov(x, vy), cov(x, y));
+
+  EXPECT_EQ(cov(vy, x), cov(x, y));
+  EXPECT_EQ(cov(vy, vx), cov(x, y));
+  EXPECT_EQ(cov(y, vx), cov(x, y));
+
+  EXPECT_EQ(cov(vy, y), cov(y, y));
+  EXPECT_EQ(cov(vy, vy), cov(y, y));
+  EXPECT_EQ(cov(y, vy), cov(y, y));
 }
 
 } // namespace albatross

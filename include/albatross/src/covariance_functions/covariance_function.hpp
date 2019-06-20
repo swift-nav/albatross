@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 
+using mapbox::util::variant;
+
 namespace albatross {
 
 template <typename X, typename Y> class SumOfCovarianceFunctions;
@@ -146,45 +148,51 @@ template <typename CovFunc, typename Caller> struct VariantForwarder {
   }
 
   template <
-      typename A, typename B,
+      typename A, typename B, typename C,
       typename std::enable_if<
-          has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
-          has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
-          has_valid_cov_caller<CovFunc, Caller, B, B>::value, int>::type = 0>
-  static double call(const CovFunc &cov_func,
-                     const variant<A, B> &x,
-                     const A &y) {
+          !has_valid_cov_caller<CovFunc, Caller, variant<A, B>, C>::value &&
+              has_valid_cov_caller<CovFunc, Caller, A, C>::value &&
+              has_valid_cov_caller<CovFunc, Caller, B, C>::value,
+          int>::type = 0>
+  static double call(const CovFunc &cov_func, const variant<A, B> &x,
+                     const C &y) {
 
     return x.match(
-      [&y](A xx) {
-        this->call(cov_func, xx, y);
-      },
-      [&y](B xx) {
-        this->call(cov_func, xx, y);
-      }
-    );
+        [&y, &cov_func](const A &xx) { return call(cov_func, xx, y); },
+        [&y, &cov_func](const B &xx) { return call(cov_func, xx, y); });
   }
 
   template <
-      typename A, typename B,
+      typename A, typename B, typename C,
       typename std::enable_if<
-          has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
-          has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
-          has_valid_cov_caller<CovFunc, Caller, B, B>::value, int>::type = 0>
-  static double call(const CovFunc &cov_func,
-                     const variant<A, B> &x,
+          !has_valid_cov_caller<CovFunc, Caller, C, variant<A, B>>::value &&
+              has_valid_cov_caller<CovFunc, Caller, C, A>::value &&
+              has_valid_cov_caller<CovFunc, Caller, C, B>::value,
+          int>::type = 0>
+  static double call(const CovFunc &cov_func, const C &x,
                      const variant<A, B> &y) {
 
     return y.match(
-      [&x](A yy) {
-        this->call(cov_func, x, yy);
-      },
-      [&x](B yy) {
-        this->call(cov_func, x, yy);
-      }
-    );
+        [&x, &cov_func](const A &yy) { return call(cov_func, x, yy); },
+        [&x, &cov_func](const B &yy) { return call(cov_func, x, yy); });
   }
-}
+
+  template <typename A, typename B,
+            typename std::enable_if<
+                !has_valid_cov_caller<CovFunc, Caller, variant<A, B>,
+                                      variant<A, B>>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, B, B>::value,
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const variant<A, B> &x,
+                     const variant<A, B> &y) {
+
+    return y.match(
+        [&x, &cov_func](const A &yy) { return call(cov_func, x, yy); },
+        [&x, &cov_func](const B &yy) { return call(cov_func, x, yy); });
+  }
+};
 
 } // namespace internal
 
@@ -192,11 +200,11 @@ template <typename CovFunc, typename Caller> struct VariantForwarder {
  * This defines the order of operations of the covariance function Callers.
  */
 template <typename CovFunc>
-using Caller =
-    internal::VariantForwarder<CovFunc,
-      internal::MeasurementForwarder<CovFunc,
-        internal::SymmetricCaller<CovFunc,
-          internal::DirectCaller<CovFunc>>>>;
+using Caller = internal::VariantForwarder<
+    CovFunc,
+    internal::MeasurementForwarder<
+        CovFunc,
+        internal::SymmetricCaller<CovFunc, internal::DirectCaller<CovFunc>>>>;
 
 template <typename CovFunc, typename... Args>
 class has_valid_caller
