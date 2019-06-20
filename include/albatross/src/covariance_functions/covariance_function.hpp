@@ -135,15 +135,68 @@ template <typename CovFunc, typename Caller> struct MeasurementForwarder {
   }
 };
 
+template <typename CovFunc, typename Caller> struct VariantForwarder {
+
+  template <
+      typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return Caller::call(cov_func, x, y);
+  }
+
+  template <
+      typename A, typename B,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
+          has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
+          has_valid_cov_caller<CovFunc, Caller, B, B>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func,
+                     const variant<A, B> &x,
+                     const A &y) {
+
+    return x.match(
+      [&y](A xx) {
+        this->call(cov_func, xx, y);
+      },
+      [&y](B xx) {
+        this->call(cov_func, xx, y);
+      }
+    );
+  }
+
+  template <
+      typename A, typename B,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
+          has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
+          has_valid_cov_caller<CovFunc, Caller, B, B>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func,
+                     const variant<A, B> &x,
+                     const variant<A, B> &y) {
+
+    return y.match(
+      [&x](A yy) {
+        this->call(cov_func, x, yy);
+      },
+      [&x](B yy) {
+        this->call(cov_func, x, yy);
+      }
+    );
+  }
+}
+
 } // namespace internal
 
 /*
  * This defines the order of operations of the covariance function Callers.
  */
 template <typename CovFunc>
-using Caller = internal::MeasurementForwarder<
-    CovFunc,
-    internal::SymmetricCaller<CovFunc, internal::DirectCaller<CovFunc>>>;
+using Caller =
+    internal::VariantForwarder<CovFunc,
+      internal::MeasurementForwarder<CovFunc,
+        internal::SymmetricCaller<CovFunc,
+          internal::DirectCaller<CovFunc>>>>;
 
 template <typename CovFunc, typename... Args>
 class has_valid_caller
