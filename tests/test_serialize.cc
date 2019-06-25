@@ -215,6 +215,28 @@ struct DatasetWithMetadata
   };
 };
 
+struct VariantAsInt : public SerializableType<variant<int, double>> {
+
+  RepresentationType create() const override {
+
+    variant<int, double> output;
+    int foo = 1;
+    output = foo;
+    return output;
+  }
+};
+
+struct VariantAsDouble : public SerializableType<variant<int, double>> {
+
+  RepresentationType create() const override {
+
+    variant<int, double> output;
+    double foo = 1.;
+    output = foo;
+    return output;
+  }
+};
+
 REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
                            test_roundtrip_serialize_binary);
 
@@ -224,7 +246,8 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          FullJointDistribution, MeanOnlyJointDistribution,
                          FullMarginalDistribution, MeanOnlyMarginalDistribution,
                          ParameterStoreType, Dataset, DatasetWithMetadata,
-                         SerializableType<MockModel>>
+                         SerializableType<MockModel>, VariantAsInt,
+                         VariantAsDouble>
     ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
