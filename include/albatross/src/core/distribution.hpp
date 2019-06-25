@@ -113,6 +113,25 @@ void set_subset(const Distribution<CovarianceType> &from,
   }
 }
 
+inline MarginalDistribution
+concatenate_marginals(const MarginalDistribution &x,
+                      const MarginalDistribution &y) {
+  Eigen::VectorXd mean(x.mean.size() + y.mean.size());
+  mean.block(0, 0, x.mean.size(), 1) = x.mean;
+  mean.block(x.mean.size(), 0, y.mean.size(), 1) = y.mean;
+
+  Eigen::VectorXd variance = Eigen::VectorXd::Zero(mean.size());
+  if (x.has_covariance()) {
+    variance.block(0, 0, x.mean.size(), 1) = x.covariance.diagonal();
+  }
+  if (y.has_covariance()) {
+    variance.block(x.mean.size(), 0, y.mean.size(), 1) =
+        y.covariance.diagonal();
+  }
+
+  return MarginalDistribution(mean, variance.asDiagonal());
+}
+
 } // namespace albatross
 
 #endif

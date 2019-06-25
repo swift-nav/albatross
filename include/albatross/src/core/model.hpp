@@ -139,6 +139,12 @@ public:
     return _fit(dataset.features, dataset.targets);
   }
 
+  template <typename FeatureX, typename FeatureY>
+  auto fit(const RegressionDataset<FeatureX> &x,
+           const RegressionDataset<FeatureY> &y) const {
+    return fit(concatenate_datasets(x, y));
+  }
+
   CrossValidation<ModelType> cross_validate() const;
 
   template <typename Strategy>
