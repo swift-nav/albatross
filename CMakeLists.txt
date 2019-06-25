@@ -25,6 +25,7 @@ find_package(Cereal REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(FastCSV REQUIRED)
 find_package(Gzip-Hpp REQUIRED)
+find_package(Variant REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
@@ -37,6 +38,7 @@ target_link_libraries(albatross
     cereal
     fast-csv
     gzip-hpp
+    variant
     )
 
 set(albatross_COMPILE_OPTIONS
