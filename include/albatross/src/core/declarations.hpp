@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_CORE_DECLARATIONS_H
 #define ALBATROSS_CORE_DECLARATIONS_H
 
+using mapbox::util::variant;
+
 namespace Eigen {
 
 template <typename _Scalar, int SizeAtCompileTime>

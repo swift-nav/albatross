@@ -10,21 +10,23 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_H
-#define ALBATROSS_CORE_H
+#include <albatross/Common>
+#include <gtest/gtest.h>
 
-#include "Dataset"
+namespace albatross {
 
-#include <type_traits>
+TEST(test_variant, test_details) {
 
-#include "src/core/declarations.hpp"
-#include "src/core/indexing.hpp"
-#include "src/core/traits.hpp"
-#include "src/core/priors.hpp"
-#include "src/core/parameter_handling_mixin.hpp"
-#include "src/core/parameter_macros.hpp"
-#include "src/core/fit_model.hpp"
-#include "src/core/prediction.hpp"
-#include "src/core/model.hpp"
+  const auto one = cereal::mapbox_variant_detail::variant_size<variant<int>>::value;
+  EXPECT_EQ(one, 1);
 
-#endif
+  const auto two = cereal::mapbox_variant_detail::variant_size<variant<int, double>>::value;
+  EXPECT_EQ(two, 2);
+
+  struct X {};
+  const auto three = cereal::mapbox_variant_detail::variant_size<variant<int, double, X>>::value;
+  EXPECT_EQ(three, 3);
+
+}
+
+}

@@ -13,8 +13,6 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_COVARIANCE_FUNCTION_H
 
-using mapbox::util::variant;
-
 namespace albatross {
 
 template <typename X, typename Y> class SumOfCovarianceFunctions;
