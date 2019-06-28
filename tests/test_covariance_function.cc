@@ -160,4 +160,41 @@ TEST(test_covariance_function, test_works_with_variants) {
   EXPECT_EQ(cov(y, vy), cov(y, y));
 }
 
+TEST(test_covariance_function, test_variant_recurssion_bug) {
+  // This tests a bug in which the variant forwarder would recurse down the tree
+  // of covariance functions until it found one defined for all types involved
+  // and in turn ignored some terms.
+  HasMultiple has_multiple;
+  HasXX has_xx;
+
+  auto cov = has_xx + has_multiple;
+
+  X x;
+  Y y;
+
+  EXPECT_EQ(cov(x, x), has_xx(x, x) + has_multiple(x, x));
+  EXPECT_EQ(cov(x, y), has_multiple(x, y));
+  EXPECT_EQ(cov(y, x), has_multiple(y, x));
+  EXPECT_EQ(cov(y, y), has_multiple(y, y));
+
+  variant<X, Y> vx = x;
+  variant<X, Y> vy = y;
+
+  EXPECT_EQ(cov(vx, x), cov(x, x));
+  EXPECT_EQ(cov(vx, vx), cov(x, x));
+  EXPECT_EQ(cov(x, vx), cov(x, x));
+
+  EXPECT_EQ(cov(vx, y), cov(x, y));
+  EXPECT_EQ(cov(vx, vy), cov(x, y));
+  EXPECT_EQ(cov(x, vy), cov(x, y));
+
+  EXPECT_EQ(cov(vy, x), cov(x, y));
+  EXPECT_EQ(cov(vy, vx), cov(x, y));
+  EXPECT_EQ(cov(y, vx), cov(x, y));
+
+  EXPECT_EQ(cov(vy, y), cov(y, y));
+  EXPECT_EQ(cov(vy, vy), cov(y, y));
+  EXPECT_EQ(cov(y, vy), cov(y, y));
+}
+
 } // namespace albatross
