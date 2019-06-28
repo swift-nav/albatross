@@ -13,6 +13,12 @@
 #ifndef ALBATROSS_CORE_DECLARATIONS_H
 #define ALBATROSS_CORE_DECLARATIONS_H
 
+namespace mapbox {
+namespace util {
+template <typename... Ts> class variant;
+}
+} // namespace mapbox
+
 using mapbox::util::variant;
 
 namespace Eigen {

@@ -255,4 +255,54 @@ TEST(test_models, test_model_from_prediction_low_rank) {
       model_pred.covariance, 1e-8));
 }
 
+TEST(test_models, test_model_from_different_datasets) {
+  Eigen::Index k = 10;
+  Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
+  Eigen::VectorXd variance = 0.1 * Eigen::VectorXd::Ones(k);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+
+  std::vector<double> train_features;
+  for (Eigen::Index i = 0; i < k; ++i) {
+    train_features.push_back(static_cast<double>(i) * 0.3);
+  }
+
+  ConstantEverywhere constant;
+  ConstantPerInterval per_interval;
+
+  // First we fit a model directly to the training data and use
+  // that to get a prediction of the inducing points.
+  auto model = gp_from_covariance(constant + per_interval, "unobservable");
+  const auto fit_model = model.fit(train_features, targets);
+  const auto inducing_points = create_inducing_points(train_features);
+  MarginalDistribution inducing_prediction =
+      fit_model.predict(inducing_points).marginal();
+
+  // Then we create a new model in which the inducing points are
+  // constrained to be the same as the previous prediction.
+  inducing_prediction.covariance =
+      1e-12 * Eigen::VectorXd::Ones(inducing_prediction.size()).asDiagonal();
+  RegressionDataset<double> dataset(train_features, targets);
+  RegressionDataset<InducingFeature> inducing_dataset(inducing_points,
+                                                      inducing_prediction);
+  const auto fit_again = model.fit(dataset, inducing_dataset);
+
+  // Then we can make sure that the subsequent constrained predictions are
+  // consistent
+  const auto pred = fit_again.predict(inducing_points).joint();
+  EXPECT_TRUE(inducing_prediction.mean.isApprox(pred.mean));
+
+  const auto train_pred = fit_model.predict(train_features).joint();
+  const auto train_pred_again = fit_again.predict(train_features).joint();
+  EXPECT_TRUE(train_pred.mean.isApprox(train_pred_again.mean));
+
+  // Now constrain the inducing points to be zero and make sure that
+  // messes things up.
+  inducing_dataset.targets.mean.fill(0.);
+  const auto fit_zero = model.fit(dataset, inducing_dataset);
+  const auto pred_zero = fit_zero.predict(inducing_points).joint();
+
+  EXPECT_FALSE(inducing_dataset.targets.mean.isApprox(pred.mean));
+  EXPECT_LT((inducing_dataset.targets.mean - pred_zero.mean).norm(), 1e-6);
+}
+
 } // namespace albatross
