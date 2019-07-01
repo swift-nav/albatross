@@ -40,7 +40,8 @@ template <typename CovarianceType> struct Distribution {
   double get_diagonal(Eigen::Index i) const;
 
   bool operator==(const Distribution<CovarianceType> &other) const {
-    return (mean == other.mean && covariance == other.covariance);
+    return (mean == other.mean && has_covariance() == other.has_covariance() &&
+            covariance == other.covariance);
   }
 
   template <typename OtherCovarianceType>
@@ -120,16 +121,20 @@ concatenate_marginals(const MarginalDistribution &x,
   mean.block(0, 0, x.mean.size(), 1) = x.mean;
   mean.block(x.mean.size(), 0, y.mean.size(), 1) = y.mean;
 
-  Eigen::VectorXd variance = Eigen::VectorXd::Zero(mean.size());
-  if (x.has_covariance()) {
-    variance.block(0, 0, x.mean.size(), 1) = x.covariance.diagonal();
-  }
-  if (y.has_covariance()) {
-    variance.block(x.mean.size(), 0, y.mean.size(), 1) =
-        y.covariance.diagonal();
-  }
+  if (!x.has_covariance() && !y.has_covariance()) {
+    return MarginalDistribution(mean);
+  } else {
+    Eigen::VectorXd variance = Eigen::VectorXd::Zero(mean.size());
+    if (x.has_covariance()) {
+      variance.block(0, 0, x.mean.size(), 1) = x.covariance.diagonal();
+    }
+    if (y.has_covariance()) {
+      variance.block(x.mean.size(), 0, y.mean.size(), 1) =
+          y.covariance.diagonal();
+    }
 
-  return MarginalDistribution(mean, variance.asDiagonal());
+    return MarginalDistribution(mean, variance.asDiagonal());
+  }
 }
 
 } // namespace albatross
