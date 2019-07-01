@@ -10,13 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Common>
+#include <albatross/CovarianceFunctions>
 #include <gtest/gtest.h>
 
 namespace albatross {
 
 TEST(test_variant, test_details) {
-
   const auto one =
       cereal::mapbox_variant_detail::variant_size<variant<int>>::value;
   EXPECT_EQ(one, 1);
@@ -29,6 +28,15 @@ TEST(test_variant, test_details) {
   const auto three = cereal::mapbox_variant_detail::variant_size<
       variant<int, double, X>>::value;
   EXPECT_EQ(three, 3);
+}
+
+TEST(test_variant, test_variant_forwarder) {
+  EXPECT_TRUE(is_variant<variant<int>>::value);
+
+  bool int_double = is_variant<variant<int, double>>::value;
+  EXPECT_TRUE(int_double);
+  EXPECT_FALSE(is_variant<int>::value);
+  EXPECT_FALSE(is_variant<double>::value);
 }
 
 } // namespace albatross

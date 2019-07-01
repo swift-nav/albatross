@@ -137,21 +137,21 @@ template <typename CovFunc, typename Caller> struct MeasurementForwarder {
 
 template <typename CovFunc, typename Caller> struct VariantForwarder {
 
-  template <
-      typename X, typename Y,
-      typename std::enable_if<
-          has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+  template <typename X, typename Y,
+            typename std::enable_if<
+                has_valid_cov_caller<CovFunc, Caller, X, Y>::value &&
+                    !is_variant<X>::value && !is_variant<Y>::value,
+                int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return Caller::call(cov_func, x, y);
   }
 
-  template <
-      typename A, typename B, typename C,
-      typename std::enable_if<
-          !has_valid_cov_caller<CovFunc, Caller, variant<A, B>, C>::value &&
-              has_valid_cov_caller<CovFunc, Caller, A, C>::value &&
-              has_valid_cov_caller<CovFunc, Caller, B, C>::value,
-          int>::type = 0>
+  template <typename A, typename B, typename C,
+            typename std::enable_if<
+                !is_variant<C>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, A, C>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, B, C>::value,
+                int>::type = 0>
   static double call(const CovFunc &cov_func, const variant<A, B> &x,
                      const C &y) {
 
@@ -160,16 +160,14 @@ template <typename CovFunc, typename Caller> struct VariantForwarder {
         [&y, &cov_func](const B &xx) { return call(cov_func, xx, y); });
   }
 
-  template <
-      typename A, typename B, typename C,
-      typename std::enable_if<
-          !has_valid_cov_caller<CovFunc, Caller, C, variant<A, B>>::value &&
-              has_valid_cov_caller<CovFunc, Caller, C, A>::value &&
-              has_valid_cov_caller<CovFunc, Caller, C, B>::value,
-          int>::type = 0>
+  template <typename A, typename B, typename C,
+            typename std::enable_if<
+                !is_variant<C>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, C, A>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, C, B>::value,
+                int>::type = 0>
   static double call(const CovFunc &cov_func, const C &x,
                      const variant<A, B> &y) {
-
     return y.match(
         [&x, &cov_func](const A &yy) { return call(cov_func, x, yy); },
         [&x, &cov_func](const B &yy) { return call(cov_func, x, yy); });
@@ -177,9 +175,7 @@ template <typename CovFunc, typename Caller> struct VariantForwarder {
 
   template <typename A, typename B,
             typename std::enable_if<
-                !has_valid_cov_caller<CovFunc, Caller, variant<A, B>,
-                                      variant<A, B>>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
+                has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
                     has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
                     has_valid_cov_caller<CovFunc, Caller, B, B>::value,
                 int>::type = 0>

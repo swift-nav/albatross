@@ -65,6 +65,11 @@ public:
 
 HAS_METHOD(solve);
 
+template <typename T> struct is_variant : public std::false_type {};
+
+template <typename... Ts>
+struct is_variant<variant<Ts...>> : public std::true_type {};
+
 } // namespace albatross
 
 #endif
