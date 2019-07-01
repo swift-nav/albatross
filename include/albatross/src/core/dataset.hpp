@@ -84,7 +84,7 @@ subset(const RegressionDataset<FeatureType> &dataset,
 template <typename X>
 inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<X> &y) {
-  const auto targets = concatenate_distributions({x.targets, y.targets});
+  const auto targets = concatenate_marginals(x.targets, y.targets);
   std::vector<X> features(x.features);
   features.insert(features.end(), y.features.begin(), y.features.end());
   return RegressionDataset<X>(features, targets);
