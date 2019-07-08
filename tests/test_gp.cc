@@ -29,7 +29,7 @@ namespace albatross {
  * prediction of each of the biases, then try to use that prediction to
  * make a new model you end up dealing with a low rank system of
  * equations which if not handled properly can lead to very large
- * errors.  This simply makes sure those errors are properly dealth with.
+ * errors.  This simply makes sure those errors are properly dealt with.
  */
 
 enum InducingFeatureType { ConstantEverywhereType, ConstantPerIntervalType };
@@ -131,6 +131,116 @@ public:
   }
 };
 
+TEST(test_gp, test_update_model_same_types) {
+  Eigen::Index k = 10;
+  Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
+  Eigen::VectorXd variance = 0.1 * Eigen::VectorXd::Ones(k);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+
+  std::vector<double> train_features;
+  for (Eigen::Index i = 0; i < k; ++i) {
+    train_features.push_back(static_cast<double>(i) * 0.3);
+  }
+
+  RegressionDataset<double> dataset(train_features, targets);
+
+  std::vector<std::size_t> train_inds = {0, 1, 3, 4, 6, 7, 8, 9};
+  std::vector<std::size_t> test_inds = {2, 5};
+
+  const auto train = albatross::subset(dataset, train_inds);
+  const auto test = albatross::subset(dataset, test_inds);
+
+  std::vector<std::size_t> first_inds = {0, 1, 2, 3, 5, 7};
+  std::vector<std::size_t> second_inds = {4, 6};
+  const auto first = albatross::subset(train, first_inds);
+  const auto second = albatross::subset(train, second_inds);
+
+  ConstantEverywhere constant;
+  ConstantPerInterval per_interval;
+
+  // First we fit a model directly to the training data and use
+  // that to get a prediction of the inducing points.
+  auto model = gp_from_covariance(constant + per_interval, "unobservable");
+
+  const auto full_model = model.fit(train);
+  const auto full_pred = full_model.predict(test.features).joint();
+
+  const auto first_model = model.fit(first);
+  const auto split_model = update(first_model, second);
+  const auto split_pred = split_model.predict(test.features).joint();
+
+  // Make sure the fit feature type is a double
+  const auto split_fit = split_model.get_fit();
+  bool is_double =
+      std::is_same<typename decltype(split_fit)::Feature, double>::value;
+  EXPECT_TRUE(is_double);
+
+  // Make sure a partial fit, followed by update is the same as a full fit
+  EXPECT_TRUE(split_pred.mean.isApprox(full_pred.mean));
+  EXPECT_LE((split_pred.covariance - full_pred.covariance).norm(), 1e-6);
+
+  // Make sure a partial fit is not the same as a full fit
+  const auto first_pred = first_model.predict(test.features).joint();
+  EXPECT_FALSE(split_pred.mean.isApprox(first_pred.mean));
+  EXPECT_GE((split_pred.covariance - first_pred.covariance).norm(), 1e-6);
+}
+
+TEST(test_gp, test_update_model_different_types) {
+  Eigen::Index k = 10;
+  Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
+  Eigen::VectorXd variance = 0.1 * Eigen::VectorXd::Ones(k);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+
+  std::vector<double> train_features;
+  for (Eigen::Index i = 0; i < k; ++i) {
+    train_features.push_back(static_cast<double>(i) * 0.3);
+  }
+
+  ConstantEverywhere constant;
+  ConstantPerInterval per_interval;
+
+  // First we fit a model directly to the training data and use
+  // that to get a prediction of the inducing points.
+  auto model = gp_from_covariance(constant + per_interval, "unobservable");
+  const auto fit_model = model.fit(train_features, targets);
+
+  const auto inducing_points = create_inducing_points(train_features);
+  MarginalDistribution inducing_prediction =
+      fit_model.predict(inducing_points).marginal();
+
+  inducing_prediction.covariance =
+      (1e-4 * Eigen::VectorXd::Ones(inducing_prediction.mean.size()))
+          .asDiagonal();
+
+  RegressionDataset<InducingFeature> dataset(inducing_points,
+                                             inducing_prediction);
+  const auto new_fit_model = update(fit_model, dataset);
+
+  // Make sure the new fit with constrained inducing points reproduces
+  // the prediction of the constraint
+  const auto new_pred = new_fit_model.predict(inducing_points).joint();
+  EXPECT_LE((new_pred.mean - inducing_prediction.mean).norm(), 0.01);
+  // Without changing the prediction of the training features much
+  const auto train_pred = new_fit_model.predict(train_features).marginal();
+  EXPECT_LE((train_pred.mean - mean).norm(), 0.1);
+
+  MarginalDistribution perturbed_inducing_targets(inducing_prediction);
+  perturbed_inducing_targets.mean +=
+      Eigen::VectorXd::Random(perturbed_inducing_targets.mean.size());
+
+  RegressionDataset<InducingFeature> perturbed_dataset(
+      inducing_points, perturbed_inducing_targets);
+  const auto new_perturbed_model = update(fit_model, perturbed_dataset);
+  const auto perturbed_inducing_pred =
+      new_perturbed_model.predict(inducing_points).marginal();
+  const auto perturbed_train_pred =
+      new_perturbed_model.predict(train_features).marginal();
+
+  // Make sure constraining to a different value changes the results.
+  EXPECT_GE((perturbed_inducing_pred.mean - new_pred.mean).norm(), 1.);
+  EXPECT_GE((perturbed_train_pred.mean - train_pred.mean).norm(), 1.);
+}
+
 TEST(test_gp, test_model_from_different_datasets) {
   Eigen::Index k = 10;
   Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
@@ -180,7 +290,6 @@ TEST(test_gp, test_model_from_different_datasets) {
   EXPECT_FALSE(inducing_dataset.targets.mean.isApprox(pred.mean));
   EXPECT_LT((inducing_dataset.targets.mean - pred_zero.mean).norm(), 1e-6);
 }
-
 
 TEST(test_gp, test_model_from_prediction_low_rank) {
   Eigen::Index k = 10;
