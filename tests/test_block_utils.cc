@@ -14,7 +14,7 @@
 
 #include <Eigen/Cholesky>
 
-#include <albatross/src/utils/block_utils.hpp>
+#include <albatross/GP>
 
 namespace albatross {
 
@@ -105,6 +105,32 @@ TEST(test_block_utils, test_matrix_l) {
 
   EXPECT_LE((block_l - dense_l).norm(), 1e-6);
   EXPECT_LE((block_result - dense_result).norm(), 1e-6);
+}
+
+TEST(test_block_utils, test_block_symmetric) {
+
+  Eigen::Index k = 5;
+  Eigen::MatrixXd X = Eigen::MatrixXd::Random(k, k);
+  X = X.transpose() * X;
+  X.diagonal() += 0.1 * Eigen::VectorXd::Ones(k);
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(X.cols(), 3);
+  const Eigen::MatrixXd expected = X.ldlt().solve(rhs);
+
+  const Eigen::MatrixXd A = X.topLeftCorner(3, 3);
+  const Eigen::MatrixXd B = X.topRightCorner(3, 2);
+  const Eigen::MatrixXd C = X.bottomRightCorner(2, 2);
+
+  // Test when constructing from the actual blocks.
+  const auto block = BlockSymmetric(A.ldlt(), B, C);
+  const Eigen::MatrixXd actual = block.solve(rhs);
+  EXPECT_TRUE(actual.isApprox(expected));
+
+  // And again using a pre computed S
+  const Eigen::MatrixXd S = C - B.transpose() * A.ldlt().solve(B);
+  const auto block_direct = BlockSymmetric(A.ldlt(), B, S.ldlt());
+  const Eigen::MatrixXd actual_direct = block_direct.solve(rhs);
+  EXPECT_TRUE(actual_direct.isApprox(expected));
 }
 
 } // namespace albatross

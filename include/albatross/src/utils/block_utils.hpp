@@ -52,6 +52,53 @@ struct BlockDiagonal {
   Eigen::MatrixXd toDense() const;
 };
 
+struct BlockSymmetric {
+
+  /*
+   * Stores a covariance matrix which takes the form:
+   *
+   *   X = |A   B|
+   *       |B.T C|
+   *
+   * It is assumes that both A and C - B.T A^-1 B are invertible and is
+   * designed for the situation where A is larger than C.  The primary
+   * use case is for a situation where you have a pre computed LDLT of
+   * a submatrix (A) and you'd like to perform a solve of the larger
+   * matrix (X)
+   */
+
+  BlockSymmetric(){};
+
+  BlockSymmetric(const Eigen::SerializableLDLT &A_, const Eigen::MatrixXd &B_,
+                 const Eigen::SerializableLDLT &S_)
+      : A(A_), Ai_B(A_.solve(B_)), S(S_) {}
+
+  BlockSymmetric(const Eigen::SerializableLDLT &A_, const Eigen::MatrixXd &B_,
+                 const Eigen::MatrixXd &C)
+      : BlockSymmetric(
+            A_, B_,
+            Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))){};
+
+  /*
+   * https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
+   */
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+
+  bool operator==(const BlockSymmetric &rhs) const;
+
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t);
+
+  Eigen::SerializableLDLT A;
+  Eigen::MatrixXd Ai_B;
+  Eigen::SerializableLDLT S;
+};
+
+/*
+ * BlockDiagonalLLT
+ */
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols>
 BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
@@ -90,6 +137,10 @@ inline Eigen::Index BlockDiagonalLLT::cols() const {
   }
   return n;
 }
+
+/*
+ * Block Diagonal
+ */
 
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonal::
@@ -165,6 +216,43 @@ inline Eigen::Index BlockDiagonal::cols() const {
     n += b.cols();
   }
   return n;
+}
+
+/*
+ * BlockSymmetric
+ *
+ */
+
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols>
+BlockSymmetric::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  // https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
+  Eigen::Index n = A.rows() + S.rows();
+  assert(rhs.rows() == n);
+
+  const auto rhs_a = rhs.topRows(A.rows());
+  const auto rhs_b = rhs.bottomRows(S.rows());
+
+  const auto Bt_Ai_rhs = Ai_B.transpose() * rhs_a;
+
+  const auto Si_Bt_Ai_rhs = S.solve(Bt_Ai_rhs);
+  const auto upper_left = A.solve(rhs_a) + Ai_B * Si_Bt_Ai_rhs;
+
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(n, rhs.cols());
+  output.topRows(A.rows()) = upper_left - Ai_B * S.solve(rhs_b);
+  output.bottomRows(S.rows()) = S.solve(rhs_b) - Si_Bt_Ai_rhs;
+
+  return output;
+}
+
+inline bool BlockSymmetric::operator==(const BlockSymmetric &rhs) const {
+  return (A == rhs.A && Ai_B == rhs.Ai_B && S == rhs.S);
+}
+
+template <typename Archive>
+inline void BlockSymmetric::serialize(Archive &archive, const std::uint32_t) {
+  archive(cereal::make_nvp("A", A), cereal::make_nvp("Ai_B", Ai_B),
+          cereal::make_nvp("S", S));
 }
 
 } // namespace albatross
