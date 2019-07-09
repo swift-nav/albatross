@@ -237,6 +237,21 @@ struct VariantAsDouble : public SerializableType<variant<int, double>> {
   }
 };
 
+struct BlockSymmetricMatrix : public SerializableType<BlockSymmetric> {
+
+  RepresentationType create() const override {
+
+    const auto X = random_covariance_matrix(5);
+
+    const Eigen::MatrixXd A = X.topLeftCorner(3, 3);
+    const Eigen::MatrixXd B = X.topRightCorner(3, 2);
+    const Eigen::MatrixXd C = X.bottomRightCorner(2, 2);
+
+    // Test when constructing from the actual blocks.
+    return BlockSymmetric(A.ldlt(), B, C);
+  }
+};
+
 REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
                            test_roundtrip_serialize_binary);
 
@@ -247,7 +262,7 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          FullMarginalDistribution, MeanOnlyMarginalDistribution,
                          ParameterStoreType, Dataset, DatasetWithMetadata,
                          SerializableType<MockModel>, VariantAsInt,
-                         VariantAsDouble>
+                         VariantAsDouble, BlockSymmetricMatrix>
     ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
