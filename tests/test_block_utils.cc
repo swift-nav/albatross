@@ -16,6 +16,8 @@
 
 #include <albatross/GP>
 
+#include "test_utils.h"
+
 namespace albatross {
 
 struct BlockExample {
@@ -109,10 +111,7 @@ TEST(test_block_utils, test_matrix_l) {
 
 TEST(test_block_utils, test_block_symmetric) {
 
-  Eigen::Index k = 5;
-  Eigen::MatrixXd X = Eigen::MatrixXd::Random(k, k);
-  X = X.transpose() * X;
-  X.diagonal() += 0.1 * Eigen::VectorXd::Ones(k);
+  const auto X = random_covariance_matrix(5);
 
   const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(X.cols(), 3);
   const Eigen::MatrixXd expected = X.ldlt().solve(rhs);

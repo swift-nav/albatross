@@ -240,10 +240,8 @@ struct VariantAsDouble : public SerializableType<variant<int, double>> {
 struct BlockSymmetricMatrix : public SerializableType<BlockSymmetric> {
 
   RepresentationType create() const override {
-    Eigen::Index k = 5;
-    Eigen::MatrixXd X = Eigen::MatrixXd::Random(k, k);
-    X = X.transpose() * X;
-    X.diagonal() += 0.1 * Eigen::VectorXd::Ones(k);
+
+    const auto X = random_covariance_matrix(5);
 
     const Eigen::MatrixXd A = X.topLeftCorner(3, 3);
     const Eigen::MatrixXd B = X.topRightCorner(3, 2);

@@ -65,8 +65,23 @@ struct BlockSymmetric {
    * use case is for a situation where you have a pre computed LDLT of
    * a submatrix (A) and you'd like to perform a solve of the larger
    * matrix (X)
+   *
+   * To do so the rules for block inversion are used:
+   *
+   * https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
+   *
+   * which leads to:
+   *
+   *   X^-1 = |A   B|^-1
+   *          |B.T C|
+   *
+   *        = |A^-1 + Ai_B S^-1 Ai_B^T    -Ai_B S^-1|
+   *          |S^-1 Ai_B^T                    S^-1  |
+   *
+   * where Ai_B = A^-1 B  and S = C - B^T A^_1 B.
+   *
+   * In this particular implementation Ai_B and S^-1 are pre-computed.
    */
-
   BlockSymmetric(){};
 
   BlockSymmetric(const Eigen::SerializableLDLT &A_, const Eigen::MatrixXd &B_,
@@ -79,9 +94,6 @@ struct BlockSymmetric {
             A_, B_,
             Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))){};
 
-  /*
-   * https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
-   */
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
