@@ -103,6 +103,10 @@ struct BlockSymmetric {
   template <typename Archive>
   void serialize(Archive &archive, const std::uint32_t);
 
+  Eigen::Index rows() const;
+
+  Eigen::Index cols() const;
+
   Eigen::SerializableLDLT A;
   Eigen::MatrixXd Ai_B;
   Eigen::SerializableLDLT S;
@@ -266,6 +270,10 @@ inline void BlockSymmetric::serialize(Archive &archive, const std::uint32_t) {
   archive(cereal::make_nvp("A", A), cereal::make_nvp("Ai_B", Ai_B),
           cereal::make_nvp("S", S));
 }
+
+inline Eigen::Index BlockSymmetric::rows() const { return A.rows() + S.rows(); }
+
+inline Eigen::Index BlockSymmetric::cols() const { return A.cols() + S.cols(); }
 
 } // namespace albatross
 

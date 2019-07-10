@@ -103,6 +103,42 @@ template <typename M, typename F>
 struct fit_type<M, F>
     : public fit_type<typename fit_model_type<M, F>::type, F> {};
 
+/*
+ * Determines which object would be returned from a call to:
+ *
+ *   T::fit_from_prediction(features, joint_prediction);
+ */
+template <typename T, typename FeatureType> class fit_from_prediction_type {
+  template <typename C,
+            typename FitModelType =
+                decltype(std::declval<const C>().fit_from_prediction(
+                    std::declval<const std::vector<FeatureType> &>(),
+                    std::declval<const JointDistribution &>()))>
+  static FitModelType test(C *);
+  template <typename> static void test(...);
+
+public:
+  typedef decltype(test<T>(0)) type;
+};
+
+/*
+ * Determines the type of updated_fit in a call along the lines of :
+ *
+ *   auto fit = model.fit(dataset);
+ *   auto updated_fit = update(fit, other_dataset);
+ */
+template <typename T, typename FeatureType> class updated_fit_type {
+  template <typename C,
+            typename UpdatedFitType = decltype(
+                update(std::declval<const C>(),
+                       std::declval<const RegressionDataset<FeatureType> &>()))>
+  static UpdatedFitType test(C *);
+  template <typename> static void test(...);
+
+public:
+  typedef decltype(test<T>(0)) type;
+};
+
 MAKE_HAS_ANY_TRAIT(_predict_impl);
 
 HAS_METHOD_WITH_RETURN_TYPE(_predict_impl);

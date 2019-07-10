@@ -45,6 +45,8 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
   static_assert(has_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
                 "CovarianceRepresentation must have a solve method");
 
+  using Feature = FeatureType;
+
   std::vector<FeatureType> train_features;
   CovarianceRepresentation train_covariance;
   Eigen::VectorXd information;
@@ -470,6 +472,43 @@ struct GaussianProcessLikelihood {
     return nll;
   }
 };
+
+template <typename ModelType, typename FeatureType, typename UpdateFeatureType>
+auto update(
+    const FitModel<ModelType, Fit<GPFit<Eigen::SerializableLDLT, FeatureType>>>
+        &fit_model,
+    const RegressionDataset<UpdateFeatureType> &dataset) {
+
+  const auto fit = fit_model.get_fit();
+  const auto new_features = concatenate(fit.train_features, dataset.features);
+
+  auto pred = fit_model.predict(dataset.features).joint();
+
+  Eigen::VectorXd delta = dataset.targets.mean - pred.mean;
+  if (dataset.targets.has_covariance()) {
+    pred.covariance += dataset.targets.covariance;
+  }
+  const auto S_ldlt = pred.covariance.ldlt();
+
+  const auto model = fit_model.get_model();
+  const Eigen::MatrixXd cross =
+      model.get_covariance()(fit.train_features, dataset.features);
+
+  BlockSymmetric new_covariance(fit.train_covariance, cross, S_ldlt);
+
+  const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
+
+  Eigen::VectorXd new_information(new_covariance.rows());
+  new_information.topRows(fit.train_covariance.rows()) =
+      fit.information - new_covariance.Ai_B * Si_delta;
+  new_information.bottomRows(S_ldlt.rows()) = Si_delta;
+
+  using NewFeatureType = typename decltype(new_features)::value_type;
+  using NewFitType = Fit<GPFit<BlockSymmetric, NewFeatureType>>;
+
+  return FitModel<ModelType, NewFitType>(
+      model, NewFitType(new_features, new_covariance, new_information));
+}
 
 } // namespace albatross
 
