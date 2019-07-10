@@ -148,6 +148,15 @@ TEST(test_traits_core, test_fit_type) {
                         fit_type<HasValidAndInvalidFitImpl, X>::type>::value));
 }
 
+TEST(test_traits_core, test_fit_model_type) {
+  EXPECT_TRUE(
+      bool(std::is_same<FitModel<HasValidXYFitImpl, Fit<HasValidXYFitImpl>>,
+                        fit_model_type<HasValidXYFitImpl, X>::type>::value));
+  EXPECT_FALSE(
+      bool(std::is_same<FitModel<HasValidXYFitImpl, Fit<HasValidFitImpl>>,
+                        fit_model_type<HasValidXYFitImpl, X>::type>::value));
+}
+
 template <typename T> struct Base : public ModelBase<T> {};
 
 struct Derived : public Base<Derived> {};
