@@ -202,7 +202,7 @@ struct GenericRansacStrategy {
     return indexing_function_(dataset);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("inlier_metric", inlier_metric_));
     archive(cereal::make_nvp("consensus_metric", consensus_metric_));
     archive(cereal::make_nvp("indexing_function", indexing_function_));

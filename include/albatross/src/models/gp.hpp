@@ -71,9 +71,9 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     information = train_covariance.solve(targets.mean);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive, const std::uint32_t) {
     archive(cereal::make_nvp("information", information));
-    archive(cereal::make_nvp("train_ldlt", train_covariance));
+    archive(cereal::make_nvp("train_covariance", train_covariance));
     archive(cereal::make_nvp("train_features", train_features));
   }
 

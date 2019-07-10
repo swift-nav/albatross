@@ -63,7 +63,7 @@ struct LeaveOneOut {
     return leave_one_out_indexer(features);
   }
 
-  template <class Archive> void serialize(Archive &){};
+  template <class Archive> void serialize(Archive &, const std::uint32_t){};
 };
 
 /*
@@ -104,7 +104,7 @@ template <typename FeatureType> struct LeaveOneGroupOut {
     return leave_one_group_out_indexer(dataset.features, grouper);
   }
 
-  template <class Archive> void serialize(Archive &) {
+  template <class Archive> void serialize(Archive &, const std::uint32_t) {
     archive(cereal::make_nvp("grouper", grouper));
   }
 

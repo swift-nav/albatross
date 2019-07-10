@@ -53,7 +53,7 @@ template <typename RequiredPredictType> struct PredictionMetric {
     return (*this)(prediction.template get<RequiredPredictType>(), truth);
   }
 
-  template <class Archive> void serialize(Archive &){};
+  template <class Archive> void serialize(Archive &, const std::uint32_t){};
 };
 
 static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
