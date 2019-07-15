@@ -473,10 +473,10 @@ struct GaussianProcessLikelihood {
   }
 };
 
-template <typename ModelType, typename FeatureType, typename UpdateFeatureType>
+template <typename ModelType, typename Solver, typename FeatureType,
+          typename UpdateFeatureType>
 auto update(
-    const FitModel<ModelType, Fit<GPFit<Eigen::SerializableLDLT, FeatureType>>>
-        &fit_model,
+    const FitModel<ModelType, Fit<GPFit<Solver, FeatureType>>> &fit_model,
     const RegressionDataset<UpdateFeatureType> &dataset) {
 
   const auto fit = fit_model.get_fit();
@@ -494,7 +494,8 @@ auto update(
   const Eigen::MatrixXd cross =
       model.get_covariance()(fit.train_features, dataset.features);
 
-  BlockSymmetric new_covariance(fit.train_covariance, cross, S_ldlt);
+  const auto new_covariance =
+      build_block_symmetric(fit.train_covariance, cross, S_ldlt);
 
   const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
 
@@ -504,7 +505,7 @@ auto update(
   new_information.bottomRows(S_ldlt.rows()) = Si_delta;
 
   using NewFeatureType = typename decltype(new_features)::value_type;
-  using NewFitType = Fit<GPFit<BlockSymmetric, NewFeatureType>>;
+  using NewFitType = Fit<GPFit<BlockSymmetric<Solver>, NewFeatureType>>;
 
   return FitModel<ModelType, NewFitType>(
       model, NewFitType(new_features, new_covariance, new_information));

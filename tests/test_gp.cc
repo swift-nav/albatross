@@ -165,11 +165,9 @@ TEST(test_gp, test_update_model_trait) {
   using UpdatedFitType = typename updated_fit_type<FitModelType, int>::type;
   using ExpectedType =
       FitModel<decltype(model),
-               Fit<GPFit<BlockSymmetric, variant<double, int>>>>;
+               Fit<GPFit<BlockSymmetric<Eigen::SerializableLDLT>,
+                         variant<double, int>>>>;
 
-  std::cout << typeid(ExpectedType).name() << std::endl;
-  std::cout << "=====" << std::endl;
-  std::cout << typeid(UpdatedFitType).name() << std::endl;
   EXPECT_TRUE(bool(std::is_same<UpdatedFitType, ExpectedType>::value));
 }
 

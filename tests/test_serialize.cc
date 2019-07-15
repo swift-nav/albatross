@@ -237,7 +237,8 @@ struct VariantAsDouble : public SerializableType<variant<int, double>> {
   }
 };
 
-struct BlockSymmetricMatrix : public SerializableType<BlockSymmetric> {
+struct BlockSymmetricMatrix
+    : public SerializableType<BlockSymmetric<Eigen::SerializableLDLT>> {
 
   RepresentationType create() const override {
 
@@ -248,7 +249,7 @@ struct BlockSymmetricMatrix : public SerializableType<BlockSymmetric> {
     const Eigen::MatrixXd C = X.bottomRightCorner(2, 2);
 
     // Test when constructing from the actual blocks.
-    return BlockSymmetric(A.ldlt(), B, C);
+    return BlockSymmetric<Eigen::SerializableLDLT>(A.ldlt(), B, C);
   }
 };
 
