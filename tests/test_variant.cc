@@ -30,11 +30,9 @@ TEST(test_variant, test_details) {
   EXPECT_EQ(three, 3);
 }
 
-TEST(test_variant, test_variant_forwarder) {
+TEST(test_variant, test_is_variant) {
   EXPECT_TRUE(is_variant<variant<int>>::value);
-
-  bool int_double = is_variant<variant<int, double>>::value;
-  EXPECT_TRUE(int_double);
+  EXPECT_TRUE(bool(is_variant<variant<int, double>>::value));
   EXPECT_FALSE(is_variant<int>::value);
   EXPECT_FALSE(is_variant<double>::value);
 }

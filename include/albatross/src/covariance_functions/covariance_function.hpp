@@ -135,74 +135,113 @@ template <typename CovFunc, typename Caller> struct MeasurementForwarder {
   }
 };
 
-template <typename CovFunc, typename Caller> struct VariantForwarder {
+/*
+ * VariantForwarder
+ *
+ * The variant forwarder allows covariance functions to be called with
+ * variant types, without explicitly handling them.  For example, a
+ * covariance function which has methods:
+ *
+ *   double _call_impl(const X&, const X&) const;
+ *
+ *   double _call_impl(const X&, const Y&) const;
+ *
+ *   double _call_impl(const Y&, const Y&) const;
+ *
+ * would then also support the following pairs of arguments:
+ *
+ *   variant<X, Y>, X
+ *   X, variant<X, Y>
+ *   variant<X, Y>, Y
+ *   Y, variant<X, Y>
+ *
+ */
+template <typename CovFunc, typename Caller> struct AsymmetricVariantForwarder {
 
+  // directly forward on the case where both types aren't variants
   template <typename X, typename Y,
             typename std::enable_if<
-                has_valid_cov_caller<CovFunc, Caller, X, Y>::value &&
-                    !is_variant<X>::value && !is_variant<Y>::value,
+                !is_variant<X>::value && !is_variant<Y>::value &&
+                    has_valid_cov_caller<CovFunc, Caller, X, Y>::value,
                 int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    static_assert(!is_variant<X>::value, "X shouldn't be a variant");
     return Caller::call(cov_func, x, y);
   }
 
-  template <typename A, typename B, typename C,
-            typename std::enable_if<
-                !is_variant<C>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, A, C>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, B, C>::value,
-                int>::type = 0>
-  static double call(const CovFunc &cov_func, const variant<A, B> &x,
-                     const C &y) {
+  /*
+   * This visitor helps deal with enabling and disabling the call operator
+   * depending on whether pairs of types in variants are defined.
+   */
+  template <typename X> struct CallVisitor {
 
+    CallVisitor(const CovFunc &cov_func, const X &x)
+        : cov_func_(cov_func), x_(x){};
+
+    template <
+        typename Y,
+        typename std::enable_if<
+            has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+    double operator()(const Y &y) const {
+      return Caller::call(cov_func_, x_, y);
+    };
+
+    template <
+        typename Y,
+        typename std::enable_if<
+            !has_valid_cov_caller<CovFunc, Caller, X, Y>::value, int>::type = 0>
+    double operator()(const Y &y) const {
+      return 0.;
+    };
+
+    const CovFunc &cov_func_;
+    const X &x_;
+  };
+
+  // Deals with a type, A, and an arbitrary variant.
+  template <typename A, typename... Ts,
+            typename std::enable_if<
+                !is_variant<A>::value &&
+                    has_valid_variant_cov_caller<CovFunc, Caller, A,
+                                                 variant<Ts...>>::value,
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const A &x,
+                     const variant<Ts...> &y) {
+    CallVisitor<A> visitor(cov_func, x);
+    return apply_visitor(visitor, y);
+  }
+
+  // Deals with two identical variants.
+  template <typename... Ts,
+            typename std::enable_if<
+                has_valid_cov_caller<CovFunc, Caller, variant<Ts...>,
+                                     variant<Ts...>>::value,
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const variant<Ts...> &x,
+                     const variant<Ts...> &y) {
     return x.match(
-        [&y, &cov_func](const A &xx) { return call(cov_func, xx, y); },
-        [&y, &cov_func](const B &xx) { return call(cov_func, xx, y); });
-  }
-
-  template <typename A, typename B, typename C,
-            typename std::enable_if<
-                !is_variant<C>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, C, A>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, C, B>::value,
-                int>::type = 0>
-  static double call(const CovFunc &cov_func, const C &x,
-                     const variant<A, B> &y) {
-    return y.match(
-        [&x, &cov_func](const A &yy) { return call(cov_func, x, yy); },
-        [&x, &cov_func](const B &yy) { return call(cov_func, x, yy); });
-  }
-
-  template <typename A, typename B,
-            typename std::enable_if<
-                has_valid_cov_caller<CovFunc, Caller, A, B>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, A, A>::value &&
-                    has_valid_cov_caller<CovFunc, Caller, B, B>::value,
-                int>::type = 0>
-  static double call(const CovFunc &cov_func, const variant<A, B> &x,
-                     const variant<A, B> &y) {
-
-    return y.match(
-        [&x, &cov_func](const A &yy) { return call(cov_func, x, yy); },
-        [&x, &cov_func](const B &yy) { return call(cov_func, x, yy); });
+        [&y, &cov_func](const auto &xx) { return call(cov_func, xx, y); });
   }
 };
 
 } // namespace internal
 
+template <typename CovFunc, typename Caller>
+using VariantForwarder = internal::SymmetricCaller<
+    CovFunc, internal::AsymmetricVariantForwarder<CovFunc, Caller>>;
+
 /*
  * This defines the order of operations of the covariance function Callers.
  */
 template <typename CovFunc>
-using Caller = internal::VariantForwarder<
+using DefaultCaller = internal::MeasurementForwarder<
     CovFunc,
-    internal::MeasurementForwarder<
-        CovFunc,
-        internal::SymmetricCaller<CovFunc, internal::DirectCaller<CovFunc>>>>;
+    VariantForwarder<CovFunc, internal::SymmetricCaller<
+                                  CovFunc, internal::DirectCaller<CovFunc>>>>;
 
 template <typename CovFunc, typename... Args>
 class has_valid_caller
-    : public has_call_with_return_type<Caller<CovFunc>, double,
+    : public has_call_with_return_type<DefaultCaller<CovFunc>, double,
                                        typename const_ref<CovFunc>::type,
                                        typename const_ref<Args>::type...> {};
 
@@ -265,7 +304,7 @@ private:
   friend Derived;
 
   template <typename X, typename Y> double call(const X &x, const Y &y) const {
-    return Caller<Derived>::call(derived(), x, y);
+    return DefaultCaller<Derived>::call(derived(), x, y);
   }
 
 public:

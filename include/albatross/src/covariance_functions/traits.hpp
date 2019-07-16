@@ -40,6 +40,27 @@ class has_valid_cov_caller
                                        typename const_ref<U>::type,
                                        typename const_ref<Args>::type...> {};
 
+template <typename U, typename Caller, typename A, typename B>
+class has_valid_cross_cov_caller {
+public:
+  static constexpr bool value = has_valid_cov_caller<U, Caller, A, A>::value &&
+                                has_valid_cov_caller<U, Caller, A, B>::value &&
+                                has_valid_cov_caller<U, Caller, B, B>::value;
+};
+
+template <typename U, typename Caller, typename A, typename B>
+struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
+    : public has_valid_cross_cov_caller<U, Caller, A, B> {
+  ;
+};
+
+template <typename U, typename Caller, typename A, typename B, typename... Ts>
+struct has_valid_cross_cov_caller<U, Caller, A, variant<B, Ts...>> {
+  static constexpr bool value =
+      has_valid_cross_cov_caller<U, Caller, A, B>::value ||
+      has_valid_cross_cov_caller<U, Caller, A, variant<Ts...>>::value;
+};
+
 /*
  * This determines whether or not a class has a method defined for,
  *   `operator() (const X &x, const Y &y, const Z &z, ...)`
@@ -69,6 +90,68 @@ template <typename T> struct is_variant : public std::false_type {};
 
 template <typename... Ts>
 struct is_variant<variant<Ts...>> : public std::true_type {};
+
+template <typename U, typename Caller, typename A>
+struct has_valid_caller_for_all_variants : public std::false_type {};
+
+template <typename U, typename Caller, typename A>
+struct has_valid_caller_for_all_variants<U, Caller, variant<A>>
+    : public has_valid_cov_caller<U, Caller, A, A> {};
+
+template <typename U, typename Caller, typename A, typename... Ts>
+struct has_valid_caller_for_all_variants<U, Caller, variant<A, Ts...>> {
+  static constexpr bool value =
+      has_valid_cov_caller<U, Caller, A, A>::value &&
+      has_valid_caller_for_all_variants<U, Caller, variant<Ts...>>::value;
+};
+
+template <typename U, typename Caller, typename... Ts>
+struct has_valid_cov_caller<U, Caller, variant<Ts...>, variant<Ts...>>
+    : public has_valid_caller_for_all_variants<U, Caller, variant<Ts...>> {};
+
+/*
+ * Checks if a type has a valid cov call for any of the types in a variant.
+ */
+template <typename U, typename Caller, typename A, typename B>
+struct has_valid_variant_cov_caller : public std::false_type {};
+
+/*
+ * Collapse from the right
+ */
+template <typename U, typename Caller, typename A, typename B>
+struct has_valid_variant_cov_caller<U, Caller, A, variant<B>> {
+  static constexpr bool value = has_valid_cov_caller<U, Caller, A, B>::value;
+};
+
+template <typename U, typename Caller, typename A, typename B, typename... Ts>
+struct has_valid_variant_cov_caller<U, Caller, A, variant<B, Ts...>> {
+  static constexpr bool value =
+      has_valid_cov_caller<U, Caller, A, B>::value ||
+      has_valid_variant_cov_caller<U, Caller, A, variant<Ts...>>::value;
+};
+
+// Collapse from the left
+template <typename U, typename Caller, typename A, typename B>
+struct has_valid_variant_cov_caller<U, Caller, variant<A>, B> {
+  static constexpr bool value = has_valid_cov_caller<U, Caller, A, B>::value;
+};
+
+template <typename U, typename Caller, typename A, typename B, typename... Ts>
+struct has_valid_variant_cov_caller<U, Caller, variant<A, Ts...>, B> {
+  static constexpr bool value =
+      has_valid_cov_caller<U, Caller, A, B>::value ||
+      has_valid_variant_cov_caller<U, Caller, variant<Ts...>, B>::value;
+};
+
+// For some mysterious reason this only works if the types in the variant are
+// split into two parts (B, Ts...).
+template <typename U, typename Caller, typename A, typename... Ts>
+struct has_valid_variant_cov_caller<U, Caller, variant<A, Ts...>,
+                                    variant<A, Ts...>> {
+  static constexpr bool value =
+      has_valid_cov_caller<U, Caller, variant<A, Ts...>,
+                           variant<A, Ts...>>::value;
+};
 
 } // namespace albatross
 
