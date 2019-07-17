@@ -80,7 +80,7 @@ private:
   friend Derived;
 
   template <typename X, typename Y> double call(const X &x, const Y &y) const {
-    return DefaultCaller<Derived>::call(derived(), x, y);
+    return DefaultCaller::call(derived(), x, y);
   }
 
 public:

@@ -83,40 +83,40 @@ TEST(test_covariance_function, test_works_with_two_variants) {
   EXPECT_EQ(cov(vxw_x, w), 0.);
 }
 
-// TEST(test_covariance_function, test_works_with_three_variants) {
-//  HasMultiple cov;
-//
-//  W w;
-//  X x;
-//  Y y;
-//
-//  variant<X, Y, W> vxyw_x = x;
-//  variant<X, Y, W> vxyw_y = y;
-//  variant<X, Y, W> vxyw_w = w;
-//
-//  EXPECT_EQ(cov(vxyw_x, vxyw_x), cov(x, x));
-//  EXPECT_EQ(cov(vxyw_x, vxyw_y), cov(x, y));
-//  EXPECT_EQ(cov(vxyw_y, vxyw_x), cov(x, y));
-//  EXPECT_EQ(cov(vxyw_y, vxyw_y), cov(y, y));
-//  EXPECT_EQ(cov(vxyw_w, vxyw_w), cov(w, w));
-//
-//  EXPECT_EQ(cov(vxyw_x, x), cov(x, x));
-//  EXPECT_EQ(cov(vxyw_x, y), cov(x, y));
-//  EXPECT_EQ(cov(vxyw_y, x), cov(x, y));
-//  EXPECT_EQ(cov(vxyw_y, y), cov(y, y));
-//  EXPECT_EQ(cov(vxyw_w, w), cov(w, w));
-//
-//  EXPECT_EQ(cov(x, vxyw_x), cov(x, x));
-//  EXPECT_EQ(cov(x, vxyw_y), cov(x, y));
-//  EXPECT_EQ(cov(y, vxyw_x), cov(x, y));
-//  EXPECT_EQ(cov(y, vxyw_y), cov(y, y));
-//  EXPECT_EQ(cov(w, vxyw_w), cov(w, w));
-//
-//  EXPECT_EQ(cov(vxyw_x, vxyw_w), 0.);
-//  EXPECT_EQ(cov(vxyw_y, vxyw_w), 0.);
-//  EXPECT_EQ(cov(vxyw_w, vxyw_x), 0.);
-//  EXPECT_EQ(cov(vxyw_w, vxyw_y), 0.);
-//}
+ TEST(test_covariance_function, test_works_with_three_variants) {
+  HasMultiple cov;
+
+  W w;
+  X x;
+  Y y;
+
+  variant<X, Y, W> vxyw_x = x;
+  variant<X, Y, W> vxyw_y = y;
+  variant<X, Y, W> vxyw_w = w;
+
+  EXPECT_EQ(cov(vxyw_x, vxyw_x), cov(x, x));
+  EXPECT_EQ(cov(vxyw_x, vxyw_y), cov(x, y));
+  EXPECT_EQ(cov(vxyw_y, vxyw_x), cov(x, y));
+  EXPECT_EQ(cov(vxyw_y, vxyw_y), cov(y, y));
+  EXPECT_EQ(cov(vxyw_w, vxyw_w), cov(w, w));
+
+  EXPECT_EQ(cov(vxyw_x, x), cov(x, x));
+  EXPECT_EQ(cov(vxyw_x, y), cov(x, y));
+  EXPECT_EQ(cov(vxyw_y, x), cov(x, y));
+  EXPECT_EQ(cov(vxyw_y, y), cov(y, y));
+  EXPECT_EQ(cov(vxyw_w, w), cov(w, w));
+
+  EXPECT_EQ(cov(x, vxyw_x), cov(x, x));
+  EXPECT_EQ(cov(x, vxyw_y), cov(x, y));
+  EXPECT_EQ(cov(y, vxyw_x), cov(x, y));
+  EXPECT_EQ(cov(y, vxyw_y), cov(y, y));
+  EXPECT_EQ(cov(w, vxyw_w), cov(w, w));
+
+  EXPECT_EQ(cov(vxyw_x, vxyw_w), 0.);
+  EXPECT_EQ(cov(vxyw_y, vxyw_w), 0.);
+  EXPECT_EQ(cov(vxyw_w, vxyw_x), 0.);
+  EXPECT_EQ(cov(vxyw_w, vxyw_y), 0.);
+}
 
 TEST(test_covariance_function, test_variant_recurssion_bug) {
   // This tests a bug in which the variant forwarder would recurse down the tree
