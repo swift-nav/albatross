@@ -90,7 +90,7 @@ TEST(test_traits_covariance, test_has_invalid_call_impl) {
   EXPECT_TRUE(bool(has_invalid_call_impl<HasMultiple, Z, Z>::value));
 }
 
-TEST(test_covariance_function, test_operator_resolution) {
+TEST(test_traits_covariance_function, test_operator_resolution) {
 
   EXPECT_TRUE(bool(has_call_operator<HasXY, X, Y>::value));
   EXPECT_TRUE(bool(has_call_operator<HasXY, Y, X>::value));
@@ -111,7 +111,7 @@ TEST(test_covariance_function, test_operator_resolution) {
   EXPECT_FALSE(bool(has_call_operator<HasMultiple, Z, Z>::value));
 }
 
-TEST(test_covariance_function, test_vector_operator_inspection) {
+TEST(test_traits_covariance_function, test_vector_operator_inspection) {
   EXPECT_TRUE(
       bool(has_call_operator<HasXY, std::vector<X>, std::vector<Y>>::value));
   EXPECT_TRUE(
@@ -135,7 +135,7 @@ TEST(test_covariance_function, test_vector_operator_inspection) {
       has_call_operator<HasMultiple, std::vector<Z>, std::vector<Z>>::value));
 }
 
-TEST(test_covariance_function, test_has_valid_caller_for_all_variants) {
+TEST(test_traits_covariance_function, test_has_valid_caller_for_all_variants) {
 
   // With one type
   EXPECT_TRUE(bool(
@@ -216,7 +216,7 @@ TEST(test_covariance_function, test_has_valid_caller_for_all_variants) {
                                         variant<Z, Y, X>>::value));
 }
 
-TEST(test_covariance_function, test_has_valid_cross_cov_caller_for_variant) {
+TEST(test_traits_covariance_function, test_has_valid_cross_cov_caller_for_variant) {
   // With one type
   EXPECT_TRUE(
       bool(has_valid_cross_cov_caller<HasMultiple, DefaultCaller,
@@ -373,7 +373,7 @@ TEST(test_covariance_function, test_has_valid_cross_cov_caller_for_variant) {
                                       Z, variant<Y, X, W>>::value));
 }
 
-TEST(test_covariance_function, test_has_valid_variant_cov_call) {
+TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
   EXPECT_TRUE(
       bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller,
                                         X, variant<X, Y>>::value));
@@ -390,6 +390,23 @@ TEST(test_covariance_function, test_has_valid_variant_cov_call) {
   EXPECT_FALSE(
       bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller,
                                         Z, variant<X, Y>>::value));
+}
+
+TEST(test_covariance_function, test_is_in_variant) {
+  EXPECT_TRUE(bool(is_in_variant<X, variant<X>>::value));
+  EXPECT_FALSE(bool(is_in_variant<Y, variant<X>>::value));
+
+  EXPECT_TRUE(bool(is_in_variant<X, variant<X, Y>>::value));
+  EXPECT_TRUE(bool(is_in_variant<Y, variant<X, Y>>::value));
+  EXPECT_FALSE(bool(is_in_variant<Z, variant<X, Y>>::value));
+
+  EXPECT_TRUE(bool(is_in_variant<X, variant<X, Y, Z>>::value));
+  EXPECT_TRUE(bool(is_in_variant<Y, variant<X, Y, Z>>::value));
+  EXPECT_TRUE(bool(is_in_variant<Z, variant<X, Y, Z>>::value));
+  EXPECT_FALSE(bool(is_in_variant<W, variant<X, Y, Z>>::value));
+
+  EXPECT_FALSE(bool(is_in_variant<variant<X>, variant<X, Y, Z>>::value));
+
 }
 
 } // namespace albatross

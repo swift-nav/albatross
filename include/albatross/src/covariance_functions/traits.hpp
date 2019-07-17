@@ -91,6 +91,25 @@ template <typename T> struct is_variant : public std::false_type {};
 template <typename... Ts>
 struct is_variant<variant<Ts...>> : public std::true_type {};
 
+/*
+ * Is in variant
+ */
+
+template <typename T, typename P>
+struct is_in_variant  : public std::false_type {};
+
+template <typename T, typename A>
+struct is_in_variant<T, variant<A>> : public std::is_same<T, A> {};
+
+template <typename T, typename A, typename... Ts>
+struct is_in_variant<T, variant<A, Ts...>> {
+  static constexpr bool value = (std::is_same<T, A>::value || is_in_variant<T, variant<Ts...>>::value);
+};
+
+/*
+ * Has valid caller for all variants
+ */
+
 template <typename U, typename Caller, typename A>
 struct has_valid_caller_for_all_variants : public std::false_type {};
 
@@ -112,19 +131,19 @@ struct has_valid_cov_caller<U, Caller, variant<Ts...>, variant<Ts...>>
 /*
  * Checks if a type has a valid cov call for any of the types in a variant.
  */
-template <typename U, typename Caller, typename A, typename B>
+template <typename U, typename Caller, typename A, typename B, typename = void>
 struct has_valid_variant_cov_caller : public std::false_type {};
 
 /*
  * Collapse from the right
  */
 template <typename U, typename Caller, typename A, typename B>
-struct has_valid_variant_cov_caller<U, Caller, A, variant<B>> {
+struct has_valid_variant_cov_caller<U, Caller, A, variant<B>, std::enable_if_t<!is_variant<A>::value>> {
   static constexpr bool value = has_valid_cov_caller<U, Caller, A, B>::value;
 };
 
 template <typename U, typename Caller, typename A, typename B, typename... Ts>
-struct has_valid_variant_cov_caller<U, Caller, A, variant<B, Ts...>> {
+struct has_valid_variant_cov_caller<U, Caller, A, variant<B, Ts...>, std::enable_if_t<!is_variant<A>::value>> {
   static constexpr bool value =
       has_valid_cov_caller<U, Caller, A, B>::value ||
       has_valid_variant_cov_caller<U, Caller, A, variant<Ts...>>::value;
@@ -132,25 +151,25 @@ struct has_valid_variant_cov_caller<U, Caller, A, variant<B, Ts...>> {
 
 // Collapse from the left
 template <typename U, typename Caller, typename A, typename B>
-struct has_valid_variant_cov_caller<U, Caller, variant<A>, B> {
+struct has_valid_variant_cov_caller<U, Caller, variant<A>, B, std::enable_if_t<!is_variant<B>::value>> {
   static constexpr bool value = has_valid_cov_caller<U, Caller, A, B>::value;
 };
 
 template <typename U, typename Caller, typename A, typename B, typename... Ts>
-struct has_valid_variant_cov_caller<U, Caller, variant<A, Ts...>, B> {
+struct has_valid_variant_cov_caller<U, Caller, variant<A, Ts...>, B, std::enable_if_t<!is_variant<B>::value>> {
   static constexpr bool value =
       has_valid_cov_caller<U, Caller, A, B>::value ||
       has_valid_variant_cov_caller<U, Caller, variant<Ts...>, B>::value;
 };
 
 // For some mysterious reason this only works if the types in the variant are
-// split into two parts (B, Ts...).
-template <typename U, typename Caller, typename A, typename... Ts>
-struct has_valid_variant_cov_caller<U, Caller, variant<A, Ts...>,
-                                    variant<A, Ts...>> {
+// split into two parts (Ts...).
+template <typename U, typename Caller, typename... Ts>
+struct has_valid_variant_cov_caller<U, Caller, variant<Ts...>,
+                                    variant<Ts...>> {
   static constexpr bool value =
-      has_valid_cov_caller<U, Caller, variant<A, Ts...>,
-                           variant<A, Ts...>>::value;
+      has_valid_cov_caller<U, Caller, variant<Ts...>,
+                           variant<Ts...>>::value;
 };
 
 } // namespace albatross

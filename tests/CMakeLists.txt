@@ -1,6 +1,7 @@
 add_executable(albatross_unit_tests 
   test_block_utils.cc
   test_call_trace.cc
+  test_callers.cc
   test_core_dataset.cc
   test_core_distribution.cc
   test_core_model.cc

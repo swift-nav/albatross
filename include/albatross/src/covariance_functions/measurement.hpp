@@ -24,6 +24,39 @@ template <typename X> struct Measurement {
   X value;
 };
 
+// A simple helper function which aids the compiler with type deduction.
+template <typename FeatureType>
+Measurement<FeatureType> as_measurement(const FeatureType &f) {
+  return Measurement<FeatureType>(f);
+}
+
+/*
+ * Takse a vector of features and turns it into a vector of
+ * measurements of those features.
+ */
+template <typename FeatureType>
+auto tag_as_measurements(const std::vector<FeatureType> &features) {
+  std::vector<Measurement<FeatureType>> measurement_features;
+  for (const auto &f : features) {
+    measurement_features.emplace_back(Measurement<FeatureType>(f));
+  }
+  return measurement_features;
+}
+
+/*
+ * This takes a vector of variants of features and turns it into
+ * a vector of variants of MEASUREMENTS of features.
+ */
+template <typename... Ts>
+auto tag_as_measurements(const std::vector<variant<Ts...>> &features) {
+  std::vector<variant<Measurement<Ts>...>> measurement_features;
+  for (const auto &f : features) {
+    measurement_features.emplace_back(f.match([](const auto &x){return variant<Measurement<Ts>...>(as_measurement(x));}));
+  }
+  return measurement_features;
+}
+
+
 template <typename SubCovariance>
 class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {

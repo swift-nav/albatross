@@ -150,7 +150,7 @@ template <typename SubCaller> struct MeasurementForwarder {
  *   Y, variant<X, Y>
  *
  */
-template <typename SubCaller> struct AsymmetricVariantForwarder {
+template <typename SubCaller> struct VariantForwarder {
 
   // directly forward on the case where both types aren't variants
   template <typename CovFunc, typename X, typename Y,
@@ -204,6 +204,20 @@ template <typename SubCaller> struct AsymmetricVariantForwarder {
     return apply_visitor(visitor, y);
   }
 
+  // Deals with a type, A, and an arbitrary variant.
+  template <typename CovFunc, typename A, typename... Ts,
+            typename std::enable_if<
+                !is_variant<A>::value &&
+                    has_valid_variant_cov_caller<CovFunc, SubCaller, A,
+                                                 variant<Ts...>>::value,
+                int>::type = 0>
+  static double call(const CovFunc &cov_func,
+                     const variant<Ts...> &x,
+                     const A &y) {
+    CallVisitor<CovFunc, A> visitor(cov_func, y);
+    return apply_visitor(visitor, x);
+  }
+
   // Deals with two identical variants.
   template <typename CovFunc, typename... Ts,
             typename std::enable_if<
@@ -219,20 +233,20 @@ template <typename SubCaller> struct AsymmetricVariantForwarder {
 
 } // namespace internal
 
-template <typename Caller>
-using VariantForwarder = internal::SymmetricCaller<internal::AsymmetricVariantForwarder<Caller>>;
-
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller = internal::MeasurementForwarder<
-    VariantForwarder<internal::SymmetricCaller<internal::DirectCaller>>>;
+using DefaultCaller = internal::VariantForwarder<internal::MeasurementForwarder<internal::SymmetricCaller<internal::DirectCaller>>>;
 
-template <typename CovFunc, typename... Args, typename Caller=DefaultCaller>
-class has_valid_caller
+template <typename Caller, typename CovFunc, typename... Args>
+class caller_has_valid_call
     : public has_call_with_return_type<Caller, double,
                                        typename const_ref<CovFunc>::type,
                                        typename const_ref<Args>::type...> {};
+
+template <typename CovFunc, typename... Args>
+class has_valid_caller : public caller_has_valid_call<DefaultCaller, CovFunc, Args...> {};
+
 
 } // namespace albatross
 
