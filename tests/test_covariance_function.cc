@@ -83,7 +83,7 @@ TEST(test_covariance_function, test_works_with_two_variants) {
   EXPECT_EQ(cov(vxw_x, w), 0.);
 }
 
-//TEST(test_covariance_function, test_works_with_three_variants) {
+// TEST(test_covariance_function, test_works_with_three_variants) {
 //  HasMultiple cov;
 //
 //  W w;
