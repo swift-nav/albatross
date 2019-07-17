@@ -15,6 +15,7 @@
 
 #include "Distribution"
 
+#include "src/core/concatenate.hpp"
 #include "src/core/dataset.hpp"
 
 #endif

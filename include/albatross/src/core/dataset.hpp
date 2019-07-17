@@ -91,31 +91,11 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
 }
 
 template <typename X, typename Y>
-inline std::vector<variant<X, Y>> concatenate(const std::vector<X> &xs,
-                                              const std::vector<Y> &ys) {
-  std::vector<variant<X, Y>> features(xs.begin(), xs.end());
-  for (const auto &y : ys) {
-    features.emplace_back(y);
-  }
-  return features;
-}
-
-template <typename X>
-inline std::vector<X> concatenate(const std::vector<X> &xs,
-                                  const std::vector<X> &ys) {
-  std::vector<X> features(xs.begin(), xs.end());
-  for (const auto &y : ys) {
-    features.emplace_back(y);
-  }
-  return features;
-}
-
-template <typename X, typename Y>
 inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<Y> &y) {
   const auto features = concatenate(x.features, y.features);
   const auto targets = concatenate_marginals(x.targets, y.targets);
-  return RegressionDataset<variant<X, Y>>(features, targets);
+  return RegressionDataset<typename decltype(features)::value_type>(features, targets);
 }
 
 } // namespace albatross

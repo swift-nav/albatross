@@ -17,15 +17,6 @@
 
 namespace albatross {
 
-class Complete {};
-
-class Incomplete;
-
-TEST(test_traits_covariance, test_is_complete) {
-  EXPECT_TRUE(bool(is_complete<Complete>::value));
-  EXPECT_FALSE(bool(is_complete<Incomplete>::value));
-}
-
 class HasPublicCallOperator {
 public:
   double operator()(const X &, const Y &) const { return 1.; };
@@ -390,23 +381,6 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
   EXPECT_FALSE(
       bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller,
                                         Z, variant<X, Y>>::value));
-}
-
-TEST(test_covariance_function, test_is_in_variant) {
-  EXPECT_TRUE(bool(is_in_variant<X, variant<X>>::value));
-  EXPECT_FALSE(bool(is_in_variant<Y, variant<X>>::value));
-
-  EXPECT_TRUE(bool(is_in_variant<X, variant<X, Y>>::value));
-  EXPECT_TRUE(bool(is_in_variant<Y, variant<X, Y>>::value));
-  EXPECT_FALSE(bool(is_in_variant<Z, variant<X, Y>>::value));
-
-  EXPECT_TRUE(bool(is_in_variant<X, variant<X, Y, Z>>::value));
-  EXPECT_TRUE(bool(is_in_variant<Y, variant<X, Y, Z>>::value));
-  EXPECT_TRUE(bool(is_in_variant<Z, variant<X, Y, Z>>::value));
-  EXPECT_FALSE(bool(is_in_variant<W, variant<X, Y, Z>>::value));
-
-  EXPECT_FALSE(bool(is_in_variant<variant<X>, variant<X, Y, Z>>::value));
-
 }
 
 } // namespace albatross

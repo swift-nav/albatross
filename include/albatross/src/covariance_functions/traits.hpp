@@ -86,26 +86,6 @@ public:
 
 HAS_METHOD(solve);
 
-template <typename T> struct is_variant : public std::false_type {};
-
-template <typename... Ts>
-struct is_variant<variant<Ts...>> : public std::true_type {};
-
-/*
- * Is in variant
- */
-
-template <typename T, typename P>
-struct is_in_variant  : public std::false_type {};
-
-template <typename T, typename A>
-struct is_in_variant<T, variant<A>> : public std::is_same<T, A> {};
-
-template <typename T, typename A, typename... Ts>
-struct is_in_variant<T, variant<A, Ts...>> {
-  static constexpr bool value = (std::is_same<T, A>::value || is_in_variant<T, variant<Ts...>>::value);
-};
-
 /*
  * Has valid caller for all variants
  */

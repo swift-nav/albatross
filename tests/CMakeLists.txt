@@ -2,6 +2,7 @@ add_executable(albatross_unit_tests
   test_block_utils.cc
   test_call_trace.cc
   test_callers.cc
+  test_concatenate.cc
   test_core_dataset.cc
   test_core_distribution.cc
   test_core_model.cc
@@ -29,6 +30,7 @@ add_executable(albatross_unit_tests
   test_sparse_gp.cc
   test_traits_cereal.cc
   test_traits_core.cc
+  test_traits_details.cc
   test_traits_covariance_functions.cc
   test_traits_evaluation.cc
   test_tune.cc

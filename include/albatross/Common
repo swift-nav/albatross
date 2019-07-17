@@ -42,13 +42,14 @@
 #include <random>
 
 #include "src/core/declarations.hpp"
-#include "src/utils/map_utils.hpp"
-#include "src/cereal/eigen.hpp"
-#include "src/cereal/traits.hpp"
-#include "src/cereal/variant.hpp"
 
 #include "src/details/traits.hpp"
 #include "src/details/has_any_macros.hpp"
 #include "src/details/error_handling.hpp"
+
+#include "src/utils/map_utils.hpp"
+#include "src/cereal/eigen.hpp"
+#include "src/cereal/traits.hpp"
+#include "src/cereal/variant.hpp"
 
 #endif

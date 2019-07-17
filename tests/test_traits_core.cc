@@ -15,11 +15,6 @@
 
 namespace albatross {
 
-TEST(test_traits_core, test_is_vector) {
-  EXPECT_TRUE(bool(is_vector<std::vector<double>>::value));
-  EXPECT_FALSE(bool(is_vector<double>::value));
-}
-
 struct X {};
 struct Y {};
 struct Z {};
