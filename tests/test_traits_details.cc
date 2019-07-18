@@ -28,7 +28,7 @@ TEST(test_traits_core, test_variant_size) {
   EXPECT_EQ(two, 2);
 
   struct X {};
-  const auto three = variant_size<      variant<int, double, X>>::value;
+  const auto three = variant_size<variant<int, double, X>>::value;
   EXPECT_EQ(three, 3);
 }
 
@@ -40,10 +40,10 @@ TEST(test_traits_core, test_is_variant) {
 }
 
 TEST(test_traits_core, test_is_in_variant) {
-  struct W{};
-  struct X{};
-  struct Y{};
-  struct Z{};
+  struct W {};
+  struct X {};
+  struct Y {};
+  struct Z {};
 
   EXPECT_TRUE(bool(is_in_variant<X, variant<X>>::value));
   EXPECT_FALSE(bool(is_in_variant<Y, variant<X>>::value));
@@ -58,7 +58,6 @@ TEST(test_traits_core, test_is_in_variant) {
   EXPECT_FALSE(bool(is_in_variant<W, variant<X, Y, Z>>::value));
 
   EXPECT_FALSE(bool(is_in_variant<variant<X>, variant<X, Y, Z>>::value));
-
 }
 
 class Complete {};
@@ -70,4 +69,4 @@ TEST(test_traits_covariance, test_is_complete) {
   EXPECT_FALSE(bool(is_complete<Incomplete>::value));
 }
 
-}
+} // namespace albatross

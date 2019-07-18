@@ -95,7 +95,8 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<Y> &y) {
   const auto features = concatenate(x.features, y.features);
   const auto targets = concatenate_marginals(x.targets, y.targets);
-  return RegressionDataset<typename decltype(features)::value_type>(features, targets);
+  return RegressionDataset<typename decltype(features)::value_type>(features,
+                                                                    targets);
 }
 
 } // namespace albatross

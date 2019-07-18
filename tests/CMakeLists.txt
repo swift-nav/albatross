@@ -34,7 +34,6 @@ add_executable(albatross_unit_tests
   test_traits_covariance_functions.cc
   test_traits_evaluation.cc
   test_tune.cc
-  test_variant.cc
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE
   "${gtest_SOURCE_DIR}"

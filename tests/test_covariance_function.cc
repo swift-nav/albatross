@@ -17,27 +17,41 @@
 
 namespace albatross {
 
+std::vector<X> test_xs() {
+  std::vector<X> xs;
+  xs.emplace_back(X());
+  xs.emplace_back(X());
+  xs.emplace_back(X());
+  return xs;
+}
+
+std::vector<Y> test_ys() {
+  std::vector<Y> ys;
+  ys.emplace_back(Y());
+  ys.emplace_back(Y());
+  return ys;
+}
+
 TEST(test_covariance_function, test_covariance_matrix) {
   HasMultiple cov;
 
-  std::vector<X> xs = {{}, {}, {}};
-  std::vector<Y> ys = {{}, {}};
+  std::vector<X> xs = test_xs();
+  std::vector<Y> ys = test_ys();
 
   EXPECT_EQ(cov(xs).size(), 9);
   EXPECT_EQ(cov(ys).size(), 4);
   EXPECT_EQ(cov(xs, ys).size(), 6);
 
-  const std::vector<X> const_xs = {{}, {}, {}};
-  const std::vector<Y> const_ys = {{}, {}};
+  const std::vector<X> const_xs = test_xs();
+  const std::vector<Y> const_ys = test_ys();
 
   EXPECT_EQ(cov(const_xs).size(), 9);
   EXPECT_EQ(cov(const_ys).size(), 4);
   EXPECT_EQ(cov(const_xs, const_ys).size(), 6);
 
-  EXPECT_EQ(cov(std::vector<X>({{}, {}, {}})).size(), 9);
-  EXPECT_EQ(cov(std::vector<Y>({{}, {}})).size(), 4);
-  EXPECT_EQ(cov(std::vector<X>({{}, {}, {}}), std::vector<Y>({{}, {}})).size(),
-            6);
+  EXPECT_EQ(cov(test_xs()).size(), 9);
+  EXPECT_EQ(cov(test_ys()).size(), 4);
+  EXPECT_EQ(cov(test_xs(), test_ys()).size(), 6);
 }
 
 TEST(test_covariance_function, test_works_with_two_variants) {
@@ -83,7 +97,7 @@ TEST(test_covariance_function, test_works_with_two_variants) {
   EXPECT_EQ(cov(vxw_x, w), 0.);
 }
 
- TEST(test_covariance_function, test_works_with_three_variants) {
+TEST(test_covariance_function, test_works_with_three_variants) {
   HasMultiple cov;
 
   W w;

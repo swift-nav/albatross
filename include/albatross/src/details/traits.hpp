@@ -75,14 +75,15 @@ struct is_variant<variant<Ts...>> : public std::true_type {};
  */
 
 template <typename T, typename A>
-struct is_in_variant  : public std::false_type {};
+struct is_in_variant : public std::false_type {};
 
 template <typename T, typename A>
 struct is_in_variant<T, variant<A>> : public std::is_same<T, A> {};
 
 template <typename T, typename A, typename... Ts>
 struct is_in_variant<T, variant<A, Ts...>> {
-  static constexpr bool value = (std::is_same<T, A>::value || is_in_variant<T, variant<Ts...>>::value);
+  static constexpr bool value =
+      (std::is_same<T, A>::value || is_in_variant<T, variant<Ts...>>::value);
 };
 
 /*
@@ -93,7 +94,6 @@ template <typename T> struct variant_size {};
 template <typename... Ts>
 struct variant_size<variant<Ts...>>
     : public std::tuple_size<std::tuple<Ts...>> {};
-
 
 } // namespace albatross
 

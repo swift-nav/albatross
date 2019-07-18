@@ -17,69 +17,108 @@ namespace albatross {
 
 namespace internal {
 
-template <typename X, typename Y>
-struct concatenation_type {
+template <typename X, typename Y, typename = void> struct concatenation_type {
   using type = variant<X, Y>;
 };
 
-template <typename X>
-struct concatenation_type<X, X> {
-  using type = X;
+template <typename X> struct concatenation_type<X, X> { using type = X; };
+
+template <typename X, typename... Ts>
+struct concatenation_type<
+    X, variant<Ts...>,
+    std::enable_if_t<!is_variant<X>::value &&
+                     is_in_variant<X, variant<Ts...>>::value>> {
+  using type = variant<Ts...>;
 };
 
-//template <typename X, typename... Ts, typename std::enable_if_t<!is_variant<X>::value && is_in_variant<X, variant<Ts...>>::value>>
-//struct concatenation_type<X, variant<Ts...> {
-//  using type = variant<Ts...>;
-//};
-//
-//template <typename X, typename... Ts, typename std::enable_if_t<!is_variant<X>::value && !is_in_variant<X, variant<Ts...>>::value>>
-//struct concatenation_type<X, variant<Ts...> {
-//  using type = variant<Ts...>;
-//};
+template <typename X, typename... Ts>
+struct concatenation_type<
+    X, variant<Ts...>,
+    std::enable_if_t<!is_variant<X>::value &&
+                     !is_in_variant<X, variant<Ts...>>::value>> {
+  using type = variant<X, Ts...>;
+};
 
-}
+template <typename X, typename... Ts>
+struct concatenation_type<
+    variant<Ts...>, X,
+    std::enable_if_t<!is_variant<X>::value &&
+                     is_in_variant<X, variant<Ts...>>::value>> {
+  using type = variant<Ts...>;
+};
 
-template <typename X, typename Y>
-inline auto concatenate(const std::vector<X> &xs,
-                        const std::vector<Y> &ys) {
-  std::vector<typename internal::concatenation_type<X, Y>::type> features(xs.begin(), xs.end());
+template <typename X, typename... Ts>
+struct concatenation_type<
+    variant<Ts...>, X,
+    std::enable_if_t<!is_variant<X>::value &&
+                     !is_in_variant<X, variant<Ts...>>::value>> {
+  using type = variant<Ts..., X>;
+};
+
+} // namespace internal
+
+/*
+ * concatenate with two identical types
+ */
+template <typename X>
+inline auto concatenate(const std::vector<X> &xs, const std::vector<X> &ys) {
+  std::vector<X> features(xs.begin(), xs.end());
   for (const auto &y : ys) {
     features.emplace_back(y);
   }
   return features;
 }
 
-//template <typename X, typename... Ts, std::enable_if_t<!is_variant<X>::value &&
-//                                                       is_in_variant<X, variant<Ts...>>::value>>
-//inline std::vector<variant<Ts...>> concatenate(const std::vector<X> &xs,
-//                                              const std::vector<variant<Ts...> &ys) {
-//  std::vector<variant<Ts...>> features(xs.begin(), xs.end());
-//  for (const auto &y : ys) {
-//    features.emplace_back(y);
-//  }
-//  return features;
-//}
-//
-//template <typename X, typename... Ts, std::enable_if_t<is_in_variant<X, variant<Ts...>>::value>>
-//inline std::vector<variant<Ts...>> concatenate(const std::vector<X> &xs,
-//                                              const std::vector<variant<Ts...> &ys) {
-//  std::vector<variant<Ts...>> features(xs.begin(), xs.end());
-//  for (const auto &y : ys) {
-//    features.emplace_back(y);
-//  }
-//  return features;
-//}
-//
-//template <typename X>
-//inline std::vector<X> concatenate(const std::vector<X> &xs,
-//                                  const std::vector<X> &ys) {
-//  std::vector<X> features(xs.begin(), xs.end());
-//  for (const auto &y : ys) {
-//    features.emplace_back(y);
-//  }
-//  return features;
-//}
-
+/*
+ * concatenate with two different non-variant types
+ */
+template <typename X, typename Y,
+          typename std::enable_if<
+              !is_variant<X>::value && !is_variant<Y>::value, int>::type = 0>
+inline auto concatenate(const std::vector<X> &xs, const std::vector<Y> &ys) {
+  std::vector<typename internal::concatenation_type<X, Y>::type> features(
+      xs.begin(), xs.end());
+  for (const auto &y : ys) {
+    features.emplace_back(y);
+  }
+  return features;
 }
+
+/*
+ * concatenate with the right hand side a variant.
+ */
+template <typename X, typename Y,
+          typename std::enable_if<!is_variant<X>::value && is_variant<Y>::value,
+                                  int>::type = 0>
+inline auto concatenate(const std::vector<X> &xs, const std::vector<Y> &ys) {
+  using OutputType = typename internal::concatenation_type<X, Y>::type;
+  std::vector<OutputType> features(xs.begin(), xs.end());
+  for (const auto &y : ys) {
+    features.emplace_back(
+        y.match([](const auto &yy) { return OutputType(yy); }));
+  }
+  return features;
+}
+
+/*
+ * concatenate with the left hand side a variant.
+ */
+template <typename X, typename Y,
+          typename std::enable_if<is_variant<X>::value && !is_variant<Y>::value,
+                                  int>::type = 0>
+inline auto concatenate(const std::vector<X> &xs, const std::vector<Y> &ys) {
+  using OutputType = typename internal::concatenation_type<X, Y>::type;
+  std::vector<OutputType> features;
+  for (const auto &x : xs) {
+    features.emplace_back(
+        x.match([](const auto &xx) { return OutputType(xx); }));
+  }
+  for (const auto &y : ys) {
+    features.emplace_back(y);
+  }
+  return features;
+}
+
+} // namespace albatross
 
 #endif /* ALBATROSS_CORE_CONCATENATE_HPP_ */

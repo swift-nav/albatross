@@ -22,15 +22,16 @@ namespace cereal {
 namespace mapbox_variant_detail {
 
 template <int N, class Variant, class... Args, class Archive,
-          typename std::enable_if_t<N == albatross::variant_size<Variant>::value, int> = 0>
+          typename std::enable_if_t<
+              N == albatross::variant_size<Variant>::value, int> = 0>
 void load_variant(Archive &, int, Variant &) {
   assert(false); // load_variant received an out of bounds index.
 }
 
-template <
-    int N, class Variant, class H, class... T, class Archive,
-    typename std::enable_if_t<N<albatross::variant_size<Variant>::value, int> = 0> void
-        load_variant(Archive &archive, int target, Variant &variant) {
+template <int N, class Variant, class H, class... T, class Archive,
+          typename std::enable_if_t<
+              N<albatross::variant_size<Variant>::value, int> = 0> void
+              load_variant(Archive &archive, int target, Variant &variant) {
   // It can get extremely confusing figuring out which type is causing a variant
   // to not be serializable, this static assert should help reveal the culprit.
   static_assert(albatross::valid_input_serializer<H, Archive>::value,
