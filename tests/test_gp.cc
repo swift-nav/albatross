@@ -161,7 +161,6 @@ TEST(test_gp, test_update_model_trait) {
   auto model = test_unobservable_model();
 
   using FitModelType = typename fit_model_type<decltype(model), double>::type;
-
   using UpdatedFitType = typename updated_fit_type<FitModelType, int>::type;
   using ExpectedType =
       FitModel<decltype(model),

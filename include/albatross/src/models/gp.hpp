@@ -247,10 +247,7 @@ public:
   CholeskyFit<FeatureType>
   _fit_impl(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
-    std::vector<Measurement<FeatureType>> measurement_features;
-    for (const auto &f : features) {
-      measurement_features.emplace_back(Measurement<FeatureType>(f));
-    }
+    const auto measurement_features = as_measurements(features);
     Eigen::MatrixXd cov = covariance_function_(measurement_features);
     return CholeskyFit<FeatureType>(features, cov, targets);
   }

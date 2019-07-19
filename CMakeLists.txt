@@ -67,7 +67,6 @@ set(albatross_COMPILE_OPTIONS
   -Wreturn-type
   -Wsequence-point
   -Wsign-compare
-  -Wstack-protector
   -Wswitch
   -Wtrigraphs
   -Wuninitialized

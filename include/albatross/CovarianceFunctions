@@ -22,6 +22,7 @@
 #include "src/core/parameter_macros.hpp"
 
 #include "src/covariance_functions/traits.hpp"
+#include "src/covariance_functions/callers.hpp"
 #include "src/covariance_functions/covariance_function.hpp"
 #include "src/covariance_functions/call_trace.hpp"
 #include "src/covariance_functions/measurement.hpp"

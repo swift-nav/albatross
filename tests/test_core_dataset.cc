@@ -69,6 +69,10 @@ TEST(test_dataset, test_concatenate_different_type) {
 
   const auto reconstructed = concatenate_datasets(int_dataset, double_dataset);
 
+  EXPECT_TRUE(
+      bool(std::is_same<typename decltype(reconstructed.features)::value_type,
+                        variant<int, double>>::value));
+
   for (std::size_t i = 0; i < reconstructed.features.size(); ++i) {
     if (i < int_features.size()) {
       EXPECT_TRUE(reconstructed.features[i].is<int>());

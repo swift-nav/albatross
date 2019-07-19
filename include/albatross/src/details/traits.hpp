@@ -52,10 +52,48 @@ public:
       decltype(test<typename std::decay<X>::type>(0))::value;
 };
 
+/*
+ * is_vector
+ */
+
 template <typename T> struct is_vector : public std::false_type {};
 
 template <typename T>
 struct is_vector<std::vector<T>> : public std::true_type {};
+
+/*
+ * is_variant
+ */
+
+template <typename T> struct is_variant : public std::false_type {};
+
+template <typename... Ts>
+struct is_variant<variant<Ts...>> : public std::true_type {};
+
+/*
+ * is_in_variant
+ */
+
+template <typename T, typename A>
+struct is_in_variant : public std::false_type {};
+
+template <typename T, typename A>
+struct is_in_variant<T, variant<A>> : public std::is_same<T, A> {};
+
+template <typename T, typename A, typename... Ts>
+struct is_in_variant<T, variant<A, Ts...>> {
+  static constexpr bool value =
+      (std::is_same<T, A>::value || is_in_variant<T, variant<Ts...>>::value);
+};
+
+/*
+ * variant_size
+ */
+template <typename T> struct variant_size {};
+
+template <typename... Ts>
+struct variant_size<variant<Ts...>>
+    : public std::tuple_size<std::tuple<Ts...>> {};
 
 } // namespace albatross
 
