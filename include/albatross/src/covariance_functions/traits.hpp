@@ -54,19 +54,6 @@ public:
                                 has_valid_cov_caller<U, Caller, B, B>::value;
 };
 
-template <typename U, typename Caller, typename A, typename B>
-struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
-    : public has_valid_cross_cov_caller<U, Caller, A, B> {
-  ;
-};
-
-template <typename U, typename Caller, typename A, typename B, typename... Ts>
-struct has_valid_cross_cov_caller<U, Caller, A, variant<B, Ts...>> {
-  static constexpr bool value =
-      has_valid_cross_cov_caller<U, Caller, A, B>::value ||
-      has_valid_cross_cov_caller<U, Caller, A, variant<Ts...>>::value;
-};
-
 /*
  * This determines whether or not a class has a method defined for,
  *   `operator() (const X &x, const Y &y, const Z &z, ...)`
@@ -118,6 +105,24 @@ template <typename CovFunc, typename Caller, typename... Ts>
 struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ts...>>
     : public has_valid_caller_for_all_variants<CovFunc, Caller,
                                                variant<Ts...>> {};
+
+/*
+ * A specialization of has_valid_cross_cov_caller in which all variant
+ * types must be valid and at least one cross covariance must be valid.
+ */
+template <typename U, typename Caller, typename A, typename B>
+struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
+    : public has_valid_cross_cov_caller<U, Caller, A, B> {
+  ;
+};
+
+template <typename U, typename Caller, typename A, typename B, typename... Ts>
+struct has_valid_cross_cov_caller<U, Caller, A, variant<B, Ts...>> {
+  static constexpr bool value =
+      has_valid_caller_for_all_variants<U, Caller, variant<B, Ts...>>::value &&
+      (has_valid_cross_cov_caller<U, Caller, A, B>::value ||
+       has_valid_cross_cov_caller<U, Caller, A, variant<Ts...>>::value);
+};
 
 /*
  * Checks if a type has a valid cov call for any of the types in a variant.

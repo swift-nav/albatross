@@ -38,7 +38,7 @@ template <typename FeatureType>
 auto as_measurements(const std::vector<FeatureType> &features) {
   std::vector<Measurement<FeatureType>> measurement_features;
   for (const auto &f : features) {
-    measurement_features.emplace_back(Measurement<FeatureType>(f));
+    measurement_features.emplace_back(f);
   }
   return measurement_features;
 }

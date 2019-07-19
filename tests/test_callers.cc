@@ -149,9 +149,6 @@ using VariantWithMeasurement =
     typename VariantOrRaw<T, variant<Measurement<X>, Y>>::type;
 
 TEST(test_callers, test_variant_caller_with_measurement) {
-  //  using VariantCaller =
-  //  internal::VariantForwarder<internal::MeasurementForwarder<internal::SymmetricCaller<internal::DirectCaller>>>;
-
   expect_symmetric_calls_true<DefaultCaller>();
   expect_symmetric_calls_true<DefaultCaller, VariantWithMeasurement,
                               Identity>();

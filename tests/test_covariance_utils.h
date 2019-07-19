@@ -15,6 +15,7 @@
 
 namespace albatross {
 
+struct V {};
 struct W {};
 
 struct X {
@@ -45,6 +46,8 @@ public:
   double _call_impl(const Y &, const Y &) const { return 5.; };
 
   double _call_impl(const W &, const W &) const { return 7.; };
+
+  double _call_impl(const V &, const V &) const { return 11.; };
 
   // These are all invalid:
   double _call_impl(const Z &, const X &) { return 1.; };
