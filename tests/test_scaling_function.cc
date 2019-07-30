@@ -147,4 +147,39 @@ TEST(test_scaling_functions, test_inference) {
   // that we made scaled observations of it.
   EXPECT_LE(fabs(state_estimate.mean()[0] - attenuation), 1e-2);
 }
+
+/*
+ * This test make sure (and illustrates how) we can perform inference
+ * on the unknown attenuation constant of the material in the test
+ * case described above.
+ */
+TEST(test_scaling_functions, test_operations) {
+  using Feature = double;
+
+  double attenuation = 3.14159;
+  double sigma = 0.01;
+
+  Constant constant(2 * attenuation);
+  Noise noise(sigma);
+
+  using TestScalingTerm = ScalingTerm<ObliquityScaling>;
+  TestScalingTerm scaling;
+
+  using IntNoise = IndependentNoise<int>;
+  IntNoise int_noise;
+  auto covariance_function = constant * scaling + int_noise;
+
+  double x = 0.;
+  double y = 1.;
+  int ix = 0;
+  int iy = 1;
+
+  std::cout << covariance_function(x, y) << std::endl;
+  std::cout << covariance_function(x, x) << std::endl;
+  std::cout << covariance_function(ix, iy) << std::endl;
+  std::cout << covariance_function(ix, ix) << std::endl;
+
+}
+
+
 } // namespace albatross
