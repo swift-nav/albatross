@@ -148,38 +148,63 @@ TEST(test_scaling_functions, test_inference) {
   EXPECT_LE(fabs(state_estimate.mean()[0] - attenuation), 1e-2);
 }
 
+class DummyCovariance : public CovarianceFunction<DummyCovariance> {
+public:
+  template <typename X, typename Y>
+  double _call_impl(const X &x, const Y &y) const {
+    return 0.;
+  }
+};
+
 /*
  * This test make sure (and illustrates how) we can perform inference
  * on the unknown attenuation constant of the material in the test
  * case described above.
  */
 TEST(test_scaling_functions, test_operations) {
-  using Feature = double;
-
-  double attenuation = 3.14159;
   double sigma = 0.01;
-
-  Constant constant(2 * attenuation);
-  Noise noise(sigma);
 
   using TestScalingTerm = ScalingTerm<ObliquityScaling>;
   TestScalingTerm scaling;
 
-  using IntNoise = IndependentNoise<int>;
-  IntNoise int_noise;
-  auto covariance_function = constant * scaling + int_noise;
+  using DoubleNoise = IndependentNoise<double>;
+  DoubleNoise double_noise(sigma);
 
-  double x = 0.;
-  double y = 1.;
-  int ix = 0;
-  int iy = 1;
+  DummyCovariance dummy;
 
-  std::cout << covariance_function(x, y) << std::endl;
-  std::cout << covariance_function(x, x) << std::endl;
-  std::cout << covariance_function(ix, iy) << std::endl;
-  std::cout << covariance_function(ix, ix) << std::endl;
+  auto rhs_cov_func = double_noise * scaling + dummy;
 
+  double a = 0.;
+  double b = 1.;
+
+  struct X {};
+  struct Y {};
+
+  X x;
+  Y y;
+
+  EXPECT_EQ(rhs_cov_func(x, y), 0.);
+  EXPECT_EQ(rhs_cov_func(x, x), 0.);
+  EXPECT_EQ(rhs_cov_func(x, y), 0.);
+  EXPECT_EQ(rhs_cov_func(a, y), 0.);
+  EXPECT_EQ(rhs_cov_func(a, x), 0.);
+  EXPECT_EQ(rhs_cov_func(a, b), 0.);
+  EXPECT_GT(rhs_cov_func(a, a), 0.);
+
+  /*
+   * The scaling functions need to be defined differently
+   * for left hand side (LHS) and right hand side (RHS)
+   * products, so we test both.
+   */
+  auto lhs_cov_func = scaling * double_noise + dummy;
+
+  EXPECT_EQ(lhs_cov_func(x, y), 0.);
+  EXPECT_EQ(lhs_cov_func(x, x), 0.);
+  EXPECT_EQ(lhs_cov_func(x, y), 0.);
+  EXPECT_EQ(lhs_cov_func(a, y), 0.);
+  EXPECT_EQ(lhs_cov_func(a, x), 0.);
+  EXPECT_EQ(lhs_cov_func(a, b), 0.);
+  EXPECT_GT(lhs_cov_func(a, a), 0.);
 }
-
 
 } // namespace albatross

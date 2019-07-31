@@ -119,5 +119,136 @@ public:
 private:
   ScalingFunction scaling_function_;
 };
+
+/*
+ * Product in the form:  scaling_term * other
+ */
+template <class ScalingFunction, class RHS>
+class ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>
+    : public CovarianceFunction<
+          ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>> {
+public:
+  using LHS = ScalingTerm<ScalingFunction>;
+
+  ProductOfCovarianceFunctions() : lhs_(), rhs_(){};
+  ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
+      : lhs_(lhs), rhs_(rhs) {
+    ProductOfCovarianceFunctions();
+  };
+
+  std::string name() const {
+    return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
+  }
+
+  ParameterStore get_params() const {
+    return map_join(lhs_.get_params(), rhs_.get_params());
+  }
+
+  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
+    if (map_contains(lhs_.get_params(), name)) {
+      lhs_.set_param(name, param);
+    } else {
+      rhs_.set_param(name, param);
+    }
+  }
+
+  /*
+   * If both LHS and RHS have a valid call method for the types X and Y
+   * this will return the product of the two.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  double _call_impl(const X &x, const Y &y) const {
+    double output = this->lhs_(x, y);
+    if (output != 0.) {
+      output *= this->rhs_(x, y);
+    }
+    return output;
+  }
+
+  /*
+   * If only RHS has a valid call method we ignore L.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  double _call_impl(const X &x, const Y &y) const {
+    return this->rhs_(x, y);
+  }
+
+protected:
+  LHS lhs_;
+  RHS rhs_;
+  friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
+};
+
+/*
+ * Product in the form:  other * scaling_term
+ */
+template <class LHS, class ScalingFunction>
+class ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>
+    : public CovarianceFunction<
+          ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>> {
+public:
+  using RHS = ScalingTerm<ScalingFunction>;
+
+  ProductOfCovarianceFunctions() : lhs_(), rhs_(){};
+  ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
+      : lhs_(lhs), rhs_(rhs) {
+    ProductOfCovarianceFunctions();
+  };
+
+  std::string name() const {
+    return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
+  }
+
+  ParameterStore get_params() const {
+    return map_join(lhs_.get_params(), rhs_.get_params());
+  }
+
+  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
+    if (map_contains(lhs_.get_params(), name)) {
+      lhs_.set_param(name, param);
+    } else {
+      rhs_.set_param(name, param);
+    }
+  }
+
+  /*
+   * If both LHS and RHS have a valid call method for the types X and Y
+   * this will return the product of the two.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  double _call_impl(const X &x, const Y &y) const {
+    double output = this->lhs_(x, y);
+    if (output != 0.) {
+      output *= this->rhs_(x, y);
+    }
+    return output;
+  }
+
+  /*
+   * If only LHS has a valid call method we ignore R.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
+                                     !has_valid_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  double _call_impl(const X &x, const Y &y) const {
+    return this->lhs_(x, y);
+  }
+
+protected:
+  LHS lhs_;
+  RHS rhs_;
+  friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
+};
+
 } // namespace albatross
 #endif
