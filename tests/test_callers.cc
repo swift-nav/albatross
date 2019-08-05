@@ -144,6 +144,17 @@ TEST(test_callers, test_variant_caller_XYW) {
   expect_symmetric_calls_true<VariantCaller, VariantXYW, VariantXYW>();
 }
 
+/*
+ * This Makes sure you can call with variants of different types.
+ */
+TEST(test_callers, test_variant_caller_XYW_XY) {
+  using VariantCaller = internal::VariantForwarder<
+      internal::SymmetricCaller<internal::DirectCaller>>;
+
+  expect_symmetric_calls_true<VariantCaller, VariantXYW, VariantXY>();
+  expect_symmetric_calls_true<VariantCaller, VariantXY, VariantXYW>();
+}
+
 template <typename T>
 using VariantWithMeasurement =
     typename VariantOrRaw<T, variant<Measurement<X>, Y>>::type;

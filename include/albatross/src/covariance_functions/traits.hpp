@@ -101,10 +101,14 @@ struct has_valid_caller_for_all_variants<U, Caller, variant<A, Ts...>> {
  * A specialization of has_valid_cov_caller for variants in which
  * the call is valid if all the types involved are valid.
  */
-template <typename CovFunc, typename Caller, typename... Ts>
-struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ts...>>
-    : public has_valid_caller_for_all_variants<CovFunc, Caller,
-                                               variant<Ts...>> {};
+template <typename CovFunc, typename Caller, typename... Ts, typename... Ys>
+struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ys...>> {
+  static constexpr bool value =
+      (has_valid_caller_for_all_variants<CovFunc, Caller,
+                                         variant<Ts...>>::value &&
+       has_valid_caller_for_all_variants<CovFunc, Caller,
+                                         variant<Ys...>>::value);
+};
 
 /*
  * A specialization of has_valid_cross_cov_caller in which all variant

@@ -217,14 +217,14 @@ template <typename SubCaller> struct VariantForwarder {
     return apply_visitor(visitor, x);
   }
 
-  // Deals with two identical variants.
-  template <typename CovFunc, typename... Ts,
+  // Deals with two variants.
+  template <typename CovFunc, typename... Xs, typename... Ys,
             typename std::enable_if<
-                has_valid_cov_caller<CovFunc, SubCaller, variant<Ts...>,
-                                     variant<Ts...>>::value,
+                has_valid_cov_caller<CovFunc, SubCaller, variant<Xs...>,
+                                     variant<Ys...>>::value,
                 int>::type = 0>
-  static double call(const CovFunc &cov_func, const variant<Ts...> &x,
-                     const variant<Ts...> &y) {
+  static double call(const CovFunc &cov_func, const variant<Xs...> &x,
+                     const variant<Ys...> &y) {
     return x.match(
         [&y, &cov_func](const auto &xx) { return call(cov_func, xx, y); });
   }
