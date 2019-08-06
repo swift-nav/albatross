@@ -70,10 +70,10 @@ struct LeaveOneOut {
  * Leave One Group Out
  */
 
-template <typename FeatureType, typename GetFolds>
+template <typename FeatureType, typename GetGroupName>
 static inline FoldIndexer
 leave_one_group_out_indexer(const std::vector<FeatureType> &features,
-                            const GetFolds &get_group_name) {
+                            const GetGroupName &get_group_name) {
   FoldIndexer groups;
   for (std::size_t i = 0; i < features.size(); i++) {
     const std::string k = get_group_name(features[i]);
