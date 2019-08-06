@@ -247,8 +247,8 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
   Eigen::Index n = A.rows() + S.rows();
   assert(rhs.rows() == n);
 
-  const auto rhs_a = rhs.topRows(A.rows());
-  const auto rhs_b = rhs.bottomRows(S.rows());
+  const Eigen::MatrixXd rhs_a = rhs.topRows(A.rows());
+  const Eigen::MatrixXd rhs_b = rhs.bottomRows(S.rows());
 
   const auto Bt_Ai_rhs = Ai_B.transpose() * rhs_a;
 
