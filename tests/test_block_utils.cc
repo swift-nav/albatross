@@ -97,7 +97,7 @@ TEST(test_block_utils, test_matrix_l) {
 
   Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(dense.cols(), 3);
   const auto block_llt = block_diag.llt();
-  BlockDiagonal block_l_val = block_llt.matrixL();
+  const auto block_l_val = block_llt.matrixL();
   const auto block_result = block_l_val * rhs;
   Eigen::MatrixXd block_l = block_l_val.toDense();
 
@@ -107,6 +107,10 @@ TEST(test_block_utils, test_matrix_l) {
 
   EXPECT_LE((block_l - dense_l).norm(), 1e-6);
   EXPECT_LE((block_result - dense_result).norm(), 1e-6);
+
+  EXPECT_LE((block_l_val.solve(rhs) - dense_l.colPivHouseholderQr().solve(rhs))
+                .norm(),
+            1e-6);
 }
 
 TEST(test_block_utils, test_block_symmetric) {

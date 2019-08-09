@@ -231,7 +231,7 @@ public:
     const auto A_llt = A.llt();
     Eigen::MatrixXd Pt = P.transpose();
     const auto A_sqrt = A_llt.matrixL();
-    Eigen::MatrixXd RtR = A_sqrt.llt().solve(Pt);
+    Eigen::MatrixXd RtR = A_sqrt.solve(Pt);
     RtR = RtR.transpose() * RtR;
     const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
