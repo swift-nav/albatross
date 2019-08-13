@@ -37,38 +37,45 @@ typedef ::testing::Types<LeaveOneOut, LeaveOneIntervalOut>
     IndependenceAssumptions;
 TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
 
-TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
+template <typename CovFunc, typename Indexer>
+void expect_sparse_gp_performance(const CovFunc &covariance,
+                                  const Indexer &indexer,
+                                  double sparse_error_threshold,
+                                  double really_sparse_error_threshold) {
 
-  auto indexer = this->indexer;
-
-  auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
-
   auto direct = gp_from_covariance(covariance, "direct");
 
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
       sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
+  sparse.set_param(details::log_inducing_nugget_name, -3.);
+  sparse.set_param(details::log_measurement_nugget_name, -12.);
 
   UniformlySpacedInducingPoints bad_strategy(3);
   auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
                                                  indexer, "really_sparse");
+  really_sparse.set_param(details::log_inducing_nugget_name, -3.);
+  really_sparse.set_param(details::log_measurement_nugget_name, -12.);
+
+  auto direct_fit = direct.fit(dataset);
+  auto sparse_fit = sparse.fit(dataset);
+  auto really_sparse_fit = really_sparse.fit(dataset);
 
   auto test_features = linspace(0.01, 9.9, 11);
 
-  auto sparse_pred =
-      sparse.fit(dataset).predict_with_measurement_noise(test_features).joint();
-  auto really_sparse_pred = really_sparse.fit(dataset)
-                                .predict_with_measurement_noise(test_features)
-                                .joint();
   auto direct_pred =
-      direct.fit(dataset).predict_with_measurement_noise(test_features).joint();
+      direct_fit.predict_with_measurement_noise(test_features).joint();
+  auto sparse_pred =
+      sparse_fit.predict_with_measurement_noise(test_features).joint();
+  auto really_sparse_pred =
+      really_sparse_fit.predict_with_measurement_noise(test_features).joint();
 
   double sparse_error = (sparse_pred.mean - direct_pred.mean).norm();
   double really_sparse_error =
       (really_sparse_pred.mean - direct_pred.mean).norm();
-  EXPECT_LT(sparse_error, 1e-2);
-  EXPECT_LT(really_sparse_error, 0.5);
+  EXPECT_LT(sparse_error, sparse_error_threshold);
+  EXPECT_LT(really_sparse_error, really_sparse_error_threshold);
   EXPECT_GT(really_sparse_error, sparse_error);
 
   double sparse_cov_diff =
@@ -76,9 +83,29 @@ TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
   double really_sparse_cov_diff =
       (really_sparse_pred.covariance - direct_pred.covariance).norm();
 
-  EXPECT_LT(sparse_cov_diff, 1e-2);
-  EXPECT_LT(really_sparse_cov_diff, 0.5);
+  EXPECT_LT(sparse_cov_diff, sparse_error_threshold);
+  EXPECT_LT(really_sparse_cov_diff, really_sparse_error_threshold);
   EXPECT_GT(really_sparse_cov_diff, sparse_cov_diff);
+}
+
+TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
+
+  auto indexer = this->indexer;
+  auto covariance = make_simple_covariance_function();
+
+  // When the length scale is large the model with more inducing points
+  // gets very nearly singular.  this checks to make sure that's dealt with
+  // gracefully.
+  covariance.set_param("squared_exponential_length_scale", 1000.);
+  expect_sparse_gp_performance(covariance, indexer, 1e-2, 0.5);
+
+  covariance.set_param("squared_exponential_length_scale", 100.);
+  expect_sparse_gp_performance(covariance, indexer, 1e-2, 0.5);
+
+  // Then when the length scale is shorter, the really sparse model
+  // should become significantly worse than the sparse one.
+  covariance.set_param("squared_exponential_length_scale", 10.);
+  expect_sparse_gp_performance(covariance, indexer, 5e-2, 100.);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_scales) {

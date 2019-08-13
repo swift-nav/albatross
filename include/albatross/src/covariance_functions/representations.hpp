@@ -88,8 +88,40 @@ struct ExplainedCovariance {
             cereal::make_nvp("inner", inner));
   }
 
+  Eigen::Index rows() const { return inner.rows(); }
+
+  Eigen::Index cols() const { return inner.cols(); }
+
   Eigen::SerializableLDLT outer_ldlt;
   Eigen::MatrixXd inner;
+};
+
+/*
+ * Simply stores a pre-computed inverse.
+ */
+struct DirectInverse {
+  DirectInverse(){};
+
+  DirectInverse(const Eigen::MatrixXd &inverse) : inverse_(inverse){};
+
+  Eigen::MatrixXd solve(const Eigen::MatrixXd &rhs) const {
+    return inverse_ * rhs;
+  }
+
+  bool operator==(const DirectInverse &rhs) const {
+    return (inverse_ == rhs.inverse_);
+  }
+
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
+    archive(cereal::make_nvp("inverse", inverse_));
+  }
+
+  Eigen::Index rows() const { return inverse_.rows(); }
+
+  Eigen::Index cols() const { return inverse_.cols(); }
+
+  Eigen::MatrixXd inverse_;
 };
 
 } // namespace albatross

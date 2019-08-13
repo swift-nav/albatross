@@ -234,7 +234,8 @@ public:
   std::string pretty_string() const {
     std::ostringstream ss;
     ss << "model_name: " << get_name() << std::endl;
-    ss << "covariance_name: " << covariance_function_.pretty_string();
+    ss << "covariance_name: " << covariance_function_.get_name() << std::endl;
+    ss << "params: " << pretty_params(impl().get_params());
     return ss.str();
   }
 

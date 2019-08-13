@@ -148,7 +148,7 @@ TEST(test_scaling_functions, test_inference) {
   EXPECT_LE(fabs(state_estimate.mean()[0] - attenuation), 1e-2);
 }
 
-class DummyCovariance : public CovarianceFunction<DummyCovariance> {
+class ZeroCovariance : public CovarianceFunction<ZeroCovariance> {
 public:
   template <typename X, typename Y>
   double _call_impl(const X &x, const Y &y) const {
@@ -170,9 +170,9 @@ TEST(test_scaling_functions, test_operations) {
   using DoubleNoise = IndependentNoise<double>;
   DoubleNoise double_noise(sigma);
 
-  DummyCovariance dummy;
+  ZeroCovariance zero;
 
-  auto rhs_cov_func = double_noise * scaling + dummy;
+  auto rhs_cov_func = double_noise * scaling + zero;
 
   double a = 0.;
   double b = 1.;
@@ -183,12 +183,12 @@ TEST(test_scaling_functions, test_operations) {
   X x;
   Y y;
 
-  EXPECT_EQ(rhs_cov_func(x, y), 0.);
-  EXPECT_EQ(rhs_cov_func(x, x), 0.);
-  EXPECT_EQ(rhs_cov_func(x, y), 0.);
-  EXPECT_EQ(rhs_cov_func(a, y), 0.);
-  EXPECT_EQ(rhs_cov_func(a, x), 0.);
-  EXPECT_EQ(rhs_cov_func(a, b), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(x, y), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(x, x), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(x, y), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(a, y), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(a, x), 0.);
+  EXPECT_DOUBLE_EQ(rhs_cov_func(a, b), 0.);
   EXPECT_GT(rhs_cov_func(a, a), 0.);
 
   /*
@@ -196,14 +196,14 @@ TEST(test_scaling_functions, test_operations) {
    * for left hand side (LHS) and right hand side (RHS)
    * products, so we test both.
    */
-  auto lhs_cov_func = scaling * double_noise + dummy;
+  auto lhs_cov_func = scaling * double_noise + zero;
 
-  EXPECT_EQ(lhs_cov_func(x, y), 0.);
-  EXPECT_EQ(lhs_cov_func(x, x), 0.);
-  EXPECT_EQ(lhs_cov_func(x, y), 0.);
-  EXPECT_EQ(lhs_cov_func(a, y), 0.);
-  EXPECT_EQ(lhs_cov_func(a, x), 0.);
-  EXPECT_EQ(lhs_cov_func(a, b), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(x, y), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(x, x), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(x, y), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(a, y), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(a, x), 0.);
+  EXPECT_DOUBLE_EQ(lhs_cov_func(a, b), 0.);
   EXPECT_GT(lhs_cov_func(a, a), 0.);
 }
 

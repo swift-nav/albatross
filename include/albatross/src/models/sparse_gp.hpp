@@ -15,6 +15,12 @@
 
 namespace albatross {
 
+namespace details {
+constexpr double DEFAULT_NUGGET = 1e-12;
+const std::string log_measurement_nugget_name = "log_measurement_nugget";
+const std::string log_inducing_nugget_name = "log_inducing_nugget";
+} // namespace details
+
 template <typename CovFunc, typename InducingPointStrategy,
           typename IndexingFunction>
 class SparseGaussianProcessRegression;
@@ -107,9 +113,11 @@ public:
       CovFunc, SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
                                                IndexingFunction>>;
 
-  SparseGaussianProcessRegression() : Base(){};
+  SparseGaussianProcessRegression() : Base() { initialize_params(); };
   SparseGaussianProcessRegression(CovFunc &covariance_function)
-      : Base(covariance_function){};
+      : Base(covariance_function) {
+    initialize_params();
+  };
   SparseGaussianProcessRegression(
       CovFunc &covariance_function,
       InducingPointStrategy &inducing_point_strategy_,
@@ -118,10 +126,42 @@ public:
       : Base(covariance_function, model_name),
         inducing_point_strategy(inducing_point_strategy_),
         independent_group_indexing_function(
-            independent_group_indexing_function_){};
+            independent_group_indexing_function_) {
+    initialize_params();
+  };
   SparseGaussianProcessRegression(CovFunc &covariance_function,
                                   const std::string &model_name)
-      : Base(covariance_function, model_name){};
+      : Base(covariance_function, model_name) {
+    initialize_params();
+  };
+
+  void initialize_params() {
+    log_measurement_nugget_ = {log10(details::DEFAULT_NUGGET),
+                               std::make_shared<UninformativePrior>()};
+    log_inducing_nugget_ = {log10(details::DEFAULT_NUGGET),
+                            std::make_shared<UninformativePrior>()};
+  }
+
+  ParameterStore get_params() const override {
+    auto params = this->covariance_function_.get_params();
+    params[details::log_measurement_nugget_name] = log_measurement_nugget_;
+    params[details::log_inducing_nugget_name] = log_inducing_nugget_;
+    return params;
+  }
+
+  void unchecked_set_param(const std::string &name,
+                           const Parameter &param) override {
+    if (map_contains(this->covariance_function_.get_params(), name)) {
+      this->covariance_function_.set_param(name, param);
+    } else if (name == details::log_measurement_nugget_name) {
+      log_measurement_nugget_ = param;
+    } else if (name == details::log_inducing_nugget_name) {
+      log_inducing_nugget_ = param;
+    } else {
+      std::cerr << "Unknown param: " << name << std::endl;
+      assert(false);
+    }
+  }
 
   template <typename FeatureType>
   auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
@@ -160,7 +200,10 @@ public:
     Eigen::Index m = static_cast<Eigen::Index>(u.size());
 
     const Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
-    const Eigen::MatrixXd K_uu = this->covariance_function_(u);
+    Eigen::MatrixXd K_uu = this->covariance_function_(u);
+
+    double inducing_nugget = pow(10., log_inducing_nugget_.value);
+    K_uu.diagonal() += inducing_nugget * Eigen::VectorXd::Ones(K_uu.rows());
 
     const auto K_uu_llt = K_uu.llt();
     // P is such that:
@@ -180,14 +223,14 @@ public:
 
     auto A = K_ff - Q_ff;
 
-    if (A.diagonal().minCoeff() < 1e-6) {
-      // It's possible that the inducing points will perfectly describe
-      // some of the data, in which case we need to add a bit of extra
-      // noise to make sure lambda is invertible.
-      for (auto &b : A.blocks) {
-        b.diagonal() += 1e-6 * Eigen::VectorXd::Ones(b.rows());
-      }
+    // It's possible that the inducing points will perfectly describe
+    // some of the data, in which case we need to add a bit of extra
+    // noise to make sure lambda is invertible.
+    for (auto &b : A.blocks) {
+      double meas_nugget = pow(10., log_measurement_nugget_.value);
+      b.diagonal() += meas_nugget * Eigen::VectorXd::Ones(b.rows());
     }
+
     /*
      *
      * The end goal here is to produce a vector, v, and matrix, C, such that
@@ -220,10 +263,6 @@ public:
      *                         (B = (I + P A^-1 P^T) and R = A^-1/2 P^T)
      *          = L^-T R^T R B^-1 L^-1
      *
-     *  taking the inverse of that then gives us:
-     *
-     *      C   = L B (R^T R)^-1 L^T
-     *
      *  reusing some of the precomputed values there leads to:
      *
      *     v = L^-T B^-1 P * A^-1 y
@@ -236,22 +275,24 @@ public:
     const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
     const auto B_ldlt = B.ldlt();
-
-    Eigen::VectorXd v = P * A_llt.solve(targets.mean);
-    v = B_ldlt.solve(v);
-    v = K_uu_llt.matrixL().transpose().solve(v);
-
     const Eigen::MatrixXd L_uu_inv =
         K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
+    const Eigen::MatrixXd BiLi = B_ldlt.solve(L_uu_inv);
     const Eigen::MatrixXd RtRBiLi = RtR * B_ldlt.solve(L_uu_inv);
-    const Eigen::MatrixXd LT = K_uu_llt.matrixL().transpose();
-    const Eigen::MatrixXd C = K_uu_llt.matrixL() * B * RtR.ldlt().solve(LT);
+    const auto LT = K_uu_llt.matrixL().transpose();
+
+    Eigen::VectorXd v = BiLi.transpose() * P * A_llt.solve(targets.mean);
+
+    const Eigen::MatrixXd C_inv = LT.solve(RtRBiLi);
+
+    DirectInverse solver(C_inv);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
-    return typename Base::template CholeskyFit<InducingPointFeatureType>(
-        u, C.ldlt(), v);
+    return Fit<GPFit<DirectInverse, InducingPointFeatureType>>(u, solver, v);
   }
 
+  Parameter log_measurement_nugget_;
+  Parameter log_inducing_nugget_;
   InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;
 };
