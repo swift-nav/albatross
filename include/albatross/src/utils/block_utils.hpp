@@ -15,6 +15,9 @@
 
 namespace albatross {
 
+template <typename MatrixType, unsigned int Mode = Eigen::Lower>
+struct BlockTriangularView;
+
 struct BlockDiagonalLLT;
 struct BlockDiagonal;
 
@@ -25,11 +28,29 @@ struct BlockDiagonalLLT {
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
-  BlockDiagonal matrixL() const;
+  BlockTriangularView<const Eigen::MatrixXd> matrixL() const;
 
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
+};
+
+template <typename MatrixType, unsigned int Mode> struct BlockTriangularView {
+  std::vector<Eigen::TriangularView<MatrixType, Mode>> blocks;
+
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+
+  Eigen::Index rows() const;
+
+  Eigen::Index cols() const;
+
+  Eigen::MatrixXd toDense() const;
 };
 
 struct BlockDiagonal {
@@ -129,10 +150,11 @@ BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   return output;
 }
 
-inline BlockDiagonal BlockDiagonalLLT::matrixL() const {
-  BlockDiagonal output;
+inline BlockTriangularView<const Eigen::MatrixXd>
+BlockDiagonalLLT::matrixL() const {
+  BlockTriangularView<const Eigen::MatrixXd> output;
   for (const auto &b : blocks) {
-    Eigen::MatrixXd L = b.matrixL();
+    Eigen::TriangularView<const Eigen::MatrixXd, Eigen::Lower> L = b.matrixL();
     output.blocks.push_back(L);
   }
   return output;
@@ -152,6 +174,74 @@ inline Eigen::Index BlockDiagonalLLT::cols() const {
     n += b.cols();
   }
   return n;
+}
+
+/*
+ * BlockTriangularView
+ */
+template <typename MatrixType, unsigned int Mode>
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols>
+BlockTriangularView<MatrixType, Mode>::solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  assert(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.solve(rhs_chunk);
+    i += b.rows();
+  }
+  return output;
+}
+
+template <typename MatrixType, unsigned int Mode>
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols>
+    BlockTriangularView<MatrixType, Mode>::
+    operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  assert(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output =
+      Eigen::Matrix<_Scalar, _Rows, _Cols>::Zero(rows(), rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b * rhs_chunk;
+    i += b.rows();
+  }
+  return output;
+}
+
+template <typename MatrixType, unsigned int Mode>
+inline Eigen::Index BlockTriangularView<MatrixType, Mode>::rows() const {
+  Eigen::Index n = 0;
+  for (const auto &b : blocks) {
+    n += b.rows();
+  }
+  return n;
+}
+
+template <typename MatrixType, unsigned int Mode>
+inline Eigen::Index BlockTriangularView<MatrixType, Mode>::cols() const {
+  Eigen::Index n = 0;
+  for (const auto &b : blocks) {
+    n += b.cols();
+  }
+  return n;
+}
+
+template <typename MatrixType, unsigned int Mode>
+inline Eigen::MatrixXd BlockTriangularView<MatrixType, Mode>::toDense() const {
+  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rows(), cols());
+
+  Eigen::Index i = 0;
+  Eigen::Index j = 0;
+  for (const auto &b : blocks) {
+    output.block(i, j, b.rows(), b.cols()) = b;
+    i += b.rows();
+    j += b.cols();
+  }
+  return output;
 }
 
 /*
