@@ -32,6 +32,7 @@ public:
   virtual std::string get_name() const = 0;
   virtual double lower_bound() const { return -LARGE_VAL; }
   virtual double upper_bound() const { return LARGE_VAL; }
+  virtual bool is_log_scale() const { return false; };
   virtual bool is_fixed() const { return false; }
   virtual bool operator==(const Prior &other) const {
     return typeid(*this) == typeid(other);
@@ -115,9 +116,31 @@ public:
             cereal::make_nvp("upper", upper_));
   }
 
-private:
+protected:
   double lower_;
   double upper_;
+};
+
+class LogScaleUniformPrior : public UniformPrior {
+public:
+  LogScaleUniformPrior(double lower = 1e-12, double upper = 1.e12)
+      : UniformPrior(lower, upper) {
+    assert(upper_ > 0.);
+    assert(lower_ > 0.);
+  };
+
+  std::string get_name() const override {
+    std::ostringstream oss;
+    oss << "log_scale_uniform[" << lower_ << "," << upper_ << "]";
+    return oss.str();
+  };
+
+  template <typename Archive>
+  void serialize(Archive &archive, const std::uint32_t) {
+    archive(cereal::base_class<UniformPrior>(this));
+  }
+
+  bool is_log_scale() const override { return true; };
 };
 
 class GaussianPrior : public Prior {
@@ -201,6 +224,7 @@ CEREAL_REGISTER_TYPE(albatross::PositivePrior);
 CEREAL_REGISTER_TYPE(albatross::NonNegativePrior);
 CEREAL_REGISTER_TYPE(albatross::FixedPrior);
 CEREAL_REGISTER_TYPE(albatross::UniformPrior);
+CEREAL_REGISTER_TYPE(albatross::LogScaleUniformPrior);
 CEREAL_REGISTER_TYPE(albatross::GaussianPrior);
 CEREAL_REGISTER_TYPE(albatross::LogNormalPrior);
 

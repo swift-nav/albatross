@@ -117,7 +117,8 @@ inline std::string pretty_param_details(const ParameterStore &params) {
       prior_name = "none";
     }
     ss << "    " << std::left << std::setw(max_name_length + 1) << pair.first
-       << " value: " << std::left << std::setw(10) << pair.second.value
+       << " value: " << std::left << std::setw(12) << pair.second.value
+       << " valid: " << std::left << std::setw(3) << pair.second.is_valid()
        << " prior: " << std::setw(15) << prior_name << " bounds: ["
        << (pair.second.has_prior() ? pair.second.prior->lower_bound()
                                    : -INFINITY)
@@ -220,14 +221,36 @@ public:
     const ParameterStore params = get_params();
     for (const auto &pair : params) {
       if (!pair.second.is_fixed()) {
-        output.values.push_back(pair.second.value);
-
+        double v = pair.second.value;
         double lb = pair.second.has_prior() ? pair.second.prior->lower_bound()
                                             : -LARGE_VAL;
-        output.lower_bounds.push_back(lb);
-
         double ub = pair.second.has_prior() ? pair.second.prior->upper_bound()
                                             : LARGE_VAL;
+
+        // Without these checks nlopt will fail in a much more obscure way.
+        if (v < lb) {
+          std::cout << "INVALID PARAMETER: " << pair.first
+                    << " expected to be greater than " << lb << " but is: " << v
+                    << std::endl;
+          assert(false);
+        }
+        if (v > ub) {
+          std::cout << "INVALID PARAMETER: " << pair.first
+                    << " expected to be less than " << ub << " but is: " << v
+                    << std::endl;
+          assert(false);
+        }
+
+        bool use_log_scale =
+            pair.second.has_prior() ? pair.second.prior->is_log_scale() : false;
+        if (use_log_scale) {
+          lb = log(lb);
+          ub = log(ub);
+          v = log(v);
+        }
+
+        output.values.push_back(v);
+        output.lower_bounds.push_back(lb);
         output.upper_bounds.push_back(ub);
       }
     }
@@ -239,7 +262,29 @@ public:
     std::size_t i = 0;
     for (const auto &pair : params) {
       if (!pair.second.is_fixed()) {
-        unchecked_set_param(pair.first, x[i]);
+        double v = x[i];
+        const bool use_log_scale =
+            pair.second.has_prior() ? pair.second.prior->is_log_scale() : false;
+        if (use_log_scale) {
+          v = exp(v);
+        }
+
+        const double lb = pair.second.has_prior()
+                              ? pair.second.prior->lower_bound()
+                              : -LARGE_VAL;
+        const double ub = pair.second.has_prior()
+                              ? pair.second.prior->upper_bound()
+                              : LARGE_VAL;
+
+        // this silly diversion is to make lint think lb and ub get used;
+        if (v < lb) {
+          assert(false);
+        };
+        if (v > ub) {
+          assert(false);
+        };
+
+        unchecked_set_param(pair.first, v);
         i++;
       }
     }
