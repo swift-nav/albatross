@@ -17,8 +17,8 @@ namespace albatross {
 
 namespace details {
 constexpr double DEFAULT_NUGGET = 1e-12;
-const std::string log_measurement_nugget_name = "log_measurement_nugget";
-const std::string log_inducing_nugget_name = "log_inducing_nugget";
+const std::string measurement_nugget_name = "measurement_nugget";
+const std::string inducing_nugget_name = "inducing_nugget";
 } // namespace details
 
 template <typename CovFunc, typename InducingPointStrategy,
@@ -136,16 +136,18 @@ public:
   };
 
   void initialize_params() {
-    log_measurement_nugget_ = {log10(details::DEFAULT_NUGGET),
-                               std::make_shared<UninformativePrior>()};
-    log_inducing_nugget_ = {log10(details::DEFAULT_NUGGET),
-                            std::make_shared<UninformativePrior>()};
+    measurement_nugget_ = {details::DEFAULT_NUGGET,
+                           std::make_shared<LogScaleUniformPrior>(
+                               PARAMETER_EPSILON, PARAMETER_MAX)};
+    inducing_nugget_ = {details::DEFAULT_NUGGET,
+                        std::make_shared<LogScaleUniformPrior>(
+                            PARAMETER_EPSILON, PARAMETER_MAX)};
   }
 
   ParameterStore get_params() const override {
     auto params = this->covariance_function_.get_params();
-    params[details::log_measurement_nugget_name] = log_measurement_nugget_;
-    params[details::log_inducing_nugget_name] = log_inducing_nugget_;
+    params[details::measurement_nugget_name] = measurement_nugget_;
+    params[details::inducing_nugget_name] = inducing_nugget_;
     return params;
   }
 
@@ -153,10 +155,10 @@ public:
                            const Parameter &param) override {
     if (map_contains(this->covariance_function_.get_params(), name)) {
       this->covariance_function_.set_param(name, param);
-    } else if (name == details::log_measurement_nugget_name) {
-      log_measurement_nugget_ = param;
-    } else if (name == details::log_inducing_nugget_name) {
-      log_inducing_nugget_ = param;
+    } else if (name == details::measurement_nugget_name) {
+      measurement_nugget_ = param;
+    } else if (name == details::inducing_nugget_name) {
+      inducing_nugget_ = param;
     } else {
       std::cerr << "Unknown param: " << name << std::endl;
       assert(false);
@@ -202,8 +204,8 @@ public:
     const Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
     Eigen::MatrixXd K_uu = this->covariance_function_(u);
 
-    double inducing_nugget = pow(10., log_inducing_nugget_.value);
-    K_uu.diagonal() += inducing_nugget * Eigen::VectorXd::Ones(K_uu.rows());
+    K_uu.diagonal() +=
+        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
 
     const auto K_uu_llt = K_uu.llt();
     // P is such that:
@@ -227,8 +229,8 @@ public:
     // some of the data, in which case we need to add a bit of extra
     // noise to make sure lambda is invertible.
     for (auto &b : A.blocks) {
-      double meas_nugget = pow(10., log_measurement_nugget_.value);
-      b.diagonal() += meas_nugget * Eigen::VectorXd::Ones(b.rows());
+      b.diagonal() +=
+          measurement_nugget_.value * Eigen::VectorXd::Ones(b.rows());
     }
 
     /*
@@ -291,8 +293,8 @@ public:
     return Fit<GPFit<DirectInverse, InducingPointFeatureType>>(u, solver, v);
   }
 
-  Parameter log_measurement_nugget_;
-  Parameter log_inducing_nugget_;
+  Parameter measurement_nugget_;
+  Parameter inducing_nugget_;
   InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;
 };
