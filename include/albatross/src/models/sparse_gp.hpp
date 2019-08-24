@@ -137,9 +137,11 @@ public:
 
   void initialize_params() {
     measurement_nugget_ = {details::DEFAULT_NUGGET,
-                           std::make_shared<NonNegativePrior>()};
+                           std::make_shared<LogScaleUniformPrior>(
+                               PARAMETER_EPSILON, PARAMETER_MAX)};
     inducing_nugget_ = {details::DEFAULT_NUGGET,
-                        std::make_shared<NonNegativePrior>()};
+                        std::make_shared<LogScaleUniformPrior>(
+                            PARAMETER_EPSILON, PARAMETER_MAX)};
   }
 
   ParameterStore get_params() const override {

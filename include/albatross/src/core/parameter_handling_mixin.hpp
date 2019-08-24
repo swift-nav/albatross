@@ -15,6 +15,10 @@
 
 namespace albatross {
 
+constexpr double PARAMETER_EPSILON =
+    std::numeric_limits<ParameterValue>::epsilon();
+constexpr double PARAMETER_MAX = std::numeric_limits<ParameterValue>::max();
+
 struct TunableParameters {
   std::vector<double> values;
   std::vector<double> lower_bounds;
