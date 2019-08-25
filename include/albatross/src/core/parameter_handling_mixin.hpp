@@ -142,10 +142,28 @@ public:
     }
   }
 
+  void set_params_if_exists(const ParameterStore &params) {
+    const ParameterStore current_params = get_params();
+    for (const auto &pair : params) {
+      if (map_contains(current_params, pair.first)) {
+        unchecked_set_param(pair.first, pair.second);
+      }
+    }
+  }
+
   void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
     for (const auto &pair : values) {
       check_param_key(pair.first);
       unchecked_set_param(pair.first, pair.second);
+    }
+  }
+
+  void set_param_values_if_exists(const std::map<ParameterKey, ParameterValue> &values) {
+    const ParameterStore current_params = get_params();
+    for (const auto &pair : values) {
+      if (map_contains(current_params, pair.first)) {
+        unchecked_set_param(pair.first, pair.second);
+      }
     }
   }
 
