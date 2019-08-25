@@ -31,6 +31,7 @@ TEST(test_random_utils, randint_without_replacement) {
         EXPECT_LE(j, i + k);
         EXPECT_GE(j, i);
       }
+      EXPECT_EQ(inds.size(), n);
     }
   }
 }

@@ -39,7 +39,7 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
     // should throw out than which ones we should keep.
     const auto to_throw_out =
         randint_without_replacement(n_choices - n, low, high, gen);
-    auto to_keep = indices_complement(to_throw_out, high - low);
+    auto to_keep = indices_complement(to_throw_out, high - low + 1);
 
     if (low != 0) {
       for (auto &el : to_keep) {
