@@ -10,12 +10,34 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/Common>
 #include <albatross/GP>
+
+#include <albatross/Serialization>
+
 #include <gtest/gtest.h>
 
 #include "test_models.h"
 #include "test_serialize.h"
 #include "test_utils.h"
+
+namespace cereal {
+
+using albatross::Fit;
+using albatross::MockFeature;
+using albatross::MockModel;
+
+template <typename Archive>
+inline void serialize(Archive &archive, MockFeature &f) {
+  archive(f.value);
+}
+
+template <typename Archive>
+inline void serialize(Archive &archive, Fit<MockModel> &f) {
+  archive(f.train_data);
+}
+
+} // namespace cereal
 
 namespace albatross {
 
@@ -266,7 +288,7 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
                          FullJointDistribution, MeanOnlyJointDistribution,
                          FullMarginalDistribution, MeanOnlyMarginalDistribution,
-                         ParameterStoreType, Dataset, DatasetWithMetadata,
+                         Dataset, DatasetWithMetadata, ParameterStoreType,
                          SerializableType<MockModel>, VariantAsInt,
                          VariantAsDouble, BlockSymmetricMatrix>
     ToTest;

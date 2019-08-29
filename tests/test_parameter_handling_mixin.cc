@@ -171,8 +171,7 @@ TEST(test_parameter_handler, test_set_param_values_doesnt_overwrite_prior) {
     const auto new_param = p.get_params().at(pair.first);
     EXPECT_NE(new_param.value, pair.second.value);
     // but not the prior.
-    EXPECT_TRUE(!pair.second.has_prior() ||
-                (pair.second.prior == new_param.prior));
+    EXPECT_TRUE(pair.second.prior == new_param.prior);
   }
 };
 

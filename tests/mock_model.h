@@ -27,10 +27,6 @@ struct MockFeature {
   bool operator==(const MockFeature &other) const {
     return value == other.value;
   };
-
-  template <class Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("value", value));
-  }
 };
 
 struct ContainsMockFeature {
@@ -39,10 +35,6 @@ struct ContainsMockFeature {
 
 template <> struct Fit<MockModel> {
   std::map<int, double> train_data;
-
-  template <class Archive> void serialize(Archive &ar) {
-    ar(cereal::make_nvp("train_data", train_data));
-  };
 
   bool operator==(const Fit &other) const {
     return train_data == other.train_data;

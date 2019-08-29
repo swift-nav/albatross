@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Core>
+
 #include <gtest/gtest.h>
 
 namespace albatross {
@@ -124,7 +125,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = expected_diag.asDiagonal();
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 
   idx = {2, 1};
   from_diag.resize(2);
@@ -134,7 +135,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = expected_diag.asDiagonal();
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 
   idx = {3, 3};
   from_diag.resize(2);
@@ -144,7 +145,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = expected_diag.asDiagonal();
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 
   idx = {2};
   from_diag.resize(1);
@@ -154,7 +155,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = expected_diag.asDiagonal();
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 
   idx = {0, 1, 2, 3, 4};
   from_diag.resize(5);
@@ -164,7 +165,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = expected_diag.asDiagonal();
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 
   idx = {};
   from_diag.resize(0);
@@ -172,7 +173,7 @@ TEST(test_indexing, test_diagonal_set_subset) {
   expected = DiagonalMatrixXd(x);
   to = DiagonalMatrixXd(x);
   set_subset(from, idx, &to);
-  EXPECT_EQ(to, expected);
+  EXPECT_TRUE(to == expected);
 }
 
 TEST(test_indexing, test_eigen_vector_subset) {

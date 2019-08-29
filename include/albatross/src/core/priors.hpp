@@ -37,23 +37,13 @@ public:
   bool operator==(const Prior &other) const {
     return get_name() == other.get_name();
   }
-<<<<<<< Updated upstream
   bool operator!=(const Prior &other) { return !((*this) == other); }
-
-  template <typename Archive> void serialize(Archive &, const std::uint32_t) {}
-=======
->>>>>>> Stashed changes
 };
 
 class UninformativePrior : public Prior {
 public:
   std::string get_name() const override { return "uninformative"; };
   double log_pdf(double) const override { return 0.; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class FixedPrior : public Prior {
@@ -62,11 +52,6 @@ public:
   double log_pdf(double) const override { return 0.; }
 
   bool is_fixed() const override { return true; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class PositivePrior : public Prior {
@@ -75,11 +60,6 @@ public:
   std::string get_name() const override { return "positive"; };
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class NonNegativePrior : public Prior {
@@ -88,11 +68,6 @@ public:
   std::string get_name() const override { return "non_negative"; };
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class UniformPrior : public Prior {
@@ -113,13 +88,6 @@ public:
 
   double log_pdf(double) const override { return -log(upper_ - lower_); }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("lower", lower_),
-            cereal::make_nvp("upper", upper_));
-  }
-
-protected:
   double lower_;
   double upper_;
 };
@@ -137,11 +105,6 @@ public:
     oss << "log_scale_uniform[" << lower_ << "," << upper_ << "]";
     return oss.str();
   };
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<UniformPrior>(this));
-  }
 
   bool is_log_scale() const override { return true; };
 };
@@ -165,13 +128,6 @@ public:
     return -0.5 * (LOG_2PI_ * 2 * log(sigma_) + deviation * deviation);
   }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
-            cereal::make_nvp("sigma", sigma_));
-  }
-
-private:
   double mu_;
   double sigma_;
 };
@@ -195,17 +151,6 @@ public:
     return -0.5 * LOG_2PI_ - log(sigma_) - log(x) - deviation * deviation;
   }
 
-<<<<<<< Updated upstream
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
-            cereal::make_nvp("sigma", sigma_));
-  }
-
-private:
-  double mu_;
-  double sigma_;
-=======
   double mu_;
   double sigma_;
 };
@@ -269,18 +214,8 @@ struct PriorContainer : Prior {
   }
 
   PossiblePriors priors_;
->>>>>>> Stashed changes
 };
 
 } // namespace albatross
-
-CEREAL_REGISTER_TYPE(albatross::UninformativePrior);
-CEREAL_REGISTER_TYPE(albatross::PositivePrior);
-CEREAL_REGISTER_TYPE(albatross::NonNegativePrior);
-CEREAL_REGISTER_TYPE(albatross::FixedPrior);
-CEREAL_REGISTER_TYPE(albatross::UniformPrior);
-CEREAL_REGISTER_TYPE(albatross::LogScaleUniformPrior);
-CEREAL_REGISTER_TYPE(albatross::GaussianPrior);
-CEREAL_REGISTER_TYPE(albatross::LogNormalPrior);
 
 #endif

@@ -127,11 +127,6 @@ struct GaussianProcessRansacStrategy {
     return indexing_function_(dataset);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("inlier_metric", inlier_metric_));
-    archive(cereal::make_nvp("indexing_function", indexing_function_));
-  }
-
 protected:
   InlierMetric inlier_metric_;
   IndexingFunction indexing_function_;

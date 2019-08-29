@@ -73,12 +73,6 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     information = train_covariance.solve(targets.mean);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("information", information));
-    archive(cereal::make_nvp("train_ldlt", train_covariance));
-    archive(cereal::make_nvp("train_features", train_features));
-  }
-
   bool operator==(
       const Fit<GPFit<CovarianceRepresentation, FeatureType>> &other) const {
     return (train_features == other.train_features &&

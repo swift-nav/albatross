@@ -282,18 +282,6 @@ public:
   }
 
   /*
-   * For serialization through cereal.
-   */
-  template <class Archive>
-  void save(Archive &archive, const std::uint32_t) const {
-    archive(cereal::make_nvp("parameters", params_));
-  };
-
-  template <class Archive> void load(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("parameters", params_));
-  };
-
-  /*
    * For debugging.
    */
   std::string pretty_string() const { return pretty_params(get_params()); }

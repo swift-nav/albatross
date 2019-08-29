@@ -21,12 +21,6 @@ template <typename... Ts> class variant;
 
 using mapbox::util::variant;
 
-namespace Eigen {
-
-template <typename _Scalar, int SizeAtCompileTime>
-class SerializableDiagonalMatrix;
-}
-
 namespace albatross {
 
 /*
@@ -67,8 +61,7 @@ using ParameterStore = std::map<ParameterKey, Parameter>;
 template <typename CovarianceType> struct Distribution;
 
 using JointDistribution = Distribution<Eigen::MatrixXd>;
-using DiagonalMatrixXd =
-    Eigen::SerializableDiagonalMatrix<double, Eigen::Dynamic>;
+using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
 using MarginalDistribution = Distribution<DiagonalMatrixXd>;
 
 /*
@@ -99,10 +92,29 @@ using IndexerFunction = FoldIndexer (*)(const RegressionDataset<FeatureType> &);
 
 template <typename ModelType> class CrossValidation;
 
+template <typename FeatureType> struct LeaveOneGroupOut;
+
+struct LeaveOneOut;
+
+template <typename MetricType> class ModelMetric;
+
+template <typename RequiredPredictType> struct PredictionMetric;
+
 /*
  * RANSAC
  */
 template <typename ModelType, typename StrategyType> class Ransac;
+
+template <typename ModelType, typename StrategyType, typename FeatureType>
+struct RansacFit;
+
+template <typename InlierMetric, typename ConsensusMetric,
+          typename IndexingFunction>
+struct GenericRansacStrategy;
+
+template <typename InlierMetric, typename IndexingFunction>
+struct GaussianProcessRansacStrategy;
+
 } // namespace albatross
 
 #endif

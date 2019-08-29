@@ -82,12 +82,6 @@ struct ExplainedCovariance {
     return (outer_ldlt == rhs.outer_ldlt && inner == rhs.inner);
   }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("outer_ldlt", outer_ldlt),
-            cereal::make_nvp("inner", inner));
-  }
-
   Eigen::Index rows() const { return inner.rows(); }
 
   Eigen::Index cols() const { return inner.cols(); }
@@ -110,11 +104,6 @@ struct DirectInverse {
 
   bool operator==(const DirectInverse &rhs) const {
     return (inverse_ == rhs.inverse_);
-  }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("inverse", inverse_));
   }
 
   Eigen::Index rows() const { return inverse_.rows(); }

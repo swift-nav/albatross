@@ -10,13 +10,20 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DISTRIBUTION_H
-#define ALBATROSS_DISTRIBUTION_H
+#ifndef INCLUDE_ALBATROSS_SRC_CEREAL_LEAST_SQUARES_HPP_
+#define INCLUDE_ALBATROSS_SRC_CEREAL_LEAST_SQUARES_HPP_
 
-#include "Common"
+using albatross::Fit;
+using albatross::LeastSquares;
 
-#include "src/core/declarations.hpp"
-#include "src/core/indexing.hpp"
-#include "src/core/distribution.hpp"
+namespace cereal {
 
-#endif
+template <typename Archive, typename ImplType>
+void serialize(Archive &archive, Fit<LeastSquares<ImplType>> &fit,
+               const std::uint32_t) {
+  archive(fit.coefs);
+}
+
+} // namespace cereal
+
+#endif /* INCLUDE_ALBATROSS_SRC_CEREAL_LEAST_SQUARES_HPP_ */
