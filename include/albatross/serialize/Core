@@ -1,0 +1,27 @@
+/*
+ * Copyright (C) 2019 Swift Navigation Inc.
+ * Contact: Swift Navigation <dev@swiftnav.com>
+ *
+ * This source is subject to the license found in the file 'LICENSE' which must
+ * be distributed together with this source. All other rights reserved.
+ *
+ * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+#ifndef ALBATROSS_SERIALIZE_CORE_H
+#define ALBATROSS_SERIALIZE_CORE_H
+
+#include "Common"
+
+#include "../src/cereal/dataset.hpp"
+#include "../src/cereal/distribution.hpp"
+#include "../src/cereal/eigen.hpp"
+#include "../src/cereal/fit_model.hpp"
+#include "../src/cereal/priors.hpp"
+#include "../src/cereal/model.hpp"
+#include "../src/cereal/parameters.hpp"
+#include "../src/cereal/variant.hpp"
+
+#endif

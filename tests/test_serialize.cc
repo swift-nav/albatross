@@ -13,7 +13,10 @@
 #include <albatross/Common>
 #include <albatross/GP>
 
-#include <albatross/Serialization>
+#include <albatross/serialize/Common>
+#include <albatross/serialize/GP>
+#include <albatross/serialize/LeastSquares>
+#include <albatross/serialize/Ransac>
 
 #include <gtest/gtest.h>
 
