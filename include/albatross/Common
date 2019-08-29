@@ -23,9 +23,7 @@
 
 #include <math.h>
 #include <iomanip>
-#include <map>
 #include <set>
-#include <string>
 #include <iostream>
 #include <unordered_map>
 #include <functional>
@@ -34,7 +32,7 @@
 #include <numeric>
 #include <random>
 
-#include "src/core/declarations.hpp"
+#include "ForwardDeclarations"
 
 #include "src/details/traits.hpp"
 #include "src/details/has_any_macros.hpp"

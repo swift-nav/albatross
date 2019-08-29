@@ -10,18 +10,14 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SERIALIZE_COMMON_H
-#define ALBATROSS_SERIALIZE_COMMON_H
+#ifndef ALBATROSS_FORWARD_DECLARATIONS_H
+#define ALBATROSS_FORWARD_DECLARATIONS_H
 
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
+#include <map>
+#include <string>
 
-#include "../src/cereal/traits.hpp"
-#include "../src/cereal/eigen.hpp"
+#include <Eigen/src/Core/util/ForwardDeclarations.h>
+
+#include "src/core/declarations.hpp"
 
 #endif
