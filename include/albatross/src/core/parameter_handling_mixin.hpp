@@ -27,50 +27,39 @@ struct TunableParameters {
 
 struct Parameter {
   ParameterValue value;
-  ParameterPrior prior;
+  PriorContainer prior;
 
-  Parameter() : value(), prior(nullptr){};
-  Parameter(ParameterValue value_) : value(value_), prior(nullptr) {}
-  Parameter(ParameterValue value_, const ParameterPrior &prior_)
+  Parameter() : value(), prior(){};
+  Parameter(ParameterValue value_) : value(value_), prior() {}
+
+  Parameter(ParameterValue value_, const PriorContainer &prior_)
       : value(value_), prior(prior_){};
-  /*
-   * For serialization through cereal.
-   */
-  template <class Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("value", value));
-    archive(cereal::make_nvp("prior", prior));
-  };
+
+  template <typename PriorType,
+            typename std::enable_if<
+                is_in_variant<PriorType, PossiblePriors>::value, int>::type = 0>
+  Parameter(ParameterValue value_, const PriorType &prior_)
+      : value(value_), prior(prior_){};
 
   bool operator==(const ParameterValue &other_value) const {
     return (value == other_value);
   }
 
   bool operator==(const Parameter &other) const {
-    return (value == other.value && has_prior() == other.has_prior() &&
-            (!has_prior() || *prior == *other.prior));
+    return (value == other.value && prior == other.prior);
   }
 
   bool operator!=(const Parameter &other) const { return !operator==(other); }
 
-  bool has_prior() const { return prior != nullptr; }
-
   bool within_bounds() const {
-    return (!has_prior() ||
-            (value >= prior->lower_bound() && value <= prior->upper_bound()));
+    return (value >= prior.lower_bound() && value <= prior.upper_bound());
   }
 
   bool is_valid() const { return within_bounds(); }
 
-  bool is_fixed() const { return has_prior() && prior->is_fixed(); }
+  bool is_fixed() const { return prior.is_fixed(); }
 
-  double prior_log_likelihood() const {
-    if (has_prior()) {
-      return prior->log_pdf(value);
-    } else {
-      return 0.;
-    }
-  }
+  double prior_log_likelihood() const { return prior.log_pdf(value); }
 };
 
 /*
@@ -93,11 +82,7 @@ inline std::string pretty_priors(const ParameterStore &params) {
   ss << "PRIORS:" << std::endl;
   for (const auto &pair : params) {
     std::string prior_name;
-    if (pair.second.has_prior()) {
-      prior_name = pair.second.prior->get_name();
-    } else {
-      prior_name = "none";
-    }
+    prior_name = pair.second.prior.get_name();
     ss << "    \"" << pair.first << "\": " << prior_name << std::endl;
   }
   return ss.str();
@@ -115,21 +100,13 @@ inline std::string pretty_param_details(const ParameterStore &params) {
 
   for (const auto &pair : params) {
     std::string prior_name;
-    if (pair.second.has_prior()) {
-      prior_name = pair.second.prior->get_name();
-    } else {
-      prior_name = "none";
-    }
+    prior_name = pair.second.prior.get_name();
     ss << "    " << std::left << std::setw(max_name_length + 1) << pair.first
        << " value: " << std::left << std::setw(12) << pair.second.value
        << " valid: " << std::left << std::setw(3) << pair.second.is_valid()
        << " prior: " << std::setw(15) << prior_name << " bounds: ["
-       << (pair.second.has_prior() ? pair.second.prior->lower_bound()
-                                   : -INFINITY)
-       << ", "
-       << (pair.second.has_prior() ? pair.second.prior->upper_bound()
-                                   : INFINITY)
-       << "]" << std::endl;
+       << pair.second.prior.lower_bound() << ", "
+       << pair.second.prior.upper_bound() << "]" << std::endl;
   }
   return ss.str();
 }
@@ -226,10 +203,8 @@ public:
     for (const auto &pair : params) {
       if (!pair.second.is_fixed()) {
         double v = pair.second.value;
-        double lb = pair.second.has_prior() ? pair.second.prior->lower_bound()
-                                            : -LARGE_VAL;
-        double ub = pair.second.has_prior() ? pair.second.prior->upper_bound()
-                                            : LARGE_VAL;
+        double lb = pair.second.prior.lower_bound();
+        double ub = pair.second.prior.upper_bound();
 
         // Without these checks nlopt will fail in a much more obscure way.
         if (v < lb) {
@@ -245,8 +220,7 @@ public:
           assert(false);
         }
 
-        bool use_log_scale =
-            pair.second.has_prior() ? pair.second.prior->is_log_scale() : false;
+        bool use_log_scale = pair.second.prior.is_log_scale();
         if (use_log_scale) {
           lb = log(lb);
           ub = log(ub);
@@ -267,18 +241,13 @@ public:
     for (const auto &pair : params) {
       if (!pair.second.is_fixed()) {
         double v = x[i];
-        const bool use_log_scale =
-            pair.second.has_prior() ? pair.second.prior->is_log_scale() : false;
+        const bool use_log_scale = pair.second.prior.is_log_scale();
         if (use_log_scale) {
           v = exp(v);
         }
 
-        const double lb = pair.second.has_prior()
-                              ? pair.second.prior->lower_bound()
-                              : -LARGE_VAL;
-        const double ub = pair.second.has_prior()
-                              ? pair.second.prior->upper_bound()
-                              : LARGE_VAL;
+        const double lb = pair.second.prior.lower_bound();
+        const double ub = pair.second.prior.upper_bound();
 
         // this silly diversion is to make lint think lb and ub get used;
         if (v < lb) {

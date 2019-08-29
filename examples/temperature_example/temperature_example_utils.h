@@ -68,10 +68,9 @@ public:
 class ElevationScalingFunction : public albatross::ScalingFunction {
 public:
   ElevationScalingFunction(double center = 1000., double factor = 3.5 / 300) {
-    this->params_["elevation_scaling_center"] = {
-        center, std::make_shared<UniformPrior>(0., 5000.)};
-    this->params_["elevation_scaling_factor"] = {
-        factor, std::make_shared<PositivePrior>()};
+    this->params_["elevation_scaling_center"] = {center,
+                                                 UniformPrior(0., 5000.)};
+    this->params_["elevation_scaling_factor"] = {factor, PositivePrior()};
   };
 
   std::string get_name() const { return "elevation_scaled"; }

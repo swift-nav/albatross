@@ -25,7 +25,7 @@ public:
   using FitType = typename Base::template CholeskyFit<FeatureType>;
 
   TestAdaptedModel() {
-    this->params_["center"] = {1., std::make_shared<UniformPrior>(-10., 10.)};
+    this->params_["center"] = {1., UniformPrior(-10., 10.)};
   }
 
   std::vector<double>

@@ -31,7 +31,7 @@ struct ConstantTerm {};
 class Constant : public CovarianceFunction<Constant> {
 public:
   Constant(double sigma_constant_ = default_sigma) {
-    sigma_constant = {sigma_constant_, std::make_shared<NonNegativePrior>()};
+    sigma_constant = {sigma_constant_, NonNegativePrior()};
   };
 
   ALBATROSS_DECLARE_PARAMS(sigma_constant);
@@ -67,7 +67,7 @@ public:
     for (int i = 0; i < order + 1; i++) {
       std::string param_name = "sigma_polynomial_" + std::to_string(i);
       param_names_[i] = param_name;
-      this->params_[param_name] = {sigma, std::make_shared<NonNegativePrior>()};
+      this->params_[param_name] = {sigma, NonNegativePrior()};
     }
   };
 

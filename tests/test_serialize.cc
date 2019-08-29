@@ -162,10 +162,15 @@ struct ExplainedCovarianceRepresentation
 struct ParameterStoreType : public SerializableType<ParameterStore> {
 
   RepresentationType create() const override {
-    ParameterStore original = {
-        {"2", {2., std::make_shared<PositivePrior>()}},
-        {"1", {1., std::make_shared<GaussianPrior>(1., 2.)}},
-        {"3", 3.}};
+    ParameterStore original = {{"1", {1., UninformativePrior()}},
+                               {"2", {2., FixedPrior()}},
+                               {"3", {3., NonNegativePrior()}},
+                               {"4", {4., PositivePrior()}},
+                               {"5", {5., UniformPrior()}},
+                               {"6", {6., LogScaleUniformPrior()}},
+                               {"7", {7., GaussianPrior()}},
+                               {"8", {8., LogNormalPrior()}},
+                               {"9", 9.}};
     return original;
   }
 

@@ -50,10 +50,9 @@ public:
   SquaredExponential(double length_scale_ = default_length_scale,
                      double sigma_squared_exponential_ = default_radial_sigma)
       : distance_metric_() {
-    squared_exponential_length_scale = {length_scale_,
-                                        std::make_shared<PositivePrior>()};
+    squared_exponential_length_scale = {length_scale_, PositivePrior()};
     sigma_squared_exponential = {sigma_squared_exponential_,
-                                 std::make_shared<NonNegativePrior>()};
+                                 NonNegativePrior()};
   };
 
   std::string name() const {
@@ -96,10 +95,8 @@ public:
   Exponential(double length_scale_ = default_length_scale,
               double sigma_exponential_ = default_radial_sigma)
       : distance_metric_() {
-    exponential_length_scale = {length_scale_,
-                                std::make_shared<PositivePrior>()};
-    sigma_exponential = {sigma_exponential_,
-                         std::make_shared<NonNegativePrior>()};
+    exponential_length_scale = {length_scale_, PositivePrior()};
+    sigma_exponential = {sigma_exponential_, NonNegativePrior()};
   };
 
   std::string name() const {

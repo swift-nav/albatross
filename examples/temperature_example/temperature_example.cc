@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
   auto covariance = elevation_scaled_mean + noise + spatial_cov;
   auto model = gp_from_covariance(covariance);
 
-  model.set_param("sigma_exponential", {1., std::make_shared<FixedPrior>()});
+  model.set_param("sigma_exponential", {1., FixedPrior()});
 
   //   These parameters are that came from tuning the model to the leave
   //   one out negative log likelihood. which can be done like this:

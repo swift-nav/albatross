@@ -48,7 +48,7 @@ TEST(test_tune, test_with_prior_bounds) {
   auto model = test_case.get_model();
 
   for (const auto &pair : model.get_params()) {
-    Parameter param = {1.e-8, std::make_shared<PositivePrior>()};
+    Parameter param = {1.e-8, PositivePrior()};
     model.set_param(pair.first, param);
   }
 
@@ -71,12 +71,11 @@ TEST(test_tune, test_with_prior) {
   // Add priors to the parameters
   auto model_with_priors = test_case.get_model();
   for (const auto &pair : model_with_priors.get_params()) {
-    model_with_priors.set_prior(
-        pair.first,
-        std::make_shared<GaussianPrior>(pair.second.value + 0.1, 0.001));
+    model_with_priors.set_prior(pair.first,
+                                GaussianPrior(pair.second.value + 0.1, 0.001));
   }
   auto param_names = map_keys(model_with_priors.get_params());
-  model_with_priors.set_prior(param_names[0], std::make_shared<FixedPrior>());
+  model_with_priors.set_prior(param_names[0], FixedPrior());
 
   // Tune using likelihood which will include the parameter priors
   LeaveOneOutLikelihood<> loo_nll;

@@ -58,8 +58,8 @@ public:
   ALBATROSS_DECLARE_PARAMS(foo, bar);
 
   MockModel(double foo_ = 3.14159, double bar_ = sqrt(2.)) {
-    this->foo = {foo_, std::make_shared<GaussianPrior>(3., 2.)};
-    this->bar = {bar_, std::make_shared<PositivePrior>()};
+    this->foo = {foo_, GaussianPrior(3., 2.)};
+    this->bar = {bar_, PositivePrior()};
   };
 
   std::string get_name() const { return "mock_model"; }
