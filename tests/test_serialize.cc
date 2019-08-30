@@ -291,7 +291,7 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
                          FullJointDistribution, MeanOnlyJointDistribution,
                          FullMarginalDistribution, MeanOnlyMarginalDistribution,
-                         Dataset, DatasetWithMetadata, ParameterStoreType,
+                         ParameterStoreType, Dataset, DatasetWithMetadata,
                          SerializableType<MockModel>, VariantAsInt,
                          VariantAsDouble, BlockSymmetricMatrix>
     ToTest;

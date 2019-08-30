@@ -51,17 +51,6 @@ inline void serialize(
   archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
 }
 
-// template <typename Archive, typename ModelType, typename StrategyType>
-// inline void serialize(Archive &archive, Ransac<ModelType, StrategyType>
-// &model, const std::uint32_t) {
-//  archive(cereal::make_nvp("sub_model", model.sub_model_));
-//  archive(cereal::make_nvp("strategy", model.strategy_));
-//  archive(cereal::make_nvp("inlier_threshold", model.inlier_threshold_));
-//  archive(cereal::make_nvp("random_sample_size", model.random_sample_size_));
-//  archive(cereal::make_nvp("min_consensus_size", model.min_consensus_size_));
-//  archive(cereal::make_nvp("max_iterations", model.max_iterations_));
-//}
-
 } // namespace cereal
 
 #endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_RANSAC_HPP_ */
