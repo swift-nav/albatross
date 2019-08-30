@@ -87,16 +87,13 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
  */
 TEST(test_parameter_handler, test_get_set_from_vector_with_fixed) {
   const ParameterStore expected = {
-      {"1", 4.},
-      {"2", 5.},
-      {"foo", {1., std::make_shared<FixedPrior>()}},
-      {"3", 6.}};
+      {"1", 4.}, {"2", 5.}, {"foo", {1., FixedPrior()}}, {"3", 6.}};
   const std::vector<ParameterValue> expected_param_vector = {4., 5., 6.};
 
   ParameterStore original(expected);
   original["1"] = 1.;
   original["2"] = 2.;
-  original["foo"] = {-2., std::make_shared<FixedPrior>()};
+  original["foo"] = {-2., FixedPrior()};
   original["3"] = 3.;
   const std::vector<ParameterValue> original_param_vector = {1., 2., 3.};
   MockParameterHandler original_handler(original);
@@ -119,10 +116,10 @@ TEST(test_parameter_handler, test_prior_log_likelihood) {
 
   double expected;
   {
-    ParameterPrior gaussian_prior = std::make_shared<GaussianPrior>(3., 5.);
-    ParameterPrior uninformative_prior = std::make_shared<UninformativePrior>();
-    expected = gaussian_prior->log_pdf(p.get_params().at("A").value) +
-               uninformative_prior->log_pdf(p.get_params().at("B").value);
+    ParameterPrior gaussian_prior = GaussianPrior(3., 5.);
+    ParameterPrior uninformative_prior = UninformativePrior();
+    expected = gaussian_prior.log_pdf(p.get_params().at("A").value) +
+               uninformative_prior.log_pdf(p.get_params().at("B").value);
     p.set_prior("A", gaussian_prior);
     p.set_prior("B", uninformative_prior);
   }
@@ -136,8 +133,7 @@ TEST(test_parameter_handler, test_set_prior) {
   const auto orig_param_vector = p.get_tunable_parameters().values;
 
   for (const auto &pair : orig_params) {
-    ParameterPrior gaussian_prior =
-        std::make_shared<GaussianPrior>(pair.second.value + 1., 1.);
+    ParameterPrior gaussian_prior = GaussianPrior(pair.second.value + 1., 1.);
     p.set_prior(pair.first, gaussian_prior);
   }
 
@@ -175,8 +171,7 @@ TEST(test_parameter_handler, test_set_param_values_doesnt_overwrite_prior) {
     const auto new_param = p.get_params().at(pair.first);
     EXPECT_NE(new_param.value, pair.second.value);
     // but not the prior.
-    EXPECT_TRUE(!pair.second.has_prior() ||
-                (pair.second.prior == new_param.prior));
+    EXPECT_TRUE(pair.second.prior == new_param.prior);
   }
 };
 

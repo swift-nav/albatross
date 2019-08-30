@@ -15,21 +15,21 @@
 
 #include "Common"
 
-#include "src/core/declarations.hpp"
-#include "src/core/traits.hpp"
-#include "src/core/priors.hpp"
-#include "src/core/parameter_handling_mixin.hpp"
-#include "src/core/parameter_macros.hpp"
+#include <albatross/src/core/declarations.hpp>
+#include <albatross/src/core/traits.hpp>
+#include <albatross/src/core/priors.hpp>
+#include <albatross/src/core/parameter_handling_mixin.hpp>
+#include <albatross/src/core/parameter_macros.hpp>
 
-#include "src/covariance_functions/traits.hpp"
-#include "src/covariance_functions/callers.hpp"
-#include "src/covariance_functions/covariance_function.hpp"
-#include "src/covariance_functions/call_trace.hpp"
-#include "src/covariance_functions/measurement.hpp"
-#include "src/covariance_functions/distance_metrics.hpp"
-#include "src/covariance_functions/noise.hpp"
-#include "src/covariance_functions/polynomials.hpp"
-#include "src/covariance_functions/radial.hpp"
-#include "src/covariance_functions/scaling_function.hpp"
+#include <albatross/src/covariance_functions/traits.hpp>
+#include <albatross/src/covariance_functions/callers.hpp>
+#include <albatross/src/covariance_functions/covariance_function.hpp>
+#include <albatross/src/covariance_functions/call_trace.hpp>
+#include <albatross/src/covariance_functions/measurement.hpp>
+#include <albatross/src/covariance_functions/distance_metrics.hpp>
+#include <albatross/src/covariance_functions/noise.hpp>
+#include <albatross/src/covariance_functions/polynomials.hpp>
+#include <albatross/src/covariance_functions/radial.hpp>
+#include <albatross/src/covariance_functions/scaling_function.hpp>
 
 #endif

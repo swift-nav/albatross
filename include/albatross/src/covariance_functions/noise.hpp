@@ -21,8 +21,7 @@ template <typename Observed>
 class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
 public:
   IndependentNoise(double sigma_noise = 0.1) {
-    sigma_independent_noise = {sigma_noise,
-                               std::make_shared<NonNegativePrior>()};
+    sigma_independent_noise = {sigma_noise, NonNegativePrior()};
   };
 
   ALBATROSS_DECLARE_PARAMS(sigma_independent_noise);

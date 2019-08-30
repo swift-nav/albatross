@@ -10,12 +10,18 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_SERIALIZE_COMMON_H
+#define ALBATROSS_SERIALIZE_COMMON_H
 
-#include "Distribution"
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 
-#include <albatross/src/core/concatenate.hpp>
-#include <albatross/src/core/dataset.hpp>
+#include "../src/cereal/traits.hpp"
+#include "../src/cereal/eigen.hpp"
 
 #endif

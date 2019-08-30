@@ -34,23 +34,16 @@ public:
   virtual double upper_bound() const { return LARGE_VAL; }
   virtual bool is_log_scale() const { return false; };
   virtual bool is_fixed() const { return false; }
-  virtual bool operator==(const Prior &other) const {
-    return typeid(*this) == typeid(other);
+  bool operator==(const Prior &other) const {
+    return get_name() == other.get_name();
   }
   bool operator!=(const Prior &other) { return !((*this) == other); }
-
-  template <typename Archive> void serialize(Archive &, const std::uint32_t) {}
 };
 
 class UninformativePrior : public Prior {
 public:
   std::string get_name() const override { return "uninformative"; };
   double log_pdf(double) const override { return 0.; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class FixedPrior : public Prior {
@@ -59,11 +52,6 @@ public:
   double log_pdf(double) const override { return 0.; }
 
   bool is_fixed() const override { return true; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class PositivePrior : public Prior {
@@ -72,11 +60,6 @@ public:
   std::string get_name() const override { return "positive"; };
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class NonNegativePrior : public Prior {
@@ -85,11 +68,6 @@ public:
   std::string get_name() const override { return "non_negative"; };
   double lower_bound() const override { return 0.; }
   double upper_bound() const override { return LARGE_VAL; }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this));
-  }
 };
 
 class UniformPrior : public Prior {
@@ -110,13 +88,6 @@ public:
 
   double log_pdf(double) const override { return -log(upper_ - lower_); }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("lower", lower_),
-            cereal::make_nvp("upper", upper_));
-  }
-
-protected:
   double lower_;
   double upper_;
 };
@@ -135,11 +106,6 @@ public:
     return oss.str();
   };
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<UniformPrior>(this));
-  }
-
   bool is_log_scale() const override { return true; };
 };
 
@@ -147,15 +113,8 @@ class GaussianPrior : public Prior {
 public:
   GaussianPrior(double mu = 0., double sigma = 1.) : mu_(mu), sigma_(sigma) {}
 
-  bool operator==(const Prior &other) const override {
-    // This seems pretty hacky but also seems to be one of the few ways
-    // to override the == operator with a possibly polymorphic argument.
-    if (Prior::operator==(other)) {
-      auto other_cast = static_cast<const GaussianPrior &>(other);
-      return other_cast.mu_ == mu_ && other_cast.sigma_ == sigma_;
-    } else {
-      return false;
-    }
+  bool operator==(const GaussianPrior &other) const {
+    return other.mu_ == mu_ && other.sigma_ == sigma_;
   }
 
   std::string get_name() const override {
@@ -169,13 +128,6 @@ public:
     return -0.5 * (LOG_2PI_ * 2 * log(sigma_) + deviation * deviation);
   }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
-            cereal::make_nvp("sigma", sigma_));
-  }
-
-private:
   double mu_;
   double sigma_;
 };
@@ -184,15 +136,8 @@ class LogNormalPrior : public Prior {
 public:
   LogNormalPrior(double mu = 0., double sigma = 1.) : mu_(mu), sigma_(sigma) {}
 
-  bool operator==(const Prior &other) const override {
-    // This seems pretty hacky but also seems to be one of the few ways
-    // to override the == operator with a possibly polymorphic argument.
-    if (Prior::operator==(other)) {
-      auto other_cast = static_cast<const LogNormalPrior &>(other);
-      return other_cast.mu_ == mu_ && other_cast.sigma_ == sigma_;
-    } else {
-      return false;
-    }
+  bool operator==(const LogNormalPrior &other) const {
+    return other.mu_ == mu_ && other.sigma_ == sigma_;
   }
 
   std::string get_name() const override {
@@ -206,26 +151,71 @@ public:
     return -0.5 * LOG_2PI_ - log(sigma_) - log(x) - deviation * deviation;
   }
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::base_class<Prior>(this), cereal::make_nvp("mu", mu_),
-            cereal::make_nvp("sigma", sigma_));
-  }
-
-private:
   double mu_;
   double sigma_;
 };
 
-} // namespace albatross
+// NOTE: Order here is very important for backward compatible seraialization.
+using PossiblePriors =
+    variant<UninformativePrior, FixedPrior, NonNegativePrior, PositivePrior,
+            UniformPrior, LogScaleUniformPrior, GaussianPrior, LogNormalPrior>;
 
-CEREAL_REGISTER_TYPE(albatross::UninformativePrior);
-CEREAL_REGISTER_TYPE(albatross::PositivePrior);
-CEREAL_REGISTER_TYPE(albatross::NonNegativePrior);
-CEREAL_REGISTER_TYPE(albatross::FixedPrior);
-CEREAL_REGISTER_TYPE(albatross::UniformPrior);
-CEREAL_REGISTER_TYPE(albatross::LogScaleUniformPrior);
-CEREAL_REGISTER_TYPE(albatross::GaussianPrior);
-CEREAL_REGISTER_TYPE(albatross::LogNormalPrior);
+class PriorContainer : public Prior {
+public:
+  PriorContainer() : priors_(UninformativePrior()){};
+
+  PriorContainer(const PriorContainer &prior) = default;
+
+  template <typename PriorType,
+            typename std::enable_if<
+                is_in_variant<PriorType, PossiblePriors>::value, int>::type = 0>
+  PriorContainer(const PriorType &prior) : priors_(prior){};
+
+  template <
+      typename PriorType,
+      typename std::enable_if<!is_in_variant<PriorType, PossiblePriors>::value,
+                              int>::type = 0>
+  PriorContainer(const PriorType &prior) {
+    static_assert(delay_static_assert<PriorType>::value,
+                  "Attempt to initialize a prior which is not one of the types "
+                  "see PossiblePriors");
+  };
+
+  double log_pdf(double x) const override {
+    return priors_.match([&x](const auto &p) { return p.log_pdf(x); });
+  }
+
+  std::string get_name() const override {
+    return priors_.match([](const auto &p) { return p.get_name(); });
+  }
+
+  double lower_bound() const override {
+    return priors_.match([](const auto &p) { return p.lower_bound(); });
+  }
+
+  double upper_bound() const override {
+    return priors_.match([](const auto &p) { return p.upper_bound(); });
+  }
+
+  bool is_log_scale() const override {
+    return priors_.match([](const auto &p) { return p.is_log_scale(); });
+  };
+
+  bool is_fixed() const override {
+    return priors_.match([](const auto &p) { return p.is_fixed(); });
+  }
+
+  bool operator==(const PriorContainer &other) const {
+    return priors_ == other.priors_;
+  }
+
+  template <typename PriorType> void operator=(const PriorType &prior) {
+    priors_ = prior;
+  }
+
+  PossiblePriors priors_;
+};
+
+} // namespace albatross
 
 #endif

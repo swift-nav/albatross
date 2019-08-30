@@ -10,12 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_UTILS_CSV_UTILS_H
+#define ALBATROSS_UTILS_CSV_UTILS_H
 
-#include "Distribution"
+#include "../serialize/Core"
 
-#include <albatross/src/core/concatenate.hpp>
-#include <albatross/src/core/dataset.hpp>
+#include "../src/utils/csv_utils.hpp"
 
 #endif

@@ -62,8 +62,6 @@ struct LeaveOneOut {
   FoldIndexer operator()(const std::vector<FeatureType> &features) const {
     return leave_one_out_indexer(features);
   }
-
-  template <class Archive> void serialize(Archive &){};
 };
 
 /*
@@ -102,10 +100,6 @@ template <typename FeatureType> struct LeaveOneGroupOut {
 
   FoldIndexer operator()(const RegressionDataset<FeatureType> &dataset) const {
     return leave_one_group_out_indexer(dataset.features, grouper);
-  }
-
-  template <class Archive> void serialize(Archive &) {
-    archive(cereal::make_nvp("grouper", grouper));
   }
 
   GroupFunction<FeatureType> grouper;

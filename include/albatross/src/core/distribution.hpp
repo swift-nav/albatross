@@ -13,6 +13,11 @@
 #ifndef ALBATROSS_CORE_DISTRIBUTION_H
 #define ALBATROSS_CORE_DISTRIBUTION_H
 
+inline bool operator==(const albatross::DiagonalMatrixXd &x,
+                       const albatross::DiagonalMatrixXd &y) {
+  return (x.diagonal() == y.diagonal());
+}
+
 namespace albatross {
 
 /*
@@ -49,18 +54,6 @@ template <typename CovarianceType> struct Distribution {
       !std::is_same<CovarianceType, OtherCovarianceType>::value, bool>::type
   operator==(const Distribution<OtherCovarianceType> &) const {
     return false;
-  }
-
-  /*
-   * If the CovarianceType is serializable, add a serialize method.
-   */
-  template <class Archive>
-  typename std::enable_if<
-      valid_in_out_serializer<CovarianceType, Archive>::value, void>::type
-  serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("mean", mean));
-    archive(cereal::make_nvp("covariance", covariance));
-    archive(cereal::make_nvp("metadata", metadata));
   }
 };
 

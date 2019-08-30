@@ -10,12 +10,14 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_SERIALIZE_GP_H
+#define ALBATROSS_SERIALIZE_GP_H
 
-#include "Distribution"
+#include "Core"
 
-#include <albatross/src/core/concatenate.hpp>
-#include <albatross/src/core/dataset.hpp>
+#include "../src/cereal/block_utils.hpp"
+#include "../src/cereal/serializable_ldlt.hpp"
+#include "../src/cereal/gp.hpp"
+#include "../src/cereal/representations.hpp"
 
 #endif

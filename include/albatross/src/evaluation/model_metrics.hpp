@@ -36,8 +36,6 @@ public:
                     const ModelBase<ModelType> &model) const =
       delete; // Metric Not Valid for these types.
 
-  template <class Archive> void serialize(Archive &){};
-
 protected:
   /*
    * CRTP Helpers

@@ -15,6 +15,6 @@
 
 #include "Core"
 
-#include "src/models/least_squares.hpp"
+#include <albatross/src/models/least_squares.hpp>
 
 #endif

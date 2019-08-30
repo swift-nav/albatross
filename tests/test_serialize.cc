@@ -10,12 +10,37 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/Common>
 #include <albatross/GP>
+
+#include <albatross/serialize/Common>
+#include <albatross/serialize/GP>
+#include <albatross/serialize/LeastSquares>
+#include <albatross/serialize/Ransac>
+
 #include <gtest/gtest.h>
 
 #include "test_models.h"
 #include "test_serialize.h"
 #include "test_utils.h"
+
+namespace cereal {
+
+using albatross::Fit;
+using albatross::MockFeature;
+using albatross::MockModel;
+
+template <typename Archive>
+inline void serialize(Archive &archive, MockFeature &f) {
+  archive(f.value);
+}
+
+template <typename Archive>
+inline void serialize(Archive &archive, Fit<MockModel> &f) {
+  archive(f.train_data);
+}
+
+} // namespace cereal
 
 namespace albatross {
 
@@ -162,10 +187,15 @@ struct ExplainedCovarianceRepresentation
 struct ParameterStoreType : public SerializableType<ParameterStore> {
 
   RepresentationType create() const override {
-    ParameterStore original = {
-        {"2", {2., std::make_shared<PositivePrior>()}},
-        {"1", {1., std::make_shared<GaussianPrior>(1., 2.)}},
-        {"3", 3.}};
+    ParameterStore original = {{"1", {1., UninformativePrior()}},
+                               {"2", {2., FixedPrior()}},
+                               {"3", {3., NonNegativePrior()}},
+                               {"4", {4., PositivePrior()}},
+                               {"5", {5., UniformPrior()}},
+                               {"6", {6., LogScaleUniformPrior()}},
+                               {"7", {7., GaussianPrior()}},
+                               {"8", {8., LogNormalPrior()}},
+                               {"9", 9.}};
     return original;
   }
 

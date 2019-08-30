@@ -30,12 +30,6 @@ public:
   FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
 
-  template <class Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("model", model_));
-    archive(cereal::make_nvp("fit", fit_));
-  }
-
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
   predict(const std::vector<PredictFeatureType> &features) const {
@@ -57,7 +51,11 @@ public:
 
   Fit get_fit() const { return fit_; }
 
+  Fit &get_fit() { return fit_; }
+
   ModelType get_model() const { return model_; };
+
+  ModelType &get_model() { return model_; };
 
   bool operator==(const FitModel &other) const {
     return (model_ == other.model_ && fit_ == other.fit_);

@@ -10,12 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_DATASET_H
-#define ALBATROSS_DATASET_H
+#ifndef ALBATROSS_UTILS_MAP_UTILS_H
+#define ALBATROSS_UTILS_MAP_UTILS_H
 
-#include "Distribution"
-
-#include <albatross/src/core/concatenate.hpp>
-#include <albatross/src/core/dataset.hpp>
+#include "../src/utils/map_utils.hpp"
 
 #endif

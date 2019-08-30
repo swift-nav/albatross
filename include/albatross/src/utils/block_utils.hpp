@@ -121,9 +121,6 @@ template <typename Solver> struct BlockSymmetric {
 
   bool operator==(const BlockSymmetric &rhs) const;
 
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t);
-
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
@@ -356,14 +353,6 @@ template <typename Solver>
 inline bool BlockSymmetric<Solver>::
 operator==(const BlockSymmetric &rhs) const {
   return (A == rhs.A && Ai_B == rhs.Ai_B && S == rhs.S);
-}
-
-template <typename Solver>
-template <typename Archive>
-inline void BlockSymmetric<Solver>::serialize(Archive &archive,
-                                              const std::uint32_t) {
-  archive(cereal::make_nvp("A", A), cereal::make_nvp("Ai_B", Ai_B),
-          cereal::make_nvp("S", S));
 }
 
 template <typename Solver>

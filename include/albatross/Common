@@ -13,14 +13,6 @@
 #ifndef ALBATROSS_COMMON_H
 #define ALBATROSS_COMMON_H
 
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/vector.hpp>
-
 #include <gzip/compress.hpp>
 #include <gzip/decompress.hpp>
 
@@ -32,6 +24,7 @@
 #include <math.h>
 #include <iomanip>
 #include <map>
+#include <set>
 #include <string>
 #include <iostream>
 #include <unordered_map>
@@ -41,15 +34,12 @@
 #include <numeric>
 #include <random>
 
-#include "src/core/declarations.hpp"
+#include <albatross/src/core/declarations.hpp>
 
-#include "src/details/traits.hpp"
-#include "src/details/has_any_macros.hpp"
-#include "src/details/error_handling.hpp"
+#include <albatross/src/details/traits.hpp>
+#include <albatross/src/details/has_any_macros.hpp>
+#include <albatross/src/details/error_handling.hpp>
 
-#include "src/utils/map_utils.hpp"
-#include "src/cereal/eigen.hpp"
-#include "src/cereal/traits.hpp"
-#include "src/cereal/variant.hpp"
+#include <albatross/src/utils/map_utils.hpp>
 
 #endif

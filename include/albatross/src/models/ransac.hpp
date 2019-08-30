@@ -202,12 +202,6 @@ struct GenericRansacStrategy {
     return indexing_function_(dataset);
   }
 
-  template <typename Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("inlier_metric", inlier_metric_));
-    archive(cereal::make_nvp("consensus_metric", consensus_metric_));
-    archive(cereal::make_nvp("indexing_function", indexing_function_));
-  }
-
 protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
@@ -247,13 +241,6 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
 
   bool operator==(const Fit &other) const {
     return fit_model == other.fit_model;
-  }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("fit_model", fit_model));
-    archive(cereal::make_nvp("inliers", inliers));
-    archive(cereal::make_nvp("outliers", outliers));
   }
 
   FitModelType fit_model;
@@ -328,20 +315,6 @@ public:
                             const FitType &ransac_fit_,
                             PredictTypeIdentity<PredictType> &&) const {
     return ransac_fit_.fit_model.predict(features).template get<PredictType>();
-  }
-
-  // Hide any inherited save/load methods.
-  void save() const;
-  void load();
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(cereal::make_nvp("sub_model", sub_model_));
-    archive(cereal::make_nvp("strategy", strategy_));
-    archive(cereal::make_nvp("inlier_threshold", inlier_threshold_));
-    archive(cereal::make_nvp("random_sample_size", random_sample_size_));
-    archive(cereal::make_nvp("min_consensus_size", min_consensus_size_));
-    archive(cereal::make_nvp("max_iterations", max_iterations_));
   }
 
   ModelType sub_model_;

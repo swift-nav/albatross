@@ -21,11 +21,6 @@ template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
   bool operator==(const Fit &other) const { return (coefs == other.coefs); }
-
-  template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t) {
-    archive(coefs);
-  }
 };
 
 /*

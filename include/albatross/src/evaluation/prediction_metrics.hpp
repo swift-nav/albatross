@@ -52,8 +52,6 @@ template <typename RequiredPredictType> struct PredictionMetric {
              const MarginalDistribution &truth) const {
     return (*this)(prediction.template get<RequiredPredictType>(), truth);
   }
-
-  template <class Archive> void serialize(Archive &){};
 };
 
 static inline double root_mean_square_error(const Eigen::VectorXd &prediction,

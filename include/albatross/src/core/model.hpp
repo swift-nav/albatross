@@ -26,8 +26,7 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   template <typename T, typename FeatureType> friend class fit_model_type;
 
 protected:
-  ModelBase() : insights_(){};
-  Insights insights_;
+  ModelBase() : insights(){};
 
   /*
    * Fit
@@ -97,23 +96,10 @@ public:
     return *static_cast<const ModelType *>(this);
   }
 
-  template <class Archive>
-  void save(Archive &archive, const std::uint32_t) const {
-    archive(cereal::make_nvp("params", derived().get_params()));
-    archive(cereal::make_nvp("insights", insights_));
-  }
-
-  template <class Archive> void load(Archive &archive, const std::uint32_t) {
-    ParameterStore params;
-    archive(cereal::make_nvp("params", params));
-    derived().set_params(params);
-    archive(cereal::make_nvp("insights", insights_));
-  }
-
   bool operator==(const ModelType &other) const {
     return (derived().get_params() == other.get_params() &&
             derived().get_name() == other.get_name() &&
-            derived().insights_ == other.insights_);
+            derived().insights == other.insights);
   }
 
   template <typename DummyType = ModelType,
@@ -152,6 +138,8 @@ public:
   ransac(const Strategy &strategy, double inlier_threshold,
          std::size_t random_sample_size, std::size_t min_consensus_size,
          std::size_t max_iteration) const;
+
+  Insights insights;
 };
 } // namespace albatross
 #endif

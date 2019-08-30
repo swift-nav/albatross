@@ -27,10 +27,6 @@ struct MockFeature {
   bool operator==(const MockFeature &other) const {
     return value == other.value;
   };
-
-  template <class Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("value", value));
-  }
 };
 
 struct ContainsMockFeature {
@@ -39,10 +35,6 @@ struct ContainsMockFeature {
 
 template <> struct Fit<MockModel> {
   std::map<int, double> train_data;
-
-  template <class Archive> void serialize(Archive &ar) {
-    ar(cereal::make_nvp("train_data", train_data));
-  };
 
   bool operator==(const Fit &other) const {
     return train_data == other.train_data;
@@ -58,8 +50,8 @@ public:
   ALBATROSS_DECLARE_PARAMS(foo, bar);
 
   MockModel(double foo_ = 3.14159, double bar_ = sqrt(2.)) {
-    this->foo = {foo_, std::make_shared<GaussianPrior>(3., 2.)};
-    this->bar = {bar_, std::make_shared<PositivePrior>()};
+    this->foo = {foo_, GaussianPrior(3., 2.)};
+    this->bar = {bar_, PositivePrior()};
   };
 
   std::string get_name() const { return "mock_model"; }
