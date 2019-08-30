@@ -18,7 +18,7 @@
 #include "Core"
 #include "Evaluation"
 
-#include "src/tune/tuning_metrics.hpp"
-#include "src/tune/tune.hpp"
+#include <albatross/src/tune/tuning_metrics.hpp>
+#include <albatross/src/tune/tune.hpp>
 
 #endif

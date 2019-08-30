@@ -34,12 +34,12 @@
 #include <numeric>
 #include <random>
 
-#include "src/core/declarations.hpp"
+#include <albatross/src/core/declarations.hpp>
 
-#include "src/details/traits.hpp"
-#include "src/details/has_any_macros.hpp"
-#include "src/details/error_handling.hpp"
+#include <albatross/src/details/traits.hpp>
+#include <albatross/src/details/has_any_macros.hpp>
+#include <albatross/src/details/error_handling.hpp>
 
-#include "src/utils/map_utils.hpp"
+#include <albatross/src/utils/map_utils.hpp>
 
 #endif

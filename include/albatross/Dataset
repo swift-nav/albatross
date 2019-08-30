@@ -15,7 +15,7 @@
 
 #include "Distribution"
 
-#include "src/core/concatenate.hpp"
-#include "src/core/dataset.hpp"
+#include <albatross/src/core/concatenate.hpp>
+#include <albatross/src/core/dataset.hpp>
 
 #endif

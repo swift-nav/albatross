@@ -17,14 +17,14 @@
 
 #include <type_traits>
 
-#include "src/core/declarations.hpp"
-#include "src/core/indexing.hpp"
-#include "src/core/traits.hpp"
-#include "src/core/priors.hpp"
-#include "src/core/parameter_handling_mixin.hpp"
-#include "src/core/parameter_macros.hpp"
-#include "src/core/fit_model.hpp"
-#include "src/core/prediction.hpp"
-#include "src/core/model.hpp"
+#include <albatross/src/core/declarations.hpp>
+#include <albatross/src/core/indexing.hpp>
+#include <albatross/src/core/traits.hpp>
+#include <albatross/src/core/priors.hpp>
+#include <albatross/src/core/parameter_handling_mixin.hpp>
+#include <albatross/src/core/parameter_macros.hpp>
+#include <albatross/src/core/fit_model.hpp>
+#include <albatross/src/core/prediction.hpp>
+#include <albatross/src/core/model.hpp>
 
 #endif
