@@ -44,7 +44,7 @@ template <typename X> struct Measurement;
  * Parameter Handling
  */
 struct Parameter;
-struct PriorContainer;
+class PriorContainer;
 
 using ParameterKey = std::string;
 // If you change the way these are stored, be sure there's

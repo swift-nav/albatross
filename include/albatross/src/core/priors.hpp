@@ -160,8 +160,8 @@ using PossiblePriors =
     variant<UninformativePrior, FixedPrior, NonNegativePrior, PositivePrior,
             UniformPrior, LogScaleUniformPrior, GaussianPrior, LogNormalPrior>;
 
-struct PriorContainer : Prior {
-
+class PriorContainer : public Prior {
+public:
   PriorContainer() : priors_(UninformativePrior()){};
 
   PriorContainer(const PriorContainer &prior) = default;
