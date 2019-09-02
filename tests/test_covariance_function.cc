@@ -174,4 +174,51 @@ TEST(test_covariance_function, test_get_name) {
   EXPECT_EQ(cov.get_name(), "has_multiple");
 }
 
+template <typename ExpectedType, typename CovFunc>
+void expect_valid_ssr(const CovFunc &cov, const std::size_t expected_size) {
+  std::vector<X> xs = {{}, {}};
+  std::vector<ExpectedType> ssr_features = cov.get_ssr_features(xs);
+  EXPECT_EQ(ssr_features.size(), expected_size);
+}
+
+TEST(test_covariance_function, test_get_ssr) {
+
+
+  HasTestSSR has;
+  expect_valid_ssr<TestSSR>(has, 1);
+
+  AlsoHasTestSSR also_has;
+  expect_valid_ssr<TestSSR>(also_has, 3);
+
+  HasXX xx;
+
+  auto sum_left = has + xx;
+  expect_valid_ssr<TestSSR>(sum_left, 1);
+  auto sum_right = xx + has;
+  expect_valid_ssr<TestSSR>(sum_right, 1);
+  auto sum_both = has + also_has;
+  expect_valid_ssr<TestSSR>(sum_both, 4);
+
+  auto prod_left = has * xx;
+  expect_valid_ssr<TestSSR>(prod_left, 1);
+  auto prod_right = xx * has;
+  expect_valid_ssr<TestSSR>(prod_right, 1);
+  auto prod_both = has * also_has;
+  expect_valid_ssr<TestSSR>(prod_both, 4);
+
+  HasOtherSSR other;
+  expect_valid_ssr<OtherSSR>(other, 5);
+
+  auto sum_lhs_other = has + other;
+  expect_valid_ssr<variant<TestSSR, OtherSSR>>(sum_lhs_other, 6);
+  auto sum_rhs_other = other + has;
+  expect_valid_ssr<variant<OtherSSR, TestSSR>>(sum_rhs_other, 6);
+
+  auto prod_lhs_other = has * other;
+  expect_valid_ssr<variant<TestSSR, OtherSSR>>(prod_lhs_other, 6);
+  auto prod_rhs_other = other * has;
+  expect_valid_ssr<variant<OtherSSR, TestSSR>>(prod_rhs_other, 6);
+
+}
+
 } // namespace albatross

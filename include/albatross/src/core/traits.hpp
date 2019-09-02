@@ -20,6 +20,40 @@ HAS_METHOD_WITH_RETURN_TYPE(name);
 template <typename T>
 class has_name : public has_name_with_return_type<T, std::string> {};
 
+HAS_METHOD(_ssr_features);
+
+
+template <typename T, typename FeatureType>
+class ssr_feature_type {
+  template <typename C,
+            typename ReturnType = decltype(std::declval<const C>()._ssr_features(
+                std::declval<const std::vector<FeatureType>>()))>
+  static
+      typename std::enable_if<is_vector<ReturnType>::value,
+                              typename ReturnType::value_type>::type
+      test(C *);
+  template <typename> static void test(...);
+
+public:
+
+  typedef decltype(test<T>(0)) type;
+};
+
+template <typename T, typename FeatureType>
+class has_valid_ssr_features {
+  template <typename C,
+            typename ReturnType = typename ssr_feature_type<C, FeatureType>::type>
+  static
+      typename std::enable_if<!std::is_same<ReturnType, void>::value,
+                              std::true_type>::type
+      test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+
+};
+
 /*
  * A valid fit is defined as simply anything which matches the pattern:
  *
