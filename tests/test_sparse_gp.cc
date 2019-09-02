@@ -27,6 +27,21 @@ struct LeaveOneIntervalOut : public LeaveOneGroupOut<double> {
   LeaveOneIntervalOut() : LeaveOneGroupOut<double>(get_group){};
 };
 
+struct UniformlySpacedInducingPoints {
+
+  UniformlySpacedInducingPoints(std::size_t num_points_ = 10)
+      : num_points(num_points_) {}
+
+  std::vector<double> operator()(const std::vector<double> &features) const {
+    double min = *std::min_element(features.begin(), features.end());
+    double max = *std::max_element(features.begin(), features.end());
+
+    return linspace(min, max, num_points);
+  }
+
+  std::size_t num_points;
+};
+
 template <typename IndexerType>
 class SparseGaussianProcessTest : public ::testing::Test {
 public:
@@ -48,13 +63,13 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
+      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
   sparse.set_param(details::inducing_nugget_name, 1e-3);
   sparse.set_param(details::measurement_nugget_name, 1e-12);
 
   UniformlySpacedInducingPoints bad_strategy(3);
-  auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
-                                                 indexer, "really_sparse");
+  auto really_sparse = sparse_gp_from_covariance(covariance, indexer,
+                                                 bad_strategy, "really_sparse");
   really_sparse.set_param(details::inducing_nugget_name, 1e-3);
   really_sparse.set_param(details::measurement_nugget_name, 1e-12);
 
@@ -126,7 +141,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   UniformlySpacedInducingPoints strategy(100);
   auto sparse =
-      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
+      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
 
   start = high_resolution_clock::now();
   auto sparse_fit = sparse.fit(large_dataset);
@@ -135,6 +150,20 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   // Make sure the sparse version is a lot faster.
   EXPECT_LT(sparse_duration, 0.3 * direct_duration);
+}
+
+TYPED_TEST(SparseGaussianProcessTest, test_default_strategy) {
+  SquaredExponential<EuclideanDistance> covariance;
+  covariance.squared_exponential_length_scale.value = 10.;
+  DefaultInducingPointStrategy<decltype(covariance)> strategy(covariance);
+  auto dataset = make_toy_sine_data(5., 10., 0.1, 100);
+
+  const auto output = strategy(dataset.features);
+  EXPECT_GT(output.size(), 5);
+
+  auto indexer = this->indexer;
+  auto sparse = sparse_gp_from_covariance(covariance, indexer, "sparse");
+  auto sparse_fit = sparse.fit(dataset);
 }
 
 } // namespace albatross

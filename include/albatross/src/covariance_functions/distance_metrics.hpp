@@ -17,6 +17,16 @@ namespace albatross {
 
 constexpr double EPSILON = 1e-16;
 
+std::vector<double> inline linspace(double a, double b, std::size_t n) {
+  double h = (b - a) / static_cast<double>(n - 1);
+  std::vector<double> xs(n);
+  typename std::vector<double>::iterator x;
+  double val;
+  for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
+    *x = val;
+  return xs;
+}
+
 class DistanceMetric : public ParameterHandlingMixin {
 public:
   DistanceMetric(){};
@@ -41,6 +51,24 @@ public:
   double operator()(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
                     const Eigen::Matrix<_Scalar, _Rows, 1> &y) const {
     return (x - y).norm();
+  }
+
+  std::vector<double> gridded_features(const std::vector<double> &features,
+                                       const double &spacing) const {
+    assert(features.size() > 0);
+    double min = *std::min_element(features.begin(), features.end());
+    double max = *std::max_element(features.begin(), features.end());
+
+    double count = (max - min) / spacing;
+    count = ceil(count);
+    assert(count >= 0.);
+    assert(count < std::numeric_limits<std::size_t>::max());
+    std::size_t n = static_cast<std::size_t>(count);
+    if (n == 1) {
+      return {min, max};
+    } else {
+      return linspace(min, max, n);
+    }
   }
 };
 

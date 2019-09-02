@@ -21,13 +21,13 @@ add_executable(albatross_unit_tests
 #  test_models.cc
 #  test_parameter_handling_mixin.cc
 #  test_prediction.cc
-#  test_radial.cc
+  test_radial.cc
 #  test_random_utils.cc
 #  test_ransac.cc
 #  test_scaling_function.cc
 #  test_serializable_ldlt.cc
 #  test_serialize.cc
-#  test_sparse_gp.cc
+  test_sparse_gp.cc
 #  test_traits_cereal.cc
 #  test_traits_core.cc
 #  test_traits_details.cc

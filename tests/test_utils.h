@@ -170,6 +170,17 @@ inline auto random_covariance_matrix(Eigen::Index k = 5) {
   return X;
 }
 
+inline std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
+  std::vector<Eigen::Vector3d> xs;
+  for (int i = 0; i < n; i++) {
+    Eigen::Vector3d x;
+    for (int j = 0; j < 3; j++)
+      x[static_cast<std::size_t>(j)] = 1000 * i + j;
+    xs.push_back(x);
+  }
+  return xs;
+}
+
 } // namespace albatross
 
 #endif

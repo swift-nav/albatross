@@ -84,29 +84,23 @@ struct OtherSSR {};
 
 class HasTestSSR : public CovarianceFunction<HasTestSSR> {
 public:
-
   std::vector<TestSSR> _ssr_features(const std::vector<X> &) const {
     return {TestSSR()};
   }
-
 };
 
 class AlsoHasTestSSR : public CovarianceFunction<AlsoHasTestSSR> {
 public:
-
   std::vector<TestSSR> _ssr_features(const std::vector<X> &) const {
     return {TestSSR(), TestSSR(), TestSSR()};
   }
-
 };
 
 class HasOtherSSR : public CovarianceFunction<HasOtherSSR> {
 public:
-
   std::vector<OtherSSR> _ssr_features(const std::vector<X> &) const {
     return {OtherSSR(), OtherSSR(), OtherSSR(), OtherSSR(), OtherSSR()};
   }
-
 };
 
 } // namespace albatross

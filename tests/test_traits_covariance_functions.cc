@@ -318,7 +318,9 @@ template <typename ExpectedType, typename CovFunc>
 void expect_valid_ssr(const CovFunc &cov) {
   EXPECT_TRUE(bool(has_valid_ssr_features<CovFunc, X>::value));
   EXPECT_FALSE(bool(has_valid_ssr_features<CovFunc, Y>::value));
-  EXPECT_TRUE(bool(std::is_same<ExpectedType, typename ssr_feature_type<CovFunc, X>::type>::value));
+  EXPECT_TRUE(
+      bool(std::is_same<ExpectedType,
+                        typename ssr_feature_type<CovFunc, X>::type>::value));
 }
 
 TEST(test_traits_covariance_function, test_has_valid_ssr_features) {
@@ -332,7 +334,8 @@ TEST(test_traits_covariance_function, test_has_valid_ssr_features) {
   HasXX xx;
   EXPECT_FALSE(bool(has_valid_ssr_features<HasXX, X>::value));
   EXPECT_FALSE(bool(has_valid_ssr_features<HasXX, Y>::value));
-  EXPECT_TRUE(bool(std::is_same<void, ssr_feature_type<HasXX, X>::type>::value));
+  EXPECT_TRUE(
+      bool(std::is_same<void, ssr_feature_type<HasXX, X>::type>::value));
 
   auto sum_left = has + xx;
   expect_valid_ssr<TestSSR>(sum_left);
@@ -360,8 +363,6 @@ TEST(test_traits_covariance_function, test_has_valid_ssr_features) {
   expect_valid_ssr<variant<TestSSR, OtherSSR>>(prod_lhs_other);
   auto prod_rhs_other = other * has;
   expect_valid_ssr<variant<OtherSSR, TestSSR>>(prod_rhs_other);
-
 }
-
 
 } // namespace albatross

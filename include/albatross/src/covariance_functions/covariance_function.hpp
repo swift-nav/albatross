@@ -198,10 +198,11 @@ public:
   /*
    * Cross covariance between two vectors of (possibly) different types.
    */
-  template <typename X,
-            typename std::enable_if<has_valid_ssr_features<Derived, X>::value,
-                                    int>::type = 0>
-  auto get_ssr_features(const std::vector<X> &features) const {
+  template <
+      typename FeatureType,
+      typename std::enable_if<
+          has_valid_ssr_features<Derived, FeatureType>::value, int>::type = 0>
+  auto get_ssr_features(const std::vector<FeatureType> &features) const {
     return derived()._ssr_features(features);
   }
 
@@ -314,7 +315,7 @@ public:
    */
   template <typename X,
             typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
-                                    !has_valid_ssr_features<RHS, X>::value,
+                                        !has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     return this->lhs_._ssr_features(features);
@@ -322,7 +323,7 @@ public:
 
   template <typename X,
             typename std::enable_if<!has_valid_ssr_features<LHS, X>::value &&
-            has_valid_ssr_features<RHS, X>::value,
+                                        has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     return this->rhs_._ssr_features(features);
@@ -330,7 +331,7 @@ public:
 
   template <typename X,
             typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
-            has_valid_ssr_features<RHS, X>::value,
+                                        has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     const auto lhs = this->lhs_._ssr_features(features);
@@ -416,7 +417,7 @@ public:
    */
   template <typename X,
             typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
-                                    !has_valid_ssr_features<RHS, X>::value,
+                                        !has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     return this->lhs_._ssr_features(features);
@@ -424,7 +425,7 @@ public:
 
   template <typename X,
             typename std::enable_if<!has_valid_ssr_features<LHS, X>::value &&
-            has_valid_ssr_features<RHS, X>::value,
+                                        has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     return this->rhs_._ssr_features(features);
@@ -432,7 +433,7 @@ public:
 
   template <typename X,
             typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
-            has_valid_ssr_features<RHS, X>::value,
+                                        has_valid_ssr_features<RHS, X>::value,
                                     int>::type = 0>
   auto _ssr_features(const std::vector<X> &features) const {
     const auto lhs = this->lhs_._ssr_features(features);

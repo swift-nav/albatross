@@ -183,7 +183,6 @@ void expect_valid_ssr(const CovFunc &cov, const std::size_t expected_size) {
 
 TEST(test_covariance_function, test_get_ssr) {
 
-
   HasTestSSR has;
   expect_valid_ssr<TestSSR>(has, 1);
 
@@ -218,7 +217,6 @@ TEST(test_covariance_function, test_get_ssr) {
   expect_valid_ssr<variant<TestSSR, OtherSSR>>(prod_lhs_other, 6);
   auto prod_rhs_other = other * has;
   expect_valid_ssr<variant<OtherSSR, TestSSR>>(prod_rhs_other, 6);
-
 }
 
 } // namespace albatross
