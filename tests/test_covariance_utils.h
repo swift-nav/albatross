@@ -56,7 +56,7 @@ public:
 
   int _call_impl(const Z &, const Z &) const { return 1.; };
 
-  std::string name_ = "has_multiple";
+  std::string name() const { return "has_multiple"; };
 };
 
 class HasPublicCallImpl {

@@ -15,22 +15,10 @@
 
 namespace albatross {
 
-/*
- * This determines whether or not a class, T, has a method,
- *   `std::string T.name() const`
- */
-template <typename T> class has_name {
-  template <typename C,
-            typename ReturnType = decltype(std::declval<const C>().name())>
-  static typename std::enable_if<std::is_same<std::string, ReturnType>::value,
-                                 std::true_type>::type
-  test(int);
+HAS_METHOD_WITH_RETURN_TYPE(name);
 
-  template <typename C> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
+template <typename T>
+class has_name : public has_name_with_return_type<T, std::string> {};
 
 /*
  * A valid fit is defined as simply anything which matches the pattern:

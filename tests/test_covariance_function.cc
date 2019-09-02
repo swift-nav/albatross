@@ -169,4 +169,9 @@ TEST(test_covariance_function, test_variant_recurssion_bug) {
   EXPECT_EQ(cov(y, vy), cov(y, y));
 }
 
+TEST(test_covariance_function, test_get_name) {
+  HasMultiple cov;
+  EXPECT_EQ(cov.get_name(), "has_multiple");
+}
+
 } // namespace albatross
