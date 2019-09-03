@@ -66,6 +66,7 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
   };
 }
 
+/*
 template <typename ModelType, typename FeatureType>
 inline typename RansacFunctions<
     FitAndIndices<ModelType, FeatureType>>::ConsensusMetric
@@ -75,6 +76,17 @@ get_gp_ransac_model_entropy_metric(const FoldIndexer &indexer,
     auto inds = indices_from_names(indexer, groups);
     auto consensus_cov = symmetric_subset(cov, inds);
     return differential_entropy(consensus_cov);
+  };
+}
+ */
+
+template <typename ModelType, typename FeatureType>
+inline typename RansacFunctions<
+    FitAndIndices<ModelType, FeatureType>>::ConsensusMetric
+get_gp_ransac_feature_count_consensus_metric(const FoldIndexer &indexer) {
+  return [&, indexer](const std::vector<FoldName> &groups) {
+    auto inds = indices_from_names(indexer, groups);
+    return (-1.0 * static_cast<double>(inds.size()));
   };
 }
 
@@ -97,12 +109,12 @@ get_gp_ransac_functions(const ModelType &model,
       get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric>(
           dataset, indexer, full_cov, model, inlier_metric);
 
-  const auto consensus_metric_from_gorup =
-      get_gp_ransac_model_entropy_metric<ModelType, FeatureType>(indexer,
-                                                                 full_cov);
+  const auto consensus_metric_from_group =
+      get_gp_ransac_feature_count_consensus_metric<ModelType, FeatureType>(
+          indexer);
 
   return RansacFunctions<FitAndIndices<ModelType, FeatureType>>(
-      fitter, inlier_metric_from_group, consensus_metric_from_gorup);
+      fitter, inlier_metric_from_group, consensus_metric_from_group);
 };
 
 template <typename InlierMetric, typename IndexingFunction>

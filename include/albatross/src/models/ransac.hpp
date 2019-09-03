@@ -80,15 +80,13 @@ ransac(const RansacFunctions<FitType> &ransac_functions,
         random_without_replacement(groups, random_sample_size, gen);
     const auto fit = ransac_functions.fitter(candidate_groups);
 
-    std::vector<FoldName> candidate_consensus;
+    // Any group that's part of the candidate set is automatically an inlier.
+    std::vector<FoldName> candidate_consensus = candidate_groups;
+
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
     for (const auto &possible_inlier : groups) {
-      if (contains_group(candidate_groups, possible_inlier)) {
-        // Any group that's part of the candidate set is automatically an
-        // inlier.
-        candidate_consensus.emplace_back(possible_inlier);
-      } else {
+      if (!contains_group(candidate_groups, possible_inlier)) {
         double metric_value =
             ransac_functions.inlier_metric(possible_inlier, fit);
         if (metric_value < inlier_threshold) {
@@ -99,7 +97,7 @@ ransac(const RansacFunctions<FitType> &ransac_functions,
 
     // If there is enough agreement, consider this random set of inliers
     // as a candidate model.
-    if (candidate_consensus.size() + random_sample_size >= min_consensus_size) {
+    if (candidate_consensus.size() >= min_consensus_size) {
       double consensus_metric_value =
           ransac_functions.consensus_metric(candidate_consensus);
       if (consensus_metric_value < best_consensus_metric) {
