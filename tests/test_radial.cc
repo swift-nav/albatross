@@ -47,4 +47,29 @@ TEST(test_radial, test_is_positive_definite) {
   EXPECT_GE(cov.eigenvalues().real().array().minCoeff(), 0.);
 }
 
+TEST(test_radial, test_gridded_features) {
+
+  EuclideanDistance cov;
+  std::vector<double> features = linspace(0., 5., 6);
+  const auto grid = cov.gridded_features(features, 0.5);
+  EXPECT_GT(grid.size(), features.size());
+}
+
+TEST(test_radial, test_get_ssr_features) {
+
+  SquaredExponential<EuclideanDistance> cov;
+
+  std::vector<double> features = linspace(0., 5., 6);
+
+  cov.squared_exponential_length_scale.value = 100.;
+  EXPECT_EQ(cov.get_ssr_features(features).size(), 2);
+
+  cov.squared_exponential_length_scale.value = 10.;
+  EXPECT_GT(cov.get_ssr_features(features).size(), 3);
+  EXPECT_LT(cov.get_ssr_features(features).size(), 10);
+
+  cov.squared_exponential_length_scale.value = 1.;
+  EXPECT_GT(cov.get_ssr_features(features).size(), 10);
+}
+
 } // namespace albatross

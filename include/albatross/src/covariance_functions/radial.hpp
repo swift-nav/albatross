@@ -71,6 +71,22 @@ public:
         sigma_squared_exponential.value);
   }
 
+  template <
+      typename FeatureType,
+      typename std::enable_if<has_gridded_features_with_return_type<
+                                  DistanceMetricType, std::vector<FeatureType>,
+                                  std::vector<FeatureType>, double>::value,
+                              int>::type = 0>
+  std::vector<FeatureType>
+  _ssr_features(const std::vector<FeatureType> &features) const {
+    //  std::vector<double> _ssr_features(const std::vector<double> &features)
+    //  const {
+    // This is the spacing for which the correlation between points drops
+    // by one percent
+    double spacing = 0.1 * squared_exponential_length_scale.value;
+    return distance_metric_.gridded_features(features, spacing);
+  }
+
   DistanceMetricType distance_metric_;
 };
 

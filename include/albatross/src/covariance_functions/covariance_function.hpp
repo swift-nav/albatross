@@ -196,6 +196,17 @@ public:
   }
 
   /*
+   * Cross covariance between two vectors of (possibly) different types.
+   */
+  template <
+      typename FeatureType,
+      typename std::enable_if<
+          has_valid_ssr_features<Derived, FeatureType>::value, int>::type = 0>
+  auto get_ssr_features(const std::vector<FeatureType> &features) const {
+    return derived()._ssr_features(features);
+  }
+
+  /*
    * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
    */
@@ -299,6 +310,35 @@ public:
     return this->rhs_(x, y);
   }
 
+  /*
+   * Manage the concatenation of ssr features.
+   */
+  template <typename X,
+            typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
+                                        !has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    return this->lhs_._ssr_features(features);
+  }
+
+  template <typename X,
+            typename std::enable_if<!has_valid_ssr_features<LHS, X>::value &&
+                                        has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    return this->rhs_._ssr_features(features);
+  }
+
+  template <typename X,
+            typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
+                                        has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    const auto lhs = this->lhs_._ssr_features(features);
+    const auto rhs = this->rhs_._ssr_features(features);
+    return concatenate(lhs, rhs);
+  }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -370,6 +410,35 @@ public:
                                     int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
+  }
+
+  /*
+   * Manage the concatenation of ssr features.
+   */
+  template <typename X,
+            typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
+                                        !has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    return this->lhs_._ssr_features(features);
+  }
+
+  template <typename X,
+            typename std::enable_if<!has_valid_ssr_features<LHS, X>::value &&
+                                        has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    return this->rhs_._ssr_features(features);
+  }
+
+  template <typename X,
+            typename std::enable_if<has_valid_ssr_features<LHS, X>::value &&
+                                        has_valid_ssr_features<RHS, X>::value,
+                                    int>::type = 0>
+  auto _ssr_features(const std::vector<X> &features) const {
+    const auto lhs = this->lhs_._ssr_features(features);
+    const auto rhs = this->rhs_._ssr_features(features);
+    return concatenate(lhs, rhs);
   }
 
 protected:

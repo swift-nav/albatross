@@ -14,6 +14,8 @@
 #include <albatross/Core>
 #include <albatross/CovarianceFunctions>
 
+#include "test_utils.h"
+
 namespace albatross {
 
 std::vector<Eigen::Vector3d> points_on_a_line(const int n) {

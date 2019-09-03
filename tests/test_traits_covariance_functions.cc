@@ -314,19 +314,55 @@ TEST(test_traits_covariance_function,
                                                variant<Y, X, W>>::value));
 }
 
-TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
-  EXPECT_TRUE(bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller, X,
-                                                variant<X, Y>>::value));
-  EXPECT_TRUE(bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller, X,
-                                                variant<X, Y, Z>>::value));
-  EXPECT_TRUE(bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller,
-                                                variant<X, Y>, X>::value));
+template <typename ExpectedType, typename CovFunc>
+void expect_valid_ssr(const CovFunc &cov) {
+  EXPECT_TRUE(bool(has_valid_ssr_features<CovFunc, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_features<CovFunc, Y>::value));
   EXPECT_TRUE(
-      bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller,
-                                        variant<X, Y>, variant<X, Y>>::value));
+      bool(std::is_same<ExpectedType,
+                        typename ssr_feature_type<CovFunc, X>::type>::value));
+}
 
-  EXPECT_FALSE(bool(has_valid_variant_cov_caller<HasMultiple, DefaultCaller, Z,
-                                                 variant<X, Y>>::value));
+TEST(test_traits_covariance_function, test_has_valid_ssr_features) {
+
+  HasTestSSR has;
+  expect_valid_ssr<TestSSR>(has);
+
+  AlsoHasTestSSR also_has;
+  expect_valid_ssr<TestSSR>(also_has);
+
+  HasXX xx;
+  EXPECT_FALSE(bool(has_valid_ssr_features<HasXX, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_features<HasXX, Y>::value));
+  EXPECT_TRUE(
+      bool(std::is_same<void, ssr_feature_type<HasXX, X>::type>::value));
+
+  auto sum_left = has + xx;
+  expect_valid_ssr<TestSSR>(sum_left);
+  auto sum_right = xx + has;
+  expect_valid_ssr<TestSSR>(sum_right);
+  auto sum_both = has + also_has;
+  expect_valid_ssr<TestSSR>(sum_both);
+
+  auto prod_left = has * xx;
+  expect_valid_ssr<TestSSR>(prod_left);
+  auto prod_right = xx * has;
+  expect_valid_ssr<TestSSR>(prod_right);
+  auto prod_both = has * also_has;
+  expect_valid_ssr<TestSSR>(prod_both);
+
+  HasOtherSSR other;
+  expect_valid_ssr<OtherSSR>(other);
+
+  auto sum_lhs_other = has + other;
+  expect_valid_ssr<variant<TestSSR, OtherSSR>>(sum_lhs_other);
+  auto sum_rhs_other = other + has;
+  expect_valid_ssr<variant<OtherSSR, TestSSR>>(sum_rhs_other);
+
+  auto prod_lhs_other = has * other;
+  expect_valid_ssr<variant<TestSSR, OtherSSR>>(prod_lhs_other);
+  auto prod_rhs_other = other * has;
+  expect_valid_ssr<variant<OtherSSR, TestSSR>>(prod_rhs_other);
 }
 
 } // namespace albatross

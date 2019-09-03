@@ -56,7 +56,7 @@ public:
 
   int _call_impl(const Z &, const Z &) const { return 1.; };
 
-  std::string name_ = "has_multiple";
+  std::string name() const { return "has_multiple"; };
 };
 
 class HasPublicCallImpl {
@@ -74,6 +74,34 @@ class HasPrivateCallImpl {
 };
 
 class HasNoCallImpl {};
+
+/*
+ * Test classes for get_ssr_features
+ */
+
+struct TestSSR {};
+struct OtherSSR {};
+
+class HasTestSSR : public CovarianceFunction<HasTestSSR> {
+public:
+  std::vector<TestSSR> _ssr_features(const std::vector<X> &) const {
+    return {TestSSR()};
+  }
+};
+
+class AlsoHasTestSSR : public CovarianceFunction<AlsoHasTestSSR> {
+public:
+  std::vector<TestSSR> _ssr_features(const std::vector<X> &) const {
+    return {TestSSR(), TestSSR(), TestSSR()};
+  }
+};
+
+class HasOtherSSR : public CovarianceFunction<HasOtherSSR> {
+public:
+  std::vector<OtherSSR> _ssr_features(const std::vector<X> &) const {
+    return {OtherSSR(), OtherSSR(), OtherSSR(), OtherSSR(), OtherSSR()};
+  }
+};
 
 } // namespace albatross
 

@@ -21,33 +21,32 @@ const std::string measurement_nugget_name = "measurement_nugget";
 const std::string inducing_nugget_name = "inducing_nugget";
 } // namespace details
 
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc> struct DefaultInducingPointStrategy;
+
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy =
+              DefaultInducingPointStrategy<CovFunc>>
 class SparseGaussianProcessRegression;
 
-std::vector<double> inline linspace(double a, double b, std::size_t n) {
-  double h = (b - a) / static_cast<double>(n - 1);
-  std::vector<double> xs(n);
-  typename std::vector<double>::iterator x;
-  double val;
-  for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
-    *x = val;
-  return xs;
-}
+/*
+ * This uses the state space representation provided by the
+ * covariance function as the inducing points.  The nice part
+ * about this is that you can have the inducing points change
+ * as a function of the parameters of the covariance function,
+ * the downside is that you have to globally modify the behavior
+ * of a covariance function to get it to behave for a sparse GP.
+ */
+template <typename CovFunc> struct DefaultInducingPointStrategy {
 
-struct UniformlySpacedInducingPoints {
+  DefaultInducingPointStrategy(const CovFunc &cov_func_)
+      : cov_func(cov_func_){};
 
-  UniformlySpacedInducingPoints(std::size_t num_points_ = 10)
-      : num_points(num_points_) {}
-
-  std::vector<double> operator()(const std::vector<double> &features) const {
-    double min = *std::min_element(features.begin(), features.end());
-    double max = *std::max_element(features.begin(), features.end());
-
-    return linspace(min, max, num_points);
+  template <typename FeatureType>
+  auto operator()(const std::vector<FeatureType> &features) const {
+    return cov_func.get_ssr_features(features);
   }
 
-  std::size_t num_points;
+  CovFunc cov_func;
 };
 
 /*
@@ -101,35 +100,35 @@ struct UniformlySpacedInducingPoints {
  *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy>
 class SparseGaussianProcessRegression
     : public GaussianProcessBase<
-          CovFunc, SparseGaussianProcessRegression<
-                       CovFunc, InducingPointStrategy, IndexingFunction>> {
+          CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                                   InducingPointStrategy>> {
 
 public:
   using Base = GaussianProcessBase<
-      CovFunc, SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                               IndexingFunction>>;
+      CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                               InducingPointStrategy>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
-  SparseGaussianProcessRegression(CovFunc &covariance_function)
+  SparseGaussianProcessRegression(const CovFunc &covariance_function)
       : Base(covariance_function) {
     initialize_params();
   };
   SparseGaussianProcessRegression(
-      CovFunc &covariance_function,
-      InducingPointStrategy &inducing_point_strategy_,
-      IndexingFunction &independent_group_indexing_function_,
+      const CovFunc &covariance_function,
+      const IndexingFunction &independent_group_indexing_function_,
+      const InducingPointStrategy &inducing_point_strategy_,
       const std::string &model_name)
       : Base(covariance_function, model_name),
-        inducing_point_strategy(inducing_point_strategy_),
         independent_group_indexing_function(
-            independent_group_indexing_function_) {
+            independent_group_indexing_function_),
+        inducing_point_strategy(inducing_point_strategy_) {
     initialize_params();
   };
-  SparseGaussianProcessRegression(CovFunc &covariance_function,
+  SparseGaussianProcessRegression(const CovFunc &covariance_function,
                                   const std::string &model_name)
       : Base(covariance_function, model_name) {
     initialize_params();
@@ -294,20 +293,31 @@ public:
 
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;
+  InducingPointStrategy inducing_point_strategy;
 };
 
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
+                               IndexingFunction &index_function,
                                InducingPointStrategy &strategy,
+                               const std::string &model_name) {
+  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                         InducingPointStrategy>(
+      covariance_function, index_function, strategy, model_name);
+};
+
+template <typename CovFunc, typename IndexingFunction>
+auto sparse_gp_from_covariance(CovFunc covariance_function,
                                IndexingFunction &index_function,
                                const std::string &model_name) {
-  return SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                         IndexingFunction>(
-      covariance_function, strategy, index_function, model_name);
+  const DefaultInducingPointStrategy<CovFunc> strategy(covariance_function);
+  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                         DefaultInducingPointStrategy<CovFunc>>(
+      covariance_function, index_function, strategy, model_name);
 };
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_ */
