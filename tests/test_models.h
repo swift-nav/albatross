@@ -12,6 +12,7 @@
 
 #include <albatross/GP>
 #include <albatross/LeastSquares>
+#include <albatross/NearestNeighbor>
 #include <albatross/NullModel>
 #include <albatross/Ransac>
 #include <gtest/gtest.h>
@@ -181,6 +182,17 @@ public:
   }
 };
 
+class MakeNearestNeighborModel {
+public:
+  NearestNeighborModel<EuclideanDistance> get_model() const {
+    return NearestNeighborModel<EuclideanDistance>();
+  }
+
+  RegressionDataset<double> get_dataset() const {
+    return make_toy_linear_data();
+  }
+};
+
 template <typename ModelTestCase>
 class RegressionModelTester : public ::testing::Test {
 public:
@@ -189,7 +201,8 @@ public:
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
-                         MakeRansacAdaptedGaussianProcess, MakeNullModel>
+                         MakeRansacAdaptedGaussianProcess, MakeNullModel,
+                         MakeNearestNeighborModel>
     ExampleModels;
 
 TYPED_TEST_CASE_P(RegressionModelTester);

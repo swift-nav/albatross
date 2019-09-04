@@ -16,6 +16,7 @@
 #include <albatross/serialize/Common>
 #include <albatross/serialize/GP>
 #include <albatross/serialize/LeastSquares>
+#include <albatross/serialize/NearestNeighbor>
 #include <albatross/serialize/Ransac>
 
 #include <gtest/gtest.h>
