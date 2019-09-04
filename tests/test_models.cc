@@ -18,6 +18,10 @@ TYPED_TEST_P(RegressionModelTester, test_performs_reasonably_on_linear_data) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
+  if (std::is_same<decltype(model), NullModel>::value) {
+    return;
+  }
+
   const auto fit_model = model.fit(dataset.features, dataset.targets);
   const auto pred = fit_model.predict(dataset.features);
   const auto pred_mean = pred.mean();
