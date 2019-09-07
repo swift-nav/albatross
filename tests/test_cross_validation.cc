@@ -42,7 +42,7 @@ TEST(test_cross_validation, test_fold_creation) {
 
 bool is_monotonic_increasing(const Eigen::VectorXd &x) {
   for (Eigen::Index i = 0; i < x.size() - 1; i++) {
-    if (x[i + 1] - x[i] <= 0.) {
+    if (x[i + 1] - x[i] < 0.) {
       return false;
     }
   }
@@ -110,7 +110,9 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
-  EXPECT_LE(cv_scores.mean(), 0.1);
+  if (!std::is_same<decltype(model), NullModel>::value) {
+    EXPECT_LE(cv_scores.mean(), 0.1);
+  }
 }
 
 REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_loo_predict_variants,

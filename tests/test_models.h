@@ -12,6 +12,7 @@
 
 #include <albatross/GP>
 #include <albatross/LeastSquares>
+#include <albatross/NullModel>
 #include <albatross/Ransac>
 #include <gtest/gtest.h>
 
@@ -171,6 +172,15 @@ public:
   }
 };
 
+class MakeNullModel {
+public:
+  NullModel get_model() const { return NullModel(); }
+
+  RegressionDataset<double> get_dataset() const {
+    return make_toy_linear_data();
+  }
+};
+
 template <typename ModelTestCase>
 class RegressionModelTester : public ::testing::Test {
 public:
@@ -179,7 +189,7 @@ public:
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
-                         MakeRansacAdaptedGaussianProcess>
+                         MakeRansacAdaptedGaussianProcess, MakeNullModel>
     ExampleModels;
 
 TYPED_TEST_CASE_P(RegressionModelTester);
