@@ -49,14 +49,14 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
       sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
-  sparse.set_param(details::inducing_nugget_name, 1e-3);
-  sparse.set_param(details::measurement_nugget_name, 1e-12);
+  sparse.set_param(details::inducing_nugget_name(), 1e-3);
+  sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   UniformlySpacedInducingPoints bad_strategy(3);
   auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
                                                  indexer, "really_sparse");
-  really_sparse.set_param(details::inducing_nugget_name, 1e-3);
-  really_sparse.set_param(details::measurement_nugget_name, 1e-12);
+  really_sparse.set_param(details::inducing_nugget_name(), 1e-3);
+  really_sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   auto direct_fit = direct.fit(dataset);
   auto sparse_fit = sparse.fit(dataset);
