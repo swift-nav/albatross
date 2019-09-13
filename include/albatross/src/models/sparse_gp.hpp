@@ -16,9 +16,13 @@
 namespace albatross {
 
 namespace details {
+
 constexpr double DEFAULT_NUGGET = 1e-12;
-const std::string measurement_nugget_name = "measurement_nugget";
-const std::string inducing_nugget_name = "inducing_nugget";
+
+inline std::string measurement_nugget_name() { return "measurement_nugget"; }
+
+inline std::string inducing_nugget_name() { return "inducing_nugget"; }
+
 } // namespace details
 
 template <typename CovFunc, typename InducingPointStrategy,
@@ -145,8 +149,8 @@ public:
 
   ParameterStore get_params() const override {
     auto params = this->covariance_function_.get_params();
-    params[details::measurement_nugget_name] = measurement_nugget_;
-    params[details::inducing_nugget_name] = inducing_nugget_;
+    params[details::measurement_nugget_name()] = measurement_nugget_;
+    params[details::inducing_nugget_name()] = inducing_nugget_;
     return params;
   }
 
@@ -154,9 +158,9 @@ public:
                            const Parameter &param) override {
     if (map_contains(this->covariance_function_.get_params(), name)) {
       this->covariance_function_.set_param(name, param);
-    } else if (name == details::measurement_nugget_name) {
+    } else if (name == details::measurement_nugget_name()) {
       measurement_nugget_ = param;
-    } else if (name == details::inducing_nugget_name) {
+    } else if (name == details::inducing_nugget_name()) {
       inducing_nugget_ = param;
     } else {
       std::cerr << "Unknown param: " << name << std::endl;
