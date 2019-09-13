@@ -32,10 +32,6 @@ public:
 
   std::string get_name() const { return "null_model"; };
 
-  /*
-   * The Gaussian Process Regression model derives its parameters from
-   * the covariance functions.
-   */
   ParameterStore get_params() const override { return params_; }
 
   void unchecked_set_param(const std::string &name,
@@ -43,8 +39,6 @@ public:
     params_[name] = param;
   }
 
-  // If the implementing class doesn't have a fit method for this
-  // FeatureType but the CovarianceFunction does.
   template <typename FeatureType>
   Fit<NullModel> _fit_impl(const std::vector<FeatureType> &features,
                            const MarginalDistribution &targets) const {
@@ -87,5 +81,4 @@ private:
 
 } // namespace albatross
 
-#endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_MODELS_NULL_MODEL_HPP_   \
-        */
+#endif // ALBATROSS_SRC_MODELS_NULL_MODEL_HPP_

@@ -53,16 +53,22 @@ TYPED_TEST_P(RegressionModelTester, test_logo_predict_variants) {
   auto dataset = this->test_case.get_dataset();
   auto model = this->test_case.get_model();
 
-  // Here we assume that the test case is linear, then split
-  // it using a group function which will not preserve order
-  // and make sure that cross validation properly reassembles
-  // the predictions
-  LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(group_by_interval);
-  const auto prediction = model.cross_validate().predict(dataset, logo);
+  // The nearest neighbor approach is not capable of modelling linear
+  // trends and in turn fails this test.
+  if (!std::is_same<decltype(model),
+                    NearestNeighborModel<EuclideanDistance>>::value) {
+    // Here we assume that the test case is linear, then split
+    // it using a group function which will not preserve order
+    // and make sure that cross validation properly reassembles
+    // the predictions
+    LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(
+        group_by_interval);
+    const auto prediction = model.cross_validate().predict(dataset, logo);
 
-  EXPECT_TRUE(is_monotonic_increasing(prediction.mean()));
+    EXPECT_TRUE(is_monotonic_increasing(prediction.mean()));
 
-  expect_predict_variants_consistent(prediction);
+    expect_predict_variants_consistent(prediction);
+  }
 }
 
 TYPED_TEST_P(RegressionModelTester, test_loo_predict_variants) {
@@ -110,7 +116,9 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   // Here we make sure the cross validated mean absolute error is reasonable.
   // Note that because we are running leave one out cross validation, the
   // RMSE for each fold is just the absolute value of the error.
-  if (!std::is_same<decltype(model), NullModel>::value) {
+  if (!std::is_same<decltype(model), NullModel>::value &&
+      !std::is_same<decltype(model),
+                    NearestNeighborModel<EuclideanDistance>>::value) {
     EXPECT_LE(cv_scores.mean(), 0.1);
   }
 }

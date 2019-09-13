@@ -93,15 +93,25 @@ inline MarginalDistribution concatenate_marginal_predictions(
   Eigen::VectorXd variance(n);
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
+  bool has_covariance = false;
   for (const auto &pair : indexer) {
     assert(preds.at(pair.first).size() == pair.second.size());
     set_subset(preds.at(pair.first).mean, pair.second, &mean);
-    set_subset(preds.at(pair.first).covariance.diagonal(), pair.second,
-               &variance);
+    if (preds.at(pair.first).has_covariance()) {
+      has_covariance = true;
+      set_subset(preds.at(pair.first).covariance.diagonal(), pair.second,
+                 &variance);
+    } else {
+      assert(!has_covariance);
+    }
     number_filled += static_cast<Eigen::Index>(pair.second.size());
   }
   assert(number_filled == n);
-  return MarginalDistribution(mean, variance.asDiagonal());
+  if (has_covariance) {
+    return MarginalDistribution(mean, variance.asDiagonal());
+  } else {
+    return MarginalDistribution(mean);
+  }
 }
 
 template <typename PredictionMetricType, typename FeatureType,
