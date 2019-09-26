@@ -16,6 +16,8 @@
 namespace albatross {
 /*
  * Samples integers between low and high (inclusive) with replacement.
+ * The inclusive part may seem a bit confusing, but it aligns with
+ * uniform_int_distribution behavior.
  */
 inline std::vector<std::size_t>
 randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
@@ -27,25 +29,28 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
     assert(false);
   }
 
-  if (n == (high - low + 1)) {
-    std::vector<std::size_t> all_inds(n);
-    std::iota(all_inds.begin(), all_inds.end(), 0);
+  if (n == n_choices) {
+    std::vector<std::size_t> all_inds(n_choices);
+    for (std::size_t i = 0; i < n; ++i) {
+      all_inds[i] = i + low;
+    }
     return all_inds;
   }
 
-  if (n > n_choices / 2 + 1) {
+  if (n > n_choices / 2.) {
     // Since we're trying to randomly sample more than half of the
     // points it'll be faster to randomly sample which points we
     // should throw out than which ones we should keep.
     const auto to_throw_out =
-        randint_without_replacement(n_choices - n, low, high, gen);
-    auto to_keep = indices_complement(to_throw_out, high - low);
+        randint_without_replacement(n_choices - n, 0, n_choices - 1, gen);
+    auto to_keep = indices_complement(to_throw_out, n_choices);
 
     if (low != 0) {
       for (auto &el : to_keep) {
         el += low;
       }
     }
+
     return to_keep;
   }
 

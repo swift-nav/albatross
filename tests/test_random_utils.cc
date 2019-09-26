@@ -25,12 +25,13 @@ TEST(test_random_utils, randint_without_replacement) {
   std::default_random_engine gen;
 
   for (int i = 0; i < iterations; i++) {
-    for (int n = 0; n <= k; n++) {
+    for (int n = 0; n < k; n++) {
       const auto inds = randint_without_replacement(n, i, i + k, gen);
       for (const auto &j : inds) {
         EXPECT_LE(j, i + k);
         EXPECT_GE(j, i);
       }
+      EXPECT_EQ(inds.size(), n);
     }
   }
 }
