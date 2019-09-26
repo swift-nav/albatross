@@ -50,6 +50,10 @@ template <typename FeatureType> struct RegressionDataset {
   }
 
   std::size_t size() const { return features.size(); }
+
+  template <typename GrouperFunc>
+  GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
+  group_by(const GrouperFunc &&grouper) const;
 };
 
 /*

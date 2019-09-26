@@ -40,6 +40,9 @@ template <typename ModelType, typename FitType> class FitModel;
 template <typename Derived> class Fit {};
 
 template <typename X> struct Measurement;
+
+template <typename Parent, typename GrouperFunction> struct GroupBy;
+
 /*
  * Parameter Handling
  */
