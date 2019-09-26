@@ -69,6 +69,15 @@ inline auto concatenate(const std::vector<X> &xs, const std::vector<X> &ys) {
   return features;
 }
 
+template <typename X>
+inline auto concatenate(const std::vector<std::vector<X>> &all_xs) {
+  std::vector<X> features;
+  for (const auto &one : all_xs) {
+    features.insert(features.end(), one.begin(), one.end());
+  }
+  return features;
+}
+
 /*
  * concatenate with two different non-variant types
  */
