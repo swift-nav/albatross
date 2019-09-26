@@ -13,7 +13,16 @@
 #ifndef ALBATROSS_CORE_GROUPBY_HPP_
 #define ALBATROSS_CORE_GROUPBY_HPP_
 
+/*
+ * Group By
+ *
+ * This collection of classes facilitates the manipulation of datasets through
+ * the use of split-apply-combine approach.
+ */
+
 namespace albatross {
+
+// NOTE: BEFORE MERGING ILL MOVE THESE TO A TRAITS FILE
 
 namespace details {
 template <typename GrouperFunction, typename FeatureType>
@@ -62,6 +71,11 @@ struct traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
 
 } // namespace details
 
+/*
+ * combine
+ *
+ * Like concatenate, but works on map values.
+ */
 template <typename KeyType, typename FeatureType>
 RegressionDataset<FeatureType>
 combine(const std::map<KeyType, RegressionDataset<FeatureType>> &groups) {
@@ -75,14 +89,11 @@ combine(const std::map<KeyType, std::vector<FeatureType>> &groups) {
 }
 
 /*
- * GROUPED
- *
- * This is the output of a call to method such as
+ * The Grouped class is the output of a call to method such as
  *
  *   dataset.groupby(grouper).groups()
  *
- * which is basically just a map, but contains a
- * few helper functions.
+ * which is basically just a map with additional functionality
  */
 
 template <typename KeyType, typename ValueType> class Grouped;
@@ -109,7 +120,10 @@ public:
 };
 
 /*
- * GROUP BY BASE
+ * GroupByBase
+ *
+ * This is the base class holding common operations for classes which can
+ * be grouped.
  */
 template <typename Derived> class GroupByBase {
 
@@ -120,27 +134,11 @@ public:
   using IndexerType = std::unordered_map<GroupType, std::vector<std::size_t>>;
 
   GroupByBase(const ParentType &parent, const GrouperType &grouper)
-      : parent_(parent), grouper_(grouper){};
+      : parent_(parent), grouper_(grouper) {
+    indexers_ = build_indexers();
+  };
 
-  //  GroupByBase(const ParentType &parent, const GrouperType &&grouper)
-  //  : parent_(parent), grouper_(grouper) {};
-
-  IndexerType indexers() const {
-    IndexerType output;
-    const auto impl = derived();
-    for (std::size_t i = 0; i < impl._get_parent_size(); i++) {
-      const GroupType group_key = this->grouper_(impl._get_element(i));
-      // Get the existing indices if we've already encountered this group_name
-      // otherwise initialize a new one.
-      FoldIndexer indices;
-      if (output.find(group_key) == output.end()) {
-        output[group_key] = FoldIndices();
-      }
-      // Add the current index.
-      output[group_key].push_back(i);
-    }
-    return output;
-  }
+  IndexerType indexers() const { return indexers_; }
 
   Grouped<GroupType, ParentType> groups() const {
     Grouped<GroupType, ParentType> output;
@@ -192,8 +190,28 @@ public:
     return output;
   }
 
+protected:
   ParentType parent_;
   GrouperType grouper_;
+  IndexerType indexers_;
+
+private:
+  IndexerType build_indexers() const {
+    IndexerType output;
+    const auto impl = derived();
+    for (std::size_t i = 0; i < impl._get_parent_size(); i++) {
+      const GroupType group_key = this->grouper_(impl._get_element(i));
+      // Get the existing indices if we've already encountered this group_name
+      // otherwise initialize a new one.
+      FoldIndexer indices;
+      if (output.find(group_key) == output.end()) {
+        output[group_key] = FoldIndices();
+      }
+      // Add the current index.
+      output[group_key].push_back(i);
+    }
+    return output;
+  }
 
   /*
    * CRTP Helpers
@@ -203,14 +221,7 @@ public:
 };
 
 /*
- * GROUP BY (DATASET)
- *
- * This it the return type of a call to:
- *
- *   dataset.groupby(grouper)
- *
- * it is lazy, nothing happens until you ask for something
- * such as `.groups()`.
+ * GroupBy for RegressionDataset
  */
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
@@ -229,6 +240,9 @@ public:
   std::size_t _get_parent_size() const { return this->parent_.size(); }
 };
 
+/*
+ * GroupBy for std::vector
+ */
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<std::vector<FeatureType>, GrouperFunction>
     : public GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
@@ -244,6 +258,9 @@ public:
   std::size_t _get_parent_size() const { return this->parent_.size(); }
 };
 
+/*
+ * Define the (already declared) group_by method for datasets.
+ */
 template <typename FeatureType>
 template <typename GrouperFunc>
 GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
@@ -251,6 +268,11 @@ RegressionDataset<FeatureType>::group_by(const GrouperFunc &&grouper) const {
   return GroupBy<RegressionDataset<FeatureType>, GrouperFunc>(*this, grouper);
 }
 
+/*
+ * Free functions which create a common way of performing group_by on
+ * datasets and vectors.  This is useful because we can't add a .group_by()
+ * method to standard library vectors.
+ */
 template <typename FeatureType, typename GrouperFunc>
 auto group_by(const RegressionDataset<FeatureType> &dataset,
               const GrouperFunc &&grouper) {

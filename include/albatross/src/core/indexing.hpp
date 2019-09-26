@@ -149,11 +149,10 @@ inline void set_subset(const Eigen::DiagonalMatrix<Scalar, Size> &from,
 }
 
 template <typename X>
-inline std::set<X> set_difference(const std::set<X> &x,
-                                  const std::set<X> &y) {
+inline std::set<X> set_difference(const std::set<X> &x, const std::set<X> &y) {
   std::set<X> diff;
-  std::set_difference(x.begin(), x.end(), y.begin(),
-                      y.end(), std::inserter(diff, diff.begin()));
+  std::set_difference(x.begin(), x.end(), y.begin(), y.end(),
+                      std::inserter(diff, diff.begin()));
   return diff;
 }
 

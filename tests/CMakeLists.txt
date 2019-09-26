@@ -13,6 +13,7 @@ add_executable(albatross_unit_tests
   test_distance_metrics.cc
   test_eigen_utils.cc
   test_evaluate.cc
+  test_group_by.cc
   test_gp.cc
   test_indexing.cc
   test_map_utils.cc

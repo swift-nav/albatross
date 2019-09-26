@@ -334,7 +334,8 @@ TEST(test_indexing, test_matrix_symmetric_subset) {
 template <typename X>
 bool operator==(const std::set<X> &x, const std::set<X> &y) {
   std::set<X> diff;
-  return std::set_symmetric_difference(x.begin(), x.end(), y.begin(), y.end(), diff.begin());
+  return std::set_symmetric_difference(x.begin(), x.end(), y.begin(), y.end(),
+                                       diff.begin());
   EXPECT_EQ(diff.size(), 0);
 }
 
@@ -358,7 +359,6 @@ TEST(test_indexing, test_vector_set_difference) {
   y = {9, 4, 6};
   expected = {3, 7};
   EXPECT_EQ(vector_set_difference(x, y), expected);
-
 }
 
 } // namespace albatross
