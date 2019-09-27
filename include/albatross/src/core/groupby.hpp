@@ -149,6 +149,10 @@ public:
     return output;
   }
 
+  std::vector<GroupType> keys() const {
+    return map_keys(indexers());
+  }
+
   std::size_t size() const {
     std::unordered_set<GroupType> set;
     const auto impl = derived();
@@ -178,6 +182,21 @@ public:
     Grouped<GroupType, ApplyType> output;
     for (const auto &pair : groups()) {
       output[pair.first] = f(pair.first, pair.second);
+    }
+    return output;
+  }
+
+  template <typename FilterFunction,
+            typename ReturnType = typename details::apply_return_type<
+            FilterFunction, GroupType, ParentType>::type,
+            typename std::enable_if<std::is_same<bool, ReturnType>::value,
+                                    int>::type = 0>
+  auto filter(const FilterFunction &f) const {
+    Grouped<GroupType, ParentType> output;
+    for (const auto &pair : groups()) {
+      if (f(pair.first, pair.second)) {
+        output[pair.first] = pair.second;
+      }
     }
     return output;
   }

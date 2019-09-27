@@ -193,10 +193,32 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_void) {
   EXPECT_EQ(grouped.size(), count);
 }
 
+TYPED_TEST_P(GroupByTester, test_groupby_filter) {
+  auto parent = this->test_case.get_parent();
+  const auto grouped = group_by(parent, this->test_case.get_grouper());
+
+  const auto keys = grouped.keys();
+  assert(keys.size() > 1);
+
+  const auto remove_first = [&keys](const auto &key, const auto &) {
+    return key == keys[0];
+  };
+
+  const auto filtered = grouped.filter(remove_first);
+
+  EXPECT_EQ(filtered.size(), grouped.size() - 1);
+
+  // Combine, then regroup and make sure the combined object no longer
+  // contains the removed group.
+  EXPECT_EQ(group_by(filtered.combine(), this->test_case.get_grouper()).size(),
+            filtered.size());
+}
+
 REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_groups,
                            test_groupby_counts, test_groupby_combine,
                            test_groupby_modify_combine,
-                           test_groupby_apply_combine, test_groupby_apply_void);
+                           test_groupby_apply_combine, test_groupby_apply_void,
+                           test_groupby_filter);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_groupby, GroupByTester, GrouperTestCases);
 
