@@ -96,7 +96,7 @@ public:
   using GroupType = typename details::traits<Derived>::GroupType;
   using ParentType = typename details::traits<Derived>::ParentType;
   using GrouperType = typename details::traits<Derived>::GrouperType;
-  using IndexerType = std::map<GroupType, GroupIndexer>;
+  using IndexerType = std::map<GroupType, GroupIndices>;
 
   GroupByBase(const ParentType &parent, const GrouperType &grouper)
       : parent_(parent), grouper_(grouper) {
@@ -245,9 +245,9 @@ private:
       const GroupType group_key = this->grouper_(impl._get_element(i));
       // Get the existing indices if we've already encountered this group_name
       // otherwise initialize a new one.
-      FoldIndexer indices;
+      GroupIndices indices;
       if (output.find(group_key) == output.end()) {
-        output[group_key] = FoldIndices();
+        output[group_key] = GroupIndices();
       }
       // Add the current index.
       output[group_key].push_back(i);

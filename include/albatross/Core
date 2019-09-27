@@ -17,8 +17,6 @@
 
 #include <type_traits>
 
-#include <albatross/src/core/declarations.hpp>
-#include <albatross/src/core/indexing.hpp>
 #include <albatross/src/core/traits.hpp>
 #include <albatross/src/core/priors.hpp>
 #include <albatross/src/core/parameter_handling_mixin.hpp>

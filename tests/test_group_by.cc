@@ -10,9 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/GroupBy>
-
 #include <gtest/gtest.h>
+#include <albatross/Indexing>
 
 namespace albatross {
 
@@ -113,7 +112,7 @@ void expect_same_but_maybe_out_of_order(
     const RegressionDataset<FeatureType> &x,
     const RegressionDataset<FeatureType> &y) {
   EXPECT_EQ(vector_set_difference(x.features, y.features).size(), 0);
-  EXPECT_DOUBLE_EQ(x.targets.mean.sum(), y.targets.mean.sum());
+  EXPECT_LT(fabs(x.targets.mean.sum() - y.targets.mean.sum()), 1e-10);
 }
 
 template <typename FeatureType>
@@ -211,7 +210,7 @@ TYPED_TEST_P(GroupByTester, test_groupby_index_apply) {
 
   std::size_t count = 0;
 
-  const auto increment_count = [&](const auto &, const GroupIndexer &) {
+  const auto increment_count = [&](const auto &, const GroupIndices &) {
     ++count;
   };
 

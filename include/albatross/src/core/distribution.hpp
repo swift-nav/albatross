@@ -84,6 +84,10 @@ double Distribution<CovarianceType>::get_diagonal(Eigen::Index i) const {
   return has_covariance() ? covariance.diagonal()[i] : NAN;
 }
 
+template <typename SizeType>
+Eigen::MatrixXd symmetric_subset(const Eigen::MatrixXd &v,
+                                 const std::vector<SizeType> &indices);
+
 template <typename SizeType, typename CovarianceType>
 Distribution<CovarianceType> subset(const Distribution<CovarianceType> &dist,
                                     const std::vector<SizeType> &indices) {

@@ -355,7 +355,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
 
-  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<GroupIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
@@ -379,7 +379,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
 
-  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<GroupIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
@@ -402,7 +402,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
                                PredictTypeIdentity<Eigen::VectorXd>) {
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
-  const std::vector<FoldIndices> indices = map_values(fold_indexer);
+  const std::vector<GroupIndices> indices = map_values(fold_indexer);
   const std::vector<std::string> fold_names = map_keys(fold_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 

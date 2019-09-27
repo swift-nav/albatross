@@ -143,7 +143,7 @@ inline RansacFunctions<FitModelType> get_generic_ransac_functions(
 
   auto inlier_metric_from_group = [&, indexer](const FoldName &group,
                                                const FitModelType &fit) {
-    FoldIndices inds = indexer.at(group);
+    GroupIndices inds = indexer.at(group);
     const auto pred = fit.predict(subset(dataset.features, inds));
     const auto target = subset(dataset.targets, inds);
     return inlier_metric(pred, target);

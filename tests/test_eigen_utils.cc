@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <albatross/Core>
+#include <albatross/Indexing>
 
 #include <albatross/src/utils/eigen_utils.hpp>
 

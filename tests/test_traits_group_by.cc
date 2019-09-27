@@ -10,9 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/GroupBy>
-
 #include <gtest/gtest.h>
+#include "../include/albatross/Indexing"
 
 namespace albatross {
 

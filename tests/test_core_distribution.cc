@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Distribution>
+#include <albatross/Indexing>
 #include <gtest/gtest.h>
 
 #include "test_core_distribution.h"

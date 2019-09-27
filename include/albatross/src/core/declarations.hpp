@@ -45,7 +45,7 @@ template <typename X> struct Measurement;
  * Group By
  */
 
-using GroupIndexer = std::vector<std::size_t>;
+using GroupIndices = std::vector<std::size_t>;
 
 template <typename Parent, typename GrouperFunction> class GroupBy;
 
@@ -87,17 +87,16 @@ template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
 /*
  * Cross Validation
  */
-using FoldIndices = std::vector<std::size_t>;
 using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, FoldIndices>;
+using FoldIndexer = std::map<FoldName, GroupIndices>;
 
 template <typename FeatureType> struct RegressionFold;
 
 template <typename FeatureType>
 using GroupFunction = std::string (*)(const FeatureType &);
-
-template <typename FeatureType>
-using IndexerFunction = FoldIndexer (*)(const RegressionDataset<FeatureType> &);
+//
+//template <typename FeatureType>
+//using IndexerFunction = FoldIndexer (*)(const RegressionDataset<FeatureType> &);
 
 template <typename ModelType> class CrossValidation;
 

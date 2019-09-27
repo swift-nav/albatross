@@ -22,11 +22,11 @@ template <typename FeatureType> struct RegressionFold {
   RegressionDataset<FeatureType> train_dataset;
   RegressionDataset<FeatureType> test_dataset;
   FoldName name;
-  FoldIndices test_indices;
+  GroupIndices test_indices;
 
   RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
                  const RegressionDataset<FeatureType> &test_dataset_,
-                 const FoldName &name_, const FoldIndices &test_indices_)
+                 const FoldName &name_, const GroupIndices &test_indices_)
       : train_dataset(train_dataset_), test_dataset(test_dataset_), name(name_),
         test_indices(test_indices_){};
 };
@@ -77,9 +77,9 @@ leave_one_group_out_indexer(const std::vector<FeatureType> &features,
     const std::string k = get_group_name(features[i]);
     // Get the existing indices if we've already encountered this group_name
     // otherwise initialize a new one.
-    FoldIndices indices;
+    GroupIndices indices;
     if (groups.find(k) == groups.end()) {
-      indices = FoldIndices();
+      indices = GroupIndices();
     } else {
       indices = groups[k];
     }
@@ -107,9 +107,9 @@ template <typename FeatureType> struct LeaveOneGroupOut {
 
 /*
  * Each flavor of cross validation can be described by a set of
- * FoldIndices, which store which indices should be used for the
+ * GroupIndices, which store which indices should be used for the
  * test cases.  This function takes a map from FoldName to
- * FoldIndices and a dataset and creates the resulting folds.
+ * GroupIndices and a dataset and creates the resulting folds.
  */
 template <typename FeatureType>
 static inline std::vector<RegressionFold<FeatureType>>
@@ -123,7 +123,7 @@ folds_from_fold_indexer(const RegressionDataset<FeatureType> &dataset,
     // we'd like to prevent modification of the output from this function
     // from changing the input FoldIndexer we perform a copy here.
     const FoldName group_name(pair.first);
-    const FoldIndices test_indices(pair.second);
+    const GroupIndices test_indices(pair.second);
     const auto train_indices = indices_complement(test_indices, n);
 
     std::vector<FeatureType> train_features =

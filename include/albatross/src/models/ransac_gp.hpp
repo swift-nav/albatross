@@ -19,7 +19,7 @@ template <typename ModelType, typename FeatureType> struct FitAndIndices {
   using FitType = typename fit_type<ModelType, FeatureType>::type;
 
   FitType fit;
-  FoldIndices indices;
+  GroupIndices indices;
 };
 
 template <typename ModelType, typename FeatureType>

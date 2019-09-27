@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Core>
+#include <albatross/Indexing>
 
 #include <gtest/gtest.h>
 

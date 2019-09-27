@@ -19,5 +19,6 @@
 #include <Eigen/src/Core/util/ForwardDeclarations.h>
 
 #include <albatross/src/core/declarations.hpp>
+#include <albatross/src/indexing/declarations.hpp>
 
 #endif

@@ -10,12 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_GROUP_BY_H
-#define ALBATROSS_GROUP_BY_H
+#ifndef ALBATROSS_INDEXING_H
+#define ALBATROSS_INDEXING_H
 
 #include "Dataset"
 
-#include <albatross/src/group_by/traits.hpp>
-#include <albatross/src/group_by/group_by.hpp>
+#include <albatross/src/indexing/traits.hpp>
+#include <albatross/src/indexing/subset.hpp>
+#include <albatross/src/indexing/group_by.hpp>
 
 #endif

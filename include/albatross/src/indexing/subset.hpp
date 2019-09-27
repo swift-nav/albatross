@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_INDEXING_H
-#define ALBATROSS_CORE_INDEXING_H
+#ifndef ALBATROSS_INDEXING_SUBSET_H
+#define ALBATROSS_INDEXING_SUBSET_H
 
 namespace albatross {
 
@@ -180,9 +180,9 @@ indices_complement(const std::vector<std::size_t> &indices,
   return std::vector<std::size_t>(complement.begin(), complement.end());
 }
 
-inline FoldIndices indices_from_names(const FoldIndexer &indexer,
+inline GroupIndices indices_from_names(const FoldIndexer &indexer,
                                       const std::vector<FoldName> &names) {
-  FoldIndices output;
+  GroupIndices output;
   for (const auto &name : names) {
     output.insert(output.end(), indexer.at(name).begin(),
                   indexer.at(name).end());
