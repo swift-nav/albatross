@@ -44,7 +44,8 @@ template <typename X> struct Measurement;
 /*
  * Group By
  */
-struct GroupIndexer;
+
+using GroupIndexer = std::vector<std::size_t>;
 
 template <typename Parent, typename GrouperFunction> class GroupBy;
 

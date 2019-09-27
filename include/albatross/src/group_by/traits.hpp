@@ -87,19 +87,19 @@ class apply_return_type
 
 template <typename ApplyFunction, typename GroupType, typename ArgType>
 class is_valid_apply_function
-    : public can_be_called_with<
-          ApplyFunction, typename const_ref<GroupType>::type, ArgType> {};
+    : public can_be_called_with<ApplyFunction,
+                                typename const_ref<GroupType>::type, ArgType> {
+};
 
 template <typename ApplyFunction, typename GroupType, typename ArgType>
 class is_valid_value_only_apply_function
-    : public can_be_called_with<
-          ApplyFunction, ArgType> {};
+    : public can_be_called_with<ApplyFunction, ArgType> {};
 
 template <typename ApplyFunction, typename GroupType, typename ArgType>
 class is_valid_index_apply_function
-    : public can_be_called_with<
-          ApplyFunction, typename const_ref<GroupType>::type,
-          typename const_ref<GroupIndexer> {};
+    : public can_be_called_with<ApplyFunction,
+                                typename const_ref<GroupType>::type,
+                                typename const_ref<GroupIndexer>::type> {};
 
 /*
 z * The following traits are required in order to allow inspection of

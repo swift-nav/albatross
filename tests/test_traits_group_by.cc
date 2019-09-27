@@ -100,8 +100,8 @@ TEST(test_traits_group_by, test_can_be_called_with_deduction) {
   EXPECT_FALSE(x_tester.test(lambda_string_const_ref_int));
   EXPECT_FALSE(x_tester.test(call_operator_string_const_ref_int));
   EXPECT_FALSE(x_tester.test(CallOperatorStringConstRefInt()));
-  EXPECT_FALSE(x_tester.test(
-      [](const int &x) { return free_string_const_ref_int(x); }));
+  EXPECT_FALSE(
+      x_tester.test([](const int &x) { return free_string_const_ref_int(x); }));
 }
 
 } // namespace albatross

@@ -22,8 +22,6 @@
 
 namespace albatross {
 
-struct GroupIndexer : public std::vector<std::size_t> {};
-
 /*
  * combine
  *
@@ -98,7 +96,7 @@ public:
   using GroupType = typename details::traits<Derived>::GroupType;
   using ParentType = typename details::traits<Derived>::ParentType;
   using GrouperType = typename details::traits<Derived>::GrouperType;
-  using IndexerType = std::map<GroupType, std::vector<std::size_t>>;
+  using IndexerType = std::map<GroupType, GroupIndexer>;
 
   GroupByBase(const ParentType &parent, const GrouperType &grouper)
       : parent_(parent), grouper_(grouper) {
@@ -131,9 +129,10 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
+                details::is_valid_apply_function<ApplyFunction, GroupType,
+                                                 ParentType>::value &&
+                    std::is_same<void, ApplyType>::value,
+                int>::type = 0>
   void apply(const ApplyFunction &f) const {
     for (const auto &pair : groups()) {
       f(pair.first, pair.second);
@@ -144,9 +143,10 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            !std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
+                details::is_valid_apply_function<ApplyFunction, GroupType,
+                                                 ParentType>::value &&
+                    !std::is_same<void, ApplyType>::value,
+                int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     Grouped<GroupType, ApplyType> output;
     for (const auto &pair : groups()) {
@@ -159,9 +159,10 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_value_only_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            !std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
+                details::is_valid_value_only_apply_function<
+                    ApplyFunction, GroupType, ParentType>::value &&
+                    !std::is_same<void, ApplyType>::value,
+                int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     Grouped<GroupType, ApplyType> output;
     for (const auto &pair : groups()) {
@@ -174,9 +175,10 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_value_only_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
+                details::is_valid_value_only_apply_function<
+                    ApplyFunction, GroupType, ParentType>::value &&
+                    std::is_same<void, ApplyType>::value,
+                int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     for (const auto &pair : groups()) {
       f(pair.second);
@@ -187,10 +189,11 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_index_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            !std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
-  auto apply(const ApplyFunction &f) const {
+                details::is_valid_index_apply_function<ApplyFunction, GroupType,
+                                                       ParentType>::value &&
+                    !std::is_same<void, ApplyType>::value,
+                int>::type = 0>
+  auto index_apply(const ApplyFunction &f) const {
     Grouped<GroupType, ApplyType> output;
     for (const auto &pair : indexers()) {
       output[pair.first] = f(pair.first, pair.second);
@@ -202,10 +205,11 @@ public:
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
             typename std::enable_if<
-            details::is_valid_index_apply_function<ApplyFunction, GroupType, ParentType>::value &&
-            std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
-  auto apply(const ApplyFunction &f) const {
+                details::is_valid_index_apply_function<ApplyFunction, GroupType,
+                                                       ParentType>::value &&
+                    std::is_same<void, ApplyType>::value,
+                int>::type = 0>
+  auto index_apply(const ApplyFunction &f) const {
     for (const auto &pair : indexers()) {
       f(pair.first, pair.second);
     }

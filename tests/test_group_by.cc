@@ -205,15 +205,17 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_value_only) {
   EXPECT_EQ(grouped.size(), count);
 }
 
-TYPED_TEST_P(GroupByTester, test_groupby_apply_indices) {
+TYPED_TEST_P(GroupByTester, test_groupby_index_apply) {
   auto parent = this->test_case.get_parent();
   const auto grouped = group_by(parent, this->test_case.get_grouper());
 
   std::size_t count = 0;
 
-  const auto increment_count = [&](const auto &, const GroupIndexer&) { ++count; };
+  const auto increment_count = [&](const auto &, const GroupIndexer &) {
+    ++count;
+  };
 
-  grouped.apply(increment_count);
+  grouped.index_apply(increment_count);
 
   EXPECT_EQ(grouped.size(), count);
 }
@@ -243,9 +245,8 @@ REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_groups,
                            test_groupby_counts, test_groupby_combine,
                            test_groupby_modify_combine,
                            test_groupby_apply_combine, test_groupby_apply_void,
-                           test_groupby_filter,
-                           test_groupby_apply_value_only,
-                           test_groupby_apply_indices);
+                           test_groupby_filter, test_groupby_apply_value_only,
+                           test_groupby_index_apply);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_groupby, GroupByTester, GrouperTestCases);
 
