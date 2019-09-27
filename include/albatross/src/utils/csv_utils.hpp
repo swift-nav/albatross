@@ -185,7 +185,7 @@ inline void write_row(std::ostream &stream,
                       const std::vector<std::string> &columns) {
   for (const auto &col : columns) {
     if (map_contains(row, col)) {
-      stream << row.at(col);;
+      stream << row.at(col);
     }
     stream << ",";
   }
