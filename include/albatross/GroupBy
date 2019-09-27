@@ -15,6 +15,7 @@
 
 #include "Dataset"
 
-#include <albatross/src/core/groupby.hpp>
+#include <albatross/src/group_by/traits.hpp>
+#include <albatross/src/group_by/group_by.hpp>
 
 #endif

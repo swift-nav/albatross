@@ -41,6 +41,11 @@ template <typename Derived> class Fit {};
 
 template <typename X> struct Measurement;
 
+/*
+ * Group By
+ */
+struct GroupIndexer;
+
 template <typename Parent, typename GrouperFunction> class GroupBy;
 
 /*

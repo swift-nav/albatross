@@ -10,8 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Dataset>
-#include <albatross/src/core/groupby.hpp>
+#include <albatross/GroupBy>
 
 #include <gtest/gtest.h>
 
@@ -193,6 +192,32 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_void) {
   EXPECT_EQ(grouped.size(), count);
 }
 
+TYPED_TEST_P(GroupByTester, test_groupby_apply_value_only) {
+  auto parent = this->test_case.get_parent();
+  const auto grouped = group_by(parent, this->test_case.get_grouper());
+
+  std::size_t count = 0;
+
+  const auto increment_count = [&](const auto &) { ++count; };
+
+  grouped.apply(increment_count);
+
+  EXPECT_EQ(grouped.size(), count);
+}
+
+TYPED_TEST_P(GroupByTester, test_groupby_apply_indices) {
+  auto parent = this->test_case.get_parent();
+  const auto grouped = group_by(parent, this->test_case.get_grouper());
+
+  std::size_t count = 0;
+
+  const auto increment_count = [&](const auto &, const GroupIndexer&) { ++count; };
+
+  grouped.apply(increment_count);
+
+  EXPECT_EQ(grouped.size(), count);
+}
+
 TYPED_TEST_P(GroupByTester, test_groupby_filter) {
   auto parent = this->test_case.get_parent();
   const auto grouped = group_by(parent, this->test_case.get_grouper());
@@ -218,7 +243,9 @@ REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_groups,
                            test_groupby_counts, test_groupby_combine,
                            test_groupby_modify_combine,
                            test_groupby_apply_combine, test_groupby_apply_void,
-                           test_groupby_filter);
+                           test_groupby_filter,
+                           test_groupby_apply_value_only,
+                           test_groupby_apply_indices);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_groupby, GroupByTester, GrouperTestCases);
 

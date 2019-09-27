@@ -10,66 +10,19 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_GROUPBY_HPP_
-#define ALBATROSS_CORE_GROUPBY_HPP_
+#ifndef ALBATROSS_GROUPBY_GROUPBY_HPP_
+#define ALBATROSS_GROUPBY_GROUPBY_HPP_
 
 /*
  * Group By
  *
- * This collection of classes facilitates the manipulation of datasets through
+ * This collection of classes facilitates the manipulation of data through
  * the use of split-apply-combine approach.
  */
 
 namespace albatross {
 
-// NOTE: BEFORE MERGING ILL MOVE THESE TO A TRAITS FILE
-
-namespace details {
-template <typename GrouperFunction, typename FeatureType>
-class grouper_return_type {
-
-  template <typename C,
-            typename GroupType = decltype(std::declval<const C>()(
-                std::declval<typename const_ref<FeatureType>::type>()))>
-  static GroupType test(C *);
-  template <typename> static void test(...);
-
-public:
-  typedef decltype(test<GrouperFunction>(0)) type;
-};
-
-template <typename ApplyFunction, typename GroupType, typename ParentType>
-class apply_return_type {
-
-  template <typename C, typename ApplyType = decltype(std::declval<const C>()(
-                            std::declval<const GroupType &>(),
-                            std::declval<const ParentType &>()))>
-  static ApplyType test(C *);
-  template <typename> static void test(...);
-
-public:
-  typedef decltype(test<ApplyFunction>(0)) type;
-};
-
-template <typename T> struct traits {};
-
-template <typename FeatureType, typename GrouperFunction>
-struct traits<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
-  using GroupType =
-      typename grouper_return_type<GrouperFunction, FeatureType>::type;
-  using ParentType = RegressionDataset<FeatureType>;
-  using GrouperType = GrouperFunction;
-};
-
-template <typename FeatureType, typename GrouperFunction>
-struct traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
-  using GroupType =
-      typename grouper_return_type<GrouperFunction, FeatureType>::type;
-  using ParentType = std::vector<FeatureType>;
-  using GrouperType = GrouperFunction;
-};
-
-} // namespace details
+struct GroupIndexer : public std::vector<std::size_t> {};
 
 /*
  * combine
@@ -96,28 +49,42 @@ combine(const std::map<KeyType, std::vector<FeatureType>> &groups) {
  * which is basically just a map with additional functionality
  */
 
-template <typename KeyType, typename ValueType> class Grouped;
+template <typename KeyType, typename ValueType>
+class Grouped : public std::map<KeyType, ValueType> {};
 
 template <typename KeyType> class Grouped<KeyType, void> {
 public:
   void operator[](const KeyType &) const {};
 };
 
-template <typename KeyType, typename FeatureType>
-class Grouped<KeyType, RegressionDataset<FeatureType>>
-    : public std::map<KeyType, RegressionDataset<FeatureType>> {
+template <typename KeyType, typename ValueType>
+class CombinableBase : public std::map<KeyType, ValueType> {
 public:
-  RegressionDataset<FeatureType> combine() const {
-    return albatross::combine(*this);
+  ValueType combine() const { return albatross::combine(*this); }
+
+  template <typename FilterFunction,
+            typename ReturnType = typename details::apply_return_type<
+                FilterFunction, KeyType, ValueType>::type,
+            typename std::enable_if<std::is_same<bool, ReturnType>::value,
+                                    int>::type = 0>
+  auto filter(const FilterFunction &f) const {
+    Grouped<KeyType, ValueType> output;
+    for (const auto &pair : *this) {
+      if (f(pair.first, pair.second)) {
+        output[pair.first] = pair.second;
+      }
+    }
+    return output;
   }
 };
 
 template <typename KeyType, typename FeatureType>
+class Grouped<KeyType, RegressionDataset<FeatureType>>
+    : public CombinableBase<KeyType, RegressionDataset<FeatureType>> {};
+
+template <typename KeyType, typename FeatureType>
 class Grouped<KeyType, std::vector<FeatureType>>
-    : public std::map<KeyType, std::vector<FeatureType>> {
-public:
-  std::vector<FeatureType> combine() const { return albatross::combine(*this); }
-};
+    : public CombinableBase<KeyType, std::vector<FeatureType>> {};
 
 /*
  * GroupByBase
@@ -131,7 +98,7 @@ public:
   using GroupType = typename details::traits<Derived>::GroupType;
   using ParentType = typename details::traits<Derived>::ParentType;
   using GrouperType = typename details::traits<Derived>::GrouperType;
-  using IndexerType = std::unordered_map<GroupType, std::vector<std::size_t>>;
+  using IndexerType = std::map<GroupType, std::vector<std::size_t>>;
 
   GroupByBase(const ParentType &parent, const GrouperType &grouper)
       : parent_(parent), grouper_(grouper) {
@@ -149,9 +116,7 @@ public:
     return output;
   }
 
-  std::vector<GroupType> keys() const {
-    return map_keys(indexers());
-  }
+  std::vector<GroupType> keys() const { return map_keys(indexers()); }
 
   std::size_t size() const {
     std::unordered_set<GroupType> set;
@@ -165,7 +130,9 @@ public:
   template <typename ApplyFunction,
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
-            typename std::enable_if<std::is_same<void, ApplyType>::value,
+            typename std::enable_if<
+            details::is_valid_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            std::is_same<void, ApplyType>::value,
                                     int>::type = 0>
   void apply(const ApplyFunction &f) const {
     for (const auto &pair : groups()) {
@@ -176,7 +143,9 @@ public:
   template <typename ApplyFunction,
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, GroupType, ParentType>::type,
-            typename std::enable_if<!std::is_same<void, ApplyType>::value,
+            typename std::enable_if<
+            details::is_valid_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            !std::is_same<void, ApplyType>::value,
                                     int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     Grouped<GroupType, ApplyType> output;
@@ -186,19 +155,69 @@ public:
     return output;
   }
 
+  template <typename ApplyFunction,
+            typename ApplyType = typename details::apply_return_type<
+                ApplyFunction, GroupType, ParentType>::type,
+            typename std::enable_if<
+            details::is_valid_value_only_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            !std::is_same<void, ApplyType>::value,
+                                    int>::type = 0>
+  auto apply(const ApplyFunction &f) const {
+    Grouped<GroupType, ApplyType> output;
+    for (const auto &pair : groups()) {
+      output[pair.first] = f(pair.second);
+    }
+    return output;
+  }
+
+  template <typename ApplyFunction,
+            typename ApplyType = typename details::apply_return_type<
+                ApplyFunction, GroupType, ParentType>::type,
+            typename std::enable_if<
+            details::is_valid_value_only_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            std::is_same<void, ApplyType>::value,
+                                    int>::type = 0>
+  auto apply(const ApplyFunction &f) const {
+    for (const auto &pair : groups()) {
+      f(pair.second);
+    }
+  }
+
+  template <typename ApplyFunction,
+            typename ApplyType = typename details::apply_return_type<
+                ApplyFunction, GroupType, ParentType>::type,
+            typename std::enable_if<
+            details::is_valid_index_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            !std::is_same<void, ApplyType>::value,
+                                    int>::type = 0>
+  auto apply(const ApplyFunction &f) const {
+    Grouped<GroupType, ApplyType> output;
+    for (const auto &pair : indexers()) {
+      output[pair.first] = f(pair.first, pair.second);
+    }
+    return output;
+  }
+
+  template <typename ApplyFunction,
+            typename ApplyType = typename details::apply_return_type<
+                ApplyFunction, GroupType, ParentType>::type,
+            typename std::enable_if<
+            details::is_valid_index_apply_function<ApplyFunction, GroupType, ParentType>::value &&
+            std::is_same<void, ApplyType>::value,
+                                    int>::type = 0>
+  auto apply(const ApplyFunction &f) const {
+    for (const auto &pair : indexers()) {
+      f(pair.first, pair.second);
+    }
+  }
+
   template <typename FilterFunction,
             typename ReturnType = typename details::apply_return_type<
-            FilterFunction, GroupType, ParentType>::type,
+                FilterFunction, GroupType, ParentType>::type,
             typename std::enable_if<std::is_same<bool, ReturnType>::value,
                                     int>::type = 0>
   auto filter(const FilterFunction &f) const {
-    Grouped<GroupType, ParentType> output;
-    for (const auto &pair : groups()) {
-      if (f(pair.first, pair.second)) {
-        output[pair.first] = pair.second;
-      }
-    }
-    return output;
+    return groups().filter(f);
   }
 
   std::map<GroupType, std::size_t> counts() const {
@@ -307,4 +326,4 @@ auto group_by(const std::vector<FeatureType> &vector,
 
 } // namespace albatross
 
-#endif /* ALBATROSS_CORE_GROUPBY_HPP_ */
+#endif /* ALBATROSS_GROUPBY_GROUPBY_HPP_ */
