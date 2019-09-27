@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Core>
+#include <albatross/serialize/Core>
 
 #include <albatross/src/utils/csv_utils.hpp>
 #include <csv.h>
@@ -32,23 +33,56 @@ struct TestFeature {
   double foo;
   int bar;
   SubFeature feature;
+  bool has_other;
+  long *other;
+  variant<double, SubFeature> double_or_feature;
 
-  template <typename Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("foo", foo));
-    archive(cereal::make_nvp("bar", bar));
-    archive(cereal::make_nvp("sub_feature", feature));
+  TestFeature()
+      : foo(1.), bar(2), feature(), has_other(false), other(nullptr),
+        double_or_feature(1.){};
+
+  TestFeature(double foo_, int bar_, const SubFeature &feature_, long *other_,
+              const variant<double, SubFeature> &double_or_feature_)
+      : foo(foo_), bar(bar_), feature(feature_), has_other(false),
+        other(other_), double_or_feature(double_or_feature_) {
+    has_other = other_ != nullptr;
+  };
+
+  template <typename Archive> void save(Archive &archive) const {
+    archive(CEREAL_NVP(foo));
+    archive(CEREAL_NVP(bar));
+    archive(CEREAL_NVP(feature));
+    archive(CEREAL_NVP(has_other));
+    if (has_other) {
+      archive(cereal::make_nvp("other", *other));
+    }
+    archive(CEREAL_NVP(double_or_feature));
+  }
+
+  template <typename Archive> void load(Archive &archive) {
+    archive(CEREAL_NVP(foo));
+    archive(CEREAL_NVP(bar));
+    archive(CEREAL_NVP(feature));
+    archive(CEREAL_NVP(has_other));
+    if (has_other) {
+      archive(cereal::make_nvp("other", *other));
+    }
+    archive(CEREAL_NVP(double_or_feature));
   }
 };
 
 /*
  * This does nothing more than read the CSV, but would fail if
- * the CSV were missing columns or had unparsable data.
+ * the CSV were missing columns or had unparsable data.  It does NOT
+ * try to reassemble the object we wrote to file.
  */
 void read_test_csv(std::istream &stream) {
-  io::CSVReader<8> reader("garbage", stream);
-  reader.read_header(io::ignore_no_column, "bar", "foo", "prediction",
-                     "prediction_variance", "sub_feature.one",
-                     "sub_feature.two", "target", "target_variance");
+  io::CSVReader<12> reader("garbage", stream);
+  reader.read_header(
+      io::ignore_no_column, "bar", "double_or_feature.cereal_class_version",
+      "double_or_feature.data", "double_or_feature.which", "feature.one",
+      "feature.two", "foo", "has_other", "prediction", "prediction_variance",
+      "target", "target_variance");
 
   bool more_to_parse = true;
   while (more_to_parse) {
@@ -57,19 +91,30 @@ void read_test_csv(std::istream &stream) {
     double target;
     std::string target_variance_str;
     TestFeature f;
-    more_to_parse = reader.read_row(f.bar, f.foo, prediction,
-                                    prediction_variance_str, f.feature.one,
-                                    f.feature.two, target, target_variance_str);
+    int version, which;
+    std::string double_or_feature;
+    std::string has_other;
+    more_to_parse =
+        reader.read_row(f.bar, version, double_or_feature, which, f.feature.one,
+                        f.feature.two, f.foo, has_other, prediction,
+                        prediction_variance_str, target, target_variance_str);
   }
 }
 
-TEST(test_csv_utils, test_writes) {
-  TestFeature one = {1.2, 2, {1.3, 3}};
-  TestFeature two = {2.2, 3, {2.3, 4}};
-  TestFeature three = {3.2, 4, {3.3, 5}};
+std::vector<TestFeature> test_features() {
+  long other = 5;
+  SubFeature sub = {4.4, 6};
+  TestFeature one(1.2, 2, {1.3, 3}, nullptr, 3.);
+  TestFeature two(2.2, 3, {2.3, 4}, &other, 3.);
+  TestFeature three(3.2, 4, {3.3, 5}, nullptr, sub);
 
   std::vector<TestFeature> features = {one, two, three};
-  Eigen::VectorXd targets(3);
+  return features;
+}
+
+TEST(test_csv_utils, test_writes) {
+  std::vector<TestFeature> features = test_features();
+  Eigen::VectorXd targets(features.size());
   targets << 1., 2., 3.;
 
   MarginalDistribution predictions(targets);
@@ -85,11 +130,7 @@ TEST(test_csv_utils, test_writes) {
 }
 
 TEST(test_csv_utils, test_writes_without_predictions) {
-  TestFeature one = {1.2, 2, {1.3, 3}};
-  TestFeature two = {2.2, 3, {2.3, 4}};
-  TestFeature three = {3.2, 4, {3.3, 5}};
-
-  std::vector<TestFeature> features = {one, two, three};
+  std::vector<TestFeature> features = test_features();
   Eigen::VectorXd targets(3);
   targets << 1., 2., 3.;
 
@@ -108,10 +149,12 @@ TEST(test_csv_utils, test_writes_without_predictions) {
  * the CSV were missing columns or had unparsable data.
  */
 void read_test_csv_with_metadata(std::istream &stream) {
-  io::CSVReader<9> reader("garbage", stream);
-  reader.read_header(io::ignore_no_column, "bar", "foo", "prediction",
-                     "prediction_variance", "sub_feature.one",
-                     "sub_feature.two", "target", "target_variance", "time");
+  io::CSVReader<13> reader("garbage", stream);
+  reader.read_header(
+      io::ignore_no_column, "bar", "double_or_feature.cereal_class_version",
+      "double_or_feature.data", "double_or_feature.which", "feature.one",
+      "feature.two", "foo", "has_other", "prediction", "prediction_variance",
+      "target", "target_variance", "time");
 
   bool more_to_parse = true;
   while (more_to_parse) {
@@ -121,19 +164,19 @@ void read_test_csv_with_metadata(std::istream &stream) {
     std::string time;
     std::string target_variance_str;
     TestFeature f;
+    int version, which;
+    std::string double_or_feature;
+    std::string has_other;
     more_to_parse = reader.read_row(
-        f.bar, f.foo, prediction, prediction_variance_str, f.feature.one,
-        f.feature.two, target, target_variance_str, time);
+        f.bar, version, double_or_feature, which, f.feature.one, f.feature.two,
+        f.foo, has_other, prediction, prediction_variance_str, target,
+        target_variance_str, time);
   }
 }
 
 TEST(test_csv_utils, test_writes_metadata) {
 
-  TestFeature one = {1.2, 2, {1.3, 3}};
-  TestFeature two = {2.2, 3, {2.3, 4}};
-  TestFeature three = {3.2, 4, {3.3, 5}};
-
-  std::vector<TestFeature> features = {one, two, three};
+  std::vector<TestFeature> features = test_features();
   Eigen::VectorXd targets(3);
   targets << 1., 2., 3.;
 
