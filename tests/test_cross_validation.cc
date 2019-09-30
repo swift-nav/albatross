@@ -18,8 +18,12 @@
 
 namespace albatross {
 
+template <typename FeatureType>
+std::string group_by_interval(const FeatureType &);
+
 // Group values by interval, but return keys that once sorted won't be
 // in order
+template <>
 std::string group_by_interval(const double &x) {
   if (x <= 3) {
     return "2";
@@ -30,14 +34,15 @@ std::string group_by_interval(const double &x) {
   }
 }
 
-std::string adapted_group_by_interval(const AdaptedFeature &x) {
-  return group_by_interval(x.value);
+template <>
+std::string group_by_interval(const AdaptedFeature &x) {
+  return group_by_interval<double>(x.value);
 }
 
 TEST(test_cross_validation, test_fold_creation) {
   const auto dataset = make_toy_linear_data();
 //  const auto grouped = dataset.group_by(&group_by_interval);
-  const auto folds = folds_from_grouper(dataset, &group_by_interval);
+  const auto folds = folds_from_grouper(dataset, &group_by_interval<double>);
   EXPECT_EQ(folds.size(), 3);
 }
 
@@ -58,8 +63,11 @@ TYPED_TEST_P(RegressionModelTester, test_logo_predict_variants) {
   // it using a group function which will not preserve order
   // and make sure that cross validation properly reassembles
   // the predictions
-  LeaveOneGroupOut<typename decltype(dataset)::Feature> logo(group_by_interval);
-  const auto prediction = model.cross_validate().predict(dataset, logo);
+
+  using FeatureType = typename decltype(dataset)::Feature;
+
+  const auto prediction = model.cross_validate().predict(dataset,
+      &group_by_interval<FeatureType>);
 
   EXPECT_TRUE(is_monotonic_increasing(prediction.mean()));
 
@@ -83,7 +91,7 @@ TYPED_TEST_P(RegressionModelTester, test_loo_get_predictions) {
 
   LeaveOneOut leave_one_out;
   const auto predictions =
-      model.cross_validate().get_predictions(dataset, leave_one_out);
+      model.cross_validate().predictions(dataset, leave_one_out);
 
   for (const auto &pred : predictions) {
     expect_predict_variants_consistent(pred.second);
@@ -95,8 +103,8 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   auto model = this->test_case.get_model();
 
   LeaveOneOut leave_one_out;
-  const auto indexer = leave_one_out(dataset);
-  const auto folds = folds_from_fold_indexer(dataset, indexer);
+  const auto indexer = group_by(dataset, leave_one_out).indexers();
+  const auto folds = folds_from_group_indexer(dataset, indexer);
 
   const RootMeanSquareError rmse;
 
@@ -135,7 +143,7 @@ TEST(test_crossvalidation, test_heteroscedastic) {
 
   auto model = MakeGaussianProcess().get_model();
 
-  LeaveOneOutGrouper loo;
+  LeaveOneOut loo;
   const RootMeanSquareError rmse;
   const auto scores = model.cross_validate().scores(rmse, dataset, loo);
 
@@ -199,8 +207,7 @@ TYPED_TEST(SpecializedCrossValidationTester,
   auto fast_duration = duration_cast<microseconds>(end - start).count();
 
   // time RMSE using the default method.
-  const auto loo_indexer = leave_one_out(dataset);
-  const auto folds = folds_from_fold_indexer(dataset, loo_indexer);
+  const auto folds = folds_from_grouper(dataset, LeaveOneOut());
   start = high_resolution_clock::now();
   const auto cv_slow_scores =
       model.cross_validate().scores(RootMeanSquareError(), folds);

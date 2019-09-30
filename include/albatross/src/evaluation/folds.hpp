@@ -24,6 +24,8 @@ struct RegressionFold {
   RegressionDataset<FeatureType> test_dataset;
   GroupIndices test_indices;
 
+  RegressionFold() : train_dataset(), test_dataset(), test_indices() {};
+
   RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
                  const RegressionDataset<FeatureType> &test_dataset_,
                  const GroupIndices &test_indices_)

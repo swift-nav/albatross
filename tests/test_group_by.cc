@@ -76,7 +76,7 @@ struct StringClassMethodGrouper {
 struct LeaveOneOutGrouperTest {
   auto get_parent() const { return test_integer_dataset(); }
 
-  auto get_grouper() const { return LeaveOneOutGrouper(); }
+  auto get_grouper() const { return LeaveOneOut(); }
 };
 
 template <typename CaseType> class GroupByTester : public ::testing::Test {
@@ -104,7 +104,7 @@ auto get_iterable_elements(const std::vector<FeatureType> &x) {
 template <typename GrouperFunction,
           typename ValueType,
           typename GroupKey = typename details::grouper_return_type<GrouperFunction, ValueType>::type,
-          typename std::enable_if<!std::is_same<GrouperFunction, LeaveOneOutGrouper>::value, int>::type = 0>
+          typename std::enable_if<!std::is_same<GrouperFunction, LeaveOneOut>::value, int>::type = 0>
 void expect_group_key_matches_expected(const GrouperFunction &grouper, const ValueType &value, const GroupKey &expected) {
   EXPECT_EQ(grouper(value), expected);
 }
@@ -112,7 +112,7 @@ void expect_group_key_matches_expected(const GrouperFunction &grouper, const Val
 template <typename GrouperFunction,
           typename ValueType,
           typename GroupKey = typename details::grouper_return_type<GrouperFunction, ValueType>::type,
-          typename std::enable_if<std::is_same<GrouperFunction, LeaveOneOutGrouper>::value, int>::type = 0>
+          typename std::enable_if<std::is_same<GrouperFunction, LeaveOneOut>::value, int>::type = 0>
 void expect_group_key_matches_expected(const GrouperFunction &grouper, const ValueType &value, const GroupKey &expected) {
 }
 
@@ -172,10 +172,8 @@ TYPED_TEST_P(GroupByTester, test_groupby_modify_combine) {
   const auto first_key = map_keys(groups)[0];
   const auto first_group = groups[first_key];
 
-  ASSERT_GT(first_group.size(), 1);
-
-  const std::size_t num_removed = first_group.size() - 1;
-  std::vector<std::size_t> single_ind = {0};
+  const std::size_t num_removed = first_group.size();
+  std::vector<std::size_t> single_ind = {};
   groups[first_key] = albatross::subset(first_group, single_ind);
 
   const auto combined = groups.combine();
@@ -248,7 +246,7 @@ TYPED_TEST_P(GroupByTester, test_groupby_filter) {
   assert(keys.size() > 1);
 
   const auto remove_first = [&keys](const auto &key, const auto &) {
-    return key == keys[0];
+    return key != keys[0];
   };
 
   const auto filtered = grouped.filter(remove_first);

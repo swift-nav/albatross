@@ -52,7 +52,7 @@ template <typename GroupKey, typename ValueType> class Grouped;
 template <typename GroupKey>
 using GroupIndexer = Grouped<GroupKey, GroupIndices>;
 
-struct LeaveOneOutGrouper;
+struct LeaveOneOut;
 
 template <typename ValueType, typename GrouperFunction> class GroupBy;
 

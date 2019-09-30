@@ -29,7 +29,7 @@ inline
                          const GroupIndexer<GroupKey> &indexer,
                          const Eigen::MatrixXd &cov) {
   return [&, indexer, cov, dataset](const std::vector<GroupKey> &groups) {
-    auto inds = indices_from_names(indexer, groups);
+    auto inds = indices_from_groups(indexer, groups);
     const auto train_dataset = subset(dataset, inds);
     const auto train_cov = symmetric_subset(cov, inds);
 
@@ -71,7 +71,7 @@ inline typename RansacFunctions<
     FitAndIndices<ModelType, FeatureType>, GroupKey>::ConsensusMetric
 get_gp_ransac_feature_count_consensus_metric(const GroupIndexer<GroupKey> &indexer) {
   return [&, indexer](const std::vector<GroupKey> &groups) {
-    auto inds = indices_from_names(indexer, groups);
+    auto inds = indices_from_groups(indexer, groups);
     return (-1.0 * static_cast<double>(inds.size()));
   };
 }
@@ -112,8 +112,8 @@ struct GaussianProcessRansacStrategy {
                                 const GrouperFunction &grouper_function)
       : inlier_metric_(inlier_metric), grouper_function_(grouper_function){};
 
-  template <typename ModelType, typename FeatureType, typename GroupKey>
-  RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>
+  template <typename ModelType, typename FeatureType>
+  auto
   operator()(const ModelType &model,
              const RegressionDataset<FeatureType> &dataset) const {
     const auto indexer = get_indexer(dataset);
@@ -122,7 +122,7 @@ struct GaussianProcessRansacStrategy {
 
   template <typename FeatureType>
   auto get_indexer(const RegressionDataset<FeatureType> &dataset) const {
-    return groupby(dataset, grouper_function_).indexers();
+    return group_by(dataset, grouper_function_).indexers();
   }
 
 protected:

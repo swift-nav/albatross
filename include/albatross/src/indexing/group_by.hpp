@@ -22,7 +22,7 @@
 
 namespace albatross {
 
-struct LeaveOneOutGrouper {
+struct LeaveOneOut {
   template <typename Arg>
   std::size_t operator() (const Arg&) const {
     static_assert(delay_static_assert<Arg>::value,
@@ -57,7 +57,7 @@ public:
     Grouped<KeyType, ValueType> output;
     for (const auto &pair : *this) {
       if (f(pair.first, pair.second)) {
-        output[pair.first] = pair.second;
+        output.emplace(pair.first, pair.second);
       }
     }
     return output;
@@ -89,7 +89,7 @@ public:
   auto apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
     for (const auto &pair : *this) {
-      output[pair.first] = f(pair.first, pair.second);
+      output.emplace(pair.first, f(pair.first, pair.second));
     }
     return output;
   }
@@ -105,7 +105,7 @@ public:
   auto apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
     for (const auto &pair : *this) {
-      output[pair.first] = f(pair.second);
+      output.emplace(pair.first, f(pair.second));
     }
     return output;
   }
@@ -131,7 +131,7 @@ class Grouped : public GroupedBase<KeyType, ValueType> {};
 
 template <typename KeyType>
 class Grouped<KeyType, GroupIndices> : public GroupedBase<KeyType, GroupIndices> {
-
+public:
   template <typename ApplyFunction,
             typename ApplyType = typename details::apply_return_type<
                 ApplyFunction, KeyType, GroupIndices>::type,
@@ -143,7 +143,7 @@ class Grouped<KeyType, GroupIndices> : public GroupedBase<KeyType, GroupIndices>
   auto index_apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
     for (const auto &pair : *this) {
-      output[pair.first] = f(pair.first, pair.second);
+      output.emplace(pair.first, f(pair.first, pair.second));
     }
     return output;
   }
@@ -234,17 +234,17 @@ struct IndexerBuilder {
 };
 
 template <>
-struct IndexerBuilder<LeaveOneOutGrouper> {
+struct IndexerBuilder<LeaveOneOut> {
 
   template <typename Iterable>
-  static auto build(const LeaveOneOutGrouper &grouper_function,
+  static auto build(const LeaveOneOut &grouper_function,
                      const Iterable &iterable) {
     GroupIndexer<std::size_t> output;
     std::size_t i = 0;
     auto it = iterable.begin();
     while (it != iterable.end()) {
       // Add the current index.
-      output[i].push_back(i);
+      output[i] = {i};
       ++i;
       ++it;
     }
@@ -287,8 +287,7 @@ public:
   Grouped<KeyType, ValueType> groups() const {
     Grouped<KeyType, ValueType> output;
     for (const auto &key_indexer_pair : indexers()) {
-      output[key_indexer_pair.first] =
-          albatross::subset(parent_, key_indexer_pair.second);
+      output.emplace(key_indexer_pair.first, albatross::subset(parent_, key_indexer_pair.second));
     }
     return output;
   }
@@ -326,7 +325,7 @@ public:
   auto index_apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
     for (const auto &pair : indexers()) {
-      output[pair.first] = f(pair.first, pair.second);
+      output.emplace(pair.first, f(pair.first, pair.second));
     }
     return output;
   }
@@ -357,7 +356,7 @@ public:
   std::map<KeyType, std::size_t> counts() const {
     std::map<KeyType, std::size_t> output;
     for (const auto &key_indexer_pair : indexers()) {
-      output[key_indexer_pair.first] = key_indexer_pair.second.size();
+      output.emplace(key_indexer_pair.first, key_indexer_pair.second.size());
     }
     return output;
   }

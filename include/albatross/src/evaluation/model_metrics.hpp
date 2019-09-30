@@ -53,8 +53,7 @@ struct LeaveOneOutLikelihood
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
     NegativeLogLikelihood<PredictType> nll;
-    LeaveOneOut loo;
-    const auto scores = model.cross_validate().scores(nll, dataset, loo);
+    const auto scores = model.cross_validate().scores(nll, dataset, LeaveOneOut());
     double data_nll = scores.sum();
     double prior_nll = model.prior_log_likelihood();
     return data_nll - prior_nll;

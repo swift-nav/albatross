@@ -17,7 +17,7 @@ namespace albatross {
 
 template <typename ModelType, typename FeatureType>
 auto predict_fold(const ModelType &model, const RegressionFold<FeatureType> &fold) {
-  return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+  return model.fit(fold.train_dataset).predict(fold.test_dataset.features);
 };
 
 /*
@@ -40,7 +40,7 @@ public:
       return predict_fold(model_, create_fold(test_indices, dataset_));
     };
 
-    return indexer_.apply(predict_one_group);
+    return indexer_.index_apply(predict_one_group);
   }
 
   // MEAN
@@ -255,10 +255,16 @@ public:
 
   //
 
+  template <typename FeatureType, typename GrouperFunction>
+  auto
+  predictions(const RegressionDataset<FeatureType> &dataset,
+      const GrouperFunction &grouper) const {
+    return predict(dataset, grouper).predictions();
+  }
+
   template <typename GroupKey, typename FeatureType>
   auto
   predictions(const RegressionFolds<GroupKey, FeatureType> &folds) const {
-
     const auto predict_one_fold = [&](const auto &, const auto &fold) {
       return predict_fold(model_, fold);
     };

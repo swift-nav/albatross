@@ -290,7 +290,7 @@ public:
     RegressionDataset<FeatureType> dataset(features, targets);
 
     auto indexer = strategy_.get_indexer(dataset);
-    using GroupKey = typename decltype(indexer)::value_type;
+    using GroupKey = typename decltype(indexer)::key_type;
 
     auto ransac_functions = strategy_(sub_model_, dataset);
 
@@ -298,7 +298,7 @@ public:
         ransac(ransac_functions, map_keys(indexer), inlier_threshold_,
                random_sample_size_, min_consensus_size_, max_iterations_);
 
-    const auto good_inds = indices_from_names(indexer, inliers);
+    const auto good_inds = indices_from_groups(indexer, inliers);
     const auto consensus_set = subset(dataset, good_inds);
 
     std::vector<GroupKey> outliers;

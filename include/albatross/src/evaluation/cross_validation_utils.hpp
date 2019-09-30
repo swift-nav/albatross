@@ -27,40 +27,40 @@ get_predictions(const ModelType &model,
   return folds.apply(predict_group);
 }
 
-template <typename PredictType, typename Prediction>
+template <typename PredictType, typename GroupKey, typename Prediction>
 inline auto get_predict_types(
-    const std::map<std::string, Prediction> &prediction_classes,
+    const std::map<GroupKey, Prediction> &prediction_classes,
     PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
 
-  std::map<std::string, PredictType> predictions;
+  std::map<GroupKey, PredictType> predictions;
   for (const auto &pred : prediction_classes) {
     predictions.emplace(pred.first, pred.second.template get<PredictType>());
   }
   return predictions;
 }
 
-template <typename PredictionType>
-inline std::map<std::string, Eigen::VectorXd>
-get_means(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline std::map<GroupKey, Eigen::VectorXd>
+get_means(const std::map<GroupKey, PredictionType> &predictions) {
   return get_predict_types<Eigen::VectorXd>(predictions);
 }
 
-template <typename PredictionType>
-inline std::map<std::string, MarginalDistribution>
-get_marginals(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline std::map<GroupKey, MarginalDistribution>
+get_marginals(const std::map<GroupKey, PredictionType> &predictions) {
   return get_predict_types<MarginalDistribution>(predictions);
 }
 
-template <typename PredictionType>
-inline std::map<std::string, JointDistribution>
-get_joints(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline std::map<GroupKey, JointDistribution>
+get_joints(const std::map<GroupKey, PredictionType> &predictions) {
   return get_predict_types<JointDistribution>(predictions);
 }
 
 template <typename GroupKey>
 inline Eigen::VectorXd concatenate_mean_predictions(
     const GroupIndexer<GroupKey> &indexer,
-    const std::map<std::string, Eigen::VectorXd> &means) {
+    const std::map<GroupKey, Eigen::VectorXd> &means) {
   assert(indexer.size() == means.size());
 
   Eigen::Index n =
@@ -81,7 +81,7 @@ inline Eigen::VectorXd concatenate_mean_predictions(
 template <typename CovarianceType, typename GroupKey>
 inline MarginalDistribution concatenate_marginal_predictions(
     const GroupIndexer<GroupKey> &indexer,
-    const std::map<std::string, Distribution<CovarianceType>> &preds) {
+    const std::map<GroupKey, Distribution<CovarianceType>> &preds) {
   assert(indexer.size() == preds.size());
 
   Eigen::Index n =
@@ -120,9 +120,9 @@ Eigen::VectorXd cross_validated_scores(
 template <typename FeatureType, typename CovarianceType, typename GroupKey>
 static inline Eigen::VectorXd cross_validated_scores(
     const PredictionMetric<Eigen::VectorXd> &metric,
-    const RegressionFolds<FeatureType, GroupKey> &folds,
-    const std::map<std::string, Distribution<CovarianceType>> &predictions) {
-  std::map<std::string, Eigen::VectorXd> converted;
+    const RegressionFolds<GroupKey, FeatureType> &folds,
+    const std::map<GroupKey, Distribution<CovarianceType>> &predictions) {
+  std::map<GroupKey, Eigen::VectorXd> converted;
   for (const auto &pred : predictions) {
     converted[pred.first] = pred.second.mean;
   }
