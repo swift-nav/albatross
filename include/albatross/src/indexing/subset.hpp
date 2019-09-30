@@ -180,12 +180,13 @@ indices_complement(const std::vector<std::size_t> &indices,
   return std::vector<std::size_t>(complement.begin(), complement.end());
 }
 
-inline GroupIndices indices_from_names(const FoldIndexer &indexer,
-                                      const std::vector<FoldName> &names) {
+template <typename GroupType>
+inline GroupIndices indices_from_groups(const GroupIndexer<GroupType> &indexer,
+                                        const std::vector<GroupType> &keys) {
   GroupIndices output;
-  for (const auto &name : names) {
-    output.insert(output.end(), indexer.at(name).begin(),
-                  indexer.at(name).end());
+  for (const auto &key : keys) {
+    output.insert(output.end(), indexer.at(key).begin(),
+                  indexer.at(key).end());
   }
   return output;
 }

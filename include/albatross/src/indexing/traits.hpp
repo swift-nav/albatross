@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SRC_GROUP_BY_TRAITS_HPP_
-#define ALBATROSS_SRC_GROUP_BY_TRAITS_HPP_
+#ifndef ALBATROSS_INDEXING_TRAITS_HPP_
+#define ALBATROSS_INDEXING_TRAITS_HPP_
 
 namespace albatross {
 
@@ -56,15 +56,15 @@ public:
  * and returns a non-void type which will end up being the key used in group by.
  */
 template <typename GrouperFunction, typename ValueType>
-struct group_type
+struct grouper_return_type
     : public return_type_when_called_with<GrouperFunction,
                                           typename const_ref<ValueType>::type> {
 };
 
 template <typename GrouperFunction, typename ValueType>
-struct group_type_is_valid {
+struct group_key_is_valid {
   static constexpr bool value = !std::is_same<
-      void, typename group_type<GrouperFunction, ValueType>::type>::value;
+      void, typename grouper_return_type<GrouperFunction, ValueType>::type>::value;
 };
 
 template <typename GrouperFunction, typename ValueType>
@@ -72,7 +72,7 @@ struct is_valid_grouper {
 
   static constexpr bool value =
       can_be_called_with_const_ref<GrouperFunction, ValueType>::value &&
-      group_type_is_valid<GrouperFunction, ValueType>::value;
+      group_key_is_valid<GrouperFunction, ValueType>::value;
 };
 
 /*
@@ -80,47 +80,47 @@ struct is_valid_grouper {
  * returns a new type, they key type needs to remain unchanged but
  * the value can be modified.
  */
-template <typename ApplyFunction, typename GroupType, typename ArgType>
+template <typename ApplyFunction, typename KeyType, typename ArgType>
 class apply_return_type
     : public return_type_when_called_with<
-          ApplyFunction, typename const_ref<GroupType>::type, ArgType> {};
+          ApplyFunction, typename const_ref<KeyType>::type, ArgType> {};
 
-template <typename ApplyFunction, typename GroupType, typename ArgType>
+template <typename ApplyFunction, typename KeyType, typename ArgType>
 class is_valid_apply_function
     : public can_be_called_with<ApplyFunction,
-                                typename const_ref<GroupType>::type, ArgType> {
+                                typename const_ref<KeyType>::type, ArgType> {
 };
 
-template <typename ApplyFunction, typename GroupType, typename ArgType>
+template <typename ApplyFunction, typename KeyType, typename ArgType>
 class is_valid_value_only_apply_function
     : public can_be_called_with<ApplyFunction, ArgType> {};
 
-template <typename ApplyFunction, typename GroupType, typename ArgType>
+template <typename ApplyFunction, typename KeyType, typename ArgType>
 class is_valid_index_apply_function
     : public can_be_called_with<ApplyFunction,
-                                typename const_ref<GroupType>::type,
+                                typename const_ref<KeyType>::type,
                                 typename const_ref<GroupIndices>::type> {};
 
 /*
-z * The following traits are required in order to allow inspection of
+ * The following traits are required in order to allow inspection of
  * the only partially defined Derived types inside of GroupByBase.
  *
  * To get GroupByBase to work with other types you need to add a new
- * trait struct for tha type.
+ * trait struct for the type.
  */
 template <typename T> struct traits {};
 
 template <typename FeatureType, typename GrouperFunction>
 struct traits<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
-  using GroupType = typename group_type<GrouperFunction, FeatureType>::type;
-  using ParentType = RegressionDataset<FeatureType>;
+  using KeyType = typename grouper_return_type<GrouperFunction, FeatureType>::type;
+  using ValueType = RegressionDataset<FeatureType>;
   using GrouperType = GrouperFunction;
 };
 
 template <typename FeatureType, typename GrouperFunction>
 struct traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
-  using GroupType = typename group_type<GrouperFunction, FeatureType>::type;
-  using ParentType = std::vector<FeatureType>;
+  using KeyType = typename grouper_return_type<GrouperFunction, FeatureType>::type;
+  using ValueType = std::vector<FeatureType>;
   using GrouperType = GrouperFunction;
 };
 
@@ -128,4 +128,4 @@ struct traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
 
 } // namespace albatross
 
-#endif /* ALBATROSS_SRC_GROUP_BY_TRAITS_HPP_ */
+#endif /* ALBATROSS_INDEXING_TRAITS_HPP_ */

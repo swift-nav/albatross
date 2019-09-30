@@ -30,13 +30,14 @@ std::string group_by_interval(const double &x) {
   }
 }
 
-std::string group_by_interval(const AdaptedFeature &x) {
+std::string adapted_group_by_interval(const AdaptedFeature &x) {
   return group_by_interval(x.value);
 }
 
 TEST(test_cross_validation, test_fold_creation) {
   const auto dataset = make_toy_linear_data();
-  const auto folds = folds_from_grouper<double>(dataset, group_by_interval);
+//  const auto grouped = dataset.group_by(&group_by_interval);
+  const auto folds = folds_from_grouper(dataset, &group_by_interval);
   EXPECT_EQ(folds.size(), 3);
 }
 
@@ -134,7 +135,7 @@ TEST(test_crossvalidation, test_heteroscedastic) {
 
   auto model = MakeGaussianProcess().get_model();
 
-  LeaveOneOut loo;
+  LeaveOneOutGrouper loo;
   const RootMeanSquareError rmse;
   const auto scores = model.cross_validate().scores(rmse, dataset, loo);
 

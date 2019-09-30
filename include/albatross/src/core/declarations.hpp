@@ -47,7 +47,14 @@ template <typename X> struct Measurement;
 
 using GroupIndices = std::vector<std::size_t>;
 
-template <typename Parent, typename GrouperFunction> class GroupBy;
+template <typename GroupKey, typename ValueType> class Grouped;
+
+template <typename GroupKey>
+using GroupIndexer = Grouped<GroupKey, GroupIndices>;
+
+struct LeaveOneOutGrouper;
+
+template <typename ValueType, typename GrouperFunction> class GroupBy;
 
 /*
  * Parameter Handling
@@ -87,10 +94,10 @@ template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
 /*
  * Cross Validation
  */
-using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, GroupIndices>;
-
 template <typename FeatureType> struct RegressionFold;
+
+template <typename GroupKey, typename FeatureType>
+using RegressionFolds = Grouped<GroupKey, RegressionFold<FeatureType>>;
 
 template <typename FeatureType>
 using GroupFunction = std::string (*)(const FeatureType &);
@@ -102,8 +109,6 @@ template <typename ModelType> class CrossValidation;
 
 template <typename FeatureType> struct LeaveOneGroupOut;
 
-struct LeaveOneOut;
-
 template <typename MetricType> class ModelMetric;
 
 template <typename RequiredPredictType> struct PredictionMetric;
@@ -113,7 +118,7 @@ template <typename RequiredPredictType> struct PredictionMetric;
  */
 template <typename ModelType, typename StrategyType> class Ransac;
 
-template <typename ModelType, typename StrategyType, typename FeatureType>
+template <typename ModelType, typename StrategyType, typename FeatureType, typename GroupKey>
 struct RansacFit;
 
 template <typename InlierMetric, typename ConsensusMetric,

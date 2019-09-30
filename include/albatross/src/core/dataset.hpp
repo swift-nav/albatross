@@ -53,7 +53,7 @@ template <typename FeatureType> struct RegressionDataset {
 
   template <typename GrouperFunc>
   GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
-  group_by(const GrouperFunc &&grouper) const;
+  group_by(const GrouperFunc &grouper) const;
 };
 
 /*

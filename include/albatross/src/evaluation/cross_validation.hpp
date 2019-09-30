@@ -15,27 +15,42 @@
 
 namespace albatross {
 
+template <typename ModelType, typename FeatureType>
+auto predict_fold(const ModelType &model, const RegressionFold<FeatureType> &fold) {
+  return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+};
+
 /*
  * This is a specialization of the `Prediction` class which adds some
  * cross validation specific methods, and specializes the standard
  * methods (such as mean, marginal, joint).
  */
-template <typename ModelType, typename FeatureType>
-class Prediction<CrossValidation<ModelType>, FeatureType, FoldIndexer> {
+template <typename ModelType, typename FeatureType, typename GroupKey>
+class Prediction<CrossValidation<ModelType>, FeatureType, GroupIndexer<GroupKey>> {
 public:
   Prediction(const ModelType &model,
              const RegressionDataset<FeatureType> &dataset,
-             const FoldIndexer &indexer)
+             const GroupIndexer<GroupKey> &indexer)
       : model_(model), dataset_(dataset), indexer_(indexer) {}
+
+  auto predictions() const {
+
+    const auto predict_one_group = [&](const auto &,
+        const GroupIndices &test_indices) {
+      return predict_fold(model_, create_fold(test_indices, dataset_));
+    };
+
+    return indexer_.apply(predict_one_group);
+  }
 
   // MEAN
 
   // Cross validation specialized means().
   template <
       typename DummyType = ModelType,
-      typename std::enable_if<has_valid_cv_mean<DummyType, FeatureType>::value,
+      typename std::enable_if<has_valid_cv_mean<DummyType, FeatureType, GroupKey>::value,
                               int>::type = 0>
-  std::map<std::string, Eigen::VectorXd> means() const {
+  std::map<GroupKey, Eigen::VectorXd> means() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<Eigen::VectorXd>());
   }
@@ -46,12 +61,10 @@ public:
                 has_mean<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_mean<DummyType, FeatureType>::value,
+                    !has_valid_cv_mean<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
-  std::map<std::string, Eigen::VectorXd> means() const {
-    const auto folds = folds_from_fold_indexer(dataset_, indexer_);
-    const auto predictions = albatross::get_predictions(model_, folds);
-    return get_means(predictions);
+  std::map<GroupKey, Eigen::VectorXd> means() const {
+    return get_means(predictions());
   }
 
   // No valid method of computing the means.
@@ -60,16 +73,16 @@ public:
                 !has_mean<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_mean<DummyType, FeatureType>::value,
+                    !has_valid_cv_mean<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
-  std::map<std::string, Eigen::VectorXd> means() const = delete;
+  std::map<GroupKey, Eigen::VectorXd> means() const = delete;
 
   template <typename DummyType = ModelType,
             typename std::enable_if<
                 has_mean<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value ||
-                    has_valid_cv_mean<DummyType, FeatureType>::value,
+                    has_valid_cv_mean<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
   Eigen::VectorXd mean() const {
     return concatenate_mean_predictions(indexer_, means());
@@ -81,7 +94,7 @@ public:
                 !has_mean<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_mean<DummyType, FeatureType>::value,
+                    !has_valid_cv_mean<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
 
   Eigen::VectorXd mean() const = delete;
@@ -92,8 +105,8 @@ public:
   template <
       typename DummyType = ModelType,
       typename std::enable_if<
-          has_valid_cv_marginal<DummyType, FeatureType>::value, int>::type = 0>
-  std::map<std::string, MarginalDistribution> marginals() const {
+          has_valid_cv_marginal<DummyType, FeatureType, GroupKey>::value, int>::type = 0>
+  std::map<GroupKey, MarginalDistribution> marginals() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<MarginalDistribution>());
   }
@@ -104,12 +117,10 @@ public:
                 has_marginal<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_marginal<DummyType, FeatureType>::value,
+                    !has_valid_cv_marginal<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
-  std::map<std::string, MarginalDistribution> marginals() const {
-    const auto folds = folds_from_fold_indexer(dataset_, indexer_);
-    const auto predictions = albatross::get_predictions(model_, folds);
-    return get_marginals(predictions);
+  std::map<GroupKey, MarginalDistribution> marginals() const {
+    return get_marginals(predictions());
   }
 
   // No valid way of computing marginals.
@@ -118,7 +129,7 @@ public:
                 !has_marginal<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_marginal<DummyType, FeatureType>::value,
+                    !has_valid_cv_marginal<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
   MarginalDistribution marginals() const = delete;
 
@@ -128,7 +139,7 @@ public:
                 has_marginal<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value ||
-                    has_valid_cv_marginal<DummyType, FeatureType>::value,
+                    has_valid_cv_marginal<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
   MarginalDistribution marginal() const {
     return concatenate_marginal_predictions(indexer_, marginals());
@@ -140,7 +151,7 @@ public:
                 !has_marginal<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_marginal<DummyType, FeatureType>::value,
+                    !has_valid_cv_marginal<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
   MarginalDistribution marginal() const = delete;
 
@@ -149,9 +160,9 @@ public:
   // Cross validation specific joints().
   template <
       typename DummyType = ModelType,
-      typename std::enable_if<has_valid_cv_joint<DummyType, FeatureType>::value,
+      typename std::enable_if<has_valid_cv_joint<DummyType, FeatureType, GroupKey>::value,
                               int>::type = 0>
-  std::map<std::string, JointDistribution> joints() const {
+  std::map<GroupKey, JointDistribution> joints() const {
     return model_.cross_validated_predictions(
         dataset_, indexer_, PredictTypeIdentity<JointDistribution>());
   }
@@ -162,12 +173,10 @@ public:
                 has_joint<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_joint<DummyType, FeatureType>::value,
+                    !has_valid_cv_joint<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
-  std::map<std::string, JointDistribution> joints() const {
-    const auto folds = folds_from_fold_indexer(dataset_, indexer_);
-    const auto predictions = albatross::get_predictions(model_, folds);
-    return get_joints(predictions);
+  std::map<GroupKey, JointDistribution> joints() const {
+    return get_joints(predictions());
   }
 
   // No valid way of computing joints().
@@ -176,9 +185,9 @@ public:
                 !has_joint<Prediction<
                     DummyType, FeatureType,
                     typename fit_type<DummyType, FeatureType>::type>>::value &&
-                    !has_valid_cv_joint<DummyType, FeatureType>::value,
+                    !has_valid_cv_joint<DummyType, FeatureType, GroupKey>::value,
                 int>::type = 0>
-  std::map<std::string, JointDistribution> joints() const = delete;
+  std::map<GroupKey, JointDistribution> joints() const = delete;
 
   template <typename DummyType = ModelType>
   JointDistribution joint() const =
@@ -195,34 +204,34 @@ private:
 
   auto get(get_type<Eigen::VectorXd>) const { return this->mean(); }
 
-  auto get(get_type<std::map<std::string, Eigen::VectorXd>>) const {
+  auto get(get_type<std::map<GroupKey, Eigen::VectorXd>>) const {
     return this->means();
   }
 
   auto get(get_type<MarginalDistribution>) const { return this->marginal(); }
 
-  auto get(get_type<std::map<std::string, MarginalDistribution>>) const {
+  auto get(get_type<std::map<GroupKey, MarginalDistribution>>) const {
     return this->marginals();
   }
 
   auto get(get_type<JointDistribution>) const { return this->joint(); }
 
-  auto get(get_type<std::map<std::string, JointDistribution>>) const {
+  auto get(get_type<std::map<GroupKey, JointDistribution>>) const {
     return this->joints();
   }
 
   const ModelType model_;
   const RegressionDataset<FeatureType> dataset_;
-  const FoldIndexer indexer_;
+  const GroupIndexer<GroupKey> indexer_;
 };
 
 /*
  * Cross Validation
  */
 
-template <typename ModelType, typename FeatureType>
+template <typename ModelType, typename FeatureType, typename GroupKey>
 using CVPrediction =
-    Prediction<CrossValidation<ModelType>, FeatureType, FoldIndexer>;
+    Prediction<CrossValidation<ModelType>, FeatureType, GroupIndexer<GroupKey>>;
 
 template <typename ModelType> class CrossValidation {
 
@@ -231,55 +240,49 @@ template <typename ModelType> class CrossValidation {
 public:
   CrossValidation(const ModelType &model) : model_(model){};
 
-  // get_predictions
-
-  template <typename FeatureType>
-  auto
-  get_predictions(const std::vector<RegressionFold<FeatureType>> &folds) const {
-    return albatross::get_predictions(model_, folds);
-  }
-
-  template <typename FeatureType, typename IndexFunc>
-  auto get_predictions(const RegressionDataset<FeatureType> &dataset,
-                       const IndexFunc &index_function) const {
-    const auto indexer = index_function(dataset);
-    const auto folds = folds_from_fold_indexer(dataset, indexer);
-    return get_predictions(folds);
-  }
-
-  // get_prediction
-  template <typename FeatureType>
-  CVPrediction<ModelType, FeatureType>
+  template <typename FeatureType, typename GroupKey>
+  CVPrediction<ModelType, FeatureType, GroupKey>
   predict(const RegressionDataset<FeatureType> &dataset,
-          const FoldIndexer &indexer) const {
-    return CVPrediction<ModelType, FeatureType>(model_, dataset, indexer);
+          const GroupIndexer<GroupKey> &indexer) const {
+    return CVPrediction<ModelType, FeatureType, GroupKey>(model_, dataset, indexer);
   }
 
-  template <typename FeatureType, typename IndexFunc>
+  template <typename FeatureType, typename GrouperFunction>
   auto predict(const RegressionDataset<FeatureType> &dataset,
-               const IndexFunc &index_function) const {
-    const auto indexer = index_function(dataset);
-    return predict(dataset, indexer);
+               const GrouperFunction &grouper_function) const {
+    return predict(dataset, dataset.group_by(grouper_function).indexers());
+  }
+
+  //
+
+  template <typename GroupKey, typename FeatureType>
+  auto
+  predictions(const RegressionFolds<GroupKey, FeatureType> &folds) const {
+
+    const auto predict_one_fold = [&](const auto &, const auto &fold) {
+      return predict_fold(model_, fold);
+    };
+    return folds.apply(predict_one_fold);
   }
 
   // Scores
 
-  template <typename RequiredPredictType, typename FeatureType>
+  template <typename RequiredPredictType, typename GroupKey, typename FeatureType>
   Eigen::VectorXd
   scores(const PredictionMetric<RequiredPredictType> &metric,
-         const std::vector<RegressionFold<FeatureType>> &folds) const {
-    const auto preds = get_predictions(folds);
+         const RegressionFolds<GroupKey, FeatureType> &folds) const {
+    const auto preds = predictions(folds);
     return cross_validated_scores(metric, folds, preds);
   }
 
-  template <typename RequiredPredictType, typename FeatureType>
+  template <typename RequiredPredictType, typename FeatureType, typename GroupKey>
   Eigen::VectorXd scores(const PredictionMetric<RequiredPredictType> &metric,
                          const RegressionDataset<FeatureType> &dataset,
-                         const FoldIndexer &indexer) const {
-    const auto folds = folds_from_fold_indexer(dataset, indexer);
+                         const GroupIndexer<GroupKey> &indexer) const {
+    const auto folds = folds_from_group_indexer(dataset, indexer);
     const auto prediction = predict(dataset, indexer);
     const auto predictions =
-        prediction.template get<std::map<std::string, RequiredPredictType>>();
+        prediction.template get<std::map<GroupKey, RequiredPredictType>>();
     return cross_validated_scores(metric, folds, predictions);
   }
 
@@ -288,7 +291,7 @@ public:
   Eigen::VectorXd scores(const PredictionMetric<RequiredPredictType> &metric,
                          const RegressionDataset<FeatureType> &dataset,
                          const IndexFunc &index_function) const {
-    const auto indexer = index_function(dataset);
+    const auto indexer = group_by(dataset, index_function).indexers();
     return scores(metric, dataset, indexer);
   }
 };

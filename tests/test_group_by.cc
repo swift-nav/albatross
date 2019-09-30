@@ -73,6 +73,12 @@ struct StringClassMethodGrouper {
   auto get_grouper() const { return IntMod2(); }
 };
 
+struct LeaveOneOutGrouperTest {
+  auto get_parent() const { return test_integer_dataset(); }
+
+  auto get_grouper() const { return LeaveOneOutGrouper(); }
+};
+
 template <typename CaseType> class GroupByTester : public ::testing::Test {
 public:
   CaseType test_case;
@@ -80,7 +86,7 @@ public:
 
 typedef ::testing::Types<BoolClassMethodGrouper, BoolLambdaGrouper,
                          IntClassMethodGrouper, StringClassMethodGrouper,
-                         BoolClassMethodVectorGrouper>
+                         BoolClassMethodVectorGrouper, LeaveOneOutGrouperTest>
     GrouperTestCases;
 
 TYPED_TEST_CASE_P(GroupByTester);
@@ -95,6 +101,21 @@ auto get_iterable_elements(const std::vector<FeatureType> &x) {
   return x;
 }
 
+template <typename GrouperFunction,
+          typename ValueType,
+          typename GroupKey = typename details::grouper_return_type<GrouperFunction, ValueType>::type,
+          typename std::enable_if<!std::is_same<GrouperFunction, LeaveOneOutGrouper>::value, int>::type = 0>
+void expect_group_key_matches_expected(const GrouperFunction &grouper, const ValueType &value, const GroupKey &expected) {
+  EXPECT_EQ(grouper(value), expected);
+}
+
+template <typename GrouperFunction,
+          typename ValueType,
+          typename GroupKey = typename details::grouper_return_type<GrouperFunction, ValueType>::type,
+          typename std::enable_if<std::is_same<GrouperFunction, LeaveOneOutGrouper>::value, int>::type = 0>
+void expect_group_key_matches_expected(const GrouperFunction &grouper, const ValueType &value, const GroupKey &expected) {
+}
+
 TYPED_TEST_P(GroupByTester, test_groupby_groups) {
   auto parent = this->test_case.get_parent();
   const auto grouped = group_by(parent, this->test_case.get_grouper());
@@ -102,7 +123,7 @@ TYPED_TEST_P(GroupByTester, test_groupby_groups) {
   // Can split into groups, and those groups align with the grouper
   for (const auto &pair : grouped.groups()) {
     for (const auto &f : get_iterable_elements(pair.second)) {
-      EXPECT_EQ(this->test_case.get_grouper()(f), pair.first);
+      expect_group_key_matches_expected(this->test_case.get_grouper(), f, pair.first);
     }
   }
 };

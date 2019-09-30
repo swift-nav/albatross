@@ -22,13 +22,13 @@ template <typename ModelType, typename FeatureType> struct FitAndIndices {
   GroupIndices indices;
 };
 
-template <typename ModelType, typename FeatureType>
+template <typename ModelType, typename FeatureType, typename GroupKey>
 inline
-    typename RansacFunctions<FitAndIndices<ModelType, FeatureType>>::FitterFunc
+    typename RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>::FitterFunc
     get_gp_ransac_fitter(const RegressionDataset<FeatureType> &dataset,
-                         const FoldIndexer &indexer,
+                         const GroupIndexer<GroupKey> &indexer,
                          const Eigen::MatrixXd &cov) {
-  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
+  return [&, indexer, cov, dataset](const std::vector<GroupKey> &groups) {
     auto inds = indices_from_names(indexer, groups);
     const auto train_dataset = subset(dataset, inds);
     const auto train_cov = symmetric_subset(cov, inds);
@@ -41,16 +41,16 @@ inline
   };
 }
 
-template <typename ModelType, typename FeatureType, typename InlierMetricType>
+template <typename ModelType, typename FeatureType, typename InlierMetricType, typename GroupKey>
 inline typename RansacFunctions<
-    FitAndIndices<ModelType, FeatureType>>::InlierMetric
+    FitAndIndices<ModelType, FeatureType>, GroupKey>::InlierMetric
 get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
-                            const FoldIndexer &indexer,
+                            const GroupIndexer<GroupKey> &indexer,
                             const Eigen::MatrixXd &cov, const ModelType &model,
                             const InlierMetricType &metric) {
 
   return [&, indexer, cov, model, dataset](
-             const FoldName &group,
+             const GroupKey &group,
              const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
     auto inds = indexer.at(group);
 
@@ -66,35 +66,21 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
   };
 }
 
-/*
-template <typename ModelType, typename FeatureType>
+template <typename ModelType, typename FeatureType, typename GroupKey>
 inline typename RansacFunctions<
-    FitAndIndices<ModelType, FeatureType>>::ConsensusMetric
-get_gp_ransac_model_entropy_metric(const FoldIndexer &indexer,
-                                   const Eigen::MatrixXd &cov) {
-  return [&, indexer, cov](const std::vector<FoldName> &groups) {
-    auto inds = indices_from_names(indexer, groups);
-    auto consensus_cov = symmetric_subset(cov, inds);
-    return differential_entropy(consensus_cov);
-  };
-}
- */
-
-template <typename ModelType, typename FeatureType>
-inline typename RansacFunctions<
-    FitAndIndices<ModelType, FeatureType>>::ConsensusMetric
-get_gp_ransac_feature_count_consensus_metric(const FoldIndexer &indexer) {
-  return [&, indexer](const std::vector<FoldName> &groups) {
+    FitAndIndices<ModelType, FeatureType>, GroupKey>::ConsensusMetric
+get_gp_ransac_feature_count_consensus_metric(const GroupIndexer<GroupKey> &indexer) {
+  return [&, indexer](const std::vector<GroupKey> &groups) {
     auto inds = indices_from_names(indexer, groups);
     return (-1.0 * static_cast<double>(inds.size()));
   };
 }
 
-template <typename ModelType, typename FeatureType, typename InlierMetric>
-inline RansacFunctions<FitAndIndices<ModelType, FeatureType>>
+template <typename ModelType, typename FeatureType, typename InlierMetric, typename GroupKey>
+inline RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>
 get_gp_ransac_functions(const ModelType &model,
                         const RegressionDataset<FeatureType> &dataset,
-                        const FoldIndexer &indexer,
+                        const GroupIndexer<GroupKey> &indexer,
                         const InlierMetric &inlier_metric) {
 
   static_assert(is_prediction_metric<InlierMetric>::value,
@@ -103,31 +89,31 @@ get_gp_ransac_functions(const ModelType &model,
   const auto full_cov = model.compute_covariance(dataset.features);
 
   const auto fitter =
-      get_gp_ransac_fitter<ModelType, FeatureType>(dataset, indexer, full_cov);
+      get_gp_ransac_fitter<ModelType, FeatureType, GroupKey>(dataset, indexer, full_cov);
 
   const auto inlier_metric_from_group =
-      get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric>(
+      get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric, GroupKey>(
           dataset, indexer, full_cov, model, inlier_metric);
 
   const auto consensus_metric_from_group =
-      get_gp_ransac_feature_count_consensus_metric<ModelType, FeatureType>(
+      get_gp_ransac_feature_count_consensus_metric<ModelType, FeatureType, GroupKey>(
           indexer);
 
-  return RansacFunctions<FitAndIndices<ModelType, FeatureType>>(
+  return RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>(
       fitter, inlier_metric_from_group, consensus_metric_from_group);
 };
 
-template <typename InlierMetric, typename IndexingFunction>
+template <typename InlierMetric, typename GrouperFunction>
 struct GaussianProcessRansacStrategy {
 
   GaussianProcessRansacStrategy() = default;
 
   GaussianProcessRansacStrategy(const InlierMetric &inlier_metric,
-                                const IndexingFunction &indexing_function)
-      : inlier_metric_(inlier_metric), indexing_function_(indexing_function){};
+                                const GrouperFunction &grouper_function)
+      : inlier_metric_(inlier_metric), grouper_function_(grouper_function){};
 
-  template <typename ModelType, typename FeatureType>
-  RansacFunctions<FitAndIndices<ModelType, FeatureType>>
+  template <typename ModelType, typename FeatureType, typename GroupKey>
+  RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>
   operator()(const ModelType &model,
              const RegressionDataset<FeatureType> &dataset) const {
     const auto indexer = get_indexer(dataset);
@@ -135,13 +121,13 @@ struct GaussianProcessRansacStrategy {
   }
 
   template <typename FeatureType>
-  FoldIndexer get_indexer(const RegressionDataset<FeatureType> &dataset) const {
-    return indexing_function_(dataset);
+  auto get_indexer(const RegressionDataset<FeatureType> &dataset) const {
+    return groupby(dataset, grouper_function_).indexers();
   }
 
 protected:
   InlierMetric inlier_metric_;
-  IndexingFunction indexing_function_;
+  GrouperFunction grouper_function_;
 };
 
 using DefaultGPRansacStrategy =

@@ -15,27 +15,23 @@
 
 namespace albatross {
 
-template <typename ModelType, typename FeatureType>
+template <typename ModelType, typename FeatureType, typename GroupKey>
 inline auto
 get_predictions(const ModelType &model,
-                const std::vector<RegressionFold<FeatureType>> &folds) {
+                const RegressionFolds<GroupKey, FeatureType> &folds) {
 
-  using FitType = typename fit_type<ModelType, FeatureType>::type;
-  std::map<std::string, Prediction<ModelType, FeatureType, FitType>>
-      predictions;
-  for (const auto &fold : folds) {
-    predictions.emplace(
-        fold.name,
-        model.fit(fold.train_dataset).predict(fold.test_dataset.features));
-  }
+  const auto predict_group = [&model](const auto &fold) {
+    return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+  };
 
-  return predictions;
+  return folds.apply(predict_group);
 }
 
 template <typename PredictType, typename Prediction>
 inline auto get_predict_types(
     const std::map<std::string, Prediction> &prediction_classes,
     PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
+
   std::map<std::string, PredictType> predictions;
   for (const auto &pred : prediction_classes) {
     predictions.emplace(pred.first, pred.second.template get<PredictType>());
@@ -61,8 +57,9 @@ get_joints(const std::map<std::string, PredictionType> &predictions) {
   return get_predict_types<JointDistribution>(predictions);
 }
 
+template <typename GroupKey>
 inline Eigen::VectorXd concatenate_mean_predictions(
-    const FoldIndexer &indexer,
+    const GroupIndexer<GroupKey> &indexer,
     const std::map<std::string, Eigen::VectorXd> &means) {
   assert(indexer.size() == means.size());
 
@@ -81,9 +78,9 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   return pred;
 }
 
-template <typename CovarianceType>
+template <typename CovarianceType, typename GroupKey>
 inline MarginalDistribution concatenate_marginal_predictions(
-    const FoldIndexer &indexer,
+    const GroupIndexer<GroupKey> &indexer,
     const std::map<std::string, Distribution<CovarianceType>> &preds) {
   assert(indexer.size() == preds.size());
 
@@ -104,28 +101,26 @@ inline MarginalDistribution concatenate_marginal_predictions(
   return MarginalDistribution(mean, variance.asDiagonal());
 }
 
-template <typename PredictionMetricType, typename FeatureType,
-          typename PredictionType>
+template <typename PredictionMetricType, typename GroupKey,
+          typename FeatureType, typename PredictionType>
 Eigen::VectorXd cross_validated_scores(
     const PredictionMetricType &metric,
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::map<std::string, PredictionType> &predictions) {
-  assert(folds.size() == predictions.size());
-  Eigen::Index n = static_cast<Eigen::Index>(predictions.size());
-  Eigen::VectorXd output(n);
-  for (Eigen::Index i = 0; i < n; ++i) {
-    assert(static_cast<std::size_t>(folds[i].test_dataset.size()) ==
-           static_cast<std::size_t>(predictions.at(folds[i].name).size()));
-    output[i] =
-        metric(predictions.at(folds[i].name), folds[i].test_dataset.targets);
-  }
-  return output;
+    const RegressionFolds<GroupKey, FeatureType> &folds,
+    const std::map<GroupKey, PredictionType> &predictions) {
+
+  const auto score_one_group = [&](const GroupKey &key, const RegressionFold<FeatureType> &fold) {
+    assert(static_cast<std::size_t>(fold.test_dataset.size()) ==
+           static_cast<std::size_t>(predictions.at(key).size()));
+    return metric(predictions.at(key), fold.test_dataset.targets);
+  };
+
+  return combine(folds.apply(score_one_group));
 }
 
-template <typename FeatureType, typename CovarianceType>
+template <typename FeatureType, typename CovarianceType, typename GroupKey>
 static inline Eigen::VectorXd cross_validated_scores(
     const PredictionMetric<Eigen::VectorXd> &metric,
-    const std::vector<RegressionFold<FeatureType>> &folds,
+    const RegressionFolds<FeatureType, GroupKey> &folds,
     const std::map<std::string, Distribution<CovarianceType>> &predictions) {
   std::map<std::string, Eigen::VectorXd> converted;
   for (const auto &pred : predictions) {
