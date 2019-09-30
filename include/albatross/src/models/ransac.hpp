@@ -138,7 +138,7 @@ inline RansacFunctions<FitModelType, GroupKey> get_generic_ransac_functions(
 
   std::function<FitModelType(const std::vector<GroupKey> &)> fitter =
       [&, indexer](const std::vector<GroupKey> &groups) {
-        auto inds = indices_from_names(indexer, groups);
+        auto inds = indices_from_groups(indexer, groups);
         return model.fit(subset(dataset, inds));
       };
 
@@ -152,7 +152,7 @@ inline RansacFunctions<FitModelType, GroupKey> get_generic_ransac_functions(
 
   auto consensus_metric_from_group =
       [&, indexer](const std::vector<GroupKey> &groups) {
-        auto inds = indices_from_names(indexer, groups);
+        auto inds = indices_from_groups(indexer, groups);
         RegressionDataset<FeatureType> inlier_dataset = subset(dataset, inds);
         return consensus_metric(inlier_dataset, model);
       };
@@ -200,7 +200,7 @@ struct GenericRansacStrategy {
 
   template <typename FeatureType>
   auto get_indexer(const RegressionDataset<FeatureType> &dataset) const {
-    return groupby(dataset, grouper_function_).indexers();
+    return group_by(dataset, grouper_function_).indexers();
   }
 
 protected:

@@ -24,10 +24,10 @@ bool map_contains(const std::map<K, V> &m, const K &k) {
   return m.find(k) != m.end();
 }
 
-template <typename K, typename V>
-bool map_contains(const std::unordered_map<K, V> &m, const K &k) {
-  return m.find(k) != m.end();
-}
+//template <typename K, typename V>
+//bool map_contains(const std::unordered_map<K, V> &m, const K &k) {
+//  return m.find(k) != m.end();
+//}
 
 /*
  * A function which makes a standard library map function
@@ -57,14 +57,14 @@ std::vector<K> map_keys(const std::map<K, V> m) {
   return keys;
 }
 
-template <typename K, typename V>
-std::vector<K> map_keys(const std::unordered_map<K, V> m) {
-  std::vector<K> keys;
-  for (const auto &pair : m) {
-    keys.push_back(pair.first);
-  }
-  return keys;
-}
+//template <typename K, typename V>
+//std::vector<K> map_keys(const std::unordered_map<K, V> m) {
+//  std::vector<K> keys;
+//  for (const auto &pair : m) {
+//    keys.push_back(pair.first);
+//  }
+//  return keys;
+//}
 
 /*
  * Returns a vector consisting of all the values in a map.

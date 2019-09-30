@@ -23,79 +23,83 @@ struct Y {};
  */
 class HasMeanPredictImpl {
 public:
-  template <typename FeatureType>
-  std::map<std::string, Eigen::VectorXd>
+  template <typename FeatureType, typename GroupKey>
+  std::map<GroupKey, Eigen::VectorXd>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
-                              const FoldIndexer &,
+                              const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<Eigen::VectorXd>) const {
-    return std::map<std::string, Eigen::VectorXd>();
+    return std::map<GroupKey, Eigen::VectorXd>();
   }
 };
 
 class HasMarginalPredictImpl {
 public:
-  template <typename FeatureType>
-  std::map<std::string, MarginalDistribution>
+  template <typename FeatureType, typename GroupKey>
+  std::map<GroupKey, MarginalDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
-                              const FoldIndexer &,
+                              const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<MarginalDistribution>) const {
-    return std::map<std::string, MarginalDistribution>();
+    return std::map<GroupKey, MarginalDistribution>();
   }
 };
 
 class HasJointPredictImpl {
 public:
-  template <typename FeatureType>
-  std::map<std::string, JointDistribution>
+  template <typename FeatureType, typename GroupKey>
+  std::map<GroupKey, JointDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
-                              const FoldIndexer &,
+                              const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<JointDistribution>) const {
-    return std::map<std::string, JointDistribution>();
+    return std::map<GroupKey, JointDistribution>();
   }
 };
 
 class HasAllPredictImpls {
 public:
-  std::map<std::string, Eigen::VectorXd>
-  cross_validated_predictions(const RegressionDataset<X> &, const FoldIndexer &,
+  template <typename GroupKey>
+  std::map<GroupKey, Eigen::VectorXd>
+  cross_validated_predictions(const RegressionDataset<X> &, const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<Eigen::VectorXd>) const {
-    return std::map<std::string, Eigen::VectorXd>();
+    return std::map<GroupKey, Eigen::VectorXd>();
   }
 
-  template <typename FeatureType>
-  std::map<std::string, MarginalDistribution>
+  template <typename FeatureType, typename GroupKey>
+  std::map<GroupKey, MarginalDistribution>
   cross_validated_predictions(const RegressionDataset<FeatureType> &,
-                              const FoldIndexer &,
+                              const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<MarginalDistribution>) const {
-    return std::map<std::string, MarginalDistribution>();
+    return std::map<GroupKey, MarginalDistribution>();
   }
 
-  std::map<std::string, JointDistribution>
-  cross_validated_predictions(const RegressionDataset<X> &, const FoldIndexer &,
+  template <typename GroupKey>
+  std::map<GroupKey, JointDistribution>
+  cross_validated_predictions(const RegressionDataset<X> &, const GroupIndexer<GroupKey> &,
                               PredictTypeIdentity<JointDistribution>) const {
-    return std::map<std::string, JointDistribution>();
+    return std::map<GroupKey, JointDistribution>();
   }
 };
 
+struct TestKey {};
+
 TEST(test_traits_core, test_has_cross_validated_predictions) {
-  EXPECT_TRUE(bool(has_valid_cv_mean<HasMeanPredictImpl, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_marginal<HasMeanPredictImpl, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_joint<HasMeanPredictImpl, X>::value));
+  EXPECT_TRUE(bool(has_valid_cv_mean<HasMeanPredictImpl, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_marginal<HasMeanPredictImpl, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_joint<HasMeanPredictImpl, X, TestKey>::value));
 
-  EXPECT_FALSE(bool(has_valid_cv_mean<HasMarginalPredictImpl, X>::value));
-  EXPECT_TRUE(bool(has_valid_cv_marginal<HasMarginalPredictImpl, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_joint<HasMarginalPredictImpl, X>::value));
+  EXPECT_FALSE(bool(has_valid_cv_mean<HasMarginalPredictImpl, X, TestKey>::value));
+  EXPECT_TRUE(bool(has_valid_cv_marginal<HasMarginalPredictImpl, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_joint<HasMarginalPredictImpl, X, TestKey>::value));
 
-  EXPECT_FALSE(bool(has_valid_cv_mean<HasJointPredictImpl, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_marginal<HasJointPredictImpl, X>::value));
-  EXPECT_TRUE(bool(has_valid_cv_joint<HasJointPredictImpl, X>::value));
+  EXPECT_FALSE(bool(has_valid_cv_mean<HasJointPredictImpl, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_marginal<HasJointPredictImpl, X, TestKey>::value));
+  EXPECT_TRUE(bool(has_valid_cv_joint<HasJointPredictImpl, X, TestKey>::value));
 
-  EXPECT_TRUE(bool(has_valid_cv_mean<HasAllPredictImpls, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_mean<HasAllPredictImpls, Y>::value));
-  EXPECT_TRUE(bool(has_valid_cv_marginal<HasAllPredictImpls, X>::value));
-  EXPECT_TRUE(bool(has_valid_cv_marginal<HasAllPredictImpls, Y>::value));
-  EXPECT_TRUE(bool(has_valid_cv_joint<HasAllPredictImpls, X>::value));
-  EXPECT_FALSE(bool(has_valid_cv_joint<HasAllPredictImpls, Y>::value));
+  EXPECT_TRUE(bool(has_valid_cv_mean<HasAllPredictImpls, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_mean<HasAllPredictImpls, Y, TestKey>::value));
+  EXPECT_TRUE(bool(has_valid_cv_marginal<HasAllPredictImpls, X, TestKey>::value));
+  EXPECT_TRUE(bool(has_valid_cv_marginal<HasAllPredictImpls, Y, TestKey>::value));
+  EXPECT_TRUE(bool(has_valid_cv_joint<HasAllPredictImpls, X, TestKey>::value));
+  EXPECT_FALSE(bool(has_valid_cv_joint<HasAllPredictImpls, Y, TestKey>::value));
 }
 
 } // namespace albatross

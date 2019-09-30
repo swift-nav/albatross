@@ -356,7 +356,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto gp_fit = fit_model.get_fit();
 
   const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> keys = map_keys(group_indexer);
+  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<GroupKey, JointDistribution> output;
@@ -364,7 +364,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
     Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
     Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
     const auto A_inv = inverse_blocks[i].inverse();
-    output[keys] = JointDistribution(yi - A_inv * vi, A_inv);
+    output[group_keys[i]] = JointDistribution(yi - A_inv * vi, A_inv);
   }
   return output;
 }
@@ -380,7 +380,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto gp_fit = fit_model.get_fit();
 
   const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_names = map_keys(group_indexer);
+  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<GroupKey, MarginalDistribution> output;
@@ -388,7 +388,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
     Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
     Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
     const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-    output[group_names[i]] = MarginalDistribution(
+    output[group_keys[i]] = MarginalDistribution(
         yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal());
   }
   return output;
@@ -403,7 +403,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
   const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_names = map_keys(group_indexer);
+  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
   const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
 
   std::map<GroupKey, Eigen::VectorXd> output;
@@ -411,7 +411,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
     Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
     Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
     const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-    output[group_names[i]] = yi - A_ldlt.solve(vi);
+    output[group_keys[i]] = yi - A_ldlt.solve(vi);
   }
   return output;
 }

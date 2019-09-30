@@ -22,9 +22,9 @@ using albatross::RansacFit;
 namespace cereal {
 
 template <typename Archive, typename ModelType, typename StrategyType,
-          typename FeatureType>
+          typename FeatureType, typename GroupKey>
 inline void serialize(Archive &archive,
-                      Fit<RansacFit<ModelType, StrategyType, FeatureType>> &fit,
+                      Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> &fit,
                       const std::uint32_t) {
   archive(cereal::make_nvp("fit_model", fit.fit_model));
   archive(cereal::make_nvp("inliers", fit.inliers));
@@ -39,7 +39,7 @@ inline void serialize(Archive &archive,
                       const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
-  archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
+  archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
 template <typename Archive, typename InlierMetric, typename IndexingFunction>
@@ -48,7 +48,7 @@ inline void serialize(
     GaussianProcessRansacStrategy<InlierMetric, IndexingFunction> &strategy,
     const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
-  archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
+  archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
 } // namespace cereal

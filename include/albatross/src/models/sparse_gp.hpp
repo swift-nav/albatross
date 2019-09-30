@@ -26,7 +26,7 @@ inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 } // namespace details
 
 template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+          typename GrouperFunction>
 class SparseGaussianProcessRegression;
 
 std::vector<double> inline linspace(double a, double b, std::size_t n) {
@@ -106,16 +106,16 @@ struct UniformlySpacedInducingPoints {
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
 template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+          typename GrouperFunction>
 class SparseGaussianProcessRegression
     : public GaussianProcessBase<
           CovFunc, SparseGaussianProcessRegression<
-                       CovFunc, InducingPointStrategy, IndexingFunction>> {
+                       CovFunc, InducingPointStrategy, GrouperFunction>> {
 
 public:
   using Base = GaussianProcessBase<
       CovFunc, SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                               IndexingFunction>>;
+                                               GrouperFunction>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
   SparseGaussianProcessRegression(CovFunc &covariance_function)
@@ -125,12 +125,12 @@ public:
   SparseGaussianProcessRegression(
       CovFunc &covariance_function,
       InducingPointStrategy &inducing_point_strategy_,
-      IndexingFunction &independent_group_indexing_function_,
+      GrouperFunction &independent_group_function_,
       const std::string &model_name)
       : Base(covariance_function, model_name),
         inducing_point_strategy(inducing_point_strategy_),
-        independent_group_indexing_function(
-            independent_group_indexing_function_) {
+        independent_group_function(
+            independent_group_function_) {
     initialize_params();
   };
   SparseGaussianProcessRegression(CovFunc &covariance_function,
@@ -172,8 +172,8 @@ public:
   auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
                  const MarginalDistribution &out_of_order_targets) const {
 
-    const auto indexer =
-        independent_group_indexing_function(out_of_order_features);
+    const auto indexer = group_by(out_of_order_features,
+            independent_group_function).indexers();
 
     // Determine the set of inducing points, u.
     const auto u = inducing_point_strategy(out_of_order_features);
@@ -299,18 +299,18 @@ public:
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
   InducingPointStrategy inducing_point_strategy;
-  IndexingFunction independent_group_indexing_function;
+  GrouperFunction independent_group_function;
 };
 
 template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+          typename GrouperFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
                                InducingPointStrategy &strategy,
-                               IndexingFunction &index_function,
+                               GrouperFunction &grouper_function,
                                const std::string &model_name) {
   return SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                         IndexingFunction>(
-      covariance_function, strategy, index_function, model_name);
+                                         GrouperFunction>(
+      covariance_function, strategy, grouper_function, model_name);
 };
 } // namespace albatross
 
