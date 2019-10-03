@@ -114,6 +114,12 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   Eigen::MatrixXd explained_cov =
       cross_cov.transpose() * train_covariance.solve(cross_cov);
+
+//  std::cout << __PRETTY_FUNCTION__ << std::endl;
+//  std::cout << "=========PRIOR COV==========" << std::endl;
+//  std::cout << prior_cov.topLeftCorner(5, 5) << std::endl;
+//  std::cout << "=========EXPLAINED COV==========" << std::endl;
+//  std::cout << explained_cov.topLeftCorner(5, 5) << std::endl;
   return JointDistribution(pred, prior_cov - explained_cov);
 }
 
@@ -242,8 +248,19 @@ public:
   CholeskyFit<FeatureType>
   _fit_impl(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
-    const auto measurement_features = as_measurements(features);
-    Eigen::MatrixXd cov = covariance_function_(measurement_features);
+//    const auto measurement_features = as_measurements(features);
+    Eigen::MatrixXd cov = covariance_function_(features);
+//    std::cout << "=============FIT==============" << std::endl;
+//    std::cout << albatross::pretty_params(covariance_function_.get_params()) << std::endl;
+//    std::cout << cov.topLeftCorner(5, 5) << std::endl;
+//    std::cout << "=============AGAIN==============" << std::endl;
+//    std::cout << get_covariance()(features).topLeftCorner(5, 5) << std::endl;
+//
+//    std::cout << "------------MEASUREMENTS" << std::endl;
+//    covariance_function_.call_trace().print(measurement_features[0], measurement_features[0]);
+//    std::cout << "------------FEATURES" << std::endl;
+//    covariance_function_.call_trace().print(features[0], features[0]);
+
     return CholeskyFit<FeatureType>(features, cov, targets);
   }
 

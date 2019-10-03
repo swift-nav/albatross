@@ -197,6 +197,10 @@ public:
 
   std::size_t size() const { return features_.size(); }
 
+  std::vector<FeatureType> features() const {
+    return features_;
+  }
+
 private:
   template <typename T> struct get_type {};
 

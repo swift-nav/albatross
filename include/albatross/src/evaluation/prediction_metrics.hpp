@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
 #define ALBATROSS_EVALUATION_PREDICTION_METRICS_H_
 
+#include "stats.hpp"
+
 namespace albatross {
 
 /*
@@ -121,6 +123,34 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
       : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
+
+/*
+ * Mahalanobis Chi-Squared Statistic
+ *
+ * Tests the normality of a multivariate distribution by computing
+ * the squared Mahalanobis distance which should follow a chi-squared
+ * distribution
+ */
+
+inline double
+mahalanobis_chi_squared_statistic(const Eigen::VectorXd &deviation,
+                                  const Eigen::MatrixXd &covariance) {
+  double distance_squared = covariance.llt().matrixL().solve(deviation).squaredNorm();
+  Eigen::Index n = deviation.size();
+  return 1. - stats::pchisq(n, distance_squared);
+}
+
+inline double
+mahalanobis_chi_squared_statistic(const JointDistribution &prediction,
+                                  const MarginalDistribution &truth) {
+  return mahalanobis_chi_squared_statistic(prediction.mean - truth.mean, prediction.covariance);
+}
+
+struct MahalanobisChiSquaredCdf : public PredictionMetric<JointDistribution> {
+  MahalanobisChiSquaredCdf()
+      : PredictionMetric<JointDistribution>(mahalanobis_chi_squared_statistic) {}
+};
+
 } // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */

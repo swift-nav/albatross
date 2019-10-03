@@ -53,11 +53,7 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
              const FoldName &group,
              const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
     auto inds = indexer.at(group);
-
     const auto test_dataset = subset(dataset, inds);
-    const auto test_cov = symmetric_subset(cov, inds);
-
-    const auto cross_cov = subset(cov, fit_and_indices.indices, inds);
 
     const auto pred =
         get_prediction(model, fit_and_indices.fit, test_dataset.features);
@@ -90,6 +86,23 @@ get_gp_ransac_feature_count_consensus_metric(const FoldIndexer &indexer) {
   };
 }
 
+template <typename ModelType, typename FeatureType>
+inline typename RansacFunctions<
+    FitAndIndices<ModelType, FeatureType>>::ConsensusMetric
+get_gp_ransac_chi_squared_consensus_metric(const RegressionDataset<FeatureType> &dataset,
+                                           const FoldIndexer &indexer,
+                                           const Eigen::MatrixXd &cov) {
+  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
+    auto inds = indices_from_names(indexer, groups);
+
+    const auto consensus_prior = symmetric_subset(cov, inds);
+    const auto consensus_targets = subset(dataset.targets, inds);
+
+    return mahalanobis_chi_squared_statistic(consensus_targets.mean, consensus_prior);
+  };
+}
+
+
 template <typename ModelType, typename FeatureType, typename InlierMetric>
 inline RansacFunctions<FitAndIndices<ModelType, FeatureType>>
 get_gp_ransac_functions(const ModelType &model,
@@ -97,8 +110,8 @@ get_gp_ransac_functions(const ModelType &model,
                         const FoldIndexer &indexer,
                         const InlierMetric &inlier_metric) {
 
-  static_assert(is_prediction_metric<InlierMetric>::value,
-                "InlierMetric must be an PredictionMetric.");
+//  static_assert(is_prediction_metric<InlierMetric>::value,
+//                "InlierMetric must be an PredictionMetric.");
 
   const auto full_cov = model.compute_covariance(dataset.features);
 
@@ -110,8 +123,10 @@ get_gp_ransac_functions(const ModelType &model,
           dataset, indexer, full_cov, model, inlier_metric);
 
   const auto consensus_metric_from_group =
-      get_gp_ransac_feature_count_consensus_metric<ModelType, FeatureType>(
-          indexer);
+      get_gp_ransac_chi_squared_consensus_metric<ModelType, FeatureType>(dataset, indexer, full_cov);
+//  const auto consensus_metric_from_group =
+//      get_gp_ransac_feature_count_consensus_metric<ModelType, FeatureType>(
+//          indexer);
 
   return RansacFunctions<FitAndIndices<ModelType, FeatureType>>(
       fitter, inlier_metric_from_group, consensus_metric_from_group);
@@ -147,6 +162,13 @@ protected:
 using DefaultGPRansacStrategy =
     GaussianProcessRansacStrategy<NegativeLogLikelihood<JointDistribution>,
                                   LeaveOneOut>;
+
+template <typename InlierMetric, typename IndexingFunction>
+auto gp_ransac_strategy(const InlierMetric &inlier_metric,
+                        const IndexingFunction &indexing_function) {
+  return GaussianProcessRansacStrategy<InlierMetric, IndexingFunction>(inlier_metric, indexing_function);
+}
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_RANSAC_GP_H_ */

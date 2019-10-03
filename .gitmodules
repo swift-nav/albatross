@@ -22,3 +22,9 @@
 [submodule "third_party/variant"]
 	path = third_party/variant
 	url = https://github.com/swift-nav/variant.git
+[submodule "third_party/gcem"]
+	path = third_party/gcem
+	url = https://github.com/kthohr/gcem
+[submodule "third_party/stats"]
+	path = third_party/stats
+	url = https://github.com/kthohr/stats.git
