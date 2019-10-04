@@ -103,26 +103,15 @@ public:
   CallTrace(const CovFunc &cov_func) : cov_func_(cov_func){};
 
   template <typename X, typename Y,
+            typename std::enable_if<has_call_operator<CovFunc, X &, Y &>::value,
+                                    int>::type = 0>
+  std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
+    return {{cov_func_.get_name(), std::to_string(cov_func_(x, y))}};
+  }
+
+  template <typename X, typename Y,
             typename std::enable_if<
-                has_valid_call_impl<CovFunc, X &, Y &>::value, int>::type = 0>
-  std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
-    return {{cov_func_.get_name(), std::to_string(cov_func_(x, y))}};
-  }
-
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(has_valid_call_impl<CovFunc, Y &, X &>::value &&
-                               !has_valid_call_impl<CovFunc, X &, Y &>::value),
-                              int>::type = 0>
-  std::vector<CallAndValue> get_trace(const X &x, const Y &y) const {
-    return {{cov_func_.get_name(), std::to_string(cov_func_(x, y))}};
-  }
-
-  template <
-      typename X, typename Y,
-      typename std::enable_if<(!has_valid_call_impl<CovFunc, Y &, X &>::value &&
-                               !has_valid_call_impl<CovFunc, X &, Y &>::value),
-                              int>::type = 0>
+                !has_call_operator<CovFunc, X &, Y &>::value, int>::type = 0>
   std::vector<CallAndValue> get_trace(const X &, const Y &) const {
     return {{cov_func_.get_name(), "UNDEFINED"}};
   }
@@ -139,8 +128,8 @@ public:
 
   template <typename X, typename Y,
             typename std::enable_if<
-                has_valid_call_impl<SumOfCovarianceFunctions<LHS, RHS>, X &,
-                                    Y &>::value,
+                has_call_operator<SumOfCovarianceFunctions<LHS, RHS>, X &,
+                                  Y &>::value,
                 int>::type = 0>
   std::string eval(const X &x, const Y &y) const {
     std::ostringstream oss;
@@ -150,8 +139,8 @@ public:
 
   template <typename X, typename Y,
             typename std::enable_if<
-                !has_valid_call_impl<SumOfCovarianceFunctions<LHS, RHS>, X &,
-                                     Y &>::value,
+                !has_call_operator<SumOfCovarianceFunctions<LHS, RHS>, X &,
+                                   Y &>::value,
                 int>::type = 0>
   std::string eval(const X &, const Y &) const {
     return "UNDEFINED";
@@ -185,8 +174,8 @@ public:
 
   template <typename X, typename Y,
             typename std::enable_if<
-                has_valid_call_impl<ProductOfCovarianceFunctions<LHS, RHS>, X &,
-                                    Y &>::value,
+                has_call_operator<ProductOfCovarianceFunctions<LHS, RHS>, X &,
+                                  Y &>::value,
                 int>::type = 0>
   std::string eval(const X &x, const Y &y) const {
     std::ostringstream oss;
@@ -196,8 +185,8 @@ public:
 
   template <typename X, typename Y,
             typename std::enable_if<
-                !has_valid_call_impl<ProductOfCovarianceFunctions<LHS, RHS>,
-                                     X &, Y &>::value,
+                !has_call_operator<ProductOfCovarianceFunctions<LHS, RHS>, X &,
+                                   Y &>::value,
                 int>::type = 0>
   std::string eval(const X &, const Y &) const {
     return "UNDEFINED";
