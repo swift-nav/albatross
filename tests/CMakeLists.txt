@@ -22,6 +22,8 @@ target_link_libraries(albatross_unit_tests
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 
+target_code_coverage(albatross_unit_tests AUTO ALL)
+
 add_custom_target(run_albatross_unit_tests ALL
   COMMAND albatross_unit_tests
   COMMENT "Running unit tests"

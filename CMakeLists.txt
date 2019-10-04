@@ -14,6 +14,10 @@ swift_create_project_options(
 include(ClangFormat)
 swift_setup_clang_format()
 
+set(CODE_COVERAGE true)
+include(CodeCoverage)
+add_code_coverage_all_targets()
+
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
 if(albatross_BUILD_EXAMPLES)
@@ -80,6 +84,7 @@ set(albatross_COMPILE_OPTIONS
   -Wvolatile-register-var
   -Wwrite-strings
   )
+
 
 if(albatross_BUILD_TESTS)
   add_subdirectory(tests)
