@@ -61,7 +61,7 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-HAS_METHOD(_fit_impl);
+DEFINE_CLASS_METHOD_TRAITS(_fit_impl);
 
 template <typename T, typename FeatureType>
 class has_possible_fit : public has__fit_impl<T, std::vector<FeatureType> &,
@@ -139,9 +139,7 @@ public:
   typedef decltype(test<T>(0)) type;
 };
 
-MAKE_HAS_ANY_TRAIT(_predict_impl);
-
-HAS_METHOD_WITH_RETURN_TYPE(_predict_impl);
+DEFINE_CLASS_METHOD_TRAITS(_predict_impl);
 
 template <typename T, typename FeatureType, typename FitType,
           typename PredictType>
@@ -163,7 +161,7 @@ template <typename T, typename FeatureType, typename FitType>
 using has_valid_predict_joint =
     has_valid_predict<T, FeatureType, FitType, JointDistribution>;
 
-HAS_METHOD(_mean);
+DEFINE_CLASS_METHOD_TRAITS(_mean);
 
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>
@@ -172,7 +170,7 @@ struct can_predict_mean
                        typename const_ref<FitType>::type,
                        typename const_ref<std::vector<FeatureType>>::type> {};
 
-HAS_METHOD(_marginal);
+DEFINE_CLASS_METHOD_TRAITS(_marginal);
 
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>
@@ -182,7 +180,7 @@ struct can_predict_marginal
                            typename const_ref<std::vector<FeatureType>>::type> {
 };
 
-HAS_METHOD(_joint);
+DEFINE_CLASS_METHOD_TRAITS(_joint);
 
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>

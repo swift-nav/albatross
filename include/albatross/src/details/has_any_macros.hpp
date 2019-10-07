@@ -15,29 +15,70 @@
 
 namespace albatross {
 
-#define HAS_METHOD(fname)                                                      \
-  template <typename T, typename... Args> class has_##fname {                  \
-    template <typename C, typename = decltype(std::declval<C>().fname(         \
-                              std::declval<Args>()...))>                       \
-    static std::true_type test(C *);                                           \
-    template <typename> static std::false_type test(...);                      \
-                                                                               \
-  public:                                                                      \
-    static constexpr bool value = decltype(test<T>(0))::value;                 \
-  };
+template <typename First, typename Second> struct TypePair {
+  using first_type = First;
+  using second_type = Second;
+};
 
-#define HAS_METHOD_WITH_RETURN_TYPE(fname)                                     \
-  template <typename T, typename ReturnType, typename... Args>                 \
-  class has_##fname##_with_return_type {                                       \
+/*
+ * Defines a couple of traits which help inspect whether a type has a method
+ * which is callable when provided with specific arguments.
+ *
+ *   template <typename T, typename ... Args>
+ *   struct class_method_FNAME_traits {
+ *     static constexpr bool is_defined;
+ *     typename return_type;
+ *   }
+ *
+ * So for example:
+ *
+ *   class_method_foo_traits<Bar, int, double>::is_defined;
+ *
+ * would be a static bool which would tell you if you can call:
+ *
+ *   Bar.foo(int(1), double(3.14159));
+ *
+ * similarly:
+ *
+ *   class_method_foo_traits<Bar, int, double>::return_type
+ *
+ * would tell you the return type.  Note that if the method is not
+ * defined `return_type` will be void, be sure to check `is_defined`
+ * if you want to make sure the call is feasible, or use the
+ * helper class:
+ *
+ *   has_foo_with_return_type<Bar, ExpectedReturnType, int, double>::value
+ *
+ * Similarly there is a helper class if you want to check if the
+ * method exists in a (slightly) more concise way:
+ *
+ *   has_foo<Bar, int, double>::value
+ */
+#define DEFINE_CLASS_METHOD_TRAITS(fname)                                      \
+  template <typename T, typename... Args>                                      \
+  class class_method_##fname##_traits {                                        \
     template <typename C,                                                      \
-              typename ActualReturnType = decltype(                            \
-                  std::declval<const C>().fname(std::declval<Args>()...))>     \
-    static typename std::is_same<ActualReturnType, ReturnType>::type           \
-    test(C *);                                                                 \
-    template <typename> static std::false_type test(...);                      \
+              typename ReturnType =                                            \
+                  decltype(std::declval<C>().fname(std::declval<Args>()...))>  \
+    static TypePair<std::true_type, ReturnType> test(C *);                     \
+    template <typename> static TypePair<std::false_type, void> test(...);      \
                                                                                \
   public:                                                                      \
-    static constexpr bool value = decltype(test<T>(0))::value;                 \
+    static constexpr bool is_defined =                                         \
+        decltype(test<T>(0))::first_type::value;                               \
+    using return_type = typename decltype(test<T>(0))::second_type;            \
+  };                                                                           \
+                                                                               \
+  template <typename T, typename... Args> struct has_##fname {                 \
+    static constexpr bool value =                                              \
+        class_method_##fname##_traits<T, Args...>::is_defined;                 \
+  };                                                                           \
+  template <typename T, typename ReturnType, typename... Args>                 \
+  struct has_##fname##_with_return_type {                                      \
+    using MethodTraits = class_method_##fname##_traits<T, Args...>;            \
+    static constexpr bool value =                                              \
+        MethodTraits::is_defined &&                                            \
+        std::is_same<ReturnType, typename MethodTraits::return_type>::value;   \
   };
 
 /*

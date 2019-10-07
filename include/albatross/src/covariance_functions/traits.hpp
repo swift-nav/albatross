@@ -20,14 +20,12 @@ MAKE_HAS_ANY_TRAIT(_call_impl);
 // A helper rename to avoid duplicate underscores.
 template <typename U> class has_any_call_impl : public has_any__call_impl<U> {};
 
-HAS_METHOD_WITH_RETURN_TYPE(_call_impl);
+DEFINE_CLASS_METHOD_TRAITS(_call_impl);
 
 template <typename U, typename... Args>
-class has_valid_call_impl : public has__call_impl_with_return_type<
-                                U, double, typename const_ref<Args>::type...> {
-};
-
-HAS_METHOD(_call_impl);
+class has_valid_call_impl
+    : public has__call_impl_with_return_type<
+          const U, double, typename const_ref<Args>::type...> {};
 
 template <typename U, typename... Args>
 class has_possible_call_impl : public has__call_impl<U, Args &...> {};
@@ -35,7 +33,8 @@ class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 /*
  * has_valid_cov_caller
  */
-HAS_METHOD_WITH_RETURN_TYPE(call);
+
+DEFINE_CLASS_METHOD_TRAITS(call);
 
 template <typename CovFunc, typename Caller, typename... Args>
 class has_valid_cov_caller
@@ -77,7 +76,7 @@ public:
                                  !has_valid_call_impl<T, Args...>::value);
 };
 
-HAS_METHOD(solve);
+DEFINE_CLASS_METHOD_TRAITS(solve);
 
 /*
  * Has valid caller for all variants
