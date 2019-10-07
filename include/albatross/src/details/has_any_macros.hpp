@@ -22,7 +22,7 @@ template <typename First, typename Second> struct TypePair {
 
 /*
  * Defines a couple of traits which help inspect whether a type has a method
- * which is callable whne provided with specific arguments.
+ * which is callable when provided with specific arguments.
  *
  *   template <typename T, typename ... Args>
  *   struct class_method_FNAME_traits {
