@@ -117,13 +117,52 @@ concatenate_marginals(const MarginalDistribution &x,
   if (!x.has_covariance() && !y.has_covariance()) {
     return MarginalDistribution(mean);
   } else {
-    Eigen::VectorXd variance = Eigen::VectorXd::Zero(mean.size());
+    Eigen::VectorXd variance(mean.size());
+    variance.fill(NAN);
     if (x.has_covariance()) {
       variance.block(0, 0, x.mean.size(), 1) = x.covariance.diagonal();
     }
     if (y.has_covariance()) {
       variance.block(x.mean.size(), 0, y.mean.size(), 1) =
           y.covariance.diagonal();
+    }
+
+    return MarginalDistribution(mean, variance.asDiagonal());
+  }
+}
+
+inline MarginalDistribution
+concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
+
+  if (dists.size() == 0) {
+    return MarginalDistribution();
+  }
+
+  std::size_t size = 0;
+  bool any_has_covariance = false;
+  for (const auto &dist : dists) {
+    size += dist.size();
+    any_has_covariance = any_has_covariance || dist.has_covariance();
+  }
+
+  Eigen::VectorXd mean(static_cast<Eigen::Index>(size));
+  Eigen::Index i = 0;
+  for (const auto &dist : dists) {
+    mean.block(i, 0, dist.mean.size(), 1) = dist.mean;
+    i += dist.mean.size();
+  }
+
+  if (!any_has_covariance) {
+    return MarginalDistribution(mean);
+  } else {
+    Eigen::VectorXd variance(mean.size());
+    variance.fill(NAN);
+    Eigen::Index i = 0;
+    for (const auto &dist : dists) {
+      if (dist.has_covariance()) {
+        variance.block(i, 0, dist.mean.size(), 1) = dist.covariance.diagonal();
+      }
+      i += dist.mean.size();
     }
 
     return MarginalDistribution(mean, variance.asDiagonal());

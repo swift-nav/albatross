@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_INDEXING_H
-#define ALBATROSS_CORE_INDEXING_H
+#ifndef ALBATROSS_INDEXING_SUBSET_H
+#define ALBATROSS_INDEXING_SUBSET_H
 
 namespace albatross {
 
@@ -149,12 +149,19 @@ inline void set_subset(const Eigen::DiagonalMatrix<Scalar, Size> &from,
 }
 
 template <typename X>
-inline std::vector<X> vector_set_difference(const std::vector<X> &x,
-                                            const std::vector<X> &y) {
-  std::vector<X> diff;
+inline std::set<X> set_difference(const std::set<X> &x, const std::set<X> &y) {
+  std::set<X> diff;
   std::set_difference(x.begin(), x.end(), y.begin(), y.end(),
                       std::inserter(diff, diff.begin()));
   return diff;
+}
+
+template <typename X>
+inline std::set<X> vector_set_difference(const std::vector<X> &x,
+                                         const std::vector<X> &y) {
+  std::set<X> sorted_x(x.begin(), x.end());
+  std::set<X> sorted_y(y.begin(), y.end());
+  return set_difference(sorted_x, sorted_y);
 }
 
 /*
@@ -169,7 +176,8 @@ indices_complement(const std::vector<std::size_t> &indices,
                    const std::size_t n) {
   std::vector<std::size_t> all_indices(n);
   std::iota(all_indices.begin(), all_indices.end(), 0);
-  return vector_set_difference(all_indices, indices);
+  const auto complement = vector_set_difference(all_indices, indices);
+  return std::vector<std::size_t>(complement.begin(), complement.end());
 }
 
 inline FoldIndices indices_from_names(const FoldIndexer &indexer,
