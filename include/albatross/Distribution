@@ -15,8 +15,6 @@
 
 #include "Common"
 
-#include <albatross/src/core/declarations.hpp>
-#include <albatross/src/core/indexing.hpp>
 #include <albatross/src/core/distribution.hpp>
 
 #endif

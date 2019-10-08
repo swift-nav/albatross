@@ -15,6 +15,7 @@
 
 #include "Core"
 #include "Stats"
+#include "Indexing"
 
 #include <albatross/src/evaluation/likelihood.hpp>
 #include <albatross/src/evaluation/differential_entropy.hpp>
