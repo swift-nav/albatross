@@ -27,10 +27,14 @@ TEST(test_linalg_utils, test_print_eigen_values) {
     features.push_back(i);
   }
 
+  // Simple sanity check;
   std::ostringstream oss;
-  print_small_eigen_directions(random, features, k - 4, &oss);
-
-  print_large_eigen_directions(random, features, k - 4, &oss);
+  print_small_eigen_directions(random, features, k - 4,
+                               details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
+                               &oss);
+  print_large_eigen_directions(random, features, k - 4,
+                               details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
+                               &oss);
 }
 
 } // namespace albatross

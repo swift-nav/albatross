@@ -17,10 +17,13 @@ namespace albatross {
 
 namespace details {
 
+constexpr double DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD = 1e-3;
+
 template <typename FeatureType, typename Comparator>
 inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
                                     const std::vector<FeatureType> &features,
                                     std::size_t count, Comparator comp,
+                                    double print_if_above,
                                     std::ostream *stream) {
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ev(matrix);
   const Eigen::VectorXd values = ev.eigenvalues().real();
@@ -47,7 +50,7 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
     (*stream) << "eigen value: " << value << std::endl;
     for (Eigen::Index j = 0; j < vector.size(); ++j) {
       double coef = vector[j];
-      if (fabs(coef) > 1e-3) {
+      if (fabs(coef) > print_if_above) {
         (*stream) << "    " << std::setw(12) << coef << "   " << features[j]
                   << std::endl;
       }
@@ -60,23 +63,29 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
 template <typename FeatureType>
 inline void print_small_eigen_directions(
     const Eigen::MatrixXd &matrix, const std::vector<FeatureType> &features,
-    std::size_t count, std::ostream *stream = &std::cout) {
+    std::size_t count,
+    double print_if_above = details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
+    std::ostream *stream = &std::cout) {
   const auto ascending = [&](const double &a, const double &b) -> bool {
     return a < b;
   };
 
-  details::_print_eigen_directions(matrix, features, count, ascending, stream);
+  details::_print_eigen_directions(matrix, features, count, ascending,
+                                   print_if_above, stream);
 }
 
 template <typename FeatureType>
 inline void print_large_eigen_directions(
     const Eigen::MatrixXd &matrix, const std::vector<FeatureType> &features,
-    std::size_t count, std::ostream *stream = &std::cout) {
+    std::size_t count,
+    double print_if_above = details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
+    std::ostream *stream = &std::cout) {
   const auto decending = [&](const double &a, const double &b) -> bool {
     return a > b;
   };
 
-  details::_print_eigen_directions(matrix, features, count, decending, stream);
+  details::_print_eigen_directions(matrix, features, count, decending,
+                                   print_if_above, stream);
 }
 
 } // namespace albatross
