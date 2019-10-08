@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Dataset>
+#include <albatross/Indexing>
 #include <gtest/gtest.h>
 
 namespace albatross {
