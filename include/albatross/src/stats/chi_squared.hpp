@@ -32,16 +32,16 @@ inline double chi_squared_cdf_unsafe(double x, std::size_t degrees_of_freedom) {
 
 inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
 
-  if (std::isnan(x)) {
+  if (std::isnan(x) || x < 0.) {
     return NAN;
-  }
-
-  if (std::numeric_limits<double>::epsilon() > x) {
-    return 0.;
   }
 
   if (degrees_of_freedom == 0) {
     return 1.;
+  }
+
+  if (std::numeric_limits<double>::epsilon() > x) {
+    return 0.;
   }
 
   if (std::isinf(x)) {

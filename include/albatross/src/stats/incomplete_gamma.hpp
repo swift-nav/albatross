@@ -67,58 +67,43 @@ inline double incomplete_gamma_quadrature_recursive(double lb, double ub,
   }
 }
 
-inline double incomplete_gamma_quadrature_lb(double a, double z) {
-  if (a > 1000) {
-    return std::max(0., std::min(z, a) - 11 * sqrt(a));
-  } else if (a > 800) {
-    return std::max(0., std::min(z, a) - 11 * sqrt(a));
-  } else if (a > 500) {
-    return std::max(0., std::min(z, a) - 10 * sqrt(a));
-  } else if (a > 300) {
-    return std::max(0., std::min(z, a) - 10 * sqrt(a));
-  } else if (a > 100) {
-    return std::max(0., std::min(z, a) - 9 * sqrt(a));
-  } else if (a > 90) {
-    return std::max(0., std::min(z, a) - 9 * sqrt(a));
-  } else if (a > 70) {
-    return std::max(0., std::min(z, a) - 8 * sqrt(a));
-  } else if (a > 50) {
-    return std::max(0., std::min(z, a) - 7 * sqrt(a));
-  } else if (a > 40) {
-    return std::max(0., std::min(z, a) - 6 * sqrt(a));
-  } else if (a > 30) {
-    return std::max(0., std::min(z, a) - 5 * sqrt(a));
-  }
-  return std::max(0., std::min(z, a) - 4 * sqrt(a));
-}
+inline std::pair<double, double> incomplete_gamma_quadrature_bounds(double a,
+                                                                    double z) {
 
-inline double incomplete_gamma_quadrature_ub(double a, double z) {
-  if (a > 1000) {
-    return std::min(z, a + 10 * sqrt(a));
-  } else if (a > 800) {
-    return std::min(z, a + 10 * sqrt(a));
-  } else if (a > 500) {
-    return std::min(z, a + 9 * sqrt(a));
+  if (a > 800) {
+    return std::make_pair(std::max(0., std::min(z, a) - 11 * sqrt(a)),
+                          std::min(z, a + 10 * sqrt(a)));
   } else if (a > 300) {
-    std::min(z, a + 9 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 10 * sqrt(a)),
+                          std::min(z, a + 9 * sqrt(a)));
   } else if (a > 100) {
-    return std::min(z, a + 8 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 9 * sqrt(a)),
+                          std::min(z, a + 8 * sqrt(a)));
   } else if (a > 90) {
-    return std::min(z, a + 8 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 9 * sqrt(a)),
+                          std::min(z, a + 8 * sqrt(a)));
   } else if (a > 70) {
-    return std::min(z, a + 7 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 8 * sqrt(a)),
+                          std::min(z, a + 7 * sqrt(a)));
   } else if (a > 50) {
-    return std::min(z, a + 6 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 7 * sqrt(a)),
+                          std::min(z, a + 6 * sqrt(a)));
   } else if (a > 40) {
-    return std::min(z, a + 5 * sqrt(a));
+    return std::make_pair(std::max(0., std::min(z, a) - 6 * sqrt(a)),
+                          std::min(z, a + 5 * sqrt(a)));
+  } else if (a > 30) {
+    return std::make_pair(std::max(0., std::min(z, a) - 5 * sqrt(a)),
+                          std::min(z, a + 4 * sqrt(a)));
+  } else {
+    return std::make_pair(std::max(0., std::min(z, a) - 4 * sqrt(a)),
+                          std::min(z, a + 4 * sqrt(a)));
   }
-  return std::min(z, a + 4 * sqrt(a));
 }
 
 double incomplete_gamma_quadrature(double a, double z) {
-  return incomplete_gamma_quadrature_recursive(
-      incomplete_gamma_quadrature_lb(a, z),
-      incomplete_gamma_quadrature_ub(a, z), a, lgamma(a), 0);
+  const auto bounds = incomplete_gamma_quadrature_bounds(a, z);
+  return incomplete_gamma_quadrature_recursive(bounds.first, bounds.second, a,
+                                               lgamma(a), 0);
 }
 
 inline double

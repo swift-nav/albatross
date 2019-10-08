@@ -23,7 +23,7 @@ TEST(test_stats, test_chi_squared) {
   EXPECT_LT(fabs(chi_squared_cdf(96.578, 80) - 0.9), 1e-5);
   EXPECT_LT(fabs(chi_squared_cdf(70.065, 100) - 0.01), 1e-5);
 
-  EXPECT_LT(chi_squared_cdf(0., 0.), 1e-6);
+  EXPECT_EQ(chi_squared_cdf(0., 0.), 1.);
   EXPECT_LT(chi_squared_cdf(0., 1), 1e-6);
   EXPECT_LT(chi_squared_cdf(0., 2), 1e-6);
   EXPECT_LT(chi_squared_cdf(0., 10), 1e-6);
@@ -37,6 +37,11 @@ TEST(test_stats, test_chi_squared) {
   EXPECT_LT(fabs(chi_squared_cdf(100000, 100) - 1.), 1e-4);
   EXPECT_LT(fabs(chi_squared_cdf(INFINITY, 1) - 1.), 1e-4);
 
+  EXPECT_TRUE(std::isnan(chi_squared_cdf(-1e-6, 0)));
+  EXPECT_TRUE(std::isnan(chi_squared_cdf(-1e-6, 1)));
+  EXPECT_TRUE(std::isnan(chi_squared_cdf(-1e-6, 100)));
+
+  EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, 0)));
   EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, 1)));
   EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, NAN)));
 }
