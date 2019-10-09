@@ -58,6 +58,29 @@ public:
   auto get_dataset() const { return make_toy_linear_data(); }
 };
 
+class MakeRansacChiSquaredGaussianProcess {
+public:
+  auto get_model() const {
+    auto covariance = make_simple_covariance_function();
+
+    double inlier_threshold = 1.;
+    std::size_t sample_size = 3;
+    std::size_t min_inliers = 3;
+    std::size_t max_iterations = 20;
+
+    const auto gp = gp_from_covariance(covariance);
+
+    GaussianProcessRansacStrategy<ChiSquaredCdf, ChiSquaredConsensusMetric,
+                                  LeaveOneOut>
+        ransac_strategy;
+
+    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
+                     min_inliers, max_iterations);
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(); }
+};
+
 namespace adapted {
 
 inline std::vector<double>
@@ -127,9 +150,9 @@ public:
   auto get_dataset() const { return make_adapted_toy_linear_data(); }
 };
 
-struct AdaptedRansacStrategy
-    : public GaussianProcessRansacStrategy<
-          NegativeLogLikelihood<JointDistribution>, LeaveOneOut> {
+struct AdaptedRansacStrategy : public GaussianProcessRansacStrategy<
+                                   NegativeLogLikelihood<JointDistribution>,
+                                   FeatureCountConsensusMetric, LeaveOneOut> {
 
   template <typename ModelType>
   RansacFunctions<FitAndIndices<ModelType, double>>
@@ -138,8 +161,9 @@ struct AdaptedRansacStrategy
     const RegressionDataset<double> converted(
         adapted::convert_features(dataset.features), dataset.targets);
     const auto indexer = get_indexer(converted);
+    const FeatureCountConsensusMetric consensus_metric;
     return get_gp_ransac_functions(model, converted, indexer,
-                                   this->inlier_metric_);
+                                   this->inlier_metric_, consensus_metric);
   }
 };
 
@@ -189,6 +213,7 @@ public:
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
+                         MakeRansacChiSquaredGaussianProcess,
                          MakeRansacAdaptedGaussianProcess, MakeNullModel>
     ExampleModels;
 

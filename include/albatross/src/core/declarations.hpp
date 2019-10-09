@@ -112,7 +112,8 @@ template <typename InlierMetric, typename ConsensusMetric,
           typename IndexingFunction>
 struct GenericRansacStrategy;
 
-template <typename InlierMetric, typename IndexingFunction>
+template <typename InlierMetric, typename ConsensusMetric,
+          typename IndexingFunction>
 struct GaussianProcessRansacStrategy;
 
 } // namespace albatross
