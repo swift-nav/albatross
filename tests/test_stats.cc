@@ -18,6 +18,15 @@ namespace albatross {
 
 TEST(test_stats, test_chi_squared) {
 
+  EXPECT_LT(fabs(chi_squared_cdf(3.84, 1) - 0.95), 1e-4);
+  EXPECT_LT(fabs(chi_squared_cdf(10.83, 1) - 0.999), 1e-4);
+
+  EXPECT_LT(fabs(chi_squared_cdf(5.99, 2) - 0.95), 1e-4);
+  EXPECT_LT(fabs(chi_squared_cdf(13.82, 2) - 0.999), 1e-4);
+
+  EXPECT_LT(fabs(chi_squared_cdf(11.07, 5) - 0.95), 1e-4);
+  EXPECT_LT(fabs(chi_squared_cdf(15.09, 5) - 0.99), 1e-4);
+
   EXPECT_LT(fabs(chi_squared_cdf(9.260, 23) - 0.005), 1e-5);
   EXPECT_LT(fabs(chi_squared_cdf(38.932, 21) - 0.99), 1e-5);
   EXPECT_LT(fabs(chi_squared_cdf(96.578, 80) - 0.9), 1e-5);

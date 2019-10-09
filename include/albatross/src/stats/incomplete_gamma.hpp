@@ -30,7 +30,7 @@ namespace albatross {
 
 namespace details {
 
-constexpr std::size_t INCOMPLETE_GAMMA_RECURSSION_LIMIT = 50;
+constexpr std::size_t INCOMPLETE_GAMMA_RECURSSION_LIMIT = 54;
 
 inline double incomplete_gamma_quadrature_inp_vals(double lb, double ub,
                                                    std::size_t counter) {
@@ -76,9 +76,6 @@ inline std::pair<double, double> incomplete_gamma_quadrature_bounds(double a,
   } else if (a > 300) {
     return std::make_pair(std::max(0., std::min(z, a) - 10 * sqrt(a)),
                           std::min(z, a + 9 * sqrt(a)));
-  } else if (a > 100) {
-    return std::make_pair(std::max(0., std::min(z, a) - 9 * sqrt(a)),
-                          std::min(z, a + 8 * sqrt(a)));
   } else if (a > 90) {
     return std::make_pair(std::max(0., std::min(z, a) - 9 * sqrt(a)),
                           std::min(z, a + 8 * sqrt(a)));
@@ -100,7 +97,7 @@ inline std::pair<double, double> incomplete_gamma_quadrature_bounds(double a,
   }
 }
 
-double incomplete_gamma_quadrature(double a, double z) {
+inline double incomplete_gamma_quadrature(double a, double z) {
   const auto bounds = incomplete_gamma_quadrature_bounds(a, z);
   return incomplete_gamma_quadrature_recursive(bounds.first, bounds.second, a,
                                                lgamma(a), 0);
@@ -112,7 +109,7 @@ incomplete_gamma_continuous_fraction_numerator(double a, double z,
   if (depth % 2 == 0) {
     return 0.5 * depth * z;
   } else {
-    return -(a - 1 + 0.5 * (depth + 1) * z);
+    return -(a - 1 + 0.5 * (depth + 1)) * z;
   }
 }
 
