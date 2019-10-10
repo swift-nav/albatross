@@ -58,7 +58,7 @@ TEST(test_stats, test_chi_squared) {
 
 TEST(test_stats, test_uniform_ks) {
 
-  std::default_random_engine gen;
+  std::default_random_engine gen(2012);
   std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
   std::vector<double> samples;
@@ -78,7 +78,7 @@ TEST(test_stats, test_chi_squared_cdf) {
     diag[i] = pow(2, 3 - i);
   }
 
-  std::default_random_engine rng(1982);
+  std::default_random_engine gen(2012);
   std::size_t iterations = 1000;
   std::vector<double> cdfs(iterations);
   for (std::size_t i = 0; i < iterations; ++i) {
@@ -86,7 +86,7 @@ TEST(test_stats, test_chi_squared_cdf) {
     // Create a random covariance matrix with perscribed eigen values (from
     // diag).
     Eigen::MatrixXd matrix(k, k);
-    gaussian_fill(matrix, rng);
+    gaussian_fill(matrix, gen);
     const Eigen::MatrixXd random_rotation =
         matrix.colPivHouseholderQr().matrixQ();
     Eigen::MatrixXd random_covariance = random_rotation * diag.asDiagonal();
@@ -94,7 +94,7 @@ TEST(test_stats, test_chi_squared_cdf) {
 
     // Sample from the distribution
     Eigen::VectorXd sample(k);
-    gaussian_fill(sample, rng);
+    gaussian_fill(sample, gen);
     sample = diag.array().sqrt().cwiseProduct(sample.array());
     sample = random_rotation * sample;
 

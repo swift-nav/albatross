@@ -124,7 +124,11 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
 
 inline double chi_squared_cdf(const JointDistribution &prediction,
                               const MarginalDistribution &truth) {
-  return chi_squared_cdf(prediction.mean - truth.mean, prediction.covariance);
+  Eigen::MatrixXd covariance(prediction.covariance);
+  if (truth.has_covariance()) {
+    covariance += truth.covariance;
+  }
+  return chi_squared_cdf(prediction.mean - truth.mean, covariance);
 }
 
 struct ChiSquaredCdf : public PredictionMetric<JointDistribution> {
