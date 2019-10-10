@@ -57,6 +57,14 @@ inline double chi_squared_cdf(double x, std::size_t degrees_of_freedom) {
   return details::chi_squared_cdf_safe(x, degrees_of_freedom);
 }
 
+inline double chi_squared_cdf(const Eigen::VectorXd &deviation,
+                              const Eigen::MatrixXd &covariance) {
+  double distance_squared =
+      covariance.llt().matrixL().solve(deviation).squaredNorm();
+  std::size_t n = static_cast<std::size_t>(deviation.size());
+  return chi_squared_cdf(distance_squared, n);
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_STATS_CHI_SQUARED_HPP_ */

@@ -121,6 +121,20 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
   NegativeLogLikelihood()
       : PredictionMetric<PredictType>(negative_log_likelihood) {}
 };
+
+inline double chi_squared_cdf(const JointDistribution &prediction,
+                              const MarginalDistribution &truth) {
+  Eigen::MatrixXd covariance(prediction.covariance);
+  if (truth.has_covariance()) {
+    covariance += truth.covariance;
+  }
+  return chi_squared_cdf(prediction.mean - truth.mean, covariance);
+}
+
+struct ChiSquaredCdf : public PredictionMetric<JointDistribution> {
+  ChiSquaredCdf() : PredictionMetric<JointDistribution>(chi_squared_cdf){};
+};
+
 } // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */

@@ -12,6 +12,7 @@
 
 #include <albatross/Common>
 #include <albatross/Stats>
+#include <albatross/src/utils/eigen_utils.hpp>
 #include <gtest/gtest.h>
 
 namespace albatross {
@@ -53,6 +54,56 @@ TEST(test_stats, test_chi_squared) {
   EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, 0)));
   EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, 1)));
   EXPECT_TRUE(std::isnan(chi_squared_cdf(NAN, NAN)));
+}
+
+TEST(test_stats, test_uniform_ks) {
+
+  std::default_random_engine gen(2012);
+  std::uniform_real_distribution<double> uniform(0.0, 1.0);
+
+  std::vector<double> samples;
+  std::size_t n = 1000;
+  for (std::size_t i = 0; i < n; ++i) {
+    samples.emplace_back(uniform(gen));
+  }
+
+  EXPECT_LT(uniform_ks_test(samples), 0.05);
+}
+
+TEST(test_stats, test_chi_squared_cdf) {
+
+  Eigen::Index k = 5;
+  Eigen::VectorXd diag(k);
+  for (Eigen::Index i = 0; i < diag.size(); ++i) {
+    diag[i] = pow(2, 3 - i);
+  }
+
+  std::default_random_engine gen(2012);
+  std::size_t iterations = 1000;
+  std::vector<double> cdfs(iterations);
+  for (std::size_t i = 0; i < iterations; ++i) {
+
+    // Create a random covariance matrix with perscribed eigen values (from
+    // diag).
+    Eigen::MatrixXd matrix(k, k);
+    gaussian_fill(matrix, gen);
+    const Eigen::MatrixXd random_rotation =
+        matrix.colPivHouseholderQr().matrixQ();
+    Eigen::MatrixXd random_covariance = random_rotation * diag.asDiagonal();
+    random_covariance = random_covariance * random_rotation.transpose();
+
+    // Sample from the distribution
+    Eigen::VectorXd sample(k);
+    gaussian_fill(sample, gen);
+    sample = diag.array().sqrt().cwiseProduct(sample.array());
+    sample = random_rotation * sample;
+
+    // Collect all the cdfs
+    cdfs[i] = chi_squared_cdf(sample, random_covariance);
+  }
+
+  double ks = uniform_ks_test(cdfs);
+  EXPECT_LT(ks, 0.05);
 }
 
 } // namespace albatross

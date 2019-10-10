@@ -16,5 +16,6 @@
 #include <albatross/src/stats/gauss_legendre.hpp>
 #include <albatross/src/stats/incomplete_gamma.hpp>
 #include <albatross/src/stats/chi_squared.hpp>
+#include <albatross/src/stats/ks_test.hpp>
 
 #endif
