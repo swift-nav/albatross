@@ -31,10 +31,37 @@ namespace albatross {
  * that facilitates applying a function to all values, filtering etc ...
  */
 
-template <typename KeyType, typename ValueType>
-class GroupedBase : public std::map<KeyType, ValueType> {
+template <typename KeyType, typename ValueType> class GroupedBase {
 
 public:
+  GroupedBase() : map_(){};
+  GroupedBase(const GroupedBase &other) = default;
+  GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map){};
+
+  void emplace(const KeyType &k, ValueType &&v) {
+    map_.emplace(k, std::move(v));
+  }
+
+  void emplace(const KeyType &k, const ValueType &v) { map_.emplace(k, v); }
+
+  auto begin() { return map_.begin(); }
+
+  auto begin() const { return map_.begin(); }
+
+  auto end() { return map_.end(); }
+
+  auto end() const { return map_.end(); }
+
+  std::size_t size() const { return map_.size(); }
+
+  ValueType &operator[](const KeyType &key) { return map_[key]; }
+
+  bool operator==(const GroupedBase<KeyType, ValueType> &other) const {
+    return map_ == other.map_;
+  }
+
+  auto find(const KeyType &key) const { return map_.find(key); }
+
   /*
    * Filtering a Grouped object consists of deciding which of the
    * groups you would like to keep.  This is done by providing a function which
@@ -47,7 +74,7 @@ public:
                               int>::type = 0>
   auto filter(const FilterFunction &f) const {
     Grouped<KeyType, ValueType> output;
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       if (f(pair.second)) {
         output.emplace(pair.first, pair.second);
       }
@@ -62,7 +89,7 @@ public:
                               int>::type = 0>
   auto filter(const FilterFunction &f) const {
     Grouped<KeyType, ValueType> output;
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       if (f(pair.first, pair.second)) {
         output.emplace(pair.first, pair.second);
       }
@@ -85,7 +112,7 @@ public:
                                   std::is_same<void, ApplyType>::value,
                               int>::type = 0>
   void apply(const ApplyFunction &f) const {
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       f(pair.first, pair.second);
     }
   }
@@ -100,7 +127,7 @@ public:
                               int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       output.emplace(pair.first, f(pair.first, pair.second));
     }
     return output;
@@ -115,7 +142,7 @@ public:
                                     int>::type = 0>
   auto apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       output.emplace(pair.first, f(pair.second));
     }
     return output;
@@ -129,10 +156,13 @@ public:
                                         std::is_same<void, ApplyType>::value,
                                     int>::type = 0>
   auto apply(const ApplyFunction &f) const {
-    for (const auto &pair : *this) {
+    for (const auto &pair : map_) {
       f(pair.second);
     }
   }
+
+protected:
+  std::map<KeyType, ValueType> map_;
 };
 
 template <typename KeyType, typename ValueType>
@@ -142,6 +172,9 @@ template <typename KeyType>
 class Grouped<KeyType, GroupIndices>
     : public GroupedBase<KeyType, GroupIndices> {
 public:
+  using Base = GroupedBase<KeyType, GroupIndices>;
+  using Base::Base;
+
   template <typename ApplyFunction,
             typename ApplyType = typename details::key_value_apply_return_type<
                 ApplyFunction, KeyType, GroupIndices>::type,
@@ -152,7 +185,7 @@ public:
                 int>::type = 0>
   auto index_apply(const ApplyFunction &f) const {
     Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : *this) {
+    for (const auto &pair : this->map_) {
       output.emplace(pair.first, f(pair.first, pair.second));
     }
     return output;
@@ -164,20 +197,22 @@ public:
  *
  * Like concatenate, but works on map values.
  */
-template <typename KeyType, typename FeatureType>
+template <template <typename...> class Map, typename KeyType,
+          typename FeatureType>
 RegressionDataset<FeatureType>
-combine(const std::map<KeyType, RegressionDataset<FeatureType>> &groups) {
+combine(const Map<KeyType, RegressionDataset<FeatureType>> &groups) {
   return concatenate_datasets(map_values(groups));
 }
 
-template <typename KeyType, typename FeatureType>
+template <template <typename...> class Map, typename KeyType,
+          typename FeatureType>
 std::vector<FeatureType>
-combine(const std::map<KeyType, std::vector<FeatureType>> &groups) {
+combine(const Map<KeyType, std::vector<FeatureType>> &groups) {
   return concatenate(map_values(groups));
 }
 
-template <typename KeyType>
-Eigen::VectorXd combine(const std::map<KeyType, double> &groups) {
+template <template <typename...> class Map, typename KeyType>
+Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
   Eigen::VectorXd output(static_cast<Eigen::Index>(groups.size()));
   Eigen::Index i = 0;
   for (const auto &x : map_values(groups)) {
@@ -271,13 +306,7 @@ template <> struct IndexerBuilder<LeaveOneOutGrouper> {
   }
 };
 
-template <
-    typename GrouperFunction, typename Iterable,
-    typename IterableValue = typename const_ref<typename std::iterator_traits<
-        typename Iterable::iterator>::value_type>::type,
-    typename std::enable_if<
-        details::is_valid_grouper<GrouperFunction, IterableValue>::value,
-        int>::type = 0>
+template <typename GrouperFunction, typename Iterable>
 inline auto build_indexer(const GrouperFunction &grouper_function,
                           const Iterable &iterable) {
   return IndexerBuilder<GrouperFunction>::build(grouper_function, iterable);
