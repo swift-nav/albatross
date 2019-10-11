@@ -133,6 +133,13 @@ inline double incomplete_gamma_continuous_fraction(double a, double z) {
   // below the numerator (and sometimes even below zero).
   double denominator =
       std::max(numerator, incomplete_gamma_continuous_fraction(a, z, 1));
+  // When `a` get's really really large the numerator (and in turn the
+  // denominator) can hit zero which would turn into a NAN but we want
+  // to treat it as evaluating at infinity which should yield 1.
+  if (std::numeric_limits<double>::epsilon() > numerator &&
+      std::numeric_limits<double>::epsilon() > denominator) {
+    return 1.;
+  }
   return numerator / denominator;
 }
 
