@@ -126,8 +126,21 @@ inline double incomplete_gamma_continuous_fraction(double a, double z,
 }
 
 inline double incomplete_gamma_continuous_fraction(double a, double z) {
-  return (exp(a * log(z) - z) / tgamma(a) /
-          incomplete_gamma_continuous_fraction(a, z, 1));
+  double numerator = exp(a * log(z) - z) / tgamma(a);
+  // the denominator can't be any smaller than the numerator since this
+  // quantity is bounded by 0 and 1.  With numerical round off when evaluating
+  // this function for really large a the continuous fraction sometimes dips
+  // below the numerator (and sometimes even below zero).
+  double denominator =
+      std::max(numerator, incomplete_gamma_continuous_fraction(a, z, 1));
+  // When `a` get's really really large the numerator (and in turn the
+  // denominator) can hit zero which would turn into a NAN but we want
+  // to treat it as evaluating at infinity which should yield 1.
+  if (std::numeric_limits<double>::epsilon() > numerator &&
+      std::numeric_limits<double>::epsilon() > denominator) {
+    return 1.;
+  }
+  return numerator / denominator;
 }
 
 } // namespace details

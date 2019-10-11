@@ -42,11 +42,13 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
 }
 
-template <typename Archive, typename InlierMetric, typename IndexingFunction>
-inline void serialize(
-    Archive &archive,
-    GaussianProcessRansacStrategy<InlierMetric, IndexingFunction> &strategy,
-    const std::uint32_t) {
+template <typename Archive, typename InlierMetric, typename ConsensusMetric,
+          typename IndexingFunction>
+inline void
+serialize(Archive &archive,
+          GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
+                                        IndexingFunction> &strategy,
+          const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
 }
