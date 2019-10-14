@@ -40,16 +40,21 @@ TEST(test_outlier, test_ransac_direct) {
   std::size_t min_consensus_size = 3;
   std::size_t max_iterations = 20;
 
-  const auto inliers = ransac(ransac_functions, indexer, inlier_threshold,
-                              sample_size, min_consensus_size, max_iterations);
+  const auto result = ransac(ransac_functions, indexer, inlier_threshold,
+                             sample_size, min_consensus_size, max_iterations);
 
-  EXPECT_EQ(inliers.size(), dataset.features.size() - bad_inds.size());
+  EXPECT_EQ(result.inliers.size(), dataset.features.size() - bad_inds.size());
+  EXPECT_TRUE(ransac_success(result.return_code));
+  EXPECT_FALSE(std::isnan(result.consensus_metric));
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
-    EXPECT_EQ(std::find(inliers.begin(), inliers.end(),
-                        std::to_string(dataset.features[i])),
-              inliers.end());
+    EXPECT_EQ(std::find(result.inliers.begin(), result.inliers.end(),
+                        std::to_string(i)),
+              result.inliers.end());
+    EXPECT_NE(std::find(result.outliers.begin(), result.outliers.end(),
+                        std::to_string(i)),
+              result.outliers.end());
   }
 }
 
@@ -80,9 +85,9 @@ TEST(test_outlier, test_ransac_model) {
   const auto ransac_functions = ransac_strategy(model, dataset);
 
   const auto indexer = ransac_strategy.get_indexer(dataset);
-  const auto inlier_names =
-      ransac(ransac_functions, indexer, inlier_threshold, sample_size,
-             min_consensus_size, max_iterations);
+  const auto result = ransac(ransac_functions, indexer, inlier_threshold,
+                             sample_size, min_consensus_size, max_iterations);
+  const auto inlier_names = result.inliers;
   const auto inlier_inds = indices_from_names(indexer, inlier_names);
   const auto inlier_dataset = subset(dataset, inlier_inds);
 
@@ -127,9 +132,9 @@ TEST(test_outlier, test_ransac_groups) {
   const auto indexer = ransac_strategy.get_indexer(dataset);
   const auto ransac_functions = ransac_strategy(model, dataset);
 
-  const auto inlier_groups = ransac(ransac_functions, indexer, 0., 1, 1, 20);
-
-  EXPECT_LE(inlier_groups.size(), indexer.size());
+  const auto result = ransac(ransac_functions, indexer, 0., 1, 1, 20);
+  EXPECT_TRUE(ransac_success(result.return_code));
+  EXPECT_LE(result.inliers.size(), indexer.size());
 }
 
 } // namespace albatross
