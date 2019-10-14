@@ -18,17 +18,26 @@ using albatross::GaussianProcessRansacStrategy;
 using albatross::GenericRansacStrategy;
 using albatross::Ransac;
 using albatross::RansacFit;
+using albatross::RansacOutput;
 
 namespace cereal {
+
+template <typename Archive>
+inline void serialize(Archive &archive, RansacOutput &ransac_output,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("return_code", ransac_output.return_code));
+  archive(cereal::make_nvp("inliers", ransac_output.inliers));
+  archive(cereal::make_nvp("outliers", ransac_output.outliers));
+  archive(cereal::make_nvp("consensus_metric", ransac_output.consensus_metric));
+}
 
 template <typename Archive, typename ModelType, typename StrategyType,
           typename FeatureType>
 inline void serialize(Archive &archive,
                       Fit<RansacFit<ModelType, StrategyType, FeatureType>> &fit,
                       const std::uint32_t) {
-  archive(cereal::make_nvp("fit_model", fit.fit_model));
-  archive(cereal::make_nvp("inliers", fit.inliers));
-  archive(cereal::make_nvp("outliers", fit.outliers));
+  archive(cereal::make_nvp("maybe_empty_fit_model", fit.maybe_empty_fit_model));
+  archive(cereal::make_nvp("ransac_output", fit.ransac_output));
 }
 
 template <typename Archive, typename InlierMetric, typename ConsensusMetric,
@@ -50,6 +59,7 @@ serialize(Archive &archive,
                                         IndexingFunction> &strategy,
           const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
+  archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
   archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
 }
 

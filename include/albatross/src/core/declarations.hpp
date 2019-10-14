@@ -103,6 +103,9 @@ template <typename RequiredPredictType> struct PredictionMetric;
 /*
  * RANSAC
  */
+
+struct RansacOutput;
+
 template <typename ModelType, typename StrategyType> class Ransac;
 
 template <typename ModelType, typename StrategyType, typename FeatureType>
