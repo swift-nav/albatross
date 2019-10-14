@@ -168,10 +168,11 @@ struct is_valid_value_only_filter_function {
  *
  * GrouperFunction is a callable type which should take
  */
-template <typename T> struct traits {};
+template <typename T> struct group_by_traits {};
 
 template <typename FeatureType, typename GrouperFunction>
-struct traits<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
+struct group_by_traits<
+    GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
   using ValueType = RegressionDataset<FeatureType>;
   using IterableType = FeatureType;
   using KeyType =
@@ -180,7 +181,7 @@ struct traits<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
 };
 
 template <typename FeatureType, typename GrouperFunction>
-struct traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
+struct group_by_traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
   using ValueType = std::vector<FeatureType>;
   using IterableType = FeatureType;
   using KeyType =

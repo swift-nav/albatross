@@ -148,7 +148,7 @@ concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
   Eigen::VectorXd mean(static_cast<Eigen::Index>(size));
   Eigen::Index i = 0;
   for (const auto &dist : dists) {
-    mean.block(i, 0, dist.mean.size(), 1) = dist.mean;
+    mean.middleRows(i, dist.mean.size()) = dist.mean;
     i += dist.mean.size();
   }
 

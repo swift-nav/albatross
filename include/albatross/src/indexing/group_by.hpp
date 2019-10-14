@@ -321,9 +321,9 @@ inline auto build_indexer(const GrouperFunction &grouper_function,
 template <typename Derived> class GroupByBase {
 
 public:
-  using KeyType = typename details::traits<Derived>::KeyType;
-  using ValueType = typename details::traits<Derived>::ValueType;
-  using GrouperType = typename details::traits<Derived>::GrouperType;
+  using KeyType = typename details::group_by_traits<Derived>::KeyType;
+  using ValueType = typename details::group_by_traits<Derived>::ValueType;
+  using GrouperType = typename details::group_by_traits<Derived>::GrouperType;
   using IndexerType = GroupIndexer<KeyType>;
 
   GroupByBase(const ValueType &parent, const GrouperType &grouper)
@@ -374,7 +374,7 @@ public:
                                                        GroupIndices>::value &&
                     std::is_same<void, ApplyType>::value,
                 int>::type = 0>
-  auto index_apply(const ApplyFunction &f) const {
+  void index_apply(const ApplyFunction &f) const {
     for (const auto &pair : indexers()) {
       f(pair.first, pair.second);
     }
