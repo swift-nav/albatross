@@ -15,6 +15,10 @@
 
 namespace albatross {
 
+inline bool accept_all_candidates(const std::vector<FoldName> &) {
+  return true;
+}
+
 template <typename FitType> struct RansacFunctions {
   // A function which takes a bunch of keys and fits a model
   // to the corresponding subset of data.
@@ -29,14 +33,19 @@ template <typename FitType> struct RansacFunctions {
   // how good a set of inliers is, lower is better.
   using ConsensusMetric = std::function<double(const std::vector<FoldName> &)>;
 
+  using IsValidCandidate = std::function<bool(const std::vector<FoldName> &)>;
+
   RansacFunctions(FitterFunc fitter_, InlierMetric inlier_metric_,
-                  ConsensusMetric consensus_metric_)
+                  ConsensusMetric consensus_metric_,
+                  IsValidCandidate is_valid_candidate_ = accept_all_candidates)
       : fitter(fitter_), inlier_metric(inlier_metric_),
-        consensus_metric(consensus_metric_){};
+        consensus_metric(consensus_metric_),
+        is_valid_candidate(is_valid_candidate_){};
 
   FitterFunc fitter;
   InlierMetric inlier_metric;
   ConsensusMetric consensus_metric;
+  IsValidCandidate is_valid_candidate;
 };
 
 inline bool contains_group(const std::vector<FoldName> &vect,
@@ -102,6 +111,23 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
     // Sample a random subset of the data and fit a model.
     auto candidate_groups =
         random_without_replacement(groups, random_sample_size, gen);
+
+    // Sometimes it's hard to design an inlier metric which is
+    // reliable if the candidate groups are tainted with outliers.
+    // Consider a situation where there are multiple correlated
+    // outliers and one of those ends up in the candidate set, it's
+    // possible the model will then reasonably predict inliers
+    // AND outliers resulting in a large consensus set.  This
+    // is_valid_candidate step allows you to filter those cases out.
+    if (!ransac_functions.is_valid_candidate(candidate_groups)) {
+      ++failed_candidates;
+      if (failed_candidates >= max_iterations) {
+        output.return_code = RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES;
+        return output;
+      }
+      continue;
+    }
+
     const auto fit = ransac_functions.fitter(candidate_groups);
 
     // Any group that's part of the candidate set is automatically an inlier.
