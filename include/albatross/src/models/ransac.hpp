@@ -78,6 +78,26 @@ struct RansacOutput {
   double consensus_metric;
 };
 
+struct RansacConfig {
+
+  RansacConfig(){};
+
+  RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
+               std::size_t min_consensus_size_, std::size_t max_iterations_,
+               std::size_t max_failed_candidates_)
+      : inlier_threshold(inlier_threshold_),
+        random_sample_size(random_sample_size_),
+        min_consensus_size(min_consensus_size_),
+        max_iterations(max_iterations_),
+        max_failed_candidates(max_failed_candidates_){};
+
+  double inlier_threshold;
+  std::size_t random_sample_size;
+  std::size_t min_consensus_size;
+  std::size_t max_iterations;
+  std::size_t max_failed_candidates;
+};
+
 /*
  * This RANdom SAmple Consensus (RANSAC) algorithm works as follows.
  *
@@ -187,7 +207,16 @@ auto ransac(const RansacFunctions<FitType> &ransac_functions,
             std::size_t random_sample_size, std::size_t min_consensus_size,
             std::size_t max_iterations) {
   return ransac(ransac_functions, map_keys(indexer), inlier_threshold,
-                random_sample_size, min_consensus_size, max_iterations);
+                random_sample_size, min_consensus_size, max_iterations,
+                max_iterations);
+}
+
+template <typename FitType>
+auto ransac(const RansacFunctions<FitType> &ransac_functions,
+            const FoldIndexer &indexer, const RansacConfig &config) {
+  return ransac(ransac_functions, map_keys(indexer), config.inlier_threshold,
+                config.random_sample_size, config.min_consensus_size,
+                config.max_iterations, config.max_failed_candidates);
 }
 
 template <typename ModelType, typename FeatureType, typename InlierMetric,
@@ -334,26 +363,6 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
   RansacOutput ransac_output;
 };
 
-struct RansacConfig {
-
-  RansacConfig(){};
-
-  RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
-               std::size_t min_consensus_size_, std::size_t max_iterations_,
-               std::size_t max_failed_candidates_)
-      : inlier_threshold(inlier_threshold_),
-        random_sample_size(random_sample_size_),
-        min_consensus_size(min_consensus_size_),
-        max_iterations(max_iterations_),
-        max_failed_candidates(max_failed_candidates_){};
-
-  double inlier_threshold;
-  std::size_t random_sample_size;
-  std::size_t min_consensus_size;
-  std::size_t max_iterations;
-  std::size_t max_failed_candidates;
-};
-
 /*
  * This wraps any other model and performs ransac each time fit is called.
  */
@@ -408,10 +417,7 @@ public:
     auto indexer = strategy_.get_indexer(dataset);
     auto ransac_functions = strategy_(sub_model_, dataset);
 
-    const auto ransac_output =
-        ransac(ransac_functions, map_keys(indexer), config_.inlier_threshold,
-               config_.random_sample_size, config_.min_consensus_size,
-               config_.max_iterations);
+    const auto ransac_output = ransac(ransac_functions, indexer, config_);
 
     if (ransac_success(ransac_output.return_code)) {
       const auto good_inds = indices_from_names(indexer, ransac_output.inliers);
@@ -419,6 +425,7 @@ public:
       return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
           sub_model_.fit(consensus_set), ransac_output);
     } else {
+      std::cout << ransac_output.return_code << std::endl;
       return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
           ransac_output);
     }
@@ -450,6 +457,14 @@ Ransac<ModelType, StrategyType> ModelBase<ModelType>::ransac(
   return Ransac<ModelType, StrategyType>(derived(), strategy, inlier_threshold,
                                          random_sample_size, min_consensus_size,
                                          max_iterations);
+}
+
+template <typename ModelType>
+template <typename StrategyType>
+Ransac<ModelType, StrategyType>
+ModelBase<ModelType>::ransac(const StrategyType &strategy,
+                             const RansacConfig &config) const {
+  return Ransac<ModelType, StrategyType>(derived(), strategy, config);
 }
 
 } // namespace albatross

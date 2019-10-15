@@ -139,6 +139,10 @@ public:
          std::size_t random_sample_size, std::size_t min_consensus_size,
          std::size_t max_iteration) const;
 
+  template <typename Strategy>
+  Ransac<ModelType, Strategy> ransac(const Strategy &strategy,
+                                     const RansacConfig &) const;
+
   Insights insights;
 };
 } // namespace albatross
