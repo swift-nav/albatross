@@ -62,6 +62,26 @@ typedef enum ransac_return_code_e {
   RANSAC_RETURN_CODE_FAILURE
 } ransac_return_code_t;
 
+inline std::string to_string(const ransac_return_code_t &return_code) {
+  switch (return_code) {
+  case RANSAC_RETURN_CODE_INVALID:
+    return "invalid";
+  case RANSAC_RETURN_CODE_SUCCESS:
+    return "success";
+  case RANSAC_RETURN_CODE_NO_CONSENSUS:
+    return "no_consensus";
+  case RANSAC_RETURN_CODE_INVALID_ARGUMENTS:
+    return "invalid_arguments";
+  case RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES:
+    return "exceeded_max_failed_candidates";
+  case RANSAC_RETURN_CODE_FAILURE:
+    return "failure";
+  default:
+    assert(false);
+    return "unknown return code";
+  }
+}
+
 inline bool ransac_success(const ransac_return_code_t &rc) {
   return rc == RANSAC_RETURN_CODE_SUCCESS;
 }
