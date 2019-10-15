@@ -54,9 +54,12 @@ get_gp_ransac_is_valid_candidate(const RegressionDataset<FeatureType> &dataset,
 
     const JointDistribution prior(Eigen::VectorXd::Zero(train_cov.rows()),
                                   train_cov);
-    const double chi2 = chi_squared_cdf(prior, train_dataset.targets);
-    const double skip_every_1000_candidates = 0.999;
-    return (chi2 < skip_every_1000_candidates);
+    // These thresholds are under the assumption of a perfectly
+    // representative prior.
+    const double probability_prior_exceeded =
+        chi_squared_cdf(prior, train_dataset.targets);
+    const double skip_every_1000th_candidate = 0.999;
+    return (probability_prior_exceeded < skip_every_1000th_candidate);
   };
 }
 

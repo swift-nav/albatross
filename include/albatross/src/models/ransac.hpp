@@ -56,6 +56,8 @@ inline bool contains_group(const std::vector<FoldName> &vect,
 typedef enum ransac_return_code_e {
   RANSAC_RETURN_CODE_INVALID = -1,
   RANSAC_RETURN_CODE_SUCCESS,
+  RANSAC_RETURN_CODE_NO_CONSENSUS,
+  RANSAC_RETURN_CODE_INVALID_ARGUMENTS,
   RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES,
   RANSAC_RETURN_CODE_FAILURE
 } ransac_return_code_t;
@@ -67,7 +69,7 @@ inline bool ransac_success(const ransac_return_code_t &rc) {
 struct RansacOutput {
 
   RansacOutput()
-      : return_code(RANSAC_RETURN_CODE_FAILURE), inliers(), outliers(),
+      : return_code(RANSAC_RETURN_CODE_INVALID), inliers(), outliers(),
         consensus_metric(HUGE_VAL){};
 
   ransac_return_code_t return_code;
@@ -98,12 +100,19 @@ template <typename FitType>
 RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
                     const std::vector<FoldName> &groups,
                     double inlier_threshold, std::size_t random_sample_size,
-                    std::size_t min_consensus_size,
-                    std::size_t max_iterations) {
-
-  std::default_random_engine gen;
+                    std::size_t min_consensus_size, std::size_t max_iterations,
+                    std::size_t max_failed_candidates) {
 
   RansacOutput output;
+  output.return_code = RANSAC_RETURN_CODE_FAILURE;
+
+  if (min_consensus_size >= groups.size() ||
+      random_sample_size >= groups.size() || max_iterations <= 0) {
+    output.return_code = RANSAC_RETURN_CODE_INVALID_ARGUMENTS;
+    return output;
+  }
+
+  std::default_random_engine gen;
 
   std::size_t i = 0;
   std::size_t failed_candidates = 0;
@@ -121,7 +130,7 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
     // is_valid_candidate step allows you to filter those cases out.
     if (!ransac_functions.is_valid_candidate(candidate_groups)) {
       ++failed_candidates;
-      if (failed_candidates >= max_iterations) {
+      if (failed_candidates >= max_failed_candidates) {
         output.return_code = RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES;
         return output;
       }
@@ -163,7 +172,11 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
     ++i;
   }
 
-  output.return_code = RANSAC_RETURN_CODE_SUCCESS;
+  if (output.inliers.size()) {
+    output.return_code = RANSAC_RETURN_CODE_SUCCESS;
+  } else {
+    output.return_code = RANSAC_RETURN_CODE_NO_CONSENSUS;
+  }
 
   return output;
 }

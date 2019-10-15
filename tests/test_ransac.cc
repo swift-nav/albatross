@@ -137,4 +137,61 @@ TEST(test_outlier, test_ransac_groups) {
   EXPECT_LE(result.inliers.size(), indexer.size());
 }
 
+inline bool never_accept_candidates(const std::vector<FoldName> &) {
+  return false;
+}
+
+RansacConfig get_reasonable_ransac_config() {
+  RansacConfig config;
+  config.inlier_threshold = -HUGE_VAL;
+  config.max_failed_candidates = 0;
+  config.max_iterations = 20;
+  config.min_consensus_size = 2;
+  config.random_sample_size = 1;
+  return config;
+}
+
+TEST(test_outlier, test_ransac_edge_cases) {
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
+
+  NegativeLogLikelihood<JointDistribution> nll;
+  LeaveOneGroupOut<double> logo(group_by_modulo);
+  LeaveOneOutLikelihood<> consensus_metric;
+
+  const auto ransac_strategy =
+      get_generic_ransac_strategy(nll, consensus_metric, logo);
+  const auto indexer = ransac_strategy.get_indexer(dataset);
+  auto ransac_functions = ransac_strategy(model, dataset);
+
+  auto bad_inlier_config = get_reasonable_ransac_config();
+  bad_inlier_config.inlier_threshold = -HUGE_VAL;
+
+  auto result = ransac(ransac_functions, indexer, bad_inlier_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_NO_CONSENSUS);
+
+  auto bad_consensus_size_config = get_reasonable_ransac_config();
+  bad_consensus_size_config.min_consensus_size = indexer.size();
+  result = ransac(ransac_functions, indexer, bad_consensus_size_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_random_sample_size_config = get_reasonable_ransac_config();
+  bad_random_sample_size_config.random_sample_size = indexer.size();
+  result = ransac(ransac_functions, indexer, bad_random_sample_size_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_max_iterations_config = get_reasonable_ransac_config();
+  bad_max_iterations_config.max_iterations = 0;
+  result = ransac(ransac_functions, indexer, bad_max_iterations_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_is_valid_candidate = get_reasonable_ransac_config();
+  ransac_functions.is_valid_candidate = never_accept_candidates;
+  bad_is_valid_candidate.max_failed_candidates = 3;
+  result = ransac(ransac_functions, indexer, bad_is_valid_candidate);
+  EXPECT_EQ(result.return_code,
+            RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES);
+}
+
 } // namespace albatross
