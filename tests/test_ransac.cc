@@ -143,7 +143,7 @@ inline bool never_accept_candidates(const std::vector<FoldName> &) {
 
 RansacConfig get_reasonable_ransac_config() {
   RansacConfig config;
-  config.inlier_threshold = -HUGE_VAL;
+  config.inlier_threshold = 1.;
   config.max_failed_candidates = 0;
   config.max_iterations = 20;
   config.min_consensus_size = 2;
