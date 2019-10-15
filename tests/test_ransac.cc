@@ -40,16 +40,21 @@ TEST(test_outlier, test_ransac_direct) {
   std::size_t min_consensus_size = 3;
   std::size_t max_iterations = 20;
 
-  const auto inliers = ransac(ransac_functions, indexer, inlier_threshold,
-                              sample_size, min_consensus_size, max_iterations);
+  const auto result = ransac(ransac_functions, indexer, inlier_threshold,
+                             sample_size, min_consensus_size, max_iterations);
 
-  EXPECT_EQ(inliers.size(), dataset.features.size() - bad_inds.size());
+  EXPECT_EQ(result.inliers.size(), dataset.features.size() - bad_inds.size());
+  EXPECT_TRUE(ransac_success(result.return_code));
+  EXPECT_FALSE(std::isnan(result.consensus_metric));
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
-    EXPECT_EQ(std::find(inliers.begin(), inliers.end(),
-                        std::to_string(dataset.features[i])),
-              inliers.end());
+    EXPECT_EQ(std::find(result.inliers.begin(), result.inliers.end(),
+                        std::to_string(i)),
+              result.inliers.end());
+    EXPECT_NE(std::find(result.outliers.begin(), result.outliers.end(),
+                        std::to_string(i)),
+              result.outliers.end());
   }
 }
 
@@ -80,9 +85,9 @@ TEST(test_outlier, test_ransac_model) {
   const auto ransac_functions = ransac_strategy(model, dataset);
 
   const auto indexer = ransac_strategy.get_indexer(dataset);
-  const auto inlier_names =
-      ransac(ransac_functions, indexer, inlier_threshold, sample_size,
-             min_consensus_size, max_iterations);
+  const auto result = ransac(ransac_functions, indexer, inlier_threshold,
+                             sample_size, min_consensus_size, max_iterations);
+  const auto inlier_names = result.inliers;
   const auto inlier_inds = indices_from_names(indexer, inlier_names);
   const auto inlier_dataset = subset(dataset, inlier_inds);
 
@@ -127,9 +132,66 @@ TEST(test_outlier, test_ransac_groups) {
   const auto indexer = ransac_strategy.get_indexer(dataset);
   const auto ransac_functions = ransac_strategy(model, dataset);
 
-  const auto inlier_groups = ransac(ransac_functions, indexer, 0., 1, 1, 20);
+  const auto result = ransac(ransac_functions, indexer, 0., 1, 1, 20);
+  EXPECT_TRUE(ransac_success(result.return_code));
+  EXPECT_LE(result.inliers.size(), indexer.size());
+}
 
-  EXPECT_LE(inlier_groups.size(), indexer.size());
+inline bool never_accept_candidates(const std::vector<FoldName> &) {
+  return false;
+}
+
+RansacConfig get_reasonable_ransac_config() {
+  RansacConfig config;
+  config.inlier_threshold = 1.;
+  config.max_failed_candidates = 0;
+  config.max_iterations = 20;
+  config.min_consensus_size = 2;
+  config.random_sample_size = 1;
+  return config;
+}
+
+TEST(test_outlier, test_ransac_edge_cases) {
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
+
+  NegativeLogLikelihood<JointDistribution> nll;
+  LeaveOneGroupOut<double> logo(group_by_modulo);
+  LeaveOneOutLikelihood<> consensus_metric;
+
+  const auto ransac_strategy =
+      get_generic_ransac_strategy(nll, consensus_metric, logo);
+  const auto indexer = ransac_strategy.get_indexer(dataset);
+  auto ransac_functions = ransac_strategy(model, dataset);
+
+  auto bad_inlier_config = get_reasonable_ransac_config();
+  bad_inlier_config.inlier_threshold = -HUGE_VAL;
+
+  auto result = ransac(ransac_functions, indexer, bad_inlier_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_NO_CONSENSUS);
+
+  auto bad_consensus_size_config = get_reasonable_ransac_config();
+  bad_consensus_size_config.min_consensus_size = indexer.size();
+  result = ransac(ransac_functions, indexer, bad_consensus_size_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_random_sample_size_config = get_reasonable_ransac_config();
+  bad_random_sample_size_config.random_sample_size = indexer.size();
+  result = ransac(ransac_functions, indexer, bad_random_sample_size_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_max_iterations_config = get_reasonable_ransac_config();
+  bad_max_iterations_config.max_iterations = 0;
+  result = ransac(ransac_functions, indexer, bad_max_iterations_config);
+  EXPECT_EQ(result.return_code, RANSAC_RETURN_CODE_INVALID_ARGUMENTS);
+
+  auto bad_is_valid_candidate = get_reasonable_ransac_config();
+  ransac_functions.is_valid_candidate = never_accept_candidates;
+  bad_is_valid_candidate.max_failed_candidates = 3;
+  result = ransac(ransac_functions, indexer, bad_is_valid_candidate);
+  EXPECT_EQ(result.return_code,
+            RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES);
 }
 
 } // namespace albatross

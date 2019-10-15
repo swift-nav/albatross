@@ -43,16 +43,17 @@ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
-    double inlier_threshold = 1.;
-    std::size_t sample_size = 3;
-    std::size_t min_inliers = 3;
-    std::size_t max_iterations = 20;
+    RansacConfig config;
+    config.inlier_threshold = 1.;
+    config.random_sample_size = 3;
+    config.min_consensus_size = 3;
+    config.max_iterations = 20;
+    config.max_failed_candidates = 20;
 
     const auto gp = gp_from_covariance(covariance);
 
     DefaultGPRansacStrategy ransac_strategy;
-    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
-                     min_inliers, max_iterations);
+    return gp.ransac(ransac_strategy, config);
   }
 
   auto get_dataset() const { return make_toy_linear_data(); }
@@ -63,10 +64,12 @@ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
-    double inlier_threshold = 1.;
-    std::size_t sample_size = 3;
-    std::size_t min_inliers = 3;
-    std::size_t max_iterations = 20;
+    RansacConfig config;
+    config.inlier_threshold = 1.;
+    config.random_sample_size = 3;
+    config.min_consensus_size = 3;
+    config.max_iterations = 20;
+    config.max_failed_candidates = 20;
 
     const auto gp = gp_from_covariance(covariance);
 
@@ -74,8 +77,7 @@ public:
                                   LeaveOneOut>
         ransac_strategy;
 
-    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
-                     min_inliers, max_iterations);
+    return gp.ransac(ransac_strategy, config);
   }
 
   auto get_dataset() const { return make_toy_linear_data(); }
@@ -172,16 +174,17 @@ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
-    double inlier_threshold = 1.;
-    std::size_t sample_size = 3;
-    std::size_t min_inliers = 3;
-    std::size_t max_iterations = 20;
+    RansacConfig config;
+    config.inlier_threshold = 1.;
+    config.random_sample_size = 3;
+    config.min_consensus_size = 3;
+    config.max_iterations = 20;
+    config.max_failed_candidates = 20;
 
     AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
 
     AdaptedRansacStrategy ransac_strategy;
-    return gp.ransac(ransac_strategy, inlier_threshold, sample_size,
-                     min_inliers, max_iterations);
+    return gp.ransac(ransac_strategy, config);
   }
 
   auto get_dataset() const { return make_adapted_toy_linear_data(); }

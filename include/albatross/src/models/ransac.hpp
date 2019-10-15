@@ -15,6 +15,10 @@
 
 namespace albatross {
 
+inline bool accept_all_candidates(const std::vector<FoldName> &) {
+  return true;
+}
+
 template <typename FitType> struct RansacFunctions {
   // A function which takes a bunch of keys and fits a model
   // to the corresponding subset of data.
@@ -29,20 +33,70 @@ template <typename FitType> struct RansacFunctions {
   // how good a set of inliers is, lower is better.
   using ConsensusMetric = std::function<double(const std::vector<FoldName> &)>;
 
+  using IsValidCandidate = std::function<bool(const std::vector<FoldName> &)>;
+
   RansacFunctions(FitterFunc fitter_, InlierMetric inlier_metric_,
-                  ConsensusMetric consensus_metric_)
+                  ConsensusMetric consensus_metric_,
+                  IsValidCandidate is_valid_candidate_ = accept_all_candidates)
       : fitter(fitter_), inlier_metric(inlier_metric_),
-        consensus_metric(consensus_metric_){};
+        consensus_metric(consensus_metric_),
+        is_valid_candidate(is_valid_candidate_){};
 
   FitterFunc fitter;
   InlierMetric inlier_metric;
   ConsensusMetric consensus_metric;
+  IsValidCandidate is_valid_candidate;
 };
 
 inline bool contains_group(const std::vector<FoldName> &vect,
                            const FoldName &group) {
   return std::find(vect.begin(), vect.end(), group) != vect.end();
 }
+
+typedef enum ransac_return_code_e {
+  RANSAC_RETURN_CODE_INVALID = -1,
+  RANSAC_RETURN_CODE_SUCCESS,
+  RANSAC_RETURN_CODE_NO_CONSENSUS,
+  RANSAC_RETURN_CODE_INVALID_ARGUMENTS,
+  RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES,
+  RANSAC_RETURN_CODE_FAILURE
+} ransac_return_code_t;
+
+inline bool ransac_success(const ransac_return_code_t &rc) {
+  return rc == RANSAC_RETURN_CODE_SUCCESS;
+}
+
+struct RansacOutput {
+
+  RansacOutput()
+      : return_code(RANSAC_RETURN_CODE_INVALID), inliers(), outliers(),
+        consensus_metric(HUGE_VAL){};
+
+  ransac_return_code_t return_code;
+  std::vector<FoldName> inliers;
+  std::vector<FoldName> outliers;
+  double consensus_metric;
+};
+
+struct RansacConfig {
+
+  RansacConfig(){};
+
+  RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
+               std::size_t min_consensus_size_, std::size_t max_iterations_,
+               std::size_t max_failed_candidates_)
+      : inlier_threshold(inlier_threshold_),
+        random_sample_size(random_sample_size_),
+        min_consensus_size(min_consensus_size_),
+        max_iterations(max_iterations_),
+        max_failed_candidates(max_failed_candidates_){};
+
+  double inlier_threshold;
+  std::size_t random_sample_size;
+  std::size_t min_consensus_size;
+  std::size_t max_iterations;
+  std::size_t max_failed_candidates;
+};
 
 /*
  * This RANdom SAmple Consensus (RANSAC) algorithm works as follows.
@@ -63,25 +117,51 @@ inline bool contains_group(const std::vector<FoldName> &vect,
  * metrics.
  */
 template <typename FitType>
-std::vector<FoldName>
-ransac(const RansacFunctions<FitType> &ransac_functions,
-       const std::vector<FoldName> &groups, double inlier_threshold,
-       std::size_t random_sample_size, std::size_t min_consensus_size,
-       std::size_t max_iterations) {
+RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
+                    const std::vector<FoldName> &groups,
+                    double inlier_threshold, std::size_t random_sample_size,
+                    std::size_t min_consensus_size, std::size_t max_iterations,
+                    std::size_t max_failed_candidates) {
+
+  RansacOutput output;
+  output.return_code = RANSAC_RETURN_CODE_FAILURE;
+
+  if (min_consensus_size >= groups.size() ||
+      random_sample_size >= groups.size() || max_iterations <= 0) {
+    output.return_code = RANSAC_RETURN_CODE_INVALID_ARGUMENTS;
+    return output;
+  }
 
   std::default_random_engine gen;
 
-  double best_consensus_metric = HUGE_VAL;
-  std::vector<FoldName> best_consensus;
-
-  for (std::size_t i = 0; i < max_iterations; i++) {
+  std::size_t i = 0;
+  std::size_t failed_candidates = 0;
+  while (i < max_iterations) {
     // Sample a random subset of the data and fit a model.
     auto candidate_groups =
         random_without_replacement(groups, random_sample_size, gen);
+
+    // Sometimes it's hard to design an inlier metric which is
+    // reliable if the candidate groups are tainted with outliers.
+    // Consider a situation where there are multiple correlated
+    // outliers and one of those ends up in the candidate set, it's
+    // possible the model will then reasonably predict inliers
+    // AND outliers resulting in a large consensus set.  This
+    // is_valid_candidate step allows you to filter those cases out.
+    if (!ransac_functions.is_valid_candidate(candidate_groups)) {
+      ++failed_candidates;
+      if (failed_candidates >= max_failed_candidates) {
+        output.return_code = RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES;
+        return output;
+      }
+      continue;
+    }
+
     const auto fit = ransac_functions.fitter(candidate_groups);
 
     // Any group that's part of the candidate set is automatically an inlier.
     std::vector<FoldName> candidate_consensus = candidate_groups;
+    std::vector<FoldName> outliers;
 
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
@@ -91,6 +171,8 @@ ransac(const RansacFunctions<FitType> &ransac_functions,
             ransac_functions.inlier_metric(possible_inlier, fit);
         if (metric_value < inlier_threshold) {
           candidate_consensus.emplace_back(possible_inlier);
+        } else {
+          outliers.emplace_back(possible_inlier);
         }
       }
     }
@@ -100,23 +182,41 @@ ransac(const RansacFunctions<FitType> &ransac_functions,
     if (candidate_consensus.size() >= min_consensus_size) {
       double consensus_metric_value =
           ransac_functions.consensus_metric(candidate_consensus);
-      if (consensus_metric_value < best_consensus_metric) {
-        best_consensus = candidate_consensus;
-        best_consensus_metric = consensus_metric_value;
+      if (consensus_metric_value < output.consensus_metric) {
+        output.inliers = candidate_consensus;
+        output.consensus_metric = consensus_metric_value;
+        output.outliers = outliers;
       }
     }
+
+    ++i;
   }
-  return best_consensus;
+
+  if (output.inliers.size()) {
+    output.return_code = RANSAC_RETURN_CODE_SUCCESS;
+  } else {
+    output.return_code = RANSAC_RETURN_CODE_NO_CONSENSUS;
+  }
+
+  return output;
 }
 
 template <typename FitType>
-std::vector<FoldName>
-ransac(const RansacFunctions<FitType> &ransac_functions,
-       const FoldIndexer &indexer, double inlier_threshold,
-       std::size_t random_sample_size, std::size_t min_consensus_size,
-       std::size_t max_iterations) {
+auto ransac(const RansacFunctions<FitType> &ransac_functions,
+            const FoldIndexer &indexer, double inlier_threshold,
+            std::size_t random_sample_size, std::size_t min_consensus_size,
+            std::size_t max_iterations) {
   return ransac(ransac_functions, map_keys(indexer), inlier_threshold,
-                random_sample_size, min_consensus_size, max_iterations);
+                random_sample_size, min_consensus_size, max_iterations,
+                max_iterations);
+}
+
+template <typename FitType>
+auto ransac(const RansacFunctions<FitType> &ransac_functions,
+            const FoldIndexer &indexer, const RansacConfig &config) {
+  return ransac(ransac_functions, map_keys(indexer), config.inlier_threshold,
+                config.random_sample_size, config.min_consensus_size,
+                config.max_iterations, config.max_failed_candidates);
 }
 
 template <typename ModelType, typename FeatureType, typename InlierMetric,
@@ -231,19 +331,36 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
 
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
-  Fit(){};
+  struct EmptyFit {
+    bool operator==(const EmptyFit &other) const { return true; };
 
-  Fit(const FitModelType &fit_model_, const std::vector<FoldName> &inliers_,
-      const std::vector<FoldName> &outliers_)
-      : fit_model(fit_model_), inliers(inliers_), outliers(outliers_){};
+    template <typename Archive>
+    void serialize(Archive &archive, const std::uint32_t){};
+  };
+
+  Fit() : maybe_empty_fit_model(EmptyFit()){};
+
+  Fit(const FitModelType &fit_model_, const RansacOutput &ransac_output_)
+      : maybe_empty_fit_model(fit_model_), ransac_output(ransac_output_){};
+
+  Fit(const RansacOutput &ransac_output_)
+      : maybe_empty_fit_model(EmptyFit()), ransac_output(ransac_output_){};
 
   bool operator==(const Fit &other) const {
-    return fit_model == other.fit_model;
+    return maybe_empty_fit_model == other.maybe_empty_fit_model;
   }
 
-  FitModelType fit_model;
-  std::vector<FoldName> inliers;
-  std::vector<FoldName> outliers;
+  bool has_fit_model() const {
+    return maybe_empty_fit_model.template is<FitModelType>();
+  }
+
+  const FitModelType &get_fit_model_or_assert() const {
+    assert(maybe_empty_fit_model.template is<FitModelType>());
+    return maybe_empty_fit_model.template get<FitModelType>();
+  }
+
+  variant<EmptyFit, FitModelType> maybe_empty_fit_model;
+  RansacOutput ransac_output;
 };
 
 /*
@@ -255,13 +372,24 @@ public:
   Ransac(){};
 
   Ransac(const ModelType &sub_model, const StrategyType &strategy,
+         const RansacConfig &config)
+      : sub_model_(sub_model), strategy_(strategy), config_(config){};
+
+  Ransac(const ModelType &sub_model, const StrategyType &strategy,
          double inlier_threshold, std::size_t random_sample_size,
          std::size_t min_consensus_size, std::size_t max_iterations)
-      : sub_model_(sub_model), strategy_(strategy),
-        inlier_threshold_(inlier_threshold),
-        random_sample_size_(random_sample_size),
-        min_consensus_size_(min_consensus_size),
-        max_iterations_(max_iterations){};
+      : Ransac(sub_model, strategy,
+               RansacConfig(inlier_threshold, random_sample_size,
+                            min_consensus_size, max_iterations, 0)){};
+
+  Ransac(const ModelType &sub_model, const StrategyType &strategy,
+         double inlier_threshold, std::size_t random_sample_size,
+         std::size_t min_consensus_size, std::size_t max_iterations,
+         std::size_t max_failed_candidates)
+      : Ransac(sub_model, strategy,
+               RansacConfig(inlier_threshold, random_sample_size,
+                            min_consensus_size, max_iterations,
+                            max_failed_candidates)){};
 
   std::string get_name() const {
     return "ransac[" + sub_model_.get_name() + "]";
@@ -289,38 +417,34 @@ public:
     auto indexer = strategy_.get_indexer(dataset);
     auto ransac_functions = strategy_(sub_model_, dataset);
 
-    std::vector<FoldName> inliers =
-        ransac(ransac_functions, map_keys(indexer), inlier_threshold_,
-               random_sample_size_, min_consensus_size_, max_iterations_);
+    const auto ransac_output = ransac(ransac_functions, indexer, config_);
 
-    const auto good_inds = indices_from_names(indexer, inliers);
-    const auto consensus_set = subset(dataset, good_inds);
-
-    std::vector<FoldName> outliers;
-    for (const auto &pair : indexer) {
-      if (!contains_group(inliers, pair.first)) {
-        outliers.emplace_back(pair.first);
-      }
+    if (ransac_success(ransac_output.return_code)) {
+      const auto good_inds = indices_from_names(indexer, ransac_output.inliers);
+      const auto consensus_set = subset(dataset, good_inds);
+      return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
+          sub_model_.fit(consensus_set), ransac_output);
+    } else {
+      return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
+          ransac_output);
     }
-
-    // Then generate a fit.
-    return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
-        sub_model_.fit(consensus_set), inliers, outliers);
   }
 
   template <typename PredictFeatureType, typename FitType, typename PredictType>
   PredictType _predict_impl(const std::vector<PredictFeatureType> &features,
                             const FitType &ransac_fit_,
                             PredictTypeIdentity<PredictType> &&) const {
-    return ransac_fit_.fit_model.predict(features).template get<PredictType>();
+    // If RANSAC failed it's up to the user to determine that from the output of
+    // fit and deal with it appropriately.
+    assert(ransac_fit_.has_fit_model());
+    return ransac_fit_.get_fit_model_or_assert()
+        .predict(features)
+        .template get<PredictType>();
   }
 
   ModelType sub_model_;
   StrategyType strategy_;
-  double inlier_threshold_;
-  std::size_t random_sample_size_;
-  std::size_t min_consensus_size_;
-  std::size_t max_iterations_;
+  RansacConfig config_;
 };
 
 template <typename ModelType>
@@ -332,6 +456,14 @@ Ransac<ModelType, StrategyType> ModelBase<ModelType>::ransac(
   return Ransac<ModelType, StrategyType>(derived(), strategy, inlier_threshold,
                                          random_sample_size, min_consensus_size,
                                          max_iterations);
+}
+
+template <typename ModelType>
+template <typename StrategyType>
+Ransac<ModelType, StrategyType>
+ModelBase<ModelType>::ransac(const StrategyType &strategy,
+                             const RansacConfig &config) const {
+  return Ransac<ModelType, StrategyType>(derived(), strategy, config);
 }
 
 } // namespace albatross

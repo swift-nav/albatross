@@ -36,8 +36,30 @@ inline
     using GPFitType = typename FitAndIndices<ModelType, FeatureType>::FitType;
     const GPFitType fit(train_dataset.features, train_cov,
                         train_dataset.targets);
-    FitAndIndices<ModelType, FeatureType> fit_and_indices = {fit, inds};
+    const FitAndIndices<ModelType, FeatureType> fit_and_indices = {fit, inds};
     return fit_and_indices;
+  };
+}
+
+template <typename ModelType, typename FeatureType>
+inline typename RansacFunctions<
+    FitAndIndices<ModelType, FeatureType>>::IsValidCandidate
+get_gp_ransac_is_valid_candidate(const RegressionDataset<FeatureType> &dataset,
+                                 const FoldIndexer &indexer,
+                                 const Eigen::MatrixXd &cov) {
+  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
+    auto inds = indices_from_names(indexer, groups);
+    const auto train_dataset = subset(dataset, inds);
+    const auto train_cov = symmetric_subset(cov, inds);
+
+    const JointDistribution prior(Eigen::VectorXd::Zero(train_cov.rows()),
+                                  train_cov);
+    // These thresholds are under the assumption of a perfectly
+    // representative prior.
+    const double probability_prior_exceeded =
+        chi_squared_cdf(prior, train_dataset.targets);
+    const double skip_every_1000th_candidate = 0.999;
+    return (probability_prior_exceeded < skip_every_1000th_candidate);
   };
 }
 
@@ -52,13 +74,12 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
   return [&, indexer, cov, model, dataset](
              const FoldName &group,
              const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
-    auto inds = indexer.at(group);
+    const auto inds = indexer.at(group);
     const auto test_dataset = subset(dataset, inds);
 
     const auto pred =
         get_prediction(model, fit_and_indices.fit, test_dataset.features);
-    double metric_value = metric(pred, test_dataset.targets);
-    return metric_value;
+    return metric(pred, test_dataset.targets);
   };
 }
 
@@ -72,8 +93,8 @@ public:
       : indexer_(indexer), cov_(cov){};
 
   double operator()(const std::vector<FoldName> &groups) {
-    auto inds = indices_from_names(indexer_, groups);
-    auto consensus_cov = symmetric_subset(cov_, inds);
+    const auto inds = indices_from_names(indexer_, groups);
+    const auto consensus_cov = symmetric_subset(cov_, inds);
     return differential_entropy(consensus_cov);
   }
 
@@ -93,7 +114,7 @@ public:
       : indexer_(indexer){};
 
   double operator()(const std::vector<FoldName> &groups) const {
-    auto inds = indices_from_names(indexer_, groups);
+    const auto inds = indices_from_names(indexer_, groups);
     // Negative because a lower metric is better.
     return (-1.0 * static_cast<double>(inds.size()));
   }
@@ -112,7 +133,7 @@ public:
       : targets_(targets), indexer_(indexer), cov_(cov){};
 
   double operator()(const std::vector<FoldName> &groups) {
-    auto inds = indices_from_names(indexer_, groups);
+    const auto inds = indices_from_names(indexer_, groups);
     const auto consensus_prior = symmetric_subset(cov_, inds);
     const auto consensus_targets = subset(targets_, inds);
     return chi_squared_cdf(consensus_targets.mean, consensus_prior);
@@ -145,11 +166,16 @@ get_gp_ransac_functions(const ModelType &model,
       get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric>(
           dataset, indexer, full_cov, model, inlier_metric);
 
-  ConsensusMetric consensus_metric_from_group(dataset.targets, indexer,
-                                              full_cov);
+  const ConsensusMetric consensus_metric_from_group(dataset.targets, indexer,
+                                                    full_cov);
+
+  const auto is_valid_candidate =
+      get_gp_ransac_is_valid_candidate<ModelType, FeatureType>(dataset, indexer,
+                                                               full_cov);
 
   return RansacFunctions<FitAndIndices<ModelType, FeatureType>>(
-      fitter, inlier_metric_from_group, consensus_metric_from_group);
+      fitter, inlier_metric_from_group, consensus_metric_from_group,
+      is_valid_candidate);
 };
 
 template <typename InlierMetric, typename ConsensusMetric,
