@@ -25,7 +25,6 @@
 #include <iomanip>
 #include <set>
 #include <iostream>
-#include <unordered_map>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -35,7 +34,7 @@
 #include "ForwardDeclarations"
 
 #include <albatross/src/details/traits.hpp>
-#include <albatross/src/details/has_any_macros.hpp>
+#include <albatross/src/details/method_inspection_macros.hpp>
 #include <albatross/src/details/error_handling.hpp>
 
 #include <albatross/src/utils/map_utils.hpp>

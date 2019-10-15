@@ -10,19 +10,14 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_CORE_H
-#define ALBATROSS_CORE_H
+#ifndef ALBATROSS_INDEXING_H
+#define ALBATROSS_INDEXING_H
 
 #include "Dataset"
 
-#include <type_traits>
-
-#include <albatross/src/core/traits.hpp>
-#include <albatross/src/core/priors.hpp>
-#include <albatross/src/core/parameter_handling_mixin.hpp>
-#include <albatross/src/core/parameter_macros.hpp>
-#include <albatross/src/core/fit_model.hpp>
-#include <albatross/src/core/prediction.hpp>
-#include <albatross/src/core/model.hpp>
+#include <albatross/src/indexing/traits.hpp>
+#include <albatross/src/indexing/subset.hpp>
+#include <albatross/src/indexing/group_by.hpp>
+#include <albatross/src/indexing/apply.hpp>
 
 #endif

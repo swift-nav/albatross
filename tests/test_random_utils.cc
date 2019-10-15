@@ -12,7 +12,7 @@
 #include <gtest/gtest.h>
 
 #include <albatross/Core>
-
+#include <albatross/Indexing>
 #include <albatross/src/utils/random_utils.hpp>
 
 namespace albatross {

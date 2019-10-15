@@ -40,6 +40,22 @@ template <typename ModelType, typename FitType> class FitModel;
 template <typename Derived> class Fit {};
 
 template <typename X> struct Measurement;
+
+/*
+ * Group By
+ */
+
+using GroupIndices = std::vector<std::size_t>;
+
+template <typename GroupKey, typename ValueType> class Grouped;
+
+template <typename GroupKey>
+using GroupIndexer = Grouped<GroupKey, GroupIndices>;
+
+struct LeaveOneOut;
+
+template <typename ValueType, typename GrouperFunction> class GroupBy;
+
 /*
  * Parameter Handling
  */
@@ -115,6 +131,15 @@ struct GenericRansacStrategy;
 template <typename InlierMetric, typename ConsensusMetric,
           typename IndexingFunction>
 struct GaussianProcessRansacStrategy;
+
+/*
+ * Traits
+ */
+
+template <typename First, typename Second> struct TypePair {
+  using first_type = First;
+  using second_type = Second;
+};
 
 } // namespace albatross
 

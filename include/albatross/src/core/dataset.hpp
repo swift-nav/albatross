@@ -50,6 +50,10 @@ template <typename FeatureType> struct RegressionDataset {
   }
 
   std::size_t size() const { return features.size(); }
+
+  template <typename GrouperFunc>
+  GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
+  group_by(GrouperFunc grouper) const;
 };
 
 /*
@@ -67,9 +71,23 @@ template <typename X>
 inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<X> &y) {
   const auto targets = concatenate_marginals(x.targets, y.targets);
-  std::vector<X> features(x.features);
-  features.insert(features.end(), y.features.begin(), y.features.end());
+  std::vector<X> features = concatenate(x.features, y.features);
   return RegressionDataset<X>(features, targets);
+}
+
+template <typename X>
+inline auto
+concatenate_datasets(const std::vector<RegressionDataset<X>> &datasets) {
+  std::vector<std::vector<X>> features;
+  std::vector<MarginalDistribution> targets;
+
+  for (const auto &dataset : datasets) {
+    features.emplace_back(dataset.features);
+    targets.emplace_back(dataset.targets);
+  }
+
+  return RegressionDataset<X>(concatenate(features),
+                              concatenate_marginals(targets));
 }
 
 template <typename X, typename Y>

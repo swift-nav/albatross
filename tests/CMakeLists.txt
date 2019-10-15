@@ -14,6 +14,7 @@ add_executable(albatross_unit_tests
   test_eigen_utils.cc
   test_evaluate.cc
   test_gp.cc
+  test_group_by.cc
   test_indexing.cc
   test_linalg_utils.cc
   test_map_utils.cc
@@ -35,6 +36,7 @@ add_executable(albatross_unit_tests
   test_traits_details.cc
   test_traits_covariance_functions.cc
   test_traits_evaluation.cc
+  test_traits_indexing.cc
   test_tune.cc
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE

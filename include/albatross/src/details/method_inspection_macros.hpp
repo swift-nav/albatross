@@ -10,15 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef INCLUDE_ALBATROSS_SRC_DETAILS_HAS_ANY_MACROS_HPP_
-#define INCLUDE_ALBATROSS_SRC_DETAILS_HAS_ANY_MACROS_HPP_
+#ifndef ALBATROSS_DETAILS_METHOD_INSPECTION_MACROS_HPP_
+#define ALBATROSS_DETAILS_METHOD_INSPECTION_MACROS_HPP_
 
 namespace albatross {
-
-template <typename First, typename Second> struct TypePair {
-  using first_type = First;
-  using second_type = Second;
-};
 
 /*
  * Defines a couple of traits which help inspect whether a type has a method
@@ -161,4 +156,4 @@ struct DummyType {};
 
 } // namespace albatross
 
-#endif /* INCLUDE_ALBATROSS_SRC_DETAILS_HAS_ANY_MACROS_HPP_ */
+#endif /* ALBATROSS_DETAILS_METHOD_INSPECTION_MACROS_HPP_ */
