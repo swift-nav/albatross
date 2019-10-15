@@ -425,7 +425,6 @@ public:
       return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
           sub_model_.fit(consensus_set), ransac_output);
     } else {
-      std::cout << ransac_output.return_code << std::endl;
       return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
           ransac_output);
     }
