@@ -54,6 +54,8 @@ public:
 
   std::size_t size() const { return map_.size(); }
 
+  const ValueType &at(const KeyType &key) const { return map_.at(key); }
+
   ValueType &operator[](const KeyType &key) { return map_[key]; }
 
   bool operator==(const GroupedBase<KeyType, ValueType> &other) const {
@@ -61,6 +63,10 @@ public:
   }
 
   auto find(const KeyType &key) const { return map_.find(key); }
+
+  std::vector<KeyType> keys() const { return map_keys(map_); }
+
+  std::vector<ValueType> values() const { return map_values(map_); }
 
   /*
    * Filtering a Grouped object consists of deciding which of the
