@@ -125,10 +125,10 @@ struct CustomClassMethodGrouper {
   auto get_grouper() const { return CustomNearestEvenNumber(); }
 };
 
-struct CustomFunctionPointerGrouper {
+struct CustomFunctionGrouper {
   auto get_parent() const { return test_integer_dataset(); }
 
-  auto get_grouper() const { return &custom_nearest_even_number; }
+  auto get_grouper() const { return custom_nearest_even_number; }
 };
 
 template <typename CaseType> class GroupByTester : public ::testing::Test {
@@ -140,14 +140,14 @@ typedef ::testing::Types<BoolClassMethodGrouper, BoolLambdaGrouper,
                          BoolFunctionPointerGrouper, IntClassMethodGrouper,
                          StringClassMethodGrouper, BoolClassMethodVectorGrouper,
                          LeaveOneOutTest, CustomClassMethodGrouper,
-                         CustomFunctionPointerGrouper>
+                         CustomFunctionGrouper>
     GrouperTestCases;
 
 TYPED_TEST_CASE_P(GroupByTester);
 
 template <typename GrouperFunction, typename ValueType,
-          typename GroupKey = typename details::grouper_return_type<
-              GrouperFunction, ValueType>::type,
+          typename GroupKey = typename details::grouper_result<GrouperFunction,
+                                                               ValueType>::type,
           typename std::enable_if<
               !std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>
@@ -158,8 +158,8 @@ void expect_group_key_matches_expected(const GrouperFunction &grouper,
 }
 
 template <typename GrouperFunction, typename ValueType,
-          typename GroupKey = typename details::grouper_return_type<
-              GrouperFunction, ValueType>::type,
+          typename GroupKey = typename details::grouper_result<GrouperFunction,
+                                                               ValueType>::type,
           typename std::enable_if<
               std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>

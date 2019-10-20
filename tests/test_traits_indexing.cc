@@ -38,6 +38,10 @@ const auto lambda_string_const_ref_int = [](const int &x) {
   return free_string_const_ref_int(x);
 };
 
+const auto lambda_string_ref_int = [](int &x) {
+  return free_string_const_ref_int(x);
+};
+
 struct CallOperatorStringConstRefInt {
   std::string operator()(const int &x) const {
     return free_string_const_ref_int(x);
@@ -64,30 +68,22 @@ typedef ::testing::Types<
 
 TYPED_TEST_CASE(TestCanBeCalledWithInt, TestFunctions);
 
-TYPED_TEST(TestCanBeCalledWithInt, test_callable_traits) {
+TYPED_TEST(TestCanBeCalledWithInt, test_invocalbe) {
   using Expected = typename TypeParam::ReturnType;
 
   using FunctionType = typename TypeParam::FunctionType;
-  EXPECT_TRUE(bool(details::callable_traits<FunctionType, int>::is_defined));
-  EXPECT_TRUE(
-      bool(std::is_same<Expected, typename details::callable_traits<
-                                      FunctionType, int>::return_type>::value));
-  // HOW SHOULD IT BEHAVE IF YOU CAN CONVERT AN ARGUMENT AND CALL???
-  // EXPECT_TRUE(bool(details::can_be_called_with<ToTest, double>::value));
-  EXPECT_FALSE(bool(details::callable_traits<FunctionType, X>::is_defined));
-}
-
-TYPED_TEST(TestCanBeCalledWithInt, test_can_be_called_with) {
-  using FunctionType = typename TypeParam::FunctionType;
-  EXPECT_TRUE(bool(details::can_be_called_with<FunctionType, int>::value));
-}
-
-TYPED_TEST(TestCanBeCalledWithInt, test_can_be_called_with_return_type) {
-  using Expected = typename TypeParam::ReturnType;
-  using FunctionType = typename TypeParam::FunctionType;
+  EXPECT_TRUE(bool(is_invocable<FunctionType, int>::value));
   EXPECT_TRUE(bool(
-      std::is_same<Expected, typename details::return_type_when_called_with<
-                                 FunctionType, int>::type>::value));
+      std::is_same<Expected,
+                   typename invoke_result<FunctionType, int>::type>::value));
+
+  // HOW SHOULD IT BEHAVE IF YOU CAN CONVERT AN ARGUMENT AND CALL???
+  EXPECT_TRUE(bool(is_invocable<FunctionType, double>::value));
+  EXPECT_TRUE(bool(
+      std::is_same<Expected,
+                   typename invoke_result<FunctionType, double>::type>::value));
+
+  EXPECT_FALSE(bool(is_invocable<FunctionType, X>::value));
 }
 
 TYPED_TEST(TestCanBeCalledWithInt, test_is_valid_grouper) {
@@ -96,37 +92,43 @@ TYPED_TEST(TestCanBeCalledWithInt, test_is_valid_grouper) {
   EXPECT_FALSE(bool(details::is_valid_grouper<FunctionType, X>::value));
 }
 
-template <typename... Args> struct Tester {
-  template <typename FunctionType> bool test(const FunctionType &) const {
-    return details::can_be_called_with<FunctionType, Args...>::value;
-  }
-};
+template <typename FunctionType>
+bool test_can_be_called_with_int(FunctionType &&) {
+  return is_invocable<FunctionType, int>::value ||
+         is_invocable<FunctionType, int &>::value;
+}
+
+template <typename FunctionType>
+bool test_can_be_called_with_x(FunctionType &&) {
+  return is_invocable<FunctionType, X>::value ||
+         is_invocable<FunctionType, X &>::value;
+}
 
 // Here we make sure can_be_called_with works when the type of the
 // functions is deduced by the compiler.
 TEST(test_traits_indexing, test_can_be_called_with_deduction) {
-  const Tester<int> int_tester;
-  const Tester<X> x_tester;
 
-  EXPECT_TRUE(int_tester.test(free_string_const_ref_int));
-  //  EXPECT_TRUE(int_tester.test(free_string_ref_int));
-  EXPECT_TRUE(int_tester.test(free_string_int));
-  EXPECT_TRUE(int_tester.test(lambda_string_const_ref_int));
-  EXPECT_TRUE(int_tester.test(call_operator_string_const_ref_int));
-  EXPECT_TRUE(int_tester.test(CallOperatorStringConstRefInt()));
-  EXPECT_TRUE(int_tester.test(
+  EXPECT_TRUE(test_can_be_called_with_int(free_string_const_ref_int));
+  EXPECT_TRUE(test_can_be_called_with_int(free_string_ref_int));
+  EXPECT_TRUE(test_can_be_called_with_int(free_string_int));
+  EXPECT_TRUE(test_can_be_called_with_int(lambda_string_const_ref_int));
+  EXPECT_TRUE(test_can_be_called_with_int(lambda_string_ref_int));
+
+  EXPECT_TRUE(test_can_be_called_with_int(call_operator_string_const_ref_int));
+  EXPECT_TRUE(test_can_be_called_with_int(CallOperatorStringConstRefInt()));
+  EXPECT_TRUE(test_can_be_called_with_int(
       [](const int &x) { return free_string_const_ref_int(x); }));
-  EXPECT_TRUE(int_tester.test(
+  EXPECT_TRUE(test_can_be_called_with_int(
       [](const auto &x) { return free_string_const_ref_int(x); }));
 
-  EXPECT_FALSE(x_tester.test(free_string_const_ref_int));
-  EXPECT_FALSE(x_tester.test(free_string_ref_int));
-  EXPECT_FALSE(x_tester.test(free_string_int));
-  EXPECT_FALSE(x_tester.test(lambda_string_const_ref_int));
-  EXPECT_FALSE(x_tester.test(call_operator_string_const_ref_int));
-  EXPECT_FALSE(x_tester.test(CallOperatorStringConstRefInt()));
-  EXPECT_FALSE(
-      x_tester.test([](const int &x) { return free_string_const_ref_int(x); }));
+  EXPECT_FALSE(test_can_be_called_with_x(free_string_const_ref_int));
+  EXPECT_FALSE(test_can_be_called_with_x(free_string_ref_int));
+  EXPECT_FALSE(test_can_be_called_with_x(free_string_int));
+  EXPECT_FALSE(test_can_be_called_with_x(lambda_string_const_ref_int));
+  EXPECT_FALSE(test_can_be_called_with_x(call_operator_string_const_ref_int));
+  EXPECT_FALSE(test_can_be_called_with_x(CallOperatorStringConstRefInt()));
+  EXPECT_FALSE(test_can_be_called_with_x(
+      [](const int &x) { return free_string_const_ref_int(x); }));
 }
 
 /*
