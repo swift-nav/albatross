@@ -78,6 +78,16 @@ public:
 
 DEFINE_CLASS_METHOD_TRAITS(solve);
 
+DEFINE_CLASS_METHOD_TRAITS(_ssr_impl);
+
+template <typename T, typename X> class has_valid_ssr_impl {
+  using SsrCall = class_method__ssr_impl_traits<T, std::vector<X>>;
+
+public:
+  static constexpr bool value = (SsrCall::is_defined &&
+      is_vector<typename SsrCall::return_type>::value);
+};
+
 /*
  * Has valid caller for all variants
  */

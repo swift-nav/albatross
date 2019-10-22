@@ -195,6 +195,13 @@ public:
     return diag;
   }
 
+  template <typename X,
+  typename std::enable_if<has_valid_ssr_impl<Derived, X>::value,
+                                      int>::type = 0>
+  auto state_space_representation(const std::vector<X> &xs) const {
+    return derived()._ssr_impl(xs);
+  }
+
   /*
    * Stubs to catch the case where a covariance function was called
    * with arguments that aren't supported.
@@ -299,6 +306,31 @@ public:
     return this->rhs_(x, y);
   }
 
+  template <typename X,
+  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                          has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return concatenate(this->lhs_.state_space_representation(xs),
+        this->rhs_.state_space_representation(xs));
+  }
+
+  template <typename X,
+  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                          !has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return this->lhs_.state_space_representation(xs);
+  }
+
+  template <typename X,
+  typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
+                          has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return this->rhs_.state_space_representation(xs);
+  }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -370,6 +402,31 @@ public:
                                     int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
+  }
+
+  template <typename X,
+  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                          has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return concatenate(this->lhs_.state_space_representation(xs),
+        this->rhs_.state_space_representation(xs));
+  }
+
+  template <typename X,
+  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                          !has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return this->lhs_.state_space_representation(xs);
+  }
+
+  template <typename X,
+  typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
+                          has_valid_ssr_impl<RHS, X>::value,
+                                      int>::type = 0>
+  auto _ssr_impl(const std::vector<X> &xs) const {
+    return this->rhs_.state_space_representation(xs);
   }
 
 protected:

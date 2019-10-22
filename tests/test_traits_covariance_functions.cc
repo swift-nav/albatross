@@ -329,4 +329,87 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
                                                  variant<X, Y>>::value));
 }
 
+struct HasSSRX : public CovarianceFunction<HasSSRX> {
+
+  std::vector<double> _ssr_impl(const std::vector<X> &xs) const {
+    return {1.};
+  }
+
+};
+
+struct HasSSRXY : public CovarianceFunction<HasSSRXY> {
+
+  std::vector<double> _ssr_impl(const std::vector<X> &xs) const {
+    return {1.};
+  }
+
+  std::vector<double> _ssr_impl(const std::vector<Y> &ys) const {
+    return {1.};
+  }
+};
+
+struct WithoutSSR : public CovarianceFunction<WithoutSSR> {
+
+};
+
+struct AlsoWithoutSSR : public CovarianceFunction<AlsoWithoutSSR> {
+
+};
+
+
+TEST(test_traits_covariance_function, test_has_valid_ssr_impl) {
+  EXPECT_TRUE(bool(has_valid_ssr_impl<HasSSRX, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<HasSSRX, Y>::value));
+
+  EXPECT_TRUE(bool(has_valid_ssr_impl<HasSSRXY, X>::value));
+  EXPECT_TRUE(bool(has_valid_ssr_impl<HasSSRXY, Y>::value));
+
+  EXPECT_FALSE(bool(has_valid_ssr_impl<WithoutSSR, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<WithoutSSR, Y>::value));
+
+  HasSSRX with_x;
+  HasSSRXY with_xy;
+  WithoutSSR without;
+  AlsoWithoutSSR also_without;
+
+  // Sums
+
+  using SumWithoutAlso = decltype(without + also_without);
+  EXPECT_FALSE(bool(has_valid_ssr_impl<SumWithoutAlso, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<SumWithoutAlso, Y>::value));
+
+  using SumWithoutWithX = decltype(without + with_x);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<SumWithoutWithX, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<SumWithoutWithX, Y>::value));
+
+  using SumWithoutWithXY = decltype(without + with_xy);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<SumWithoutWithXY, X>::value));
+  EXPECT_TRUE(bool(has_valid_ssr_impl<SumWithoutWithXY, Y>::value));
+
+  using SumWithXWithXY = decltype(with_x + with_xy);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<SumWithXWithXY, X>::value));
+  EXPECT_TRUE(bool(has_valid_ssr_impl<SumWithXWithXY, Y>::value));
+
+  // Products
+
+  using ProductWithoutAlso = decltype(without * also_without);
+  EXPECT_FALSE(bool(has_valid_ssr_impl<ProductWithoutAlso, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<ProductWithoutAlso, Y>::value));
+
+  using ProductWithoutWithX = decltype(without * with_x);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithoutWithX, X>::value));
+  EXPECT_FALSE(bool(has_valid_ssr_impl<ProductWithoutWithX, Y>::value));
+
+  using ProductWithoutWithXY = decltype(without * with_xy);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithoutWithXY, X>::value));
+  EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithoutWithXY, Y>::value));
+
+  using ProductWithXWithXY = decltype(with_x * with_xy);
+  EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithXWithXY, X>::value));
+  EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithXWithXY, Y>::value));
+
+
+}
+
+
 } // namespace albatross

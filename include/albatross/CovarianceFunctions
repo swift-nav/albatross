@@ -13,7 +13,7 @@
 #ifndef ALBATROSS_COVARIANCE_FUNCTIONS_H
 #define ALBATROSS_COVARIANCE_FUNCTIONS_H
 
-#include "Common"
+#include "Indexing"
 
 #include <albatross/src/core/declarations.hpp>
 #include <albatross/src/core/traits.hpp>
