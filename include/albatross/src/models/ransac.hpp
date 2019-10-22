@@ -147,7 +147,9 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
   output.return_code = RANSAC_RETURN_CODE_FAILURE;
 
   if (min_consensus_size >= groups.size() ||
-      random_sample_size >= groups.size() || max_iterations <= 0) {
+      min_consensus_size < random_sample_size ||
+      random_sample_size >= groups.size() || random_sample_size <= 0 ||
+      max_iterations <= 0 || max_failed_candidates < 0) {
     output.return_code = RANSAC_RETURN_CODE_INVALID_ARGUMENTS;
     return output;
   }
