@@ -247,6 +247,17 @@ auto gp_ransac_strategy(const InlierMetric &inlier_metric,
       inlier_metric, consensus_metric, indexing_function);
 }
 
+template <typename InlierMetric, typename ConsensusMetric,
+          typename IndexingFunction, typename IsValidCandidateMetric>
+auto gp_ransac_strategy(const InlierMetric &inlier_metric,
+                        const IndexingFunction &indexing_function,
+                        const ConsensusMetric &consensus_metric,
+                        const IsValidCandidateMetric &is_valid_candidate) {
+  return GaussianProcessRansacStrategy<
+      InlierMetric, ConsensusMetric, IndexingFunction, IsValidCandidateMetric>(
+      inlier_metric, consensus_metric, indexing_function);
+}
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_RANSAC_GP_H_ */
