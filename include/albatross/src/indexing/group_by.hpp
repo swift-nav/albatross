@@ -54,6 +54,8 @@ public:
 
   std::size_t size() const { return map_.size(); }
 
+  const ValueType &at(const KeyType &key) const { return map_.at(key); }
+
   ValueType &operator[](const KeyType &key) { return map_[key]; }
 
   bool operator==(const GroupedBase<KeyType, ValueType> &other) const {
@@ -61,6 +63,10 @@ public:
   }
 
   auto find(const KeyType &key) const { return map_.find(key); }
+
+  std::vector<KeyType> keys() const { return map_keys(map_); }
+
+  std::vector<ValueType> values() const { return map_values(map_); }
 
   /*
    * Filtering a Grouped object consists of deciding which of the
@@ -105,7 +111,7 @@ public:
    */
   template <
       typename ApplyFunction,
-      typename ApplyType = typename details::key_value_apply_return_type<
+      typename ApplyType = typename details::key_value_apply_result<
           ApplyFunction, KeyType, ValueType>::type,
       typename std::enable_if<details::is_valid_key_value_apply_function<
                                   ApplyFunction, KeyType, ValueType>::value &&
@@ -119,7 +125,7 @@ public:
 
   template <
       typename ApplyFunction,
-      typename ApplyType = typename details::key_value_apply_return_type<
+      typename ApplyType = typename details::key_value_apply_result<
           ApplyFunction, KeyType, ValueType>::type,
       typename std::enable_if<details::is_valid_key_value_apply_function<
                                   ApplyFunction, KeyType, ValueType>::value &&
@@ -134,7 +140,7 @@ public:
   }
 
   template <typename ApplyFunction,
-            typename ApplyType = typename details::value_only_apply_return_type<
+            typename ApplyType = typename details::value_only_apply_result<
                 ApplyFunction, ValueType>::type,
             typename std::enable_if<details::is_valid_value_only_apply_function<
                                         ApplyFunction, ValueType>::value &&
@@ -149,7 +155,7 @@ public:
   }
 
   template <typename ApplyFunction,
-            typename ApplyType = typename details::value_only_apply_return_type<
+            typename ApplyType = typename details::value_only_apply_result<
                 ApplyFunction, ValueType>::type,
             typename std::enable_if<details::is_valid_value_only_apply_function<
                                         ApplyFunction, ValueType>::value &&
@@ -176,7 +182,7 @@ public:
   using Base::Base;
 
   template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_return_type<
+            typename ApplyType = typename details::key_value_apply_result<
                 ApplyFunction, KeyType, GroupIndices>::type,
             typename std::enable_if<
                 details::is_valid_index_apply_function<ApplyFunction, KeyType,
@@ -258,8 +264,8 @@ template <typename GrouperFunction> struct IndexerBuilder {
           int>::type = 0>
   static auto build(const GrouperFunction &grouper_function,
                     const Iterable &iterable) {
-    using GroupKey = typename details::grouper_return_type<GrouperFunction,
-                                                           IterableValue>::type;
+    using GroupKey =
+        typename details::grouper_result<GrouperFunction, IterableValue>::type;
     GroupIndexer<GroupKey> output;
     std::size_t i = 0;
     for (const auto &value : iterable) {
@@ -351,7 +357,7 @@ public:
   }
 
   template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_return_type<
+            typename ApplyType = typename details::key_value_apply_result<
                 ApplyFunction, KeyType, GroupIndices>::type,
             typename std::enable_if<
                 details::is_valid_index_apply_function<ApplyFunction, KeyType,
@@ -367,7 +373,7 @@ public:
   }
 
   template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_return_type<
+            typename ApplyType = typename details::key_value_apply_result<
                 ApplyFunction, KeyType, GroupIndices>::type,
             typename std::enable_if<
                 details::is_valid_index_apply_function<ApplyFunction, KeyType,

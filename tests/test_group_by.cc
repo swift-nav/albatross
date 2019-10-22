@@ -125,10 +125,10 @@ struct CustomClassMethodGrouper {
   auto get_grouper() const { return CustomNearestEvenNumber(); }
 };
 
-struct CustomFunctionPointerGrouper {
+struct CustomFunctionGrouper {
   auto get_parent() const { return test_integer_dataset(); }
 
-  auto get_grouper() const { return &custom_nearest_even_number; }
+  auto get_grouper() const { return custom_nearest_even_number; }
 };
 
 template <typename CaseType> class GroupByTester : public ::testing::Test {
@@ -140,14 +140,14 @@ typedef ::testing::Types<BoolClassMethodGrouper, BoolLambdaGrouper,
                          BoolFunctionPointerGrouper, IntClassMethodGrouper,
                          StringClassMethodGrouper, BoolClassMethodVectorGrouper,
                          LeaveOneOutTest, CustomClassMethodGrouper,
-                         CustomFunctionPointerGrouper>
+                         CustomFunctionGrouper>
     GrouperTestCases;
 
 TYPED_TEST_CASE_P(GroupByTester);
 
 template <typename GrouperFunction, typename ValueType,
-          typename GroupKey = typename details::grouper_return_type<
-              GrouperFunction, ValueType>::type,
+          typename GroupKey = typename details::grouper_result<GrouperFunction,
+                                                               ValueType>::type,
           typename std::enable_if<
               !std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>
@@ -158,8 +158,8 @@ void expect_group_key_matches_expected(const GrouperFunction &grouper,
 }
 
 template <typename GrouperFunction, typename ValueType,
-          typename GroupKey = typename details::grouper_return_type<
-              GrouperFunction, ValueType>::type,
+          typename GroupKey = typename details::grouper_result<GrouperFunction,
+                                                               ValueType>::type,
           typename std::enable_if<
               std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>
@@ -195,6 +195,20 @@ template <typename FeatureType>
 void expect_same_but_maybe_out_of_order(const std::vector<FeatureType> &x,
                                         const std::vector<FeatureType> &y) {
   EXPECT_EQ(vector_set_difference(x, y).size(), 0);
+}
+
+TYPED_TEST_P(GroupByTester, test_groupby_access_methods) {
+  auto parent = this->test_case.get_parent();
+  const auto grouper = group_by(parent, this->test_case.get_grouper());
+
+  const auto const_groups = grouper.groups();
+  assert(const_groups.size() > 0);
+  const auto first_key = const_groups.keys()[0];
+  const_groups.at(first_key);
+
+  auto groups = grouper.groups();
+  groups.at(first_key);
+  groups[first_key];
 }
 
 TYPED_TEST_P(GroupByTester, test_groupby_combine) {
@@ -314,9 +328,9 @@ TYPED_TEST_P(GroupByTester, test_groupby_filter) {
             filtered.size());
 }
 
-REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_groups,
-                           test_groupby_counts, test_groupby_combine,
-                           test_groupby_modify_combine,
+REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_access_methods,
+                           test_groupby_groups, test_groupby_counts,
+                           test_groupby_combine, test_groupby_modify_combine,
                            test_groupby_apply_combine, test_groupby_apply_void,
                            test_groupby_filter, test_groupby_apply_value_only,
                            test_groupby_index_apply);
