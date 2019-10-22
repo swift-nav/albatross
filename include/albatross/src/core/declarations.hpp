@@ -133,8 +133,11 @@ template <typename InlierMetric, typename ConsensusMetric,
           typename IndexingFunction>
 struct GenericRansacStrategy;
 
+struct AlwaysAcceptCandidateMetric;
+
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename IndexingFunction,
+          typename IsValidCandidateMetric = AlwaysAcceptCandidateMetric>
 struct GaussianProcessRansacStrategy;
 
 /*
