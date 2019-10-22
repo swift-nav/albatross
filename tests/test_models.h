@@ -164,8 +164,10 @@ struct AdaptedRansacStrategy : public GaussianProcessRansacStrategy<
         adapted::convert_features(dataset.features), dataset.targets);
     const auto indexer = get_indexer(converted);
     const FeatureCountConsensusMetric consensus_metric;
+    const AlwaysAcceptCandidateMetric always_accept;
     return get_gp_ransac_functions(model, converted, indexer,
-                                   this->inlier_metric_, consensus_metric);
+                                   this->inlier_metric_, consensus_metric,
+                                   always_accept);
   }
 };
 
