@@ -196,8 +196,8 @@ public:
   }
 
   template <typename X,
-  typename std::enable_if<has_valid_ssr_impl<Derived, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<has_valid_ssr_impl<Derived, X>::value,
+                                    int>::type = 0>
   auto state_space_representation(const std::vector<X> &xs) const {
     return derived()._ssr_impl(xs);
   }
@@ -307,26 +307,26 @@ public:
   }
 
   template <typename X,
-  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
-                          has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                                        has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return concatenate(this->lhs_.state_space_representation(xs),
-        this->rhs_.state_space_representation(xs));
+                       this->rhs_.state_space_representation(xs));
   }
 
   template <typename X,
-  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
-                          !has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                                        !has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->lhs_.state_space_representation(xs);
   }
 
   template <typename X,
-  typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
-                          has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
+                                        has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->rhs_.state_space_representation(xs);
   }
@@ -405,26 +405,26 @@ public:
   }
 
   template <typename X,
-  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
-                          has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                                        has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return concatenate(this->lhs_.state_space_representation(xs),
-        this->rhs_.state_space_representation(xs));
+                       this->rhs_.state_space_representation(xs));
   }
 
   template <typename X,
-  typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
-                          !has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<has_valid_ssr_impl<LHS, X>::value &&
+                                        !has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->lhs_.state_space_representation(xs);
   }
 
   template <typename X,
-  typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
-                          has_valid_ssr_impl<RHS, X>::value,
-                                      int>::type = 0>
+            typename std::enable_if<!has_valid_ssr_impl<LHS, X>::value &&
+                                        has_valid_ssr_impl<RHS, X>::value,
+                                    int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->rhs_.state_space_representation(xs);
   }

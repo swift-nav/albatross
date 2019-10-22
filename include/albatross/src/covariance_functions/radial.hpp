@@ -59,6 +59,18 @@ public:
     return "squared_exponential[" + this->distance_metric_.get_name() + "]";
   }
 
+  std::vector<double> _ssr_impl(const std::vector<double> &xs) const {
+    double min = *std::min_element(xs.begin(), xs.end());
+    double max = *std::max_element(xs.begin(), xs.end());
+
+    double range = max - min;
+    // using 1/10th of the length scale should result in grids with
+    // one percent decorrelation between them.
+    double n = ceil(10 * range / squared_exponential_length_scale.value);
+    n = std::max(n, 3.);
+    return linspace(min, max, safe_cast_to_size_t(n));
+  }
+
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<

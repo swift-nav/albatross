@@ -25,33 +25,33 @@ inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
 } // namespace details
 
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy>
 class SparseGaussianProcessRegression;
-
-std::vector<double> inline linspace(double a, double b, std::size_t n) {
-  double h = (b - a) / static_cast<double>(n - 1);
-  std::vector<double> xs(n);
-  typename std::vector<double>::iterator x;
-  double val;
-  for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
-    *x = val;
-  return xs;
-}
 
 struct UniformlySpacedInducingPoints {
 
   UniformlySpacedInducingPoints(std::size_t num_points_ = 10)
       : num_points(num_points_) {}
 
-  std::vector<double> operator()(const std::vector<double> &features) const {
+  template <typename CovarianceFunction>
+  std::vector<double> operator()(const CovarianceFunction &cov,
+                                 const std::vector<double> &features) const {
     double min = *std::min_element(features.begin(), features.end());
     double max = *std::max_element(features.begin(), features.end());
-
     return linspace(min, max, num_points);
   }
 
   std::size_t num_points;
+};
+
+struct StateSpaceInducingPointStrategy {
+
+  template <typename CovarianceFunction>
+  std::vector<double> operator()(const CovarianceFunction &cov,
+                                 const std::vector<double> &features) const {
+    return cov.state_space_representation(features);
+  }
 };
 
 /*
@@ -105,17 +105,17 @@ struct UniformlySpacedInducingPoints {
  *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy>
 class SparseGaussianProcessRegression
     : public GaussianProcessBase<
-          CovFunc, SparseGaussianProcessRegression<
-                       CovFunc, InducingPointStrategy, IndexingFunction>> {
+          CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                                   InducingPointStrategy>> {
 
 public:
   using Base = GaussianProcessBase<
-      CovFunc, SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                               IndexingFunction>>;
+      CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                               InducingPointStrategy>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
   SparseGaussianProcessRegression(CovFunc &covariance_function)
@@ -124,13 +124,13 @@ public:
   };
   SparseGaussianProcessRegression(
       CovFunc &covariance_function,
-      InducingPointStrategy &inducing_point_strategy_,
       IndexingFunction &independent_group_indexing_function_,
+      InducingPointStrategy &inducing_point_strategy_,
       const std::string &model_name)
       : Base(covariance_function, model_name),
-        inducing_point_strategy(inducing_point_strategy_),
         independent_group_indexing_function(
-            independent_group_indexing_function_) {
+            independent_group_indexing_function_),
+        inducing_point_strategy(inducing_point_strategy_) {
     initialize_params();
   };
   SparseGaussianProcessRegression(CovFunc &covariance_function,
@@ -171,12 +171,20 @@ public:
   template <typename FeatureType>
   auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
                  const MarginalDistribution &out_of_order_targets) const {
+    static_assert(
+        is_invocable<IndexingFunction, std::vector<FeatureType>>::value,
+        "IndexingFunction is not defined for the required types");
+    static_assert(
+        is_invocable<InducingPointStrategy, CovFunc,
+                     std::vector<FeatureType>>::value,
+        "InducingPointStrategy is not defined for the required types");
 
     const auto indexer =
         independent_group_indexing_function(out_of_order_features);
 
     // Determine the set of inducing points, u.
-    const auto u = inducing_point_strategy(out_of_order_features);
+    const auto u = inducing_point_strategy(this->covariance_function_,
+                                           out_of_order_features);
 
     std::vector<Measurement<FeatureType>> out_of_order_measurement_features;
     for (const auto &f : out_of_order_features) {
@@ -298,20 +306,31 @@ public:
 
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  InducingPointStrategy inducing_point_strategy;
   IndexingFunction independent_group_indexing_function;
+  InducingPointStrategy inducing_point_strategy;
 };
 
-template <typename CovFunc, typename InducingPointStrategy,
-          typename IndexingFunction>
+template <typename CovFunc, typename IndexingFunction,
+          typename InducingPointStrategy>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
+                               IndexingFunction &index_function,
                                InducingPointStrategy &strategy,
+                               const std::string &model_name) {
+  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                         InducingPointStrategy>(
+      covariance_function, index_function, strategy, model_name);
+};
+
+template <typename CovFunc, typename IndexingFunction>
+auto sparse_gp_from_covariance(CovFunc covariance_function,
                                IndexingFunction &index_function,
                                const std::string &model_name) {
-  return SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                         IndexingFunction>(
-      covariance_function, strategy, index_function, model_name);
+  StateSpaceInducingPointStrategy strategy;
+  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+                                         StateSpaceInducingPointStrategy>(
+      covariance_function, index_function, strategy, model_name);
 };
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_ */

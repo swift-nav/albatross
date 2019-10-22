@@ -48,19 +48,25 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
+      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
   sparse.set_param(details::inducing_nugget_name(), 1e-3);
   sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   UniformlySpacedInducingPoints bad_strategy(3);
-  auto really_sparse = sparse_gp_from_covariance(covariance, bad_strategy,
-                                                 indexer, "really_sparse");
+  auto really_sparse = sparse_gp_from_covariance(covariance, indexer,
+                                                 bad_strategy, "really_sparse");
   really_sparse.set_param(details::inducing_nugget_name(), 1e-3);
   really_sparse.set_param(details::measurement_nugget_name(), 1e-12);
+
+  auto state_space =
+      sparse_gp_from_covariance(covariance, indexer, "state_space");
+  state_space.set_param(details::inducing_nugget_name(), 1e-3);
+  state_space.set_param(details::measurement_nugget_name(), 1e-12);
 
   auto direct_fit = direct.fit(dataset);
   auto sparse_fit = sparse.fit(dataset);
   auto really_sparse_fit = really_sparse.fit(dataset);
+  auto state_space_fit = state_space.fit(dataset);
 
   auto test_features = linspace(0.01, 9.9, 11);
 
@@ -70,22 +76,29 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
       sparse_fit.predict_with_measurement_noise(test_features).joint();
   auto really_sparse_pred =
       really_sparse_fit.predict_with_measurement_noise(test_features).joint();
+  auto state_space_pred =
+      state_space_fit.predict_with_measurement_noise(test_features).joint();
 
   double sparse_error = (sparse_pred.mean - direct_pred.mean).norm();
   double really_sparse_error =
       (really_sparse_pred.mean - direct_pred.mean).norm();
+  double state_space_error = (state_space_pred.mean - direct_pred.mean).norm();
   EXPECT_LT(sparse_error, sparse_error_threshold);
   EXPECT_LT(really_sparse_error, really_sparse_error_threshold);
   EXPECT_GT(really_sparse_error, sparse_error);
+  EXPECT_GE(really_sparse_error, state_space_error);
 
   double sparse_cov_diff =
       (sparse_pred.covariance - direct_pred.covariance).norm();
   double really_sparse_cov_diff =
       (really_sparse_pred.covariance - direct_pred.covariance).norm();
+  double state_sparse_cov_diff =
+      (state_space_pred.covariance - direct_pred.covariance).norm();
 
   EXPECT_LT(sparse_cov_diff, sparse_error_threshold);
   EXPECT_LT(really_sparse_cov_diff, really_sparse_error_threshold);
   EXPECT_GT(really_sparse_cov_diff, sparse_cov_diff);
+  EXPECT_GE(really_sparse_cov_diff, state_sparse_cov_diff);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
@@ -126,7 +139,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   UniformlySpacedInducingPoints strategy(100);
   auto sparse =
-      sparse_gp_from_covariance(covariance, strategy, indexer, "sparse");
+      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
 
   start = high_resolution_clock::now();
   auto sparse_fit = sparse.fit(large_dataset);

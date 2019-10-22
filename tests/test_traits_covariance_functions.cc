@@ -331,31 +331,19 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
 
 struct HasSSRX : public CovarianceFunction<HasSSRX> {
 
-  std::vector<double> _ssr_impl(const std::vector<X> &xs) const {
-    return {1.};
-  }
-
+  std::vector<double> _ssr_impl(const std::vector<X> &xs) const { return {1.}; }
 };
 
 struct HasSSRXY : public CovarianceFunction<HasSSRXY> {
 
-  std::vector<double> _ssr_impl(const std::vector<X> &xs) const {
-    return {1.};
-  }
+  std::vector<double> _ssr_impl(const std::vector<X> &xs) const { return {1.}; }
 
-  std::vector<double> _ssr_impl(const std::vector<Y> &ys) const {
-    return {1.};
-  }
+  std::vector<double> _ssr_impl(const std::vector<Y> &ys) const { return {1.}; }
 };
 
-struct WithoutSSR : public CovarianceFunction<WithoutSSR> {
+struct WithoutSSR : public CovarianceFunction<WithoutSSR> {};
 
-};
-
-struct AlsoWithoutSSR : public CovarianceFunction<AlsoWithoutSSR> {
-
-};
-
+struct AlsoWithoutSSR : public CovarianceFunction<AlsoWithoutSSR> {};
 
 TEST(test_traits_covariance_function, test_has_valid_ssr_impl) {
   EXPECT_TRUE(bool(has_valid_ssr_impl<HasSSRX, X>::value));
@@ -407,9 +395,6 @@ TEST(test_traits_covariance_function, test_has_valid_ssr_impl) {
   using ProductWithXWithXY = decltype(with_x * with_xy);
   EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithXWithXY, X>::value));
   EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithXWithXY, Y>::value));
-
-
 }
-
 
 } // namespace albatross
