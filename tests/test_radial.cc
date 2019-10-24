@@ -47,4 +47,71 @@ TEST(test_radial, test_is_positive_definite) {
   EXPECT_GE(cov.eigenvalues().real().array().minCoeff(), 0.);
 }
 
+class SquaredExponentialSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., 10., 101); }
+
+  auto covariance_function() const {
+    SquaredExponential<EuclideanDistance> cov(5., 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 1e-12; }
+};
+
+class ExponentialSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., 10., 11); }
+
+  auto covariance_function() const {
+    Exponential<EuclideanDistance> cov(5., 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 0.1; }
+};
+
+class ExponentialAngularSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., M_2_PI, 11); }
+
+  auto covariance_function() const {
+    Exponential<EuclideanDistance> cov(M_PI_4, 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 0.1; }
+};
+
+template <typename T>
+class CovarianceStateSpaceTester : public ::testing::Test {
+public:
+  T test_case;
+};
+
+using StateSpaceTestCases =
+    ::testing::Types<SquaredExponentialSSRTest, ExponentialSSRTest,
+                     ExponentialAngularSSRTest>;
+TYPED_TEST_CASE(CovarianceStateSpaceTester, StateSpaceTestCases);
+
+TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
+
+  const auto xs = this->test_case.features();
+
+  const auto cov_func = this->test_case.covariance_function();
+
+  const auto ssr = cov_func.state_space_representation(xs);
+
+  const Eigen::MatrixXd expected = cov_func(xs, xs);
+
+  // This forms the covariance between xs via the state
+  // space representation, they should be very similar
+  const Eigen::MatrixXd cross = cov_func(xs, ssr);
+  const Eigen::MatrixXd ssr_cov = cov_func(ssr, ssr);
+  const Eigen::MatrixXd actual =
+      cross * ssr_cov.ldlt().solve(cross.transpose());
+
+  EXPECT_LT((expected - actual).norm(), this->test_case.get_tolerance());
+}
+
 } // namespace albatross

@@ -48,9 +48,6 @@ std::vector<double> random_points_on_line(const int n, const double low,
 std::vector<double> uniform_points_on_line(const std::size_t n,
                                            const double low,
                                            const double high) {
-  std::default_random_engine generator;
-  std::uniform_real_distribution<double> distribution(low, high);
-
   std::vector<double> xs;
   for (std::size_t i = 0; i < n; i++) {
     double ratio = (double)i / (double)(n - 1);
