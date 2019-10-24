@@ -1,5 +1,6 @@
 add_executable(albatross_unit_tests 
   test_radial.cc
+  test_covariance_functions.cc
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE
   "${gtest_SOURCE_DIR}"
