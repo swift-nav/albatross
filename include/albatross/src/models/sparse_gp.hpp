@@ -47,11 +47,25 @@ struct UniformlySpacedInducingPoints {
 
 struct StateSpaceInducingPointStrategy {
 
-  template <typename CovarianceFunction>
-  std::vector<double> operator()(const CovarianceFunction &cov,
-                                 const std::vector<double> &features) const {
+  template <typename CovarianceFunction, typename FeatureType,
+            std::enable_if_t<has_valid_state_space_representation<
+                                 CovarianceFunction, FeatureType>::value,
+                             int> = 0>
+  auto operator()(const CovarianceFunction &cov,
+                  const std::vector<FeatureType> &features) const {
     return cov.state_space_representation(features);
   }
+
+  template <typename CovarianceFunction, typename FeatureType,
+            std::enable_if_t<!has_valid_state_space_representation<
+                                 CovarianceFunction, FeatureType>::value,
+                             int> = 0>
+  auto operator()(const CovarianceFunction &cov,
+                  const std::vector<FeatureType> &features) const
+      ALBATROSS_FAIL(
+          CovarianceFunction,
+          "Covariance function is missing state_space_representation method, "
+          "be sure _ssr_impl has been defined for the types concerned");
 };
 
 /*
