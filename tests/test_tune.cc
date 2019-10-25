@@ -29,7 +29,7 @@ TEST(test_tune, test_single_dataset) {
   auto params = tuner.tune();
 
   NegativeLogLikelihood<JointDistribution> nll;
-  LeaveOneOut loo;
+  LeaveOneOutGrouper loo;
   const auto scores = model.cross_validate().scores(nll, dataset, loo);
 
   model.set_params(params);

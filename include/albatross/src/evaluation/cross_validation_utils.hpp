@@ -15,55 +15,51 @@
 
 namespace albatross {
 
-template <typename ModelType, typename FeatureType>
+template <typename ModelType, typename FeatureType, typename GroupKey>
 inline auto
 get_predictions(const ModelType &model,
-                const std::vector<RegressionFold<FeatureType>> &folds) {
+                const RegressionFolds<GroupKey, FeatureType> &folds) {
 
-  using FitType = typename fit_type<ModelType, FeatureType>::type;
-  std::map<std::string, Prediction<ModelType, FeatureType, FitType>>
-      predictions;
-  for (const auto &fold : folds) {
-    predictions.emplace(
-        fold.name,
-        model.fit(fold.train_dataset).predict(fold.test_dataset.features));
-  }
+  const auto predict_group = [&model](const auto &fold) {
+    return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+  };
 
-  return predictions;
+  return folds.apply(predict_group);
 }
 
-template <typename PredictType, typename Prediction>
+template <typename PredictType, typename GroupKey, typename Prediction,
+          template <typename...> class Map>
 inline auto get_predict_types(
-    const std::map<std::string, Prediction> &prediction_classes,
+    const Map<GroupKey, Prediction> &predictions,
     PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
-  std::map<std::string, PredictType> predictions;
-  for (const auto &pred : prediction_classes) {
-    predictions.emplace(pred.first, pred.second.template get<PredictType>());
-  }
-  return predictions;
+
+  const auto get_predict_type = [](const auto &prediction) {
+    return prediction.template get<PredictType>();
+  };
+
+  return Grouped<GroupKey, Prediction>(predictions).apply(get_predict_type);
 }
 
-template <typename PredictionType>
-inline std::map<std::string, Eigen::VectorXd>
-get_means(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline auto get_means(const Grouped<GroupKey, PredictionType> &predictions) {
   return get_predict_types<Eigen::VectorXd>(predictions);
 }
 
-template <typename PredictionType>
-inline std::map<std::string, MarginalDistribution>
-get_marginals(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline auto
+get_marginals(const Grouped<GroupKey, PredictionType> &predictions) {
   return get_predict_types<MarginalDistribution>(predictions);
 }
 
-template <typename PredictionType>
-inline std::map<std::string, JointDistribution>
-get_joints(const std::map<std::string, PredictionType> &predictions) {
+template <typename GroupKey, typename PredictionType>
+inline auto get_joints(const Grouped<GroupKey, PredictionType> &predictions) {
   return get_predict_types<JointDistribution>(predictions);
 }
 
-inline Eigen::VectorXd concatenate_mean_predictions(
-    const FoldIndexer &indexer,
-    const std::map<std::string, Eigen::VectorXd> &means) {
+template <typename GroupKey>
+inline Eigen::VectorXd
+concatenate_mean_predictions(const GroupIndexer<GroupKey> &indexer,
+                             const Grouped<GroupKey, Eigen::VectorXd> &means) {
   assert(indexer.size() == means.size());
 
   Eigen::Index n =
@@ -81,10 +77,10 @@ inline Eigen::VectorXd concatenate_mean_predictions(
   return pred;
 }
 
-template <typename CovarianceType>
+template <typename CovarianceType, typename GroupKey>
 inline MarginalDistribution concatenate_marginal_predictions(
-    const FoldIndexer &indexer,
-    const std::map<std::string, Distribution<CovarianceType>> &preds) {
+    const GroupIndexer<GroupKey> &indexer,
+    const Grouped<GroupKey, Distribution<CovarianceType>> &preds) {
   assert(indexer.size() == preds.size());
 
   Eigen::Index n =
@@ -104,34 +100,33 @@ inline MarginalDistribution concatenate_marginal_predictions(
   return MarginalDistribution(mean, variance.asDiagonal());
 }
 
-template <typename PredictionMetricType, typename FeatureType,
-          typename PredictionType>
+template <typename PredictionMetricType, typename GroupKey,
+          typename FeatureType, typename PredictionType,
+          template <typename...> class PredictionContainer>
 Eigen::VectorXd cross_validated_scores(
     const PredictionMetricType &metric,
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::map<std::string, PredictionType> &predictions) {
-  assert(folds.size() == predictions.size());
-  Eigen::Index n = static_cast<Eigen::Index>(predictions.size());
-  Eigen::VectorXd output(n);
-  for (Eigen::Index i = 0; i < n; ++i) {
-    assert(static_cast<std::size_t>(folds[i].test_dataset.size()) ==
-           static_cast<std::size_t>(predictions.at(folds[i].name).size()));
-    output[i] =
-        metric(predictions.at(folds[i].name), folds[i].test_dataset.targets);
-  }
-  return output;
+    const RegressionFolds<GroupKey, FeatureType> &folds,
+    const PredictionContainer<GroupKey, PredictionType> &predictions) {
+
+  const auto score_one_group = [&](const GroupKey &key,
+                                   const RegressionFold<FeatureType> &fold) {
+    assert(static_cast<std::size_t>(fold.test_dataset.size()) ==
+           static_cast<std::size_t>(predictions.at(key).size()));
+    return metric(predictions.at(key), fold.test_dataset.targets);
+  };
+
+  return combine(folds.apply(score_one_group));
 }
 
-template <typename FeatureType, typename CovarianceType>
+template <typename FeatureType, typename CovarianceType, typename GroupKey>
 static inline Eigen::VectorXd cross_validated_scores(
     const PredictionMetric<Eigen::VectorXd> &metric,
-    const std::vector<RegressionFold<FeatureType>> &folds,
-    const std::map<std::string, Distribution<CovarianceType>> &predictions) {
-  std::map<std::string, Eigen::VectorXd> converted;
-  for (const auto &pred : predictions) {
-    converted[pred.first] = pred.second.mean;
-  }
-  return cross_validated_scores(metric, folds, converted);
+    const RegressionFolds<GroupKey, FeatureType> &folds,
+    const Grouped<GroupKey, Distribution<CovarianceType>> &predictions) {
+
+  const auto get_mean = [](const auto &pred) { return pred.mean; };
+
+  return cross_validated_scores(metric, folds, predictions.apply(get_mean));
 }
 
 } // namespace albatross

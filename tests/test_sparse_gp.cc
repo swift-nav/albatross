@@ -23,8 +23,9 @@ std::string get_group(const double &f) {
   return std::to_string(static_cast<int>(f) / 10);
 }
 
-struct LeaveOneIntervalOut : public LeaveOneGroupOut<double> {
-  LeaveOneIntervalOut() : LeaveOneGroupOut<double>(get_group){};
+struct LeaveOneIntervalOut {
+
+  std::string operator()(const double &f) const { return get_group(f); }
 };
 
 template <typename IndexerType>
@@ -33,7 +34,7 @@ public:
   IndexerType indexer;
 };
 
-typedef ::testing::Types<LeaveOneOut, LeaveOneIntervalOut>
+typedef ::testing::Types<LeaveOneOutGrouper, LeaveOneIntervalOut>
     IndependenceAssumptions;
 TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
 

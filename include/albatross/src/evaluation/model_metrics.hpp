@@ -53,8 +53,8 @@ struct LeaveOneOutLikelihood
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
     NegativeLogLikelihood<PredictType> nll;
-    LeaveOneOut loo;
-    const auto scores = model.cross_validate().scores(nll, dataset, loo);
+    const auto scores =
+        model.cross_validate().scores(nll, dataset, LeaveOneOutGrouper());
     double data_nll = scores.sum();
     double prior_nll = model.prior_log_likelihood();
     return data_nll - prior_nll;
@@ -66,12 +66,12 @@ class LeaveOneGroupOutLikelihood
     : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
 public:
   explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
-      : logo_(grouper){};
+      : grouper_(grouper){};
 
   template <typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
-    const auto scores = model.cross_validate().scores(nll_, dataset, logo_);
+    const auto scores = model.cross_validate().scores(nll_, dataset, grouper_);
     double data_nll = scores.sum();
     double prior_nll = model.prior_log_likelihood();
     return data_nll - prior_nll;
@@ -79,7 +79,7 @@ public:
 
 private:
   albatross::NegativeLogLikelihood<PredictType> nll_;
-  albatross::LeaveOneGroupOut<FeatureType> logo_;
+  GroupFunction<FeatureType> grouper_;
 };
 
 struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
@@ -87,7 +87,7 @@ struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const {
     RootMeanSquareError rmse;
-    LeaveOneOut loo;
+    LeaveOneOutGrouper loo;
 
     double rmse_score =
         model.cross_validate().scores(rmse, dataset, loo).mean();

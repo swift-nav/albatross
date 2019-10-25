@@ -109,7 +109,7 @@ TEST(test_scaling_functions, test_predicts) {
   auto model = gp_from_covariance(covariance_function);
 
   RootMeanSquareError rmse;
-  LeaveOneOut loo;
+  LeaveOneOutGrouper loo;
   auto cv_scores = model.cross_validate().scores(rmse, dataset, loo);
   EXPECT_LE(cv_scores.mean(), 0.01);
 }

@@ -74,7 +74,7 @@ public:
     const auto gp = gp_from_covariance(covariance);
 
     GaussianProcessRansacStrategy<ChiSquaredCdf, ChiSquaredConsensusMetric,
-                                  LeaveOneOut>
+                                  LeaveOneOutGrouper>
         ransac_strategy;
 
     return gp.ransac(ransac_strategy, config);
@@ -111,12 +111,12 @@ public:
 
   using FitType = Fit<GPFit<Eigen::SerializableLDLT, double>>;
 
-  template <typename FeatureType, typename PredictType>
-  std::map<std::string, PredictType>
+  template <typename FeatureType, typename PredictType, typename GroupKey>
+  std::map<GroupKey, PredictType>
   cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const FoldIndexer &fold_indexer,
+                              const GroupIndexer<GroupKey> &group_indexer,
                               PredictTypeIdentity<PredictType> identity) const {
-    return gp_cross_validated_predictions(dataset, fold_indexer, *this,
+    return gp_cross_validated_predictions(dataset, group_indexer, *this,
                                           identity);
   }
 

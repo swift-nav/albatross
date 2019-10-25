@@ -18,16 +18,18 @@ namespace albatross {
 /*
  * Cross validation traits
  */
-template <typename T, typename FeatureType, typename PredictType>
+template <typename T, typename FeatureType, typename PredictType,
+          typename GroupKey>
 class has_valid_cross_validated_predictions {
+
   template <typename C,
             typename ReturnType =
                 decltype(std::declval<const C>().cross_validated_predictions(
                     std::declval<const RegressionDataset<FeatureType> &>(),
-                    std::declval<const FoldIndexer &>(),
+                    std::declval<const GroupIndexer<GroupKey> &>(),
                     std::declval<PredictTypeIdentity<PredictType>>()))>
   static typename std::enable_if<
-      std::is_same<std::map<std::string, PredictType>, ReturnType>::value,
+      std::is_same<std::map<GroupKey, PredictType>, ReturnType>::value,
       std::true_type>::type
   test(C *);
   template <typename> static std::false_type test(...);
@@ -36,17 +38,20 @@ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T, typename FeatureType>
+template <typename T, typename FeatureType, typename GroupKey>
 using has_valid_cv_mean =
-    has_valid_cross_validated_predictions<T, FeatureType, Eigen::VectorXd>;
+    has_valid_cross_validated_predictions<T, FeatureType, Eigen::VectorXd,
+                                          GroupKey>;
 
-template <typename T, typename FeatureType>
+template <typename T, typename FeatureType, typename GroupKey>
 using has_valid_cv_marginal =
-    has_valid_cross_validated_predictions<T, FeatureType, MarginalDistribution>;
+    has_valid_cross_validated_predictions<T, FeatureType, MarginalDistribution,
+                                          GroupKey>;
 
-template <typename T, typename FeatureType>
+template <typename T, typename FeatureType, typename GroupKey>
 using has_valid_cv_joint =
-    has_valid_cross_validated_predictions<T, FeatureType, JointDistribution>;
+    has_valid_cross_validated_predictions<T, FeatureType, JointDistribution,
+                                          GroupKey>;
 
 /*
  * PredictionMetrics
