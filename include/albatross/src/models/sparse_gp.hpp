@@ -25,7 +25,7 @@ inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
 } // namespace details
 
-template <typename CovFunc, typename IndexingFunction,
+template <typename CovFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 class SparseGaussianProcessRegression;
 
@@ -119,16 +119,16 @@ struct StateSpaceInducingPointStrategy {
  *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
-template <typename CovFunc, typename IndexingFunction,
+template <typename CovFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 class SparseGaussianProcessRegression
     : public GaussianProcessBase<
-          CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+          CovFunc, SparseGaussianProcessRegression<CovFunc, GrouperFunction,
                                                    InducingPointStrategy>> {
 
 public:
   using Base = GaussianProcessBase<
-      CovFunc, SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+      CovFunc, SparseGaussianProcessRegression<CovFunc, GrouperFunction,
                                                InducingPointStrategy>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
@@ -138,13 +138,13 @@ public:
   };
   SparseGaussianProcessRegression(
       CovFunc &covariance_function,
-      IndexingFunction &independent_group_indexing_function_,
+      GrouperFunction &independent_group_function_,
       InducingPointStrategy &inducing_point_strategy_,
       const std::string &model_name)
       : Base(covariance_function, model_name),
-        independent_group_indexing_function(
-            independent_group_indexing_function_),
-        inducing_point_strategy(inducing_point_strategy_) {
+        inducing_point_strategy(inducing_point_strategy_),
+independent_group_function(
+            independent_group_indexing_function_) {
     initialize_params();
   };
   SparseGaussianProcessRegression(CovFunc &covariance_function,
@@ -194,7 +194,7 @@ public:
         "InducingPointStrategy is not defined for the required types");
 
     const auto indexer =
-        independent_group_indexing_function(out_of_order_features);
+        group_by(out_of_order_features, independent_group_function).indexers();
 
     // Determine the set of inducing points, u.
     const auto u = inducing_point_strategy(this->covariance_function_,
@@ -320,29 +320,29 @@ public:
 
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  IndexingFunction independent_group_indexing_function;
   InducingPointStrategy inducing_point_strategy;
+  GrouperFunction independent_group_function;
 };
 
-template <typename CovFunc, typename IndexingFunction,
-          typename InducingPointStrategy>
+template <typename CovFunc, typename InducingPointStrategy,
+          typename GrouperFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               IndexingFunction &index_function,
+                               GrouperFunction &grouper_function,                               
                                InducingPointStrategy &strategy,
                                const std::string &model_name) {
-  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
-                                         InducingPointStrategy>(
-      covariance_function, index_function, strategy, model_name);
+  return SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
+                                         GrouperFunction>(
+      covariance_function, grouper_function, strategy, model_name);
 };
 
-template <typename CovFunc, typename IndexingFunction>
+template <typename CovFunc, typename GrouperFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               IndexingFunction &index_function,
+                               GrouperFunction &grouper_function,
                                const std::string &model_name) {
   StateSpaceInducingPointStrategy strategy;
-  return SparseGaussianProcessRegression<CovFunc, IndexingFunction,
+  return SparseGaussianProcessRegression<CovFunc, GrouperFunction,
                                          StateSpaceInducingPointStrategy>(
-      covariance_function, index_function, strategy, model_name);
+      covariance_function, grouper_function, strategy, model_name);
 };
 
 } // namespace albatross

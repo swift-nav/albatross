@@ -19,17 +19,17 @@ template <typename ModelType, typename FeatureType> struct FitAndIndices {
   using FitType = typename fit_type<ModelType, FeatureType>::type;
 
   FitType fit;
-  FoldIndices indices;
+  GroupIndices indices;
 };
 
-template <typename ModelType, typename FeatureType>
-inline
-    typename RansacFunctions<FitAndIndices<ModelType, FeatureType>>::FitterFunc
-    get_gp_ransac_fitter(const RegressionDataset<FeatureType> &dataset,
-                         const FoldIndexer &indexer,
-                         const Eigen::MatrixXd &cov) {
-  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
-    auto inds = indices_from_names(indexer, groups);
+template <typename ModelType, typename FeatureType, typename GroupKey>
+inline typename RansacFunctions<FitAndIndices<ModelType, FeatureType>,
+                                GroupKey>::FitterFunc
+get_gp_ransac_fitter(const RegressionDataset<FeatureType> &dataset,
+                     const GroupIndexer<GroupKey> &indexer,
+                     const Eigen::MatrixXd &cov) {
+  return [&, indexer, cov, dataset](const std::vector<GroupKey> &groups) {
+    auto inds = indices_from_groups(indexer, groups);
     const auto train_dataset = subset(dataset, inds);
     const auto train_cov = symmetric_subset(cov, inds);
 
@@ -42,30 +42,31 @@ inline
 }
 
 template <typename ModelType, typename FeatureType,
-          typename IsValidCandidateMetric>
-inline typename RansacFunctions<
-    FitAndIndices<ModelType, FeatureType>>::IsValidCandidate
+          typename IsValidCandidateMetric, typename GroupKey>
+inline typename RansacFunctions<FitAndIndices<ModelType, FeatureType>,
+                                GroupKey>::IsValidCandidate
 get_gp_ransac_is_valid_candidate(const RegressionDataset<FeatureType> &dataset,
-                                 const FoldIndexer &indexer,
+                                 const GroupIndexer<GroupKey> &indexer,
                                  const Eigen::MatrixXd &cov,
                                  const IsValidCandidateMetric &metric) {
 
-  return [&, indexer, cov, dataset](const std::vector<FoldName> &groups) {
-    const auto inds = indices_from_names(indexer, groups);
+  return [&, indexer, cov, dataset](const std::vector<GroupKey> &groups) {
+    const auto inds = indices_from_groups(indexer, groups);
     return metric(inds, dataset, cov);
   };
 }
 
-template <typename ModelType, typename FeatureType, typename InlierMetricType>
-inline typename RansacFunctions<
-    FitAndIndices<ModelType, FeatureType>>::InlierMetric
+template <typename ModelType, typename FeatureType, typename InlierMetricType,
+          typename GroupKey>
+inline typename RansacFunctions<FitAndIndices<ModelType, FeatureType>,
+                                GroupKey>::InlierMetric
 get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
-                            const FoldIndexer &indexer,
+                            const GroupIndexer<GroupKey> &indexer,
                             const Eigen::MatrixXd &cov, const ModelType &model,
                             const InlierMetricType &metric) {
 
   return [&, indexer, cov, model, dataset](
-             const FoldName &group,
+             const GroupKey &group,
              const FitAndIndices<ModelType, FeatureType> &fit_and_indices) {
     const auto inds = indexer.at(group);
     const auto test_dataset = subset(dataset, inds);
@@ -76,72 +77,53 @@ get_gp_ransac_inlier_metric(const RegressionDataset<FeatureType> &dataset,
   };
 }
 
-class DifferentialEntropyConsensusMetric {
-public:
-  DifferentialEntropyConsensusMetric() : indexer_(), cov_(){};
+template <typename ModelType, typename FeatureType, typename ConsensusMetric,
+          typename GroupKey>
+inline typename RansacFunctions<FitAndIndices<ModelType, FeatureType>,
+                                GroupKey>::ConsensusMetric
+get_gp_ransac_consensus_metric(const GroupIndexer<GroupKey> &indexer,
+                               const RegressionDataset<FeatureType> &dataset,
+                               const Eigen::MatrixXd &cov,
+                               const ConsensusMetric &metric) {
 
-  DifferentialEntropyConsensusMetric(const MarginalDistribution &,
-                                     const FoldIndexer &indexer,
-                                     const Eigen::MatrixXd &cov)
-      : indexer_(indexer), cov_(cov){};
+  return [&, indexer, cov, dataset](const std::vector<GroupKey> &groups) {
+    const auto inds = indices_from_groups(indexer, groups);
+    ;
+    return metric(inds, dataset.targets, cov);
+  };
+}
 
-  double operator()(const std::vector<FoldName> &groups) {
-    const auto inds = indices_from_names(indexer_, groups);
-    const auto consensus_cov = symmetric_subset(cov_, inds);
+struct DifferentialEntropyConsensusMetric {
+  double operator()(const GroupIndices &indices, const MarginalDistribution &,
+                    const Eigen::MatrixXd &cov) const {
+    const auto consensus_cov = symmetric_subset(cov, indices);
     return differential_entropy(consensus_cov);
   }
-
-private:
-  FoldIndexer indexer_;
-  Eigen::MatrixXd cov_;
 };
 
-class FeatureCountConsensusMetric {
+struct FeatureCountConsensusMetric {
 
-public:
-  FeatureCountConsensusMetric() : indexer_(){};
-
-  FeatureCountConsensusMetric(const MarginalDistribution &,
-                              const FoldIndexer &indexer,
-                              const Eigen::MatrixXd &)
-      : indexer_(indexer){};
-
-  double operator()(const std::vector<FoldName> &groups) const {
-    const auto inds = indices_from_names(indexer_, groups);
+  double operator()(const GroupIndices &indices, const MarginalDistribution &,
+                    const Eigen::MatrixXd &) const {
     // Negative because a lower metric is better.
-    return (-1.0 * static_cast<double>(inds.size()));
+    return (-1.0 * static_cast<double>(indices.size()));
   }
-
-private:
-  FoldIndexer indexer_;
 };
 
-class ChiSquaredConsensusMetric {
-public:
-  ChiSquaredConsensusMetric() : indexer_(), cov_(){};
-
-  ChiSquaredConsensusMetric(const MarginalDistribution &targets,
-                            const FoldIndexer &indexer,
-                            const Eigen::MatrixXd &cov)
-      : targets_(targets), indexer_(indexer), cov_(cov){};
-
-  double operator()(const std::vector<FoldName> &groups) {
-    const auto inds = indices_from_names(indexer_, groups);
-    const auto consensus_prior = symmetric_subset(cov_, inds);
-    const auto consensus_targets = subset(targets_, inds);
+struct ChiSquaredConsensusMetric {
+  double operator()(const GroupIndices &indices,
+                    const MarginalDistribution &targets,
+                    const Eigen::MatrixXd &cov) const {
+    const auto consensus_prior = symmetric_subset(cov, indices);
+    const auto consensus_targets = subset(targets, indices);
     return chi_squared_cdf(consensus_targets.mean, consensus_prior);
   }
-
-private:
-  MarginalDistribution targets_;
-  FoldIndexer indexer_;
-  Eigen::MatrixXd cov_;
 };
 
 struct ChiSquaredIsValidCandidateMetric {
 
   template <typename FeatureType>
-  bool operator()(const FoldIndices &inds,
+  bool operator()(const GroupIndices &inds,
                   const RegressionDataset<FeatureType> &dataset,
                   const Eigen::MatrixXd &cov) const {
     const auto train_dataset = subset(dataset, inds);
@@ -160,7 +142,7 @@ struct ChiSquaredIsValidCandidateMetric {
 
 struct AlwaysAcceptCandidateMetric {
   template <typename FeatureType>
-  bool operator()(const FoldIndices &inds,
+  bool operator()(const GroupIndices &inds,
                   const RegressionDataset<FeatureType> &dataset,
                   const Eigen::MatrixXd &cov) const {
     return true;
@@ -168,11 +150,12 @@ struct AlwaysAcceptCandidateMetric {
 };
 
 template <typename ModelType, typename FeatureType, typename InlierMetric,
-          typename ConsensusMetric, typename IsValidCandidateMetric>
-inline RansacFunctions<FitAndIndices<ModelType, FeatureType>>
+          typename ConsensusMetric, typename IsValidCandidateMetric,
+          typename GroupKey>
+inline RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>
 get_gp_ransac_functions(
     const ModelType &model, const RegressionDataset<FeatureType> &dataset,
-    const FoldIndexer &indexer, const InlierMetric &inlier_metric,
+    const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric,
     const IsValidCandidateMetric &is_valid_candidate_metric) {
 
@@ -181,70 +164,73 @@ get_gp_ransac_functions(
 
   const auto full_cov = model.compute_covariance(dataset.features);
 
-  const auto fitter =
-      get_gp_ransac_fitter<ModelType, FeatureType>(dataset, indexer, full_cov);
+  const auto fitter = get_gp_ransac_fitter<ModelType, FeatureType, GroupKey>(
+      dataset, indexer, full_cov);
 
   const auto inlier_metric_from_group =
-      get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric>(
-          dataset, indexer, full_cov, model, inlier_metric);
+      get_gp_ransac_inlier_metric<ModelType, FeatureType, InlierMetric,
+                                  GroupKey>(dataset, indexer, full_cov, model,
+                                            inlier_metric);
 
-  const ConsensusMetric consensus_metric_from_group(dataset.targets, indexer,
-                                                    full_cov);
+  const auto consensus_metric_from_groups =
+      get_gp_ransac_consensus_metric<ModelType, FeatureType, ConsensusMetric,
+                                     GroupKey>(indexer, dataset, full_cov,
+                                               consensus_metric);
 
   const auto is_valid_candidate =
       get_gp_ransac_is_valid_candidate<ModelType, FeatureType>(
           dataset, indexer, full_cov, is_valid_candidate_metric);
 
-  return RansacFunctions<FitAndIndices<ModelType, FeatureType>>(
-      fitter, inlier_metric_from_group, consensus_metric_from_group,
+  return RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>(
+      fitter, inlier_metric_from_group, consensus_metric_from_groups,
       is_valid_candidate);
 };
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction, typename IsValidCandidateMetric>
+          typename GrouperFunction, typename IsValidCandidateMetric>
 struct GaussianProcessRansacStrategy {
 
   GaussianProcessRansacStrategy() = default;
 
   GaussianProcessRansacStrategy(const InlierMetric &inlier_metric,
                                 const ConsensusMetric &consensus_metric,
-                                const IndexingFunction &indexing_function)
+                                const GrouperFunction &grouper_function)
       : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
-        indexing_function_(indexing_function), is_valid_candidate_(){};
+        grouper_function_(grouper_function){};
 
   template <typename ModelType, typename FeatureType>
-  RansacFunctions<FitAndIndices<ModelType, FeatureType>>
-  operator()(const ModelType &model,
-             const RegressionDataset<FeatureType> &dataset) const {
+  auto operator()(const ModelType &model,
+                  const RegressionDataset<FeatureType> &dataset) const {
     const auto indexer = get_indexer(dataset);
     return get_gp_ransac_functions(model, dataset, indexer, inlier_metric_,
                                    consensus_metric_, is_valid_candidate_);
   }
 
   template <typename FeatureType>
-  FoldIndexer get_indexer(const RegressionDataset<FeatureType> &dataset) const {
-    return indexing_function_(dataset);
+  auto get_indexer(const RegressionDataset<FeatureType> &dataset) const {
+    return dataset.group_by(grouper_function_).indexers();
   }
 
 protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
-  IndexingFunction indexing_function_;
+  GrouperFunction grouper_function_;
   IsValidCandidateMetric is_valid_candidate_;
 };
 
 using DefaultGPRansacStrategy =
     GaussianProcessRansacStrategy<NegativeLogLikelihood<JointDistribution>,
-                                  FeatureCountConsensusMetric, LeaveOneOut>;
+                                  FeatureCountConsensusMetric,
+                                  LeaveOneOutGrouper>;
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 auto gp_ransac_strategy(const InlierMetric &inlier_metric,
-                        const IndexingFunction &indexing_function,
+                        const GrouperFunction &grouper_function,
                         const ConsensusMetric &consensus_metric) {
   return GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
-                                       IndexingFunction>(
-      inlier_metric, consensus_metric, indexing_function);
+                                       GrouperFunction>(
+      inlier_metric, consensus_metric, grouper_function);
 }
 
 template <typename InlierMetric, typename ConsensusMetric,

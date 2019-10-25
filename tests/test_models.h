@@ -152,14 +152,14 @@ public:
   auto get_dataset() const { return make_adapted_toy_linear_data(); }
 };
 
-struct AdaptedRansacStrategy : public GaussianProcessRansacStrategy<
-                                   NegativeLogLikelihood<JointDistribution>,
-                                   FeatureCountConsensusMetric, LeaveOneOut> {
+struct AdaptedRansacStrategy
+    : public GaussianProcessRansacStrategy<
+          NegativeLogLikelihood<JointDistribution>, FeatureCountConsensusMetric,
+          LeaveOneOutGrouper> {
 
   template <typename ModelType>
-  RansacFunctions<FitAndIndices<ModelType, double>>
-  operator()(const ModelType &model,
-             const RegressionDataset<AdaptedFeature> &dataset) const {
+  auto operator()(const ModelType &model,
+                  const RegressionDataset<AdaptedFeature> &dataset) const {
     const RegressionDataset<double> converted(
         adapted::convert_features(dataset.features), dataset.targets);
     const auto indexer = get_indexer(converted);
