@@ -25,7 +25,6 @@ inline std::vector<double> linspace(double a, double b, std::size_t n) {
   std::vector<double> xs(n);
   double val = a;
   for (auto &x : xs) {
-    assert(val <= b);
     x = val;
     val += step;
   }
