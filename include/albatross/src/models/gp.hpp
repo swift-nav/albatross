@@ -334,6 +334,15 @@ public:
     return covariance_function_(features);
   }
 
+  template <typename FeatureType,
+            std::enable_if_t<has_valid_state_space_representation<
+                                 CovFunc, FeatureType>::value,
+                             int> = 0>
+  auto
+  state_space_representation(const std::vector<FeatureType> &features) const {
+    return covariance_function_.state_space_representation(features);
+  }
+
 protected:
   /*
    * CRTP Helpers

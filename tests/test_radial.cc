@@ -47,4 +47,61 @@ TEST(test_radial, test_is_positive_definite) {
   EXPECT_GE(cov.eigenvalues().real().array().minCoeff(), 0.);
 }
 
+class SquaredExponentialSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., 10., 101); }
+
+  auto covariance_function() const {
+    SquaredExponential<EuclideanDistance> cov(5., 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 1e-12; }
+};
+
+class ExponentialSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., 10., 11); }
+
+  auto covariance_function() const {
+    Exponential<EuclideanDistance> cov(5., 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 1e-2; }
+};
+
+class ExponentialAngularSSRTest {
+public:
+  std::vector<double> features() const { return linspace(0., M_2_PI, 11); }
+
+  auto covariance_function() const {
+    Exponential<EuclideanDistance> cov(M_PI_4, 1.);
+    return cov;
+  }
+
+  double get_tolerance() const { return 1e-2; }
+};
+
+template <typename T>
+class CovarianceStateSpaceTester : public ::testing::Test {
+public:
+  T test_case;
+};
+
+using StateSpaceTestCases =
+    ::testing::Types<SquaredExponentialSSRTest, ExponentialSSRTest,
+                     ExponentialAngularSSRTest>;
+TYPED_TEST_CASE(CovarianceStateSpaceTester, StateSpaceTestCases);
+
+TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
+
+  const auto xs = this->test_case.features();
+
+  const auto cov_func = this->test_case.covariance_function();
+
+  expect_state_space_representation_quality(cov_func, xs,
+                                            this->test_case.get_tolerance());
+}
+
 } // namespace albatross

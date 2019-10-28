@@ -14,6 +14,8 @@
 #include <albatross/Core>
 #include <albatross/CovarianceFunctions>
 
+#include "test_covariance_utils.h"
+
 namespace albatross {
 
 std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
@@ -217,6 +219,35 @@ TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {
     EXPECT_DOUBLE_EQ(this->covariance_function.get_param_value(pair.first),
                      pair.second.value + to_add);
   }
+}
+
+class SsrX : public CovarianceFunction<SsrX> {
+public:
+  std::vector<X> _ssr_impl(const std::vector<double> &) const { return {X()}; }
+};
+
+class SsrY : public CovarianceFunction<SsrY> {
+public:
+  std::vector<Y> _ssr_impl(const std::vector<double> &) const { return {Y()}; }
+};
+
+TEST(test_covariance_functions, test_state_space_representation) {
+  SsrX with_x;
+  SsrY with_y;
+
+  auto with_both = with_x + with_y;
+
+  std::vector<double> features = {0.};
+
+  auto xs = with_x.state_space_representation(features);
+  EXPECT_TRUE(bool(std::is_same<decltype(xs), std::vector<X>>::value));
+
+  auto ys = with_y.state_space_representation(features);
+  EXPECT_TRUE(bool(std::is_same<decltype(ys), std::vector<Y>>::value));
+
+  auto xs_and_ys = with_both.state_space_representation(features);
+  EXPECT_TRUE(bool(
+      std::is_same<decltype(xs_and_ys), std::vector<variant<X, Y>>>::value));
 }
 
 } // namespace albatross

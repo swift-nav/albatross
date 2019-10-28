@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 
   LeaveOneOut loo;
   UniformlySpacedInducingPoints strategy(FLAGS_k);
-  auto model = sparse_gp_from_covariance(cov, strategy, loo, "example");
+  auto model = sparse_gp_from_covariance(cov, loo, strategy, "example");
   //  auto model = gp_from_covariance(cov, "example");
 
   if (FLAGS_tune) {

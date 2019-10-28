@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # read in the training and prediction data
     train_path = args.train
     predictions_path = args.predictions
-    print train_path
+    print(train_path)
     train_data = pd.read_csv(train_path)
     x_name = 'feature'
     y_name = 'prediction'
