@@ -68,7 +68,7 @@ public:
     return cov;
   }
 
-  double get_tolerance() const { return 0.1; }
+  double get_tolerance() const { return 1e-2; }
 };
 
 class ExponentialAngularSSRTest {
@@ -80,7 +80,7 @@ public:
     return cov;
   }
 
-  double get_tolerance() const { return 0.1; }
+  double get_tolerance() const { return 1e-2; }
 };
 
 template <typename T>
@@ -100,18 +100,8 @@ TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
 
   const auto cov_func = this->test_case.covariance_function();
 
-  const auto ssr = cov_func.state_space_representation(xs);
-
-  const Eigen::MatrixXd expected = cov_func(xs, xs);
-
-  // This forms the covariance between xs via the state
-  // space representation, they should be very similar
-  const Eigen::MatrixXd cross = cov_func(xs, ssr);
-  const Eigen::MatrixXd ssr_cov = cov_func(ssr, ssr);
-  const Eigen::MatrixXd actual =
-      cross * ssr_cov.ldlt().solve(cross.transpose());
-
-  EXPECT_LT((expected - actual).norm(), this->test_case.get_tolerance());
+  expect_state_space_representation_quality(cov_func, xs,
+                                            this->test_case.get_tolerance());
 }
 
 } // namespace albatross

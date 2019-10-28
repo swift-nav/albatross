@@ -170,6 +170,28 @@ inline auto random_covariance_matrix(Eigen::Index k = 5) {
   return X;
 }
 
+template <typename CovarianceFunction, typename FeatureType>
+void expect_state_space_representation_quality(
+    const CovarianceFunction &cov_func,
+    const std::vector<FeatureType> &features, double threshold) {
+
+  const auto ssr_features = cov_func.state_space_representation(features);
+
+  const Eigen::MatrixXd ssr_cov = cov_func(ssr_features);
+  const Eigen::MatrixXd cross_cov = cov_func(features, ssr_features);
+  const Eigen::MatrixXd full_cov = cov_func(features);
+
+  // This is "the covariance explained by the state space representation".
+  // In other words, it's the posterior covariance of the observations
+  // if you had fit using the state space representation.
+  // If the state space representation fully explains the observations
+  // then we know we've formed a (relatively) loss less representation.
+  const Eigen::MatrixXd explained =
+      cross_cov * ssr_cov.ldlt().solve(cross_cov.transpose());
+  const Eigen::MatrixXd posterior = full_cov - explained;
+  EXPECT_LT(posterior.norm() / full_cov.norm(), threshold);
+}
+
 } // namespace albatross
 
 #endif

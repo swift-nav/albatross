@@ -30,7 +30,7 @@ inline double squared_exponential_covariance(double distance,
 
 /*
  * SquaredExponential distance
- *    covariance(d) = sigma**2 exp(-(d/length_scale)^2)
+ *    covariance(d) = sigma^2 exp(-(d/length_scale)^2)
  */
 template <class DistanceMetricType>
 class SquaredExponential
@@ -97,7 +97,7 @@ inline double exponential_covariance(double distance, double length_scale,
 
 /*
  * Exponential distance
- *    covariance(d) = sigma**2 exp(-|d|/length_scale)
+ *    covariance(d) = sigma^2 exp(-|d|/length_scale)
  */
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
