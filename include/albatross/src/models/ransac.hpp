@@ -15,29 +15,31 @@
 
 namespace albatross {
 
-inline bool accept_all_candidates(const std::vector<FoldName> &) {
+template <typename GroupKey>
+inline bool accept_all_candidates(const std::vector<GroupKey> &) {
   return true;
 }
 
-template <typename FitType> struct RansacFunctions {
+template <typename FitType, typename GroupKey> struct RansacFunctions {
   // A function which takes a bunch of keys and fits a model
   // to the corresponding subset of data.
-  using FitterFunc = std::function<FitType(const std::vector<FoldName> &)>;
+  using FitterFunc = std::function<FitType(const std::vector<GroupKey> &)>;
 
   // A function which takes a fit and a set of indices
   // and returns a metric which represents how well the model
   // predicted the subset corresponding to the indices.
-  using InlierMetric = std::function<double(const FoldName &, const FitType &)>;
+  using InlierMetric = std::function<double(const GroupKey &, const FitType &)>;
 
   // A function which returns an error metric value which indicates
   // how good a set of inliers is, lower is better.
-  using ConsensusMetric = std::function<double(const std::vector<FoldName> &)>;
+  using ConsensusMetric = std::function<double(const std::vector<GroupKey> &)>;
 
-  using IsValidCandidate = std::function<bool(const std::vector<FoldName> &)>;
+  using IsValidCandidate = std::function<bool(const std::vector<GroupKey> &)>;
 
-  RansacFunctions(FitterFunc fitter_, InlierMetric inlier_metric_,
-                  ConsensusMetric consensus_metric_,
-                  IsValidCandidate is_valid_candidate_ = accept_all_candidates)
+  RansacFunctions(
+      FitterFunc fitter_, InlierMetric inlier_metric_,
+      ConsensusMetric consensus_metric_,
+      IsValidCandidate is_valid_candidate_ = accept_all_candidates<GroupKey>)
       : fitter(fitter_), inlier_metric(inlier_metric_),
         consensus_metric(consensus_metric_),
         is_valid_candidate(is_valid_candidate_){};
@@ -48,8 +50,9 @@ template <typename FitType> struct RansacFunctions {
   IsValidCandidate is_valid_candidate;
 };
 
-inline bool contains_group(const std::vector<FoldName> &vect,
-                           const FoldName &group) {
+template <typename GroupKey>
+inline bool contains_group(const std::vector<GroupKey> &vect,
+                           const GroupKey &group) {
   return std::find(vect.begin(), vect.end(), group) != vect.end();
 }
 
@@ -86,16 +89,24 @@ inline bool ransac_success(const ransac_return_code_t &rc) {
   return rc == RANSAC_RETURN_CODE_SUCCESS;
 }
 
-struct RansacOutput {
+template <typename GroupKey> struct RansacOutput {
 
   RansacOutput()
       : return_code(RANSAC_RETURN_CODE_INVALID), inliers(), outliers(),
         consensus_metric(HUGE_VAL){};
 
+  using key_type = GroupKey;
+
   ransac_return_code_t return_code;
-  std::vector<FoldName> inliers;
-  std::vector<FoldName> outliers;
+  std::vector<GroupKey> inliers;
+  std::vector<GroupKey> outliers;
   double consensus_metric;
+
+  bool operator==(const RansacOutput &other) const {
+    return (return_code == other.return_code && inliers == other.inliers &&
+            outliers == other.outliers &&
+            consensus_metric == other.consensus_metric);
+  }
 };
 
 struct RansacConfig {
@@ -136,14 +147,14 @@ struct RansacConfig {
  * update/downdate the model to produce the fits and evaluation
  * metrics.
  */
-template <typename FitType>
-RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
-                    const std::vector<FoldName> &groups,
-                    double inlier_threshold, std::size_t random_sample_size,
-                    std::size_t min_consensus_size, std::size_t max_iterations,
-                    std::size_t max_failed_candidates) {
+template <typename FitType, typename GroupKey>
+RansacOutput<GroupKey>
+ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
+       const std::vector<GroupKey> &groups, double inlier_threshold,
+       std::size_t random_sample_size, std::size_t min_consensus_size,
+       std::size_t max_iterations, std::size_t max_failed_candidates) {
 
-  RansacOutput output;
+  RansacOutput<GroupKey> output;
   output.return_code = RANSAC_RETURN_CODE_FAILURE;
 
   if (min_consensus_size >= groups.size() ||
@@ -182,8 +193,8 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
     const auto fit = ransac_functions.fitter(candidate_groups);
 
     // Any group that's part of the candidate set is automatically an inlier.
-    std::vector<FoldName> candidate_consensus = candidate_groups;
-    std::vector<FoldName> outliers;
+    std::vector<GroupKey> candidate_consensus = candidate_groups;
+    std::vector<GroupKey> outliers;
 
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
@@ -223,9 +234,9 @@ RansacOutput ransac(const RansacFunctions<FitType> &ransac_functions,
   return output;
 }
 
-template <typename FitType>
-auto ransac(const RansacFunctions<FitType> &ransac_functions,
-            const FoldIndexer &indexer, double inlier_threshold,
+template <typename FitType, typename GroupKey>
+auto ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
+            const GroupIndexer<GroupKey> &indexer, double inlier_threshold,
             std::size_t random_sample_size, std::size_t min_consensus_size,
             std::size_t max_iterations) {
   return ransac(ransac_functions, map_keys(indexer), inlier_threshold,
@@ -233,21 +244,21 @@ auto ransac(const RansacFunctions<FitType> &ransac_functions,
                 max_iterations);
 }
 
-template <typename FitType>
-auto ransac(const RansacFunctions<FitType> &ransac_functions,
-            const FoldIndexer &indexer, const RansacConfig &config) {
+template <typename FitType, typename GroupKey>
+auto ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
+            const GroupIndexer<GroupKey> &indexer, const RansacConfig &config) {
   return ransac(ransac_functions, map_keys(indexer), config.inlier_threshold,
                 config.random_sample_size, config.min_consensus_size,
                 config.max_iterations, config.max_failed_candidates);
 }
 
 template <typename ModelType, typename FeatureType, typename InlierMetric,
-          typename ConsensusMetric,
+          typename ConsensusMetric, typename GroupKey,
           typename FitModelType =
               typename fit_model_type<ModelType, FeatureType>::type>
-inline RansacFunctions<FitModelType> get_generic_ransac_functions(
+inline RansacFunctions<FitModelType, GroupKey> get_generic_ransac_functions(
     const ModelType &model, const RegressionDataset<FeatureType> &dataset,
-    const FoldIndexer &indexer, const InlierMetric &inlier_metric,
+    const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric) {
 
   static_assert(is_prediction_metric<InlierMetric>::value,
@@ -257,29 +268,29 @@ inline RansacFunctions<FitModelType> get_generic_ransac_functions(
                 "ConsensusMetric must be a ModelMetric valid for the feature "
                 "and model provided");
 
-  std::function<FitModelType(const std::vector<FoldName> &)> fitter =
-      [&, indexer](const std::vector<FoldName> &groups) {
-        auto inds = indices_from_names(indexer, groups);
+  std::function<FitModelType(const std::vector<GroupKey> &)> fitter =
+      [&, indexer](const std::vector<GroupKey> &groups) {
+        auto inds = indices_from_groups(indexer, groups);
         return model.fit(subset(dataset, inds));
       };
 
-  auto inlier_metric_from_group = [&, indexer](const FoldName &group,
+  auto inlier_metric_from_group = [&, indexer](const GroupKey &group,
                                                const FitModelType &fit) {
-    FoldIndices inds = indexer.at(group);
+    GroupIndices inds = indexer.at(group);
     const auto pred = fit.predict(subset(dataset.features, inds));
     const auto target = subset(dataset.targets, inds);
     return inlier_metric(pred, target);
   };
 
   auto consensus_metric_from_group =
-      [&, indexer](const std::vector<FoldName> &groups) {
-        auto inds = indices_from_names(indexer, groups);
+      [&, indexer](const std::vector<GroupKey> &groups) {
+        auto inds = indices_from_groups(indexer, groups);
         RegressionDataset<FeatureType> inlier_dataset = subset(dataset, inds);
         return consensus_metric(inlier_dataset, model);
       };
 
-  return RansacFunctions<FitModelType>(fitter, inlier_metric_from_group,
-                                       consensus_metric_from_group);
+  return RansacFunctions<FitModelType, GroupKey>(
+      fitter, inlier_metric_from_group, consensus_metric_from_group);
 };
 
 /*
@@ -292,7 +303,7 @@ inline RansacFunctions<FitModelType> get_generic_ransac_functions(
  * a fit/inlier_metric/consensus_metric when given group names.
  */
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 struct GenericRansacStrategy {
 
   static_assert(is_prediction_metric<InlierMetric>::value,
@@ -302,54 +313,55 @@ struct GenericRansacStrategy {
 
   GenericRansacStrategy(const InlierMetric &inlier_metric,
                         const ConsensusMetric &consensus_metric,
-                        const IndexingFunction &indexing_function)
+                        GrouperFunction grouper_function)
       : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
-        indexing_function_(indexing_function){};
+        grouper_function_(grouper_function){};
 
   template <typename ModelType, typename FeatureType,
             typename FitModelType =
                 typename fit_model_type<ModelType, FeatureType>::type>
-  RansacFunctions<FitModelType>
-  operator()(const ModelType &model,
-             const RegressionDataset<FeatureType> &dataset) const {
+  auto operator()(const ModelType &model,
+                  const RegressionDataset<FeatureType> &dataset) const {
     const auto indexer = get_indexer(dataset);
     return get_generic_ransac_functions(model, dataset, indexer, inlier_metric_,
                                         consensus_metric_);
   }
 
   template <typename FeatureType>
-  FoldIndexer get_indexer(const RegressionDataset<FeatureType> &dataset) const {
-    return indexing_function_(dataset);
+  auto get_indexer(const RegressionDataset<FeatureType> &dataset) const {
+    return dataset.group_by(grouper_function_).indexers();
   }
 
 protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
-  IndexingFunction indexing_function_;
+  GrouperFunction grouper_function_;
 };
 
 using DefaultRansacStrategy =
     GenericRansacStrategy<NegativeLogLikelihood<JointDistribution>,
                           LeaveOneOutLikelihood<JointDistribution>,
-                          LeaveOneOut>;
+                          LeaveOneOutGrouper>;
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 auto get_generic_ransac_strategy(const InlierMetric &inlier_metric,
                                  const ConsensusMetric &consensus_metric,
-                                 const IndexingFunction &indexing_function) {
-  return GenericRansacStrategy<InlierMetric, ConsensusMetric, IndexingFunction>(
-      inlier_metric, consensus_metric, indexing_function);
+                                 GrouperFunction grouper_function) {
+  return GenericRansacStrategy<InlierMetric, ConsensusMetric, GrouperFunction>(
+      inlier_metric, consensus_metric, grouper_function);
 }
 
-template <typename ModelType, typename StrategyType, typename FeatureType>
+template <typename ModelType, typename StrategyType, typename FeatureType,
+          typename GroupKey>
 struct RansacFit {};
 
 /*
  * Ransac Model Implementation.
  */
-template <typename ModelType, typename StrategyType, typename FeatureType>
-struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
+template <typename ModelType, typename StrategyType, typename FeatureType,
+          typename GroupKey>
+struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
 
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
@@ -362,14 +374,16 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
 
   Fit() : maybe_empty_fit_model(EmptyFit()){};
 
-  Fit(const FitModelType &fit_model_, const RansacOutput &ransac_output_)
+  Fit(const FitModelType &fit_model_,
+      const RansacOutput<GroupKey> &ransac_output_)
       : maybe_empty_fit_model(fit_model_), ransac_output(ransac_output_){};
 
-  Fit(const RansacOutput &ransac_output_)
+  Fit(const RansacOutput<GroupKey> &ransac_output_)
       : maybe_empty_fit_model(EmptyFit()), ransac_output(ransac_output_){};
 
   bool operator==(const Fit &other) const {
-    return maybe_empty_fit_model == other.maybe_empty_fit_model;
+    return (maybe_empty_fit_model == other.maybe_empty_fit_model &&
+            ransac_output == other.ransac_output);
   }
 
   bool has_fit_model() const {
@@ -382,7 +396,7 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType>> {
   }
 
   variant<EmptyFit, FitModelType> maybe_empty_fit_model;
-  RansacOutput ransac_output;
+  RansacOutput<GroupKey> ransac_output;
 };
 
 /*
@@ -426,9 +440,8 @@ public:
   }
 
   template <typename FeatureType>
-  Fit<RansacFit<ModelType, StrategyType, FeatureType>>
-  _fit_impl(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const {
+  auto _fit_impl(const std::vector<FeatureType> &features,
+                 const MarginalDistribution &targets) const {
 
     static_assert(has_call_operator<StrategyType, ModelType,
                                     RegressionDataset<FeatureType>>::value,
@@ -440,14 +453,16 @@ public:
     auto ransac_functions = strategy_(sub_model_, dataset);
 
     const auto ransac_output = ransac(ransac_functions, indexer, config_);
+    using GroupKey = typename decltype(ransac_output)::key_type;
 
     if (ransac_success(ransac_output.return_code)) {
-      const auto good_inds = indices_from_names(indexer, ransac_output.inliers);
+      const auto good_inds =
+          indices_from_groups(indexer, ransac_output.inliers);
       const auto consensus_set = subset(dataset, good_inds);
-      return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
+      return Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>>(
           sub_model_.fit(consensus_set), ransac_output);
     } else {
-      return Fit<RansacFit<ModelType, StrategyType, FeatureType>>(
+      return Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>>(
           ransac_output);
     }
   }

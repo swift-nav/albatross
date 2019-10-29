@@ -23,23 +23,24 @@ std::string get_group(const double &f) {
   return std::to_string(static_cast<int>(f) / 10);
 }
 
-struct LeaveOneIntervalOut : public LeaveOneGroupOut<double> {
-  LeaveOneIntervalOut() : LeaveOneGroupOut<double>(get_group){};
+struct LeaveOneIntervalOut {
+
+  std::string operator()(const double &f) const { return get_group(f); }
 };
 
-template <typename IndexerType>
+template <typename GrouperFunction>
 class SparseGaussianProcessTest : public ::testing::Test {
 public:
-  IndexerType indexer;
+  GrouperFunction grouper;
 };
 
-typedef ::testing::Types<LeaveOneOut, LeaveOneIntervalOut>
+typedef ::testing::Types<LeaveOneOutGrouper, LeaveOneIntervalOut>
     IndependenceAssumptions;
 TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
 
-template <typename CovFunc, typename Indexer>
+template <typename CovFunc, typename GrouperFunction>
 void expect_sparse_gp_performance(const CovFunc &covariance,
-                                  const Indexer &indexer,
+                                  const GrouperFunction &grouper,
                                   double sparse_error_threshold,
                                   double really_sparse_error_threshold) {
 
@@ -48,18 +49,18 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
   sparse.set_param(details::inducing_nugget_name(), 1e-3);
   sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   UniformlySpacedInducingPoints bad_strategy(3);
-  auto really_sparse = sparse_gp_from_covariance(covariance, indexer,
+  auto really_sparse = sparse_gp_from_covariance(covariance, grouper,
                                                  bad_strategy, "really_sparse");
   really_sparse.set_param(details::inducing_nugget_name(), 1e-3);
   really_sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   auto state_space =
-      sparse_gp_from_covariance(covariance, indexer, "state_space");
+      sparse_gp_from_covariance(covariance, grouper, "state_space");
   state_space.set_param(details::inducing_nugget_name(), 1e-3);
   state_space.set_param(details::measurement_nugget_name(), 1e-12);
 
@@ -103,27 +104,27 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 
 TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
 
-  auto indexer = this->indexer;
+  auto grouper = this->grouper;
   auto covariance = make_simple_covariance_function();
 
   // When the length scale is large the model with more inducing points
   // gets very nearly singular.  this checks to make sure that's dealt with
   // gracefully.
   covariance.set_param("squared_exponential_length_scale", 1000.);
-  expect_sparse_gp_performance(covariance, indexer, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper, 1e-2, 0.5);
 
   covariance.set_param("squared_exponential_length_scale", 100.);
-  expect_sparse_gp_performance(covariance, indexer, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper, 1e-2, 0.5);
 
   // Then when the length scale is shorter, the really sparse model
   // should become significantly worse than the sparse one.
   covariance.set_param("squared_exponential_length_scale", 10.);
-  expect_sparse_gp_performance(covariance, indexer, 5e-2, 100.);
+  expect_sparse_gp_performance(covariance, grouper, 5e-2, 100.);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
-  auto indexer = this->indexer;
+  auto grouper = this->grouper;
 
   auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
 
@@ -139,7 +140,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   UniformlySpacedInducingPoints strategy(100);
   auto sparse =
-      sparse_gp_from_covariance(covariance, indexer, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
 
   start = high_resolution_clock::now();
   auto sparse_fit = sparse.fit(large_dataset);

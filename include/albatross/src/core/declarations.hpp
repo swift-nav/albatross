@@ -52,7 +52,7 @@ template <typename GroupKey, typename ValueType> class Grouped;
 template <typename GroupKey>
 using GroupIndexer = Grouped<GroupKey, GroupIndices>;
 
-struct LeaveOneOut;
+struct LeaveOneOutGrouper;
 
 template <typename ValueType, typename GrouperFunction> class GroupBy;
 
@@ -94,23 +94,15 @@ template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
 /*
  * Cross Validation
  */
-using FoldIndices = std::vector<std::size_t>;
-using FoldName = std::string;
-using FoldIndexer = std::map<FoldName, FoldIndices>;
-
 template <typename FeatureType> struct RegressionFold;
+
+template <typename GroupKey, typename FeatureType>
+using RegressionFolds = Grouped<GroupKey, RegressionFold<FeatureType>>;
 
 template <typename FeatureType>
 using GroupFunction = std::string (*)(const FeatureType &);
 
-template <typename FeatureType>
-using IndexerFunction = FoldIndexer (*)(const RegressionDataset<FeatureType> &);
-
 template <typename ModelType> class CrossValidation;
-
-template <typename FeatureType> struct LeaveOneGroupOut;
-
-struct LeaveOneOut;
 
 template <typename MetricType> class ModelMetric;
 
@@ -120,23 +112,24 @@ template <typename RequiredPredictType> struct PredictionMetric;
  * RANSAC
  */
 
-struct RansacOutput;
+template <typename GroupKey> struct RansacOutput;
 
 struct RansacConfig;
 
 template <typename ModelType, typename StrategyType> class Ransac;
 
-template <typename ModelType, typename StrategyType, typename FeatureType>
+template <typename ModelType, typename StrategyType, typename FeatureType,
+          typename GroupKey>
 struct RansacFit;
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 struct GenericRansacStrategy;
 
 struct AlwaysAcceptCandidateMetric;
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction,
+          typename GrouperFunction,
           typename IsValidCandidateMetric = AlwaysAcceptCandidateMetric>
 struct GaussianProcessRansacStrategy;
 

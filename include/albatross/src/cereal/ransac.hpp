@@ -22,8 +22,8 @@ using albatross::RansacOutput;
 
 namespace cereal {
 
-template <typename Archive>
-inline void serialize(Archive &archive, RansacOutput &ransac_output,
+template <typename Archive, typename GroupKey>
+inline void serialize(Archive &archive, RansacOutput<GroupKey> &ransac_output,
                       const std::uint32_t) {
   archive(cereal::make_nvp("return_code", ransac_output.return_code));
   archive(cereal::make_nvp("inliers", ransac_output.inliers));
@@ -32,35 +32,36 @@ inline void serialize(Archive &archive, RansacOutput &ransac_output,
 }
 
 template <typename Archive, typename ModelType, typename StrategyType,
-          typename FeatureType>
-inline void serialize(Archive &archive,
-                      Fit<RansacFit<ModelType, StrategyType, FeatureType>> &fit,
-                      const std::uint32_t) {
+          typename FeatureType, typename GroupKey>
+inline void
+serialize(Archive &archive,
+          Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> &fit,
+          const std::uint32_t) {
   archive(cereal::make_nvp("maybe_empty_fit_model", fit.maybe_empty_fit_model));
   archive(cereal::make_nvp("ransac_output", fit.ransac_output));
 }
 
 template <typename Archive, typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 inline void serialize(Archive &archive,
                       GenericRansacStrategy<InlierMetric, ConsensusMetric,
-                                            IndexingFunction> &strategy,
+                                            GrouperFunction> &strategy,
                       const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
-  archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
+  archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
 template <typename Archive, typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction>
+          typename GrouperFunction>
 inline void
 serialize(Archive &archive,
           GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
-                                        IndexingFunction> &strategy,
+                                        GrouperFunction> &strategy,
           const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
-  archive(cereal::make_nvp("indexing_function", strategy.indexing_function_));
+  archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
 } // namespace cereal

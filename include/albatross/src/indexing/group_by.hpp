@@ -36,6 +36,7 @@ template <typename KeyType, typename ValueType> class GroupedBase {
 public:
   GroupedBase() : map_(){};
   GroupedBase(const GroupedBase &other) = default;
+  GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)){};
   GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map){};
 
   void emplace(const KeyType &k, ValueType &&v) {
@@ -67,6 +68,8 @@ public:
   std::vector<KeyType> keys() const { return map_keys(map_); }
 
   std::vector<ValueType> values() const { return map_values(map_); }
+
+  std::map<KeyType, ValueType> get_map() const { return map_; }
 
   /*
    * Filtering a Grouped object consists of deciding which of the
@@ -172,7 +175,10 @@ protected:
 };
 
 template <typename KeyType, typename ValueType>
-class Grouped : public GroupedBase<KeyType, ValueType> {};
+class Grouped : public GroupedBase<KeyType, ValueType> {
+  using Base = GroupedBase<KeyType, ValueType>;
+  using Base::Base;
+};
 
 template <typename KeyType>
 class Grouped<KeyType, GroupIndices>
@@ -236,16 +242,25 @@ Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
 template <typename KeyType, typename ValueType>
 class CombinableBase : public GroupedBase<KeyType, ValueType> {
 public:
+  using Base = GroupedBase<KeyType, ValueType>;
+  using Base::Base;
+
   ValueType combine() const { return albatross::combine(*this); }
 };
 
 template <typename KeyType, typename FeatureType>
 class Grouped<KeyType, RegressionDataset<FeatureType>>
-    : public CombinableBase<KeyType, RegressionDataset<FeatureType>> {};
+    : public CombinableBase<KeyType, RegressionDataset<FeatureType>> {
+  using Base = CombinableBase<KeyType, RegressionDataset<FeatureType>>;
+  using Base::Base;
+};
 
 template <typename KeyType, typename FeatureType>
 class Grouped<KeyType, std::vector<FeatureType>>
-    : public CombinableBase<KeyType, std::vector<FeatureType>> {};
+    : public CombinableBase<KeyType, std::vector<FeatureType>> {
+  using Base = CombinableBase<KeyType, std::vector<FeatureType>>;
+  using Base::Base;
+};
 
 /*
  * Not all GrouperFunctions actually take Values as input, the leave one

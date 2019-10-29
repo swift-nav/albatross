@@ -28,7 +28,7 @@ TEST(test_outlier, test_ransac_direct) {
     dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
   }
 
-  const auto indexer = leave_one_out_indexer(dataset.features);
+  const auto indexer = dataset.group_by(LeaveOneOutGrouper()).indexers();
   NegativeLogLikelihood<JointDistribution> nll;
   LeaveOneOutLikelihood<> loo_nll;
 
@@ -49,11 +49,9 @@ TEST(test_outlier, test_ransac_direct) {
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
-    EXPECT_EQ(std::find(result.inliers.begin(), result.inliers.end(),
-                        std::to_string(i)),
+    EXPECT_EQ(std::find(result.inliers.begin(), result.inliers.end(), i),
               result.inliers.end());
-    EXPECT_NE(std::find(result.outliers.begin(), result.outliers.end(),
-                        std::to_string(i)),
+    EXPECT_NE(std::find(result.outliers.begin(), result.outliers.end(), i),
               result.outliers.end());
   }
 }
@@ -87,8 +85,8 @@ TEST(test_outlier, test_ransac_model) {
   const auto indexer = ransac_strategy.get_indexer(dataset);
   const auto result = ransac(ransac_functions, indexer, inlier_threshold,
                              sample_size, min_consensus_size, max_iterations);
-  const auto inlier_names = result.inliers;
-  const auto inlier_inds = indices_from_names(indexer, inlier_names);
+  const auto inlier_keys = result.inliers;
+  const auto inlier_inds = indices_from_groups(indexer, inlier_keys);
   const auto inlier_dataset = subset(dataset, inlier_inds);
 
   const auto direct_pred = model.fit(inlier_dataset).predict(dataset.features);
@@ -124,11 +122,10 @@ TEST(test_outlier, test_ransac_groups) {
   dataset.targets.mean[5] = -300.;
 
   NegativeLogLikelihood<JointDistribution> nll;
-  LeaveOneGroupOut<double> logo(group_by_modulo);
   LeaveOneOutLikelihood<> consensus_metric;
 
   const auto ransac_strategy =
-      get_generic_ransac_strategy(nll, consensus_metric, logo);
+      get_generic_ransac_strategy(nll, consensus_metric, group_by_modulo);
   const auto indexer = ransac_strategy.get_indexer(dataset);
   const auto ransac_functions = ransac_strategy(model, dataset);
 
@@ -137,7 +134,7 @@ TEST(test_outlier, test_ransac_groups) {
   EXPECT_LE(result.inliers.size(), indexer.size());
 }
 
-inline bool never_accept_candidates(const std::vector<FoldName> &) {
+inline bool never_accept_candidates(const std::vector<std::string> &) {
   return false;
 }
 
@@ -157,11 +154,10 @@ TEST(test_outlier, test_ransac_edge_cases) {
   auto model = test_case.get_model();
 
   NegativeLogLikelihood<JointDistribution> nll;
-  LeaveOneGroupOut<double> logo(group_by_modulo);
   LeaveOneOutLikelihood<> consensus_metric;
 
   const auto ransac_strategy =
-      get_generic_ransac_strategy(nll, consensus_metric, logo);
+      get_generic_ransac_strategy(nll, consensus_metric, group_by_modulo);
   const auto indexer = ransac_strategy.get_indexer(dataset);
   auto ransac_functions = ransac_strategy(model, dataset);
 
