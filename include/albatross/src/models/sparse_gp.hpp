@@ -143,8 +143,7 @@ public:
       const std::string &model_name)
       : Base(covariance_function, model_name),
         inducing_point_strategy(inducing_point_strategy_),
-independent_group_function(
-            independent_group_indexing_function_) {
+        independent_group_function(independent_group_function_) {
     initialize_params();
   };
   SparseGaussianProcessRegression(CovFunc &covariance_function,
@@ -185,9 +184,8 @@ independent_group_function(
   template <typename FeatureType>
   auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
                  const MarginalDistribution &out_of_order_targets) const {
-    static_assert(
-        is_invocable<IndexingFunction, std::vector<FeatureType>>::value,
-        "IndexingFunction is not defined for the required types");
+    static_assert(is_invocable<GrouperFunction, FeatureType>::value,
+                  "GrouperFunction is not defined for the required types");
     static_assert(
         is_invocable<InducingPointStrategy, CovFunc,
                      std::vector<FeatureType>>::value,
@@ -324,14 +322,14 @@ independent_group_function(
   GrouperFunction independent_group_function;
 };
 
-template <typename CovFunc, typename InducingPointStrategy,
-          typename GrouperFunction>
+template <typename CovFunc, typename GrouperFunction,
+          typename InducingPointStrategy>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               GrouperFunction &grouper_function,                               
+                               GrouperFunction &grouper_function,
                                InducingPointStrategy &strategy,
                                const std::string &model_name) {
-  return SparseGaussianProcessRegression<CovFunc, InducingPointStrategy,
-                                         GrouperFunction>(
+  return SparseGaussianProcessRegression<CovFunc, GrouperFunction,
+                                         InducingPointStrategy>(
       covariance_function, grouper_function, strategy, model_name);
 };
 
@@ -340,9 +338,8 @@ auto sparse_gp_from_covariance(CovFunc covariance_function,
                                GrouperFunction &grouper_function,
                                const std::string &model_name) {
   StateSpaceInducingPointStrategy strategy;
-  return SparseGaussianProcessRegression<CovFunc, GrouperFunction,
-                                         StateSpaceInducingPointStrategy>(
-      covariance_function, grouper_function, strategy, model_name);
+  return sparse_gp_from_covariance(covariance_function, grouper_function,
+                                   strategy, model_name);
 };
 
 } // namespace albatross
