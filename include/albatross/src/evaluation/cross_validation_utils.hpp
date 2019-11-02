@@ -77,10 +77,11 @@ concatenate_mean_predictions(const GroupIndexer<GroupKey> &indexer,
   return pred;
 }
 
-template <typename CovarianceType, typename GroupKey>
+template <typename CovarianceType, typename GroupKey,
+          template <typename...> class PredictionContainer>
 inline MarginalDistribution concatenate_marginal_predictions(
     const GroupIndexer<GroupKey> &indexer,
-    const Grouped<GroupKey, Distribution<CovarianceType>> &preds) {
+    const PredictionContainer<GroupKey, Distribution<CovarianceType>> &preds) {
   assert(indexer.size() == preds.size());
 
   Eigen::Index n =

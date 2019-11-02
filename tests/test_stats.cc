@@ -39,7 +39,7 @@ TEST(test_stats, test_chi_squared) {
   EXPECT_LT(chi_squared_cdf(0., 2), 1e-6);
   EXPECT_LT(chi_squared_cdf(0., 10), 1e-6);
   EXPECT_LT(chi_squared_cdf(0., 100.), 1e-6);
-  EXPECT_LT(chi_squared_cdf(0., INFINITY), 1e-6);
+  EXPECT_LT(chi_squared_cdf(0., std::numeric_limits<std::size_t>::max()), 1e-6);
 
   EXPECT_LT(fabs(chi_squared_cdf(1.e-4, 0.) - 1.), 1e-4);
   EXPECT_LT(fabs(chi_squared_cdf(1., 0.) - 1.), 1e-4);

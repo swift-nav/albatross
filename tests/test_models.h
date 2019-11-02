@@ -74,6 +74,7 @@ public:
     const auto gp = gp_from_covariance(covariance);
 
     GaussianProcessRansacStrategy<ChiSquaredCdf, ChiSquaredConsensusMetric,
+                                  ChiSquaredIsValidCandidateMetric,
                                   LeaveOneOutGrouper>
         ransac_strategy;
 
@@ -155,6 +156,7 @@ public:
 struct AdaptedRansacStrategy
     : public GaussianProcessRansacStrategy<
           NegativeLogLikelihood<JointDistribution>, FeatureCountConsensusMetric,
+          AlwaysAcceptCandidateMetric,
           LeaveOneOutGrouper> {
 
   template <typename ModelType>
@@ -163,11 +165,10 @@ struct AdaptedRansacStrategy
     const RegressionDataset<double> converted(
         adapted::convert_features(dataset.features), dataset.targets);
     const auto indexer = get_indexer(converted);
-    const FeatureCountConsensusMetric consensus_metric;
-    const AlwaysAcceptCandidateMetric always_accept;
     return get_gp_ransac_functions(model, converted, indexer,
-                                   this->inlier_metric_, consensus_metric,
-                                   always_accept);
+                                   this->inlier_metric_,
+                                   this->consensus_metric_,
+                                   this->is_valid_candidate_);
   }
 };
 

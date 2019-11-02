@@ -187,15 +187,18 @@ get_gp_ransac_functions(
 };
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename GrouperFunction, typename IsValidCandidateMetric>
+          typename IsValidCandidateMetric, typename GrouperFunction>
 struct GaussianProcessRansacStrategy {
 
   GaussianProcessRansacStrategy() = default;
 
   GaussianProcessRansacStrategy(const InlierMetric &inlier_metric,
                                 const ConsensusMetric &consensus_metric,
-                                const GrouperFunction &grouper_function)
-      : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
+                                const IsValidCandidateMetric &is_valid_candidate,
+                                GrouperFunction grouper_function)
+      : inlier_metric_(inlier_metric),
+        consensus_metric_(consensus_metric),
+        is_valid_candidate_(is_valid_candidate),
         grouper_function_(grouper_function){};
 
   template <typename ModelType, typename FeatureType>
@@ -214,34 +217,37 @@ struct GaussianProcessRansacStrategy {
 protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
-  GrouperFunction grouper_function_;
   IsValidCandidateMetric is_valid_candidate_;
+  GrouperFunction grouper_function_;
 };
 
 using DefaultGPRansacStrategy =
     GaussianProcessRansacStrategy<NegativeLogLikelihood<JointDistribution>,
                                   FeatureCountConsensusMetric,
+                                  AlwaysAcceptCandidateMetric,
                                   LeaveOneOutGrouper>;
 
 template <typename InlierMetric, typename ConsensusMetric,
           typename GrouperFunction>
 auto gp_ransac_strategy(const InlierMetric &inlier_metric,
-                        const GrouperFunction &grouper_function,
-                        const ConsensusMetric &consensus_metric) {
+                        const ConsensusMetric &consensus_metric,
+                        GrouperFunction grouper_function) {
+  AlwaysAcceptCandidateMetric always_valid;
   return GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
+                                       AlwaysAcceptCandidateMetric,
                                        GrouperFunction>(
-      inlier_metric, consensus_metric, grouper_function);
+      inlier_metric, consensus_metric, always_valid, grouper_function);
 }
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IndexingFunction, typename IsValidCandidateMetric>
+          typename GrouperFunction, typename IsValidCandidateMetric>
 auto gp_ransac_strategy(const InlierMetric &inlier_metric,
-                        const IndexingFunction &indexing_function,
                         const ConsensusMetric &consensus_metric,
-                        const IsValidCandidateMetric &is_valid_candidate) {
+                        const IsValidCandidateMetric &is_valid_candidate,
+                        GrouperFunction grouper_function) {
   return GaussianProcessRansacStrategy<
-      InlierMetric, ConsensusMetric, IndexingFunction, IsValidCandidateMetric>(
-      inlier_metric, consensus_metric, indexing_function);
+      InlierMetric, ConsensusMetric, IsValidCandidateMetric, GrouperFunction>(
+      inlier_metric, consensus_metric, is_valid_candidate, grouper_function);
 }
 
 } // namespace albatross

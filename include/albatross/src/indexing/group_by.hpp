@@ -71,6 +71,17 @@ public:
 
   std::map<KeyType, ValueType> get_map() const { return map_; }
 
+  ValueType first() const { return map_.begin()->second; }
+
+  ValueType last() const { return map_.end()->second; }
+
+  auto min() const {
+    const auto value_compare = [](const auto &x, const auto &y) {
+      return x.second < y.second;
+    };
+    return *std::min_element(begin(), end(), value_compare);
+  }
+
   /*
    * Filtering a Grouped object consists of deciding which of the
    * groups you would like to keep.  This is done by providing a function which
@@ -178,6 +189,31 @@ template <typename KeyType, typename ValueType>
 class Grouped : public GroupedBase<KeyType, ValueType> {
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
+};
+
+
+template <typename KeyType>
+class Grouped<KeyType, double> : public GroupedBase<KeyType, double> {
+  using Base = GroupedBase<KeyType, double>;
+  using Base::Base;
+
+public:
+  double sum() const {
+    double output = 0.;
+    for (const auto &pair : this->map_) {
+      output += pair.second;
+    }
+    return output;
+  }
+
+  double mean() const {
+    double output = 0.;
+    for (const auto &pair : this->map_) {
+      output += pair.second / this->size();
+    }
+    return output;
+  }
+
 };
 
 template <typename KeyType>
@@ -438,6 +474,9 @@ class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
     : public GroupByBase<
           GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
 
+  static_assert(!std::is_same<GrouperFunction, void>::value,
+      "GrouperFunction is void (this may indicate the function won't compile).");
+
 public:
   using Base =
       GroupByBase<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>>;
@@ -452,6 +491,9 @@ public:
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<std::vector<FeatureType>, GrouperFunction>
     : public GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
+
+  static_assert(!std::is_same<GrouperFunction, void>::value,
+      "GrouperFunction is void (this may indicate the function won't compile).");
 
 public:
   using Base = GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>>;
