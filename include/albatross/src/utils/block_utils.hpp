@@ -97,9 +97,9 @@ template <typename Solver> struct BlockSymmetric {
    *          |B.T C|
    *
    *        = |A^-1 + Ai_B S^-1 Ai_B^T    -Ai_B S^-1|
-   *          |S^-1 Ai_B^T                    S^-1  |
+   *          |-S^-1 Ai_B^T                    S^-1  |
    *
-   * where Ai_B = A^-1 B  and S = C - B^T A^_1 B.
+   * where Ai_B = A^-1 B  and S = C - B^T A^-1 B.
    *
    * In this particular implementation Ai_B and S^-1 are pre-computed.
    */
