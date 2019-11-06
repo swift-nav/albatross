@@ -71,6 +71,22 @@ public:
 
   std::map<KeyType, ValueType> get_map() const { return map_; }
 
+  std::pair<KeyType, ValueType> first_group() const { return *map_.begin(); }
+
+  auto min_value() const {
+    const auto value_compare = [](const auto &x, const auto &y) {
+      return x.second < y.second;
+    };
+    return std::min_element(begin(), end(), value_compare)->second;
+  }
+
+  auto max_value() const {
+    const auto value_compare = [](const auto &x, const auto &y) {
+      return x.second < y.second;
+    };
+    return std::max_element(begin(), end(), value_compare)->second;
+  }
+
   /*
    * Filtering a Grouped object consists of deciding which of the
    * groups you would like to keep.  This is done by providing a function which
@@ -174,10 +190,38 @@ protected:
   std::map<KeyType, ValueType> map_;
 };
 
-template <typename KeyType, typename ValueType>
+template <typename KeyType, typename ValueType, typename Enable>
 class Grouped : public GroupedBase<KeyType, ValueType> {
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
+};
+
+/*
+ * Some specialized functionality for arithmetic value types.
+ */
+template <typename KeyType, typename ValueType>
+class Grouped<KeyType, ValueType,
+              std::enable_if_t<std::is_arithmetic<ValueType>::value>>
+    : public GroupedBase<KeyType, ValueType> {
+  using Base = GroupedBase<KeyType, ValueType>;
+  using Base::Base;
+
+public:
+  auto sum() const {
+    double output = 0.;
+    for (const auto &pair : this->map_) {
+      output += pair.second;
+    }
+    return output;
+  }
+
+  auto mean() const {
+    double output = 0.;
+    for (const auto &pair : this->map_) {
+      output += pair.second / static_cast<double>(this->size());
+    }
+    return output;
+  }
 };
 
 template <typename KeyType>
@@ -371,6 +415,16 @@ public:
     return groups().apply(f);
   }
 
+  ValueType get_group(const KeyType &key) const {
+    return albatross::subset(parent_, indexers().at(key));
+  }
+
+  std::pair<KeyType, ValueType> first_group() const {
+    const auto first_indexer = indexers().first_group();
+    return std::make_pair(first_indexer.first,
+                          albatross::subset(parent_, first_indexer.second));
+  }
+
   template <typename ApplyFunction,
             typename ApplyType = typename details::key_value_apply_result<
                 ApplyFunction, KeyType, GroupIndices>::type,
@@ -438,6 +492,10 @@ class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
     : public GroupByBase<
           GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
 
+  static_assert(!std::is_same<GrouperFunction, void>::value,
+                "GrouperFunction is void (this may indicate the function won't "
+                "compile).");
+
 public:
   using Base =
       GroupByBase<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>>;
@@ -452,6 +510,10 @@ public:
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<std::vector<FeatureType>, GrouperFunction>
     : public GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
+
+  static_assert(!std::is_same<GrouperFunction, void>::value,
+                "GrouperFunction is void (this may indicate the function won't "
+                "compile).");
 
 public:
   using Base = GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>>;

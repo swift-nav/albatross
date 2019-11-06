@@ -47,7 +47,8 @@ template <typename X> struct Measurement;
 
 using GroupIndices = std::vector<std::size_t>;
 
-template <typename GroupKey, typename ValueType> class Grouped;
+template <typename GroupKey, typename ValueType, typename Enable = void>
+class Grouped;
 
 template <typename GroupKey>
 using GroupIndexer = Grouped<GroupKey, GroupIndices>;

@@ -358,7 +358,7 @@ double mean(const std::vector<double> &xs) {
   return mean / xs.size();
 }
 
-long int number_of_digits(double x) { return lround(floor(log10(x))); }
+long int number_of_digits(double x) { return lround(ceil(log10(x))); }
 
 std::vector<double>
 direct_remove_less_than_mean(const std::vector<double> &xs) {
@@ -413,6 +413,74 @@ TEST(test_groupby, test_group_by_nested_filter) {
   for (std::size_t i = 0; i < direct.size(); ++i) {
     EXPECT_EQ(direct[i], filtered[i]);
   }
+}
+
+TEST(test_groupby, test_group_by_first_group) {
+
+  const auto fib = fibonacci(20);
+
+  const auto first_group = group_by(fib, number_of_digits).first_group();
+
+  for (const auto &value : first_group.second) {
+    EXPECT_EQ(number_of_digits(value), first_group.first);
+  }
+}
+
+TEST(test_groupby, test_group_by_get_group) {
+
+  const auto fib = fibonacci(20);
+
+  const auto group_2 = group_by(fib, number_of_digits).get_group(2);
+
+  for (const auto &value : group_2) {
+    EXPECT_EQ(number_of_digits(value), 2);
+  }
+}
+
+template <typename T> inline double test_sum(const std::vector<T> &ts) {
+  double output = 0.;
+  for (const auto &t : ts) {
+    output += static_cast<double>(t);
+  }
+  return output;
+};
+
+template <typename T> inline double test_mean(const std::vector<T> &ts) {
+  return test_sum(ts) / ts.size();
+}
+
+TEST(test_groupby, test_group_by_min_max_value) {
+
+  const auto fib = fibonacci(20);
+
+  const auto sums = group_by(fib, number_of_digits).apply(test_sum<double>);
+
+  double actual_max = -INFINITY;
+  double actual_min = INFINITY;
+  for (const auto &pair : sums) {
+    if (pair.second < actual_min) {
+      actual_min = pair.second;
+    }
+    if (pair.second > actual_max) {
+      actual_max = pair.second;
+    }
+  }
+
+  EXPECT_EQ(actual_min, sums.min_value());
+  EXPECT_EQ(actual_max, sums.max_value());
+}
+
+TEST(test_groupby, test_group_by_sum_mean) {
+
+  const auto fib = fibonacci(20);
+
+  const auto means = group_by(fib, number_of_digits).apply(test_mean<double>);
+
+  const double expected_mean = test_mean(map_values(means));
+  EXPECT_EQ(expected_mean, means.mean());
+
+  const double expected_sum = test_sum(map_values(means));
+  EXPECT_EQ(expected_sum, means.sum());
 }
 
 } // namespace albatross
