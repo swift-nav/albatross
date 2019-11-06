@@ -202,11 +202,28 @@ class Grouped : public GroupedBase<KeyType, ValueType> {
 };
 
 /*
+ * Some specialized functionality for bool value types.
+ */
+template <typename KeyType, typename ValueType>
+class Grouped<KeyType, ValueType,
+              std::enable_if_t<std::is_same<ValueType, bool>::value>>
+    : public GroupedBase<KeyType, ValueType> {
+  using Base = GroupedBase<KeyType, ValueType>;
+  using Base::Base;
+
+public:
+  bool all() const { return albatross::all(this->values()); }
+
+  auto any() const { return albatross::any(this->values()); }
+};
+
+/*
  * Some specialized functionality for arithmetic value types.
  */
 template <typename KeyType, typename ValueType>
 class Grouped<KeyType, ValueType,
-              std::enable_if_t<std::is_arithmetic<ValueType>::value>>
+              std::enable_if_t<std::is_arithmetic<ValueType>::value &&
+                               !std::is_same<ValueType, bool>::value>>
     : public GroupedBase<KeyType, ValueType> {
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
@@ -464,8 +481,8 @@ public:
     return groups().filter(f);
   }
 
-  std::map<KeyType, std::size_t> counts() const {
-    std::map<KeyType, std::size_t> output;
+  Grouped<KeyType, std::size_t> counts() const {
+    Grouped<KeyType, std::size_t> output;
     for (const auto &key_indexer_pair : indexers()) {
       output.emplace(key_indexer_pair.first, key_indexer_pair.second.size());
     }
