@@ -208,7 +208,7 @@ class Grouped<KeyType, ValueType,
 
 public:
   auto sum() const {
-    double output = 0.;
+    ValueType output = 0.;
     for (const auto &pair : this->map_) {
       output += pair.second;
     }
