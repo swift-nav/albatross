@@ -30,6 +30,30 @@ inline auto filter(const std::vector<ValueType> &values,
   return output;
 }
 
+template <typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+void apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+  std::for_each(xs.begin(), xs.end(), f);
+}
+
+template <typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+auto apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+  std::vector<ApplyType> output(xs.size());
+  std::transform(xs.begin(), xs.end(), output.begin(), f);
+  return output;
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_APPLY_HPP_ */
