@@ -133,4 +133,80 @@ TEST(test_apply, test_vector_apply_void) {
   EXPECT_EQ(call_count, xs.size());
 }
 
+TEST(test_apply, test_vector_apply_all) {
+
+  std::vector<std::vector<bool>> input;
+  std::vector<bool> expected;
+
+  std::vector<bool> empty = {};
+  input.push_back(empty);
+  expected.push_back(true);
+
+  input.push_back({true});
+  expected.push_back(true);
+
+  input.push_back({false});
+  expected.push_back(false);
+
+  input.push_back({true, true});
+  expected.push_back(true);
+
+  input.push_back({true, false});
+  expected.push_back(false);
+
+  input.push_back({false, true});
+  expected.push_back(false);
+
+  input.push_back({false, false});
+  expected.push_back(false);
+
+  input.push_back({true, true, true});
+  expected.push_back(true);
+
+  input.push_back({true, false, true});
+  expected.push_back(false);
+
+  const auto actual = apply(input, all);
+
+  EXPECT_EQ(actual, expected);
+}
+
+TEST(test_apply, test_vector_apply_any) {
+
+  std::vector<std::vector<bool>> input;
+  std::vector<bool> expected;
+
+  std::vector<bool> empty = {};
+  input.push_back(empty);
+  expected.push_back(false);
+
+  input.push_back({true});
+  expected.push_back(true);
+
+  input.push_back({false});
+  expected.push_back(false);
+
+  input.push_back({true, true});
+  expected.push_back(true);
+
+  input.push_back({true, false});
+  expected.push_back(true);
+
+  input.push_back({false, true});
+  expected.push_back(true);
+
+  input.push_back({false, false});
+  expected.push_back(false);
+
+  input.push_back({true, true, true});
+  expected.push_back(true);
+
+  input.push_back({true, false, true});
+  expected.push_back(true);
+
+  const auto actual = apply(input, any);
+
+  EXPECT_EQ(actual, expected);
+}
+
 } // namespace albatross

@@ -31,6 +31,38 @@ inline std::vector<double> linspace(double a, double b, std::size_t n) {
   return xs;
 }
 
+inline bool all(const std::vector<bool> &xs) {
+  // The thinking on having all({}) return true comes from interpreting "all" as
+  // "is there anything that isn't true".
+  if (xs.size() == 0) {
+    return true;
+  }
+  // Due to optimizations of vector<bool> you can't get actual references so we
+  // copy here to avoid future issues.
+  for (const auto x : xs) {
+    if (!x) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool any(const std::vector<bool> &xs) {
+  // The thinking on having any({}) return false comes from interpreting "amy"
+  // as "is there at least one true"
+  if (xs.size() == 0) {
+    return false;
+  }
+  // Due to optimizations of vector<bool> you can't get actual references so we
+  // copy here to avoid future issues.
+  for (const auto x : xs) {
+    if (x) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_UTILS_VECTOR_UTILS_HPP_ */
