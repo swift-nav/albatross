@@ -130,8 +130,7 @@ struct GenericRansacStrategy;
 struct AlwaysAcceptCandidateMetric;
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename GrouperFunction,
-          typename IsValidCandidateMetric = AlwaysAcceptCandidateMetric>
+          typename IsValidCandidateMetric, typename GrouperFunction>
 struct GaussianProcessRansacStrategy;
 
 /*

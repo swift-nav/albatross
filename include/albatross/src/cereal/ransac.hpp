@@ -53,14 +53,16 @@ inline void serialize(Archive &archive,
 }
 
 template <typename Archive, typename InlierMetric, typename ConsensusMetric,
-          typename GrouperFunction>
+          typename IsValidCandidateMetric, typename GrouperFunction>
 inline void
 serialize(Archive &archive,
           GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
-                                        GrouperFunction> &strategy,
+                                        IsValidCandidateMetric, GrouperFunction>
+              &strategy,
           const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
+  archive(cereal::make_nvp("is_valid_candidate", strategy.is_valid_candidate_));
   archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
