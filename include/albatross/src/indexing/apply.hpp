@@ -38,9 +38,7 @@ template <typename ValueType, typename ApplyFunction,
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
 void apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
-  for (const auto &x : xs) {
-    f(x);
-  }
+  std::for_each(xs.begin(), xs.end(), f);
 }
 
 template <typename ValueType, typename ApplyFunction,
@@ -51,10 +49,8 @@ template <typename ValueType, typename ApplyFunction,
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
 auto apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
-  std::vector<ApplyType> output;
-  for (const auto &x : xs) {
-    output.emplace_back(f(x));
-  }
+  std::vector<ApplyType> output(xs.size());
+  std::transform(xs.begin(), xs.end(), output.begin(), f);
   return output;
 }
 
