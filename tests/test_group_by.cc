@@ -504,4 +504,35 @@ TEST(test_groupby, test_group_by_sum_mean) {
   EXPECT_EQ(expected_sum, means.sum());
 }
 
+TEST(test_groupby, test_group_by_any_all) {
+
+  const auto fib = fibonacci(20);
+
+  const auto grouped = group_by(fib, number_of_digits);
+  const auto counts = grouped.counts();
+  const auto min_count = counts.min_value();
+  const auto max_count = counts.max_value();
+
+  auto greater_or_equal_to_min_count = [&](const auto &xs) {
+    return xs.size() >= min_count;
+  };
+
+  auto greater_than_min_count = [&](const auto &xs) {
+    return xs.size() > min_count;
+  };
+
+  auto greater_than_max_count = [&](const auto &xs) {
+    return xs.size() > max_count;
+  };
+
+  EXPECT_TRUE(grouped.apply(greater_or_equal_to_min_count).all());
+  EXPECT_TRUE(grouped.apply(greater_or_equal_to_min_count).any());
+
+  EXPECT_FALSE(grouped.apply(greater_than_min_count).all());
+  EXPECT_TRUE(grouped.apply(greater_than_min_count).any());
+
+  EXPECT_FALSE(grouped.apply(greater_than_max_count).all());
+  EXPECT_FALSE(grouped.apply(greater_than_max_count).any());
+}
+
 } // namespace albatross
