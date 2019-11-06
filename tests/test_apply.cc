@@ -140,7 +140,7 @@ TEST(test_apply, test_vector_apply_all) {
 
   std::vector<bool> empty = {};
   input.push_back(empty);
-  expected.push_back(false);
+  expected.push_back(true);
 
   input.push_back({true});
   expected.push_back(true);
