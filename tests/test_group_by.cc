@@ -33,6 +33,10 @@ struct StringMod3 {
   }
 };
 
+bool overloaded_above_three(const int &x) { return above_three(x); }
+
+bool overloaded_above_three(const double &x) { return x > 3.; }
+
 struct CustomGroupKey {
 
   bool operator<(const CustomGroupKey &other) const {
@@ -73,6 +77,22 @@ struct BoolClassMethodGrouper {
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return AboveThree(); }
+};
+
+struct BoolFunctionGrouper {
+
+  auto get_parent() const { return test_integer_dataset(); }
+
+  auto get_grouper() const { return above_three; }
+};
+
+struct BoolOverloadedFunctionGrouper {
+
+  auto get_parent() const { return test_integer_dataset(); }
+
+  auto get_grouper() const {
+    return select_overload<int>(overloaded_above_three);
+  }
 };
 
 struct BoolFunctionPointerGrouper {
@@ -137,6 +157,7 @@ public:
 };
 
 typedef ::testing::Types<BoolClassMethodGrouper, BoolLambdaGrouper,
+                         BoolFunctionGrouper, BoolOverloadedFunctionGrouper,
                          BoolFunctionPointerGrouper, IntClassMethodGrouper,
                          StringClassMethodGrouper, BoolClassMethodVectorGrouper,
                          LeaveOneOutTest, CustomClassMethodGrouper,

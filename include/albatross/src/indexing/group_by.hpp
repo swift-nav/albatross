@@ -22,6 +22,11 @@
 
 namespace albatross {
 
+template <typename Arg, typename ReturnType>
+auto select_overload(ReturnType (*fptr)(const Arg &)) {
+  return fptr;
+};
+
 /*
  * The Grouped class is the output of a call to method such as
  *
