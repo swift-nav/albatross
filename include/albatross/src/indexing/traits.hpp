@@ -167,6 +167,8 @@ struct group_by_traits<
     GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
   using ValueType = RegressionDataset<FeatureType>;
   using IterableType = FeatureType;
+  static_assert(is_valid_grouper<GrouperFunction, IterableType>::value,
+                "Invalid Grouper Function");
   using KeyType = typename grouper_result<GrouperFunction, IterableType>::type;
   using GrouperType = GrouperFunction;
 };
@@ -175,6 +177,8 @@ template <typename FeatureType, typename GrouperFunction>
 struct group_by_traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
   using ValueType = std::vector<FeatureType>;
   using IterableType = FeatureType;
+  static_assert(is_valid_grouper<GrouperFunction, IterableType>::value,
+                "Invalid Grouper Function");
   using KeyType = typename grouper_result<GrouperFunction, IterableType>::type;
   using GrouperType = GrouperFunction;
 };

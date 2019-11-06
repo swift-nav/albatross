@@ -12,8 +12,9 @@
 
 #include <albatross/CovarianceFunctions>
 
-#include "test_covariance_utils.h"
 #include <gtest/gtest.h>
+
+#include "test_covariance_utils.h"
 
 namespace albatross {
 

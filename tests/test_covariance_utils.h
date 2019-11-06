@@ -13,6 +13,8 @@
 #ifndef TESTS_TEST_COVARIANCE_UTILS_H_
 #define TESTS_TEST_COVARIANCE_UTILS_H_
 
+#include <gtest/gtest.h>
+
 namespace albatross {
 
 struct V {};
@@ -74,6 +76,51 @@ class HasPrivateCallImpl {
 };
 
 class HasNoCallImpl {};
+
+/*
+ * The following utilities are helpful for verifying covariance
+ * functions work as expected.
+ */
+
+inline bool has_non_zero(const Eigen::MatrixXd &matrix) {
+  double max_element = matrix.array().abs().maxCoeff();
+  return max_element > 0.;
+};
+
+template <typename FeatureType, typename GrouperFunction,
+          typename CovarianceFunction>
+inline void expect_zero_covariance_across_groups(
+    const RegressionDataset<FeatureType> &dataset, GrouperFunction grouper,
+    const CovarianceFunction &cov_func, bool strict = true) {
+  const auto grouped = dataset.group_by(grouper);
+
+  const auto are_correlated = grouped.apply(
+      [&](const auto &d) { return has_non_zero(cov_func(d.features)); });
+
+  bool any = false;
+  bool all = true;
+
+  for (const auto &one_group : are_correlated) {
+    any = any || one_group.second;
+    all = all && one_group.second;
+  }
+
+  EXPECT_TRUE(any);
+  EXPECT_TRUE(all || !strict);
+
+  const auto expect_zero_across_groups =
+      [&](const auto &, const albatross::GroupIndices &indices) {
+        const auto in_group = albatross::subset(dataset.features, indices);
+        const auto complement =
+            albatross::indices_complement(indices, dataset.features.size());
+        const auto not_in_group =
+            albatross::subset(dataset.features, complement);
+        EXPECT_EQ(cov_func(in_group, not_in_group).array().abs().maxCoeff(),
+                  0.);
+      };
+
+  grouped.index_apply(expect_zero_across_groups);
+}
 
 } // namespace albatross
 
