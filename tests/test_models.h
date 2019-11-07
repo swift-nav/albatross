@@ -74,6 +74,7 @@ public:
     const auto gp = gp_from_covariance(covariance);
 
     GaussianProcessRansacStrategy<ChiSquaredCdf, ChiSquaredConsensusMetric,
+                                  ChiSquaredIsValidCandidateMetric,
                                   LeaveOneOutGrouper>
         ransac_strategy;
 
@@ -155,7 +156,7 @@ public:
 struct AdaptedRansacStrategy
     : public GaussianProcessRansacStrategy<
           NegativeLogLikelihood<JointDistribution>, FeatureCountConsensusMetric,
-          LeaveOneOutGrouper> {
+          AlwaysAcceptCandidateMetric, LeaveOneOutGrouper> {
 
   template <typename ModelType>
   auto operator()(const ModelType &model,

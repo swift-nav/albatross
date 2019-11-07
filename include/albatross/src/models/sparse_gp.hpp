@@ -137,8 +137,7 @@ public:
     initialize_params();
   };
   SparseGaussianProcessRegression(
-      CovFunc &covariance_function,
-      GrouperFunction &independent_group_function_,
+      CovFunc &covariance_function, GrouperFunction independent_group_function_,
       InducingPointStrategy &inducing_point_strategy_,
       const std::string &model_name)
       : Base(covariance_function, model_name),
@@ -325,7 +324,7 @@ public:
 template <typename CovFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               GrouperFunction &grouper_function,
+                               GrouperFunction grouper_function,
                                InducingPointStrategy &strategy,
                                const std::string &model_name) {
   return SparseGaussianProcessRegression<CovFunc, GrouperFunction,
@@ -335,7 +334,7 @@ auto sparse_gp_from_covariance(CovFunc covariance_function,
 
 template <typename CovFunc, typename GrouperFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               GrouperFunction &grouper_function,
+                               GrouperFunction grouper_function,
                                const std::string &model_name) {
   StateSpaceInducingPointStrategy strategy;
   return sparse_gp_from_covariance(covariance_function, grouper_function,
