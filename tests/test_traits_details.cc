@@ -60,6 +60,84 @@ TEST(test_traits_core, test_is_in_variant) {
   EXPECT_FALSE(bool(is_in_variant<variant<X>, variant<X, Y, Z>>::value));
 }
 
+struct Foo {};
+
+template <typename T> struct is_foo : public std::is_same<T, Foo> {};
+
+TEST(test_traits_core, test_variant_any) {
+  struct X {};
+  struct Y {};
+  struct Z {};
+
+  EXPECT_FALSE(bool(variant_any<is_foo, variant<>>::value));
+
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<Foo>>::value));
+  EXPECT_FALSE(bool(variant_any<is_foo, variant<X>>::value));
+
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<Foo, X>>::value));
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<X, Foo>>::value));
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<Y, Foo>>::value));
+  EXPECT_FALSE(bool(variant_any<is_foo, variant<X, Y>>::value));
+
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<Foo, X, Y>>::value));
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<X, Y, Foo>>::value));
+  EXPECT_TRUE(bool(variant_any<is_foo, variant<Y, Foo, X>>::value));
+  EXPECT_FALSE(bool(variant_any<is_foo, variant<X, Y, Z>>::value));
+}
+
+struct Bar {};
+
+template <typename T> struct is_foo_or_bar {
+  static constexpr bool value =
+      std::is_same<T, Foo>::value || std::is_same<T, Bar>::value;
+};
+
+TEST(test_traits_core, test_variant_all) {
+  struct X {};
+  struct Y {};
+  struct Z {};
+
+  EXPECT_TRUE(bool(variant_all<is_foo_or_bar, variant<>>::value));
+
+  EXPECT_TRUE(bool(variant_all<is_foo_or_bar, variant<Foo>>::value));
+  EXPECT_TRUE(bool(variant_all<is_foo_or_bar, variant<Bar>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<Y>>::value));
+
+  EXPECT_TRUE(bool(variant_all<is_foo_or_bar, variant<Foo, Bar>>::value));
+  EXPECT_TRUE(bool(variant_all<is_foo_or_bar, variant<Bar, Foo>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<Y, Foo>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<X, Y>>::value));
+
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<Foo, Bar, Y>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<X, Bar, Foo>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<Y, Foo, X>>::value));
+  EXPECT_FALSE(bool(variant_all<is_foo_or_bar, variant<X, Y, Z>>::value));
+}
+
+TEST(test_traits_core, test_is_sub_variant) {
+  struct X {};
+  struct Y {};
+  struct Z {};
+
+  EXPECT_FALSE(bool(is_sub_variant<X, variant<X>>::value));
+  EXPECT_FALSE(bool(is_sub_variant<variant<X>, X>::value));
+  EXPECT_FALSE(bool(is_sub_variant<X, variant<>>::value));
+
+  EXPECT_TRUE(bool(is_sub_variant<variant<>, variant<>>::value));
+
+  EXPECT_TRUE(bool(is_sub_variant<variant<>, variant<X>>::value));
+  EXPECT_TRUE(bool(is_sub_variant<variant<X>, variant<X>>::value));
+  EXPECT_FALSE(bool(is_sub_variant<variant<Y>, variant<X>>::value));
+
+  EXPECT_TRUE(bool(is_sub_variant<variant<X>, variant<X, Y>>::value));
+  EXPECT_TRUE(bool(is_sub_variant<variant<X>, variant<Y, X>>::value));
+  EXPECT_TRUE(bool(is_sub_variant<variant<X, Y>, variant<X, Y>>::value));
+  EXPECT_TRUE(bool(is_sub_variant<variant<Y, X>, variant<Y, X>>::value));
+  EXPECT_FALSE(bool(is_sub_variant<variant<Y, X>, variant<Y, Z>>::value));
+  EXPECT_FALSE(bool(is_sub_variant<variant<X, Y>, variant<Y, Z>>::value));
+  EXPECT_FALSE(bool(is_sub_variant<variant<X>, variant<Y, Z>>::value));
+}
+
 class Complete {};
 
 class Incomplete;
