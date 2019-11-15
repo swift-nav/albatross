@@ -197,11 +197,8 @@ public:
     const auto u = inducing_point_strategy(this->covariance_function_,
                                            out_of_order_features);
 
-    std::vector<Measurement<FeatureType>> out_of_order_measurement_features;
-    for (const auto &f : out_of_order_features) {
-      out_of_order_measurement_features.emplace_back(
-          Measurement<FeatureType>(f));
-    }
+    const auto out_of_order_measurement_features =
+        as_measurements(out_of_order_features);
 
     std::vector<std::size_t> reordered_inds;
     BlockDiagonal K_ff;
