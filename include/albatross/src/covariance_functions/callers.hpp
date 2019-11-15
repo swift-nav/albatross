@@ -15,6 +15,23 @@
 
 namespace albatross {
 
+template <typename X> struct LinearCombination {
+
+  LinearCombination(){};
+
+  LinearCombination(const std::vector<X> &values_)
+      : values(values_), coefficients(Eigen::VectorXd::Ones(values_.size())){};
+
+  LinearCombination(const std::vector<X> &values_,
+                    const Eigen::VectorXd &coefficients_)
+      : values(values_), coefficients(coefficients_) {
+    assert(values_.size() == static_cast<std::size_t>(coefficients_.size()));
+  };
+
+  std::vector<X> values;
+  Eigen::VectorXd coefficients;
+};
+
 /*
  * Implementing a CovarianceFunction requires defining a method with
  * signature:
@@ -33,6 +50,31 @@ namespace albatross {
  */
 
 namespace internal {
+
+/*
+ * Cross covariance between two vectors of (possibly) different types.
+ */
+template <
+    typename Caller, typename CovFunc, typename X, typename Y,
+    typename std::enable_if<is_invocable<CovFunc, X, Y>::value, int>::type = 0>
+inline Eigen::MatrixXd compute_covariance_matrix(const CovFunc &cov_func,
+                                                 const std::vector<X> &xs,
+                                                 const std::vector<Y> &ys) {
+  int m = static_cast<int>(xs.size());
+  int n = static_cast<int>(ys.size());
+  Eigen::MatrixXd C(m, n);
+
+  int i, j;
+  std::size_t si, sj;
+  for (i = 0; i < m; i++) {
+    si = static_cast<std::size_t>(i);
+    for (j = 0; j < n; j++) {
+      sj = static_cast<std::size_t>(j);
+      C(i, j) = Caller::call(cov_func, xs[si], ys[sj]);
+    }
+  }
+  return C;
+}
 
 /*
  * This Caller just directly call the underlying CovFunc.
@@ -126,6 +168,54 @@ template <typename SubCaller> struct MeasurementForwarder {
   static double call(const CovFunc &cov_func, const X &x,
                      const Measurement<Y> &y) {
     return SubCaller::call(cov_func, x, y.value);
+  }
+};
+
+template <typename SubCaller> struct LinearCombinationCaller {
+
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return SubCaller::call(cov_func, x, y);
+  }
+
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const LinearCombination<X> &xs,
+                     const LinearCombination<Y> &ys) {
+    const auto mat =
+        compute_covariance_matrix<SubCaller>(cov_func, xs.values, ys.values);
+    return xs.coefficients.dot(mat * ys.coefficients);
+  }
+
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x,
+                     const LinearCombination<Y> &ys) {
+    double sum = 0.;
+    for (std::size_t i = 0; i < ys.values.size(); ++i) {
+      sum += ys.coefficients[i] * SubCaller::call(cov_func, x, ys.values[i]);
+    }
+    return sum;
+  }
+
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
+  static double call(const CovFunc &cov_func, const LinearCombination<X> &xs,
+                     const Y &y) {
+    double sum = 0.;
+    for (std::size_t i = 0; i < xs.values.size(); ++i) {
+      sum += xs.coefficients[i] * SubCaller::call(cov_func, xs.values[i], y);
+    }
+    return sum;
   }
 };
 
@@ -235,8 +325,9 @@ template <typename SubCaller> struct VariantForwarder {
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller = internal::VariantForwarder<internal::MeasurementForwarder<
-    internal::SymmetricCaller<internal::DirectCaller>>>;
+using DefaultCaller = internal::LinearCombinationCaller<
+    internal::VariantForwarder<internal::MeasurementForwarder<
+        internal::SymmetricCaller<internal::DirectCaller>>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call
