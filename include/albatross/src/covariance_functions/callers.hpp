@@ -49,17 +49,17 @@ template <typename X> struct LinearCombination {
  * can be strung together to avoid repeated trait inspection.
  */
 
-namespace internal {
-
 /*
  * Cross covariance between two vectors of (possibly) different types.
  */
-template <
-    typename Caller, typename CovFunc, typename X, typename Y,
-    typename std::enable_if<is_invocable<CovFunc, X, Y>::value, int>::type = 0>
-inline Eigen::MatrixXd compute_covariance_matrix(const CovFunc &cov_func,
+template <typename CovFuncCaller, typename X, typename Y>
+inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
                                                  const std::vector<X> &xs,
                                                  const std::vector<Y> &ys) {
+  static_assert(is_invocable<CovFuncCaller, X, Y>::value,
+                "caller does not support the required arguments");
+  static_assert(is_invocable_with_result<CovFuncCaller, double, X, Y>::value,
+                "caller does not return a double");
   int m = static_cast<int>(xs.size());
   int n = static_cast<int>(ys.size());
   Eigen::MatrixXd C(m, n);
@@ -70,11 +70,40 @@ inline Eigen::MatrixXd compute_covariance_matrix(const CovFunc &cov_func,
     si = static_cast<std::size_t>(i);
     for (j = 0; j < n; j++) {
       sj = static_cast<std::size_t>(j);
-      C(i, j) = Caller::call(cov_func, xs[si], ys[sj]);
+      C(i, j) = caller(xs[si], ys[sj]);
     }
   }
   return C;
 }
+
+/*
+ * Cross covariance between all elements of a vector.
+ */
+template <typename CovFuncCaller, typename X>
+inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
+                                                 const std::vector<X> &xs) {
+  static_assert(is_invocable<CovFuncCaller, X, X>::value,
+                "caller does not support the required arguments");
+  static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
+                "caller does not return a double");
+
+  int n = static_cast<int>(xs.size());
+  Eigen::MatrixXd C(n, n);
+
+  int i, j;
+  std::size_t si, sj;
+  for (i = 0; i < n; i++) {
+    si = static_cast<std::size_t>(i);
+    for (j = 0; j <= i; j++) {
+      sj = static_cast<std::size_t>(j);
+      C(i, j) = caller(xs[si], xs[sj]);
+      C(j, i) = C(i, j);
+    }
+  }
+  return C;
+}
+
+namespace internal {
 
 /*
  * This Caller just directly call the underlying CovFunc.
@@ -187,8 +216,13 @@ template <typename SubCaller> struct LinearCombinationCaller {
           has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
   static double call(const CovFunc &cov_func, const LinearCombination<X> &xs,
                      const LinearCombination<Y> &ys) {
+
+    auto sub_caller = [&](const auto &x, const auto &y) {
+      return SubCaller::call(cov_func, x, y);
+    };
+
     const auto mat =
-        compute_covariance_matrix<SubCaller>(cov_func, xs.values, ys.values);
+        compute_covariance_matrix(sub_caller, xs.values, ys.values);
     return xs.coefficients.dot(mat * ys.coefficients);
   }
 

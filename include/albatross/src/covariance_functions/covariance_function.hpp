@@ -136,20 +136,10 @@ public:
             typename std::enable_if<has_valid_caller<Derived, X, X>::value,
                                     int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
-    int n = static_cast<int>(xs.size());
-    Eigen::MatrixXd C(n, n);
-
-    int i, j;
-    std::size_t si, sj;
-    for (i = 0; i < n; i++) {
-      si = static_cast<std::size_t>(i);
-      for (j = 0; j <= i; j++) {
-        sj = static_cast<std::size_t>(j);
-        C(i, j) = call(xs[si], xs[sj]);
-        C(j, i) = C(i, j);
-      }
-    }
-    return C;
+    auto caller = [&](const auto &x, const auto &y) {
+      return this->call(x, y);
+    };
+    return compute_covariance_matrix(caller, xs);
   }
 
   /*
@@ -160,20 +150,10 @@ public:
                                     int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              const std::vector<Y> &ys) const {
-    int m = static_cast<int>(xs.size());
-    int n = static_cast<int>(ys.size());
-    Eigen::MatrixXd C(m, n);
-
-    int i, j;
-    std::size_t si, sj;
-    for (i = 0; i < m; i++) {
-      si = static_cast<std::size_t>(i);
-      for (j = 0; j < n; j++) {
-        sj = static_cast<std::size_t>(j);
-        C(i, j) = call(xs[si], ys[sj]);
-      }
-    }
-    return C;
+    auto caller = [&](const auto &x, const auto &y) {
+      return this->call(x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys);
   }
 
   /*
