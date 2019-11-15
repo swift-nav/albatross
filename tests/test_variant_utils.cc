@@ -43,17 +43,19 @@ TEST(test_variant_utils, test_set_variant_two_types) {
   EXPECT_EQ(foo.get<double>(), two);
 }
 
-struct X {
+struct VariantUtilsTestType {
   double value;
-  bool operator==(const X &other) const { return value == other.value; }
+  bool operator==(const VariantUtilsTestType &other) const {
+    return value == other.value;
+  }
 };
 
 TEST(test_variant_utils, test_set_variant_three_types) {
 
-  variant<int, double, X> foo;
+  variant<int, double, VariantUtilsTestType> foo;
   const int one = 1;
   const double two = 2.;
-  const X x = {3.};
+  const VariantUtilsTestType x = {3.};
 
   variant<double, int> double_int;
 
@@ -67,12 +69,12 @@ TEST(test_variant_utils, test_set_variant_three_types) {
   EXPECT_TRUE(foo.is<double>());
   EXPECT_EQ(foo.get<double>(), two);
 
-  variant<double, X> double_x;
+  variant<double, VariantUtilsTestType> double_x;
 
   double_x = x;
   set_variant(double_x, &foo);
-  EXPECT_TRUE(foo.is<X>());
-  EXPECT_EQ(foo.get<X>(), x);
+  EXPECT_TRUE(foo.is<VariantUtilsTestType>());
+  EXPECT_EQ(foo.get<VariantUtilsTestType>(), x);
 
   double_x = two;
   set_variant(double_x, &foo);
@@ -82,7 +84,8 @@ TEST(test_variant_utils, test_set_variant_three_types) {
 
 TEST(test_variant_utils, test_to_variant_vector) {
   const auto doubles = linspace(0., 10., 11);
-  const auto variants = to_variant_vector<variant<int, double, X>>(doubles);
+  const auto variants =
+      to_variant_vector<variant<int, double, VariantUtilsTestType>>(doubles);
   EXPECT_EQ(variants.size(), doubles.size());
 
   for (std::size_t i = 0; i < variants.size(); ++i) {
@@ -92,16 +95,17 @@ TEST(test_variant_utils, test_to_variant_vector) {
 
   double a = 1.;
   double b = 2.;
-  X x_a = {a};
-  X x_b = {b};
+  VariantUtilsTestType x_a = {a};
+  VariantUtilsTestType x_b = {b};
 
-  std::vector<variant<double, X>> mixed;
+  std::vector<variant<double, VariantUtilsTestType>> mixed;
   mixed.emplace_back(a);
   mixed.emplace_back(b);
   mixed.emplace_back(x_a);
   mixed.emplace_back(x_b);
 
-  auto from_mixed = to_variant_vector<variant<int, double, X>>(mixed);
+  auto from_mixed =
+      to_variant_vector<variant<int, double, VariantUtilsTestType>>(mixed);
   for (std::size_t i = 0; i < mixed.size(); ++i) {
     mixed[i].match([&](auto v) {
       EXPECT_TRUE(from_mixed[i].is<decltype(v)>());
