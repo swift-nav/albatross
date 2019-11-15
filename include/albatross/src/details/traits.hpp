@@ -87,6 +87,58 @@ struct is_in_variant<T, variant<A, Ts...>> {
 };
 
 /*
+ * Checks if Expression<A>::value is true for any of the types in a variant.
+ */
+template <template <typename...> class Expression, typename A, typename = void>
+struct variant_any : public std::false_type {};
+
+template <template <typename...> class Expression, typename A>
+struct variant_any<Expression, variant<A>,
+                   std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value = Expression<A>::value;
+};
+
+template <template <typename...> class Expression, typename A, typename... Ts>
+struct variant_any<Expression, variant<A, Ts...>,
+                   std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value =
+      Expression<A>::value || variant_any<Expression, variant<Ts...>>::value;
+};
+
+/*
+ * Checks if Expression<A>::value is true for all of the types in a variant.
+ */
+template <template <typename...> class Expression, typename A, typename = void>
+struct variant_all : public std::true_type {};
+
+template <template <typename...> class Expression, typename A>
+struct variant_all<Expression, variant<A>,
+                   std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value = Expression<A>::value;
+};
+
+template <template <typename...> class Expression, typename A, typename... Ts>
+struct variant_all<Expression, variant<A, Ts...>,
+                   std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value =
+      Expression<A>::value && variant_all<Expression, variant<Ts...>>::value;
+};
+
+/*
+ * Checks if one variant contains all the types of another variant.
+ */
+template <typename X, typename Y>
+struct is_sub_variant : public std::false_type {};
+
+template <typename Y, typename... Ts> struct is_sub_variant<variant<Ts...>, Y> {
+private:
+  template <typename T> struct is_in_y : public is_in_variant<T, Y> {};
+
+public:
+  static constexpr bool value = variant_all<is_in_y, variant<Ts...>>::value;
+};
+
+/*
  * variant_size
  */
 template <typename T> struct variant_size {};
