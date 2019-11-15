@@ -25,8 +25,8 @@ template <typename X> struct ToVariantIdentity {};
  */
 template <typename... Ts, typename X>
 inline std::enable_if_t<is_sub_variant<X, variant<Ts...>>::value, void>
-set_variant(variant<Ts...> &to_set, const X &x) {
-  x.match([&to_set](const auto &v) { to_set = v; });
+set_variant(const X &x, variant<Ts...> *to_set) {
+  x.match([&to_set](const auto &v) { *to_set = v; });
 }
 
 /*
@@ -35,19 +35,19 @@ set_variant(variant<Ts...> &to_set, const X &x) {
 template <typename... Ts, typename X>
 inline std::enable_if_t<
     !is_variant<X>::value && is_in_variant<X, variant<Ts...>>::value, void>
-set_variant(variant<Ts...> &to_set, const X &x) {
-  to_set = x;
+set_variant(const X &x, variant<Ts...> *to_set) {
+  *to_set = x;
 }
 
 /*
  * Convert a vector of one type
  */
 template <typename... Ts, typename X>
-inline void set_variants(std::vector<variant<Ts...>> &to_set,
-                         const std::vector<X> &xs) {
-  to_set.resize(xs.size());
+inline void set_variants(const std::vector<X> &xs,
+                         std::vector<variant<Ts...>> *to_set) {
+  to_set->resize(xs.size());
   for (std::size_t i = 0; i < xs.size(); ++i) {
-    set_variant(to_set[i], xs[i]);
+    set_variant(xs[i], &to_set->operator[](i));
   }
 }
 
@@ -57,7 +57,7 @@ inline std::vector<OutputType>
 to_variant_vector(const std::vector<X> &xs,
                   details::ToVariantIdentity<OutputType> && = {}) {
   std::vector<OutputType> output;
-  set_variants(output, xs);
+  set_variants(xs, &output);
   return output;
 }
 

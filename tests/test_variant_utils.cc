@@ -24,21 +24,21 @@ TEST(test_variant_utils, test_set_variant_two_types) {
 
   variant<double, int> bar;
 
-  set_variant(foo, one);
+  set_variant(one, &foo);
   EXPECT_TRUE(foo.is<int>());
   EXPECT_EQ(foo.get<int>(), one);
 
-  set_variant(foo, two);
+  set_variant(two, &foo);
   EXPECT_TRUE(foo.is<double>());
   EXPECT_EQ(foo.get<double>(), two);
 
   bar = one;
-  set_variant(foo, bar);
+  set_variant(bar, &foo);
   EXPECT_TRUE(foo.is<int>());
   EXPECT_EQ(foo.get<int>(), one);
 
   bar = two;
-  set_variant(foo, bar);
+  set_variant(bar, &foo);
   EXPECT_TRUE(foo.is<double>());
   EXPECT_EQ(foo.get<double>(), two);
 }
@@ -58,24 +58,24 @@ TEST(test_variant_utils, test_set_variant_three_types) {
   variant<double, int> double_int;
 
   double_int = one;
-  set_variant(foo, double_int);
+  set_variant(double_int, &foo);
   EXPECT_TRUE(foo.is<int>());
   EXPECT_EQ(foo.get<int>(), one);
 
   double_int = two;
-  set_variant(foo, double_int);
+  set_variant(double_int, &foo);
   EXPECT_TRUE(foo.is<double>());
   EXPECT_EQ(foo.get<double>(), two);
 
   variant<double, X> double_x;
 
   double_x = x;
-  set_variant(foo, double_x);
+  set_variant(double_x, &foo);
   EXPECT_TRUE(foo.is<X>());
   EXPECT_EQ(foo.get<X>(), x);
 
   double_x = two;
-  set_variant(foo, double_x);
+  set_variant(double_x, &foo);
   EXPECT_TRUE(foo.is<double>());
   EXPECT_EQ(foo.get<double>(), two);
 }
