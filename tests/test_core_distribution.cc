@@ -28,11 +28,7 @@ TYPED_TEST_P(DistributionTest, test_subset) {
 
   expect_subset_equal(dist.mean, ss.mean, indices);
 
-  if (dist.has_covariance()) {
-    expect_subset_equal(dist.covariance, ss.covariance, indices);
-  } else {
-    EXPECT_FALSE(ss.has_covariance());
-  }
+  expect_subset_equal(dist.covariance, ss.covariance, indices);
 };
 
 REGISTER_TYPED_TEST_CASE_P(DistributionTest, test_subset);
@@ -45,14 +41,6 @@ Eigen::VectorXd arange(int k = 5) {
   return mean;
 }
 
-struct MarginalNoCovariance
-    : public DistributionTestCase<MarginalDistribution> {
-  virtual MarginalDistribution create() const {
-    Eigen::VectorXd mean = arange(5);
-    return MarginalDistribution(mean);
-  }
-};
-
 struct MarginalWithCovariance
     : public DistributionTestCase<MarginalDistribution> {
   virtual MarginalDistribution create() const {
@@ -60,16 +48,7 @@ struct MarginalWithCovariance
     Eigen::VectorXd mean = arange(k);
     Eigen::MatrixXd covariance = Eigen::MatrixXd::Random(k, k);
     covariance = covariance * covariance.transpose();
-
-    return MarginalDistribution(mean, mean.asDiagonal());
-  }
-};
-
-struct JointNoCovariance : public DistributionTestCase<JointDistribution> {
-  virtual JointDistribution create() const {
-    Eigen::Index k = 5;
-    Eigen::VectorXd mean = arange(k);
-    return JointDistribution(mean);
+    return MarginalDistribution(mean, covariance.diagonal().asDiagonal());
   }
 };
 
@@ -84,9 +63,7 @@ struct JointWithCovariance : public DistributionTestCase<JointDistribution> {
   }
 };
 
-typedef ::testing::Types<MarginalNoCovariance, MarginalWithCovariance,
-                         JointNoCovariance, JointWithCovariance>
-    ToTest;
+typedef ::testing::Types<MarginalWithCovariance, JointWithCovariance> ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, DistributionTest, ToTest);
 

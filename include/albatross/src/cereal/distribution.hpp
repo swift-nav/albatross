@@ -15,9 +15,16 @@
 
 namespace cereal {
 
-template <class CovarianceType, class Archive>
-inline void serialize(Archive &archive,
-                      albatross::Distribution<CovarianceType> &dist,
+template <class Archive>
+inline void serialize(Archive &archive, albatross::MarginalDistribution &dist,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("mean", dist.mean));
+  archive(cereal::make_nvp("covariance", dist.covariance));
+  archive(cereal::make_nvp("metadata", dist.metadata));
+}
+
+template <class Archive>
+inline void serialize(Archive &archive, albatross::JointDistribution &dist,
                       const std::uint32_t) {
   archive(cereal::make_nvp("mean", dist.mean));
   archive(cereal::make_nvp("covariance", dist.covariance));

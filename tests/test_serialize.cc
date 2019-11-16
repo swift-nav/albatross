@@ -111,27 +111,12 @@ struct FullJointDistribution : public SerializableType<JointDistribution> {
   }
 };
 
-struct MeanOnlyJointDistribution : public SerializableType<JointDistribution> {
-  JointDistribution create() const override {
-    Eigen::MatrixXd mean = Eigen::VectorXd::Ones(3);
-    return JointDistribution(mean);
-  }
-};
-
 struct FullMarginalDistribution
     : public SerializableType<MarginalDistribution> {
   MarginalDistribution create() const override {
     Eigen::VectorXd diag = Eigen::VectorXd::Ones(3);
     Eigen::VectorXd mean = Eigen::VectorXd::Ones(3);
     return MarginalDistribution(mean, diag.asDiagonal());
-  }
-};
-
-struct MeanOnlyMarginalDistribution
-    : public SerializableType<MarginalDistribution> {
-  MarginalDistribution create() const override {
-    Eigen::MatrixXd mean = Eigen::VectorXd::Ones(3);
-    return MarginalDistribution(mean);
   }
 };
 
@@ -290,8 +275,7 @@ REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
 typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
                          EigenVectorXd, EmptyEigenMatrixXd, EigenMatrixXd,
-                         FullJointDistribution, MeanOnlyJointDistribution,
-                         FullMarginalDistribution, MeanOnlyMarginalDistribution,
+                         FullJointDistribution, FullMarginalDistribution,
                          ParameterStoreType, Dataset, DatasetWithMetadata,
                          SerializableType<MockModel>, VariantAsInt,
                          VariantAsDouble, BlockSymmetricMatrix>

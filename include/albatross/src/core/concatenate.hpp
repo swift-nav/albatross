@@ -78,6 +78,14 @@ inline auto concatenate(const std::vector<std::vector<X>> &all_xs) {
   return features;
 }
 
+inline Eigen::VectorXd concatenate(const Eigen::VectorXd &x,
+                                   const Eigen::VectorXd &y) {
+  Eigen::VectorXd mean(x.size() + y.size());
+  mean.block(0, 0, x.size(), 1) = x;
+  mean.block(x.size(), 0, y.size(), 1) = y;
+  return mean;
+}
+
 /*
  * concatenate with two different non-variant types
  */

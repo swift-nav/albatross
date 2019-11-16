@@ -64,9 +64,7 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
 
     train_features = features;
     Eigen::MatrixXd cov(train_cov);
-    if (targets.has_covariance()) {
-      cov += targets.covariance;
-    }
+    cov += targets.covariance;
     assert(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
     // Precompute the information vector
@@ -486,9 +484,7 @@ auto update(
   auto pred = fit_model.predict(dataset.features).joint();
 
   Eigen::VectorXd delta = dataset.targets.mean - pred.mean;
-  if (dataset.targets.has_covariance()) {
-    pred.covariance += dataset.targets.covariance;
-  }
+  pred.covariance += dataset.targets.covariance;
   const auto S_ldlt = pred.covariance.ldlt();
 
   const auto model = fit_model.get_model();

@@ -20,153 +20,187 @@ inline bool operator==(const albatross::DiagonalMatrixXd &x,
 
 namespace albatross {
 
-/*
- * A Distribution holds what is typically assumed to be a
- * multivariate Gaussian distribution with mean and optional
- * covariance.
- */
-template <typename CovarianceType> struct Distribution {
+template <typename Derived> struct DistributionBase {
+
+private:
+  // Declaring these private makes it impossible to accidentally do things like:
+  //     class A : public CovarianceFunction<B> {}
+  // or
+  //     using A = CovarianceFunction<B>;
+  //
+  // which if unchecked can lead to some very strange behavior.
+  DistributionBase(){};
+  friend Derived;
+
+public:
+  DistributionBase(const Eigen::VectorXd &mean_) : mean(mean_){};
+
+  std::size_t size() const {
+    // If the covariance is defined it must have the same number
+    // of rows and columns which should be the same size as the mean.
+    derived().assert_valid();
+    return static_cast<std::size_t>(mean.size());
+  }
+
+  double get_diagonal(Eigen::Index i) const {
+    return derived().get_diagonal(i);
+  }
+
   Eigen::VectorXd mean;
-  CovarianceType covariance;
   std::map<std::string, std::string> metadata;
 
-  Distribution() : mean(), covariance(), metadata(){};
-  Distribution(const Eigen::VectorXd &mean_)
-      : mean(mean_), covariance(), metadata(){};
-  Distribution(const Eigen::VectorXd &mean_, const CovarianceType &covariance_)
-      : mean(mean_), covariance(covariance_), metadata(){};
+  Derived &derived() { return *static_cast<Derived *>(this); }
 
-  std::size_t size() const;
-
-  void assert_valid() const;
-
-  bool has_covariance() const;
-
-  double get_diagonal(Eigen::Index i) const;
-
-  bool operator==(const Distribution<CovarianceType> &other) const {
-    return (mean == other.mean && has_covariance() == other.has_covariance() &&
-            covariance == other.covariance);
-  }
-
-  template <typename OtherCovarianceType>
-  typename std::enable_if<
-      !std::is_same<CovarianceType, OtherCovarianceType>::value, bool>::type
-  operator==(const Distribution<OtherCovarianceType> &) const {
-    return false;
-  }
+  const Derived &derived() const { return *static_cast<const Derived *>(this); }
 };
 
-template <typename CovarianceType>
-std::size_t Distribution<CovarianceType>::size() const {
-  // If the covariance is defined it must have the same number
-  // of rows and columns which should be the same size as the mean.
-  assert_valid();
-  return static_cast<std::size_t>(mean.size());
-}
+template <typename T>
+struct is_distribution : public std::is_base_of<DistributionBase<T>, T> {};
 
-template <typename CovarianceType>
-void Distribution<CovarianceType>::assert_valid() const {
-  if (covariance.size() > 0) {
-    assert(covariance.rows() == covariance.cols());
+struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
+
+  using Base = DistributionBase<MarginalDistribution>;
+
+  MarginalDistribution(){};
+
+  MarginalDistribution(const Eigen::VectorXd &mean_)
+      : Base(mean_), covariance(mean_.size()) {
+    covariance.diagonal().fill(0.);
+    assert_valid();
+  };
+
+  MarginalDistribution(const Eigen::VectorXd &mean_,
+                       const DiagonalMatrixXd &covariance_)
+      : Base(mean_), covariance(covariance_) {
+    assert_valid();
+  };
+
+  template <typename DiagonalDerived>
+  MarginalDistribution(const Eigen::VectorXd &mean_,
+                       const Eigen::DiagonalBase<DiagonalDerived> &covariance_)
+      : Base(mean_), covariance(covariance_) {
+    assert_valid();
+  }
+
+  MarginalDistribution(const Eigen::VectorXd &mean_,
+                       const Eigen::VectorXd &variance_)
+      : Base(mean_), covariance(variance_.asDiagonal()) {
+    assert_valid();
+  };
+
+  void assert_valid() const {
     assert(mean.size() == covariance.rows());
+    assert(mean.size() == covariance.cols());
   }
-}
 
-template <typename CovarianceType>
-bool Distribution<CovarianceType>::has_covariance() const {
-  assert_valid();
-  return covariance.size() > 0;
-}
-
-template <typename CovarianceType>
-double Distribution<CovarianceType>::get_diagonal(Eigen::Index i) const {
-  return has_covariance() ? covariance.diagonal()[i] : NAN;
-}
-
-template <typename SizeType, typename CovarianceType>
-Distribution<CovarianceType> subset(const Distribution<CovarianceType> &dist,
-                                    const std::vector<SizeType> &indices) {
-  auto subset_mean = albatross::subset(Eigen::VectorXd(dist.mean), indices);
-  if (dist.has_covariance()) {
-    auto subset_cov = albatross::symmetric_subset(dist.covariance, indices);
-    return Distribution<CovarianceType>(subset_mean, subset_cov);
-  } else {
-    return Distribution<CovarianceType>(subset_mean);
+  double get_diagonal(Eigen::Index i) const {
+    assert(i >= 0 && i < covariance.rows());
+    return covariance.diagonal()[i];
   }
+
+  bool operator==(const MarginalDistribution &other) const {
+    return (mean == other.mean && covariance == other.covariance);
+  }
+
+  template <typename SizeType>
+  MarginalDistribution subset(const std::vector<SizeType> &indices) const {
+    return MarginalDistribution(
+        albatross::subset(mean, indices),
+        albatross::subset(covariance.diagonal(), indices));
+  }
+
+  template <typename SizeType>
+  void set_subset(const MarginalDistribution &from,
+                  const std::vector<SizeType> &indices) {
+    albatross::set_subset(from.mean, indices, &mean);
+    albatross::set_subset(from.covariance.diagonal(), indices,
+                          &covariance.diagonal());
+  }
+
+  DiagonalMatrixXd covariance;
+};
+
+struct JointDistribution : public DistributionBase<JointDistribution> {
+
+  using Base = DistributionBase<JointDistribution>;
+
+  JointDistribution(){};
+
+  JointDistribution(const Eigen::VectorXd &mean_,
+                    const Eigen::MatrixXd &covariance_)
+      : Base(mean_), covariance(covariance_) {
+    assert(mean_.size() == covariance_.rows());
+  };
+
+  void assert_valid() const {
+    assert(mean.size() == covariance.rows());
+    assert(mean.size() == covariance.cols());
+  }
+
+  double get_diagonal(Eigen::Index i) const {
+    assert(i >= 0 && i < covariance.rows());
+    return covariance.diagonal()[i];
+  }
+
+  bool operator==(const JointDistribution &other) const {
+    return (mean == other.mean && covariance == other.covariance);
+  }
+
+  template <typename SizeType>
+  JointDistribution subset(const std::vector<SizeType> &indices) const {
+    return JointDistribution(albatross::subset(mean, indices),
+                             symmetric_subset(covariance, indices));
+  }
+
+  MarginalDistribution marginal() const {
+    return MarginalDistribution(mean, covariance.diagonal());
+  }
+
+  Eigen::MatrixXd covariance;
+};
+
+template <typename SizeType, typename DistributionType>
+DistributionType subset(const DistributionBase<DistributionType> &dist,
+                        const std::vector<SizeType> &indices) {
+  return dist.derived().subset(indices);
 }
 
-template <typename SizeType, typename CovarianceType>
-void set_subset(const Distribution<CovarianceType> &from,
+template <typename SizeType, typename DistributionType>
+void set_subset(const DistributionBase<DistributionType> &from,
                 const std::vector<SizeType> &indices,
-                Distribution<CovarianceType> *to) {
-  set_subset(from.mean, indices, &to->mean);
-  assert(from.has_covariance() == to->has_covariance());
-  if (from.has_covariance()) {
-    set_subset(from.covariance, indices, &to->covariance);
-  }
+                DistributionBase<DistributionType> *to) {
+  to->derived().set_subset(from, indices);
 }
 
 inline MarginalDistribution
 concatenate_marginals(const MarginalDistribution &x,
                       const MarginalDistribution &y) {
-  Eigen::VectorXd mean(x.mean.size() + y.mean.size());
-  mean.block(0, 0, x.mean.size(), 1) = x.mean;
-  mean.block(x.mean.size(), 0, y.mean.size(), 1) = y.mean;
-
-  if (!x.has_covariance() && !y.has_covariance()) {
-    return MarginalDistribution(mean);
-  } else {
-    Eigen::VectorXd variance(mean.size());
-    variance.fill(NAN);
-    if (x.has_covariance()) {
-      variance.block(0, 0, x.mean.size(), 1) = x.covariance.diagonal();
-    }
-    if (y.has_covariance()) {
-      variance.block(x.mean.size(), 0, y.mean.size(), 1) =
-          y.covariance.diagonal();
-    }
-
-    return MarginalDistribution(mean, variance.asDiagonal());
-  }
+  return MarginalDistribution(
+      concatenate(x.mean, y.mean),
+      concatenate(x.covariance.diagonal(), y.covariance.diagonal()));
 }
 
 inline MarginalDistribution
 concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
-
   if (dists.size() == 0) {
     return MarginalDistribution();
   }
 
-  std::size_t size = 0;
-  bool any_has_covariance = false;
+  Eigen::Index size = 0;
   for (const auto &dist : dists) {
-    size += dist.size();
-    any_has_covariance = any_has_covariance || dist.has_covariance();
+    size += dist.mean.size();
   }
 
-  Eigen::VectorXd mean(static_cast<Eigen::Index>(size));
+  Eigen::VectorXd mean(size);
+  Eigen::VectorXd variance(size);
   Eigen::Index i = 0;
   for (const auto &dist : dists) {
     mean.middleRows(i, dist.mean.size()) = dist.mean;
+    variance.middleRows(i, dist.mean.size()) = dist.covariance.diagonal();
     i += dist.mean.size();
   }
 
-  if (!any_has_covariance) {
-    return MarginalDistribution(mean);
-  } else {
-    Eigen::VectorXd variance(mean.size());
-    variance.fill(NAN);
-    Eigen::Index i = 0;
-    for (const auto &dist : dists) {
-      if (dist.has_covariance()) {
-        variance.block(i, 0, dist.mean.size(), 1) = dist.covariance.diagonal();
-      }
-      i += dist.mean.size();
-    }
-
-    return MarginalDistribution(mean, variance.asDiagonal());
-  }
+  return MarginalDistribution(mean, variance);
 }
 
 } // namespace albatross
