@@ -100,7 +100,7 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
   Eigen::VectorXd explained_variance =
       explained.cwiseProduct(cross_cov).array().colwise().sum();
   Eigen::VectorXd marginal_variance = prior_variance - explained_variance;
-  return MarginalDistribution(pred, marginal_variance.asDiagonal());
+  return MarginalDistribution(pred, marginal_variance);
 }
 
 template <typename CovarianceRepresentation>
@@ -395,8 +395,8 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
     Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
     Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
     const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-    output[group_keys[i]] = MarginalDistribution(
-        yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal());
+    output[group_keys[i]] =
+        MarginalDistribution(yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal());
   }
   return output;
 }

@@ -102,6 +102,24 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     return (mean == other.mean && covariance == other.covariance);
   }
 
+  JointDistribution operator*(const Eigen::MatrixXd &mat) const;
+
+  JointDistribution operator*(const Eigen::VectorXd &mat) const;
+
+  MarginalDistribution operator+(const MarginalDistribution &other) const {
+    return MarginalDistribution(
+        mean + other.mean, covariance.diagonal() + other.covariance.diagonal());
+  }
+
+  MarginalDistribution operator-(const MarginalDistribution &other) const {
+    return MarginalDistribution(
+        mean - other.mean, covariance.diagonal() + other.covariance.diagonal());
+  }
+
+  MarginalDistribution operator*(double scale) const {
+    return MarginalDistribution(scale * mean, scale * scale * covariance);
+  }
+
   template <typename SizeType>
   MarginalDistribution subset(const std::vector<SizeType> &indices) const {
     return MarginalDistribution(
@@ -126,6 +144,13 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
 
   JointDistribution(){};
 
+  JointDistribution(double mean_, double variance_) {
+    mean.resize(1);
+    mean << mean_;
+    covariance.resize(1, 1);
+    covariance << variance_;
+  }
+
   JointDistribution(const Eigen::VectorXd &mean_,
                     const Eigen::MatrixXd &covariance_)
       : Base(mean_), covariance(covariance_) {
@@ -146,6 +171,40 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
     return (mean == other.mean && covariance == other.covariance);
   }
 
+  JointDistribution operator*(const Eigen::MatrixXd &mat) const {
+    return JointDistribution(mat * mean, mat * covariance * mat.transpose());
+  }
+
+  JointDistribution operator*(const Eigen::VectorXd &vector) const {
+    return JointDistribution(vector.dot(mean), vector.dot(covariance * vector));
+  }
+
+  JointDistribution operator*(double scale) const {
+    return JointDistribution(scale * mean, scale * scale * covariance);
+  }
+
+  JointDistribution operator+(const JointDistribution &other) const {
+    return JointDistribution(mean + other.mean, covariance + other.covariance);
+  }
+
+  JointDistribution operator+(const MarginalDistribution &other) const {
+    Eigen::MatrixXd new_covariance = covariance;
+    new_covariance += other.covariance;
+    return JointDistribution(mean + other.mean, new_covariance);
+  }
+
+  JointDistribution operator-(const JointDistribution &other) const {
+    Eigen::MatrixXd new_covariance = covariance;
+    new_covariance += other.covariance;
+    return JointDistribution(mean - other.mean, new_covariance);
+  }
+
+  JointDistribution operator-(const MarginalDistribution &other) const {
+    Eigen::MatrixXd new_covariance = covariance;
+    new_covariance += other.covariance;
+    return JointDistribution(mean - other.mean, new_covariance);
+  }
+
   template <typename SizeType>
   JointDistribution subset(const std::vector<SizeType> &indices) const {
     return JointDistribution(albatross::subset(mean, indices),
@@ -159,16 +218,26 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
   Eigen::MatrixXd covariance;
 };
 
+inline JointDistribution MarginalDistribution::
+operator*(const Eigen::MatrixXd &mat) const {
+  return JointDistribution(mat * mean, mat * covariance * mat.transpose());
+}
+
+inline JointDistribution MarginalDistribution::
+operator*(const Eigen::VectorXd &vector) const {
+  return JointDistribution(vector.dot(mean), vector.dot(covariance * vector));
+}
+
 template <typename SizeType, typename DistributionType>
-DistributionType subset(const DistributionBase<DistributionType> &dist,
-                        const std::vector<SizeType> &indices) {
+inline DistributionType subset(const DistributionBase<DistributionType> &dist,
+                               const std::vector<SizeType> &indices) {
   return dist.derived().subset(indices);
 }
 
 template <typename SizeType, typename DistributionType>
-void set_subset(const DistributionBase<DistributionType> &from,
-                const std::vector<SizeType> &indices,
-                DistributionBase<DistributionType> *to) {
+inline void set_subset(const DistributionBase<DistributionType> &from,
+                       const std::vector<SizeType> &indices,
+                       DistributionBase<DistributionType> *to) {
   to->derived().set_subset(from, indices);
 }
 
