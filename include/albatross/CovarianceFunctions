@@ -26,6 +26,7 @@
 #include <albatross/src/covariance_functions/covariance_function.hpp>
 #include <albatross/src/covariance_functions/call_trace.hpp>
 #include <albatross/src/covariance_functions/measurement.hpp>
+#include <albatross/src/covariance_functions/linear_combination.hpp>
 #include <albatross/src/covariance_functions/distance_metrics.hpp>
 #include <albatross/src/covariance_functions/noise.hpp>
 #include <albatross/src/covariance_functions/polynomials.hpp>
