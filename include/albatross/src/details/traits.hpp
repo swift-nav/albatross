@@ -221,6 +221,13 @@ public:
   static constexpr bool value = decltype(test<F>(0))::value;
 };
 
+template <class F, class ReturnType, class... Args>
+struct is_invocable_with_result {
+  static constexpr bool value = std::is_same<
+      ReturnType,
+      typename detail::invoke_result<void, F, Args...>::type>::value;
+};
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_DETAILS_TRAITS_HPP_ */

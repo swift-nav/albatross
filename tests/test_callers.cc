@@ -89,6 +89,27 @@ TEST(test_callers, test_measurement_caller) {
   expect_all_calls_false<MeasCaller, Measurement, Measurement>();
 }
 
+TEST(test_callers, test_linear_combination_caller) {
+  using Caller = internal::LinearCombinationCaller<
+      internal::SymmetricCaller<internal::DirectCaller>>;
+
+  HasMultiple cov_func;
+
+  LinearCombination<X> two_xs({X(), X()});
+  X x;
+  Y y;
+
+  const auto one_x = Caller::call(cov_func, x, x);
+  const auto two_x = Caller::call(cov_func, x, two_xs);
+  EXPECT_EQ(two_x, 2 * one_x);
+  const auto four_x = Caller::call(cov_func, two_xs, two_xs);
+  EXPECT_EQ(four_x, 4 * one_x);
+
+  const auto one_xy = Caller::call(cov_func, y, x);
+  const auto two_xy = Caller::call(cov_func, y, two_xs);
+  EXPECT_EQ(two_xy, 2 * one_xy);
+}
+
 template <typename T, typename VariantType> struct VariantOrRaw {
 
   template <typename C,

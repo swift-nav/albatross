@@ -96,11 +96,11 @@ TEST(test_concatenate, test_different_types_repeated) {
   EXPECT_EQ(actual, expected);
 }
 
-struct X {
+struct ConcatenateTest {
 
-  X(const int &x_) : x(x_){};
+  ConcatenateTest(const int &x_) : x(x_){};
 
-  bool operator==(const X &other) const { return x == other.x; }
+  bool operator==(const ConcatenateTest &other) const { return x == other.x; }
 
   int x;
 };
@@ -109,8 +109,9 @@ TEST(test_concatenate, test_different_types_twice) {
 
   std::vector<int> first = {1, 2, 3};
   std::vector<double> second = {4., 5., 6.};
-  std::vector<X> third = {X(10), X(11)};
-  std::vector<variant<int, double, X>> expected;
+  std::vector<ConcatenateTest> third = {ConcatenateTest(10),
+                                        ConcatenateTest(11)};
+  std::vector<variant<int, double, ConcatenateTest>> expected;
 
   for (const auto &x : first) {
     expected.push_back(x);
@@ -118,8 +119,8 @@ TEST(test_concatenate, test_different_types_twice) {
   for (const auto &x : second) {
     expected.push_back(x);
   }
-  for (const auto &x : third) {
-    expected.push_back(x);
+  for (const auto &y : third) {
+    expected.push_back(y);
   }
 
   const auto once = concatenate(first, second);

@@ -34,10 +34,17 @@ namespace albatross {
 
 enum InducingFeatureType { ConstantEverywhereType, ConstantPerIntervalType };
 
-struct InducingFeature {
-  InducingFeatureType type;
+struct ConstantEverywhereFeature {};
+
+struct ConstantPerIntervalFeature {
+  ConstantPerIntervalFeature() : location(){};
+  explicit ConstantPerIntervalFeature(const long &location_)
+      : location(location_){};
   long location;
 };
+
+using InducingFeature =
+    variant<ConstantEverywhereFeature, ConstantPerIntervalFeature>;
 
 std::vector<InducingFeature>
 create_inducing_points(const std::vector<double> &features) {
@@ -46,14 +53,12 @@ create_inducing_points(const std::vector<double> &features) {
   double min = *std::min_element(features.begin(), features.end());
   double max = *std::max_element(features.begin(), features.end());
 
-  InducingFeature everywhere = {ConstantEverywhereType, 0};
-  inducing_points.push_back(everywhere);
+  ConstantEverywhereFeature everywhere;
+  inducing_points.emplace_back(everywhere);
 
-  InducingFeature interval_feature = {ConstantPerIntervalType, 0};
   long interval = lround(min);
   while (interval <= lround(max)) {
-    interval_feature.location = interval;
-    inducing_points.push_back(interval_feature);
+    inducing_points.emplace_back(ConstantPerIntervalFeature(interval));
     interval += 1;
   }
 
@@ -75,20 +80,13 @@ public:
    */
   double _call_impl(const double &x, const double &y) const { return variance; }
 
-  double _call_impl(const InducingFeature &x, const double &y) const {
-    if (x.type == ConstantEverywhereType) {
-      return variance;
-    } else {
-      return 0.;
-    }
+  double _call_impl(const ConstantEverywhereFeature &x, const double &y) const {
+    return variance;
   }
 
-  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
-    if (x.type == ConstantEverywhereType && y.type == ConstantEverywhereType) {
-      return variance;
-    } else {
-      return 0.;
-    }
+  double _call_impl(const ConstantEverywhereFeature &x,
+                    const ConstantEverywhereFeature &y) const {
+    return variance;
   }
 };
 
@@ -113,17 +111,18 @@ public:
     }
   }
 
-  double _call_impl(const InducingFeature &x, const double &y) const {
-    if (x.type == ConstantPerIntervalType && x.location == lround(y)) {
+  double _call_impl(const ConstantPerIntervalFeature &x,
+                    const double &y) const {
+    if (x.location == lround(y)) {
       return variance;
     } else {
       return 0.;
     }
   }
 
-  double _call_impl(const InducingFeature &x, const InducingFeature &y) const {
-    if (x.type == ConstantPerIntervalType &&
-        y.type == ConstantPerIntervalType && x.location == y.location) {
+  double _call_impl(const ConstantPerIntervalFeature &x,
+                    const ConstantPerIntervalFeature &y) const {
+    if (x.location == y.location) {
       return variance;
     } else {
       return 0.;
@@ -227,6 +226,8 @@ TEST(test_gp, test_update_model_different_types) {
                                                       inducing_prediction);
   const auto new_fit_model = update(fit_model, inducing_dataset);
 
+  ConstantPerInterval cov;
+
   // Make sure the new fit with constrained inducing points reproduces
   // the prediction of the constraint
   const auto new_pred = new_fit_model.predict(inducing_points).joint();
@@ -253,20 +254,13 @@ TEST(test_gp, test_update_model_different_types) {
 }
 
 TEST(test_gp, test_model_from_different_datasets) {
-  Eigen::Index k = 10;
-  Eigen::VectorXd mean = 3.14159 * Eigen::VectorXd::Ones(k);
-  Eigen::VectorXd variance = 0.1 * Eigen::VectorXd::Ones(k);
-  MarginalDistribution targets(mean, variance.asDiagonal());
-
-  std::vector<double> train_features;
-  for (Eigen::Index i = 0; i < k; ++i) {
-    train_features.push_back(static_cast<double>(i) * 0.3);
-  }
+  const auto unobservable_dataset = test_unobservable_dataset();
 
   const auto model = test_unobservable_model();
 
-  const auto fit_model = model.fit(train_features, targets);
-  const auto inducing_points = create_inducing_points(train_features);
+  const auto fit_model = model.fit(unobservable_dataset);
+  const auto inducing_points =
+      create_inducing_points(unobservable_dataset.features);
   MarginalDistribution inducing_prediction =
       fit_model.predict(inducing_points).marginal();
 
@@ -274,7 +268,7 @@ TEST(test_gp, test_model_from_different_datasets) {
   // constrained to be the same as the previous prediction.
   inducing_prediction.covariance =
       1e-12 * Eigen::VectorXd::Ones(inducing_prediction.size()).asDiagonal();
-  RegressionDataset<double> dataset(train_features, targets);
+  RegressionDataset<double> dataset(unobservable_dataset);
   RegressionDataset<InducingFeature> inducing_dataset(inducing_points,
                                                       inducing_prediction);
   const auto fit_again = model.fit(dataset, inducing_dataset);
@@ -284,8 +278,10 @@ TEST(test_gp, test_model_from_different_datasets) {
   const auto pred = fit_again.predict(inducing_points).joint();
   EXPECT_TRUE(inducing_prediction.mean.isApprox(pred.mean));
 
-  const auto train_pred = fit_model.predict(train_features).joint();
-  const auto train_pred_again = fit_again.predict(train_features).joint();
+  const auto train_pred =
+      fit_model.predict(unobservable_dataset.features).joint();
+  const auto train_pred_again =
+      fit_again.predict(unobservable_dataset.features).joint();
   EXPECT_TRUE(train_pred.mean.isApprox(train_pred_again.mean));
 
   // Now constrain the inducing points to be zero and make sure that
@@ -332,6 +328,78 @@ TEST(test_gp, test_model_from_prediction_low_rank) {
       joint_prediction_from_prediction.mean.isApprox(model_pred.mean, 1e-12));
   EXPECT_TRUE(joint_prediction_from_prediction.covariance.isApprox(
       model_pred.covariance, 1e-8));
+}
+
+TEST(test_gp, test_unobservablemodel_with_sum_constraint) {
+
+  const auto dataset = test_unobservable_dataset();
+  const auto model = test_unobservable_model();
+
+  const auto inducing_points = create_inducing_points(dataset.features);
+
+  std::vector<ConstantPerIntervalFeature> interval_features;
+  for (const auto &f : inducing_points) {
+    if (f.is<ConstantPerIntervalFeature>()) {
+      interval_features.emplace_back(f.get<ConstantPerIntervalFeature>());
+    }
+  }
+
+  LinearCombination<ConstantPerIntervalFeature> sums(interval_features);
+
+  Eigen::VectorXd mean = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd variance = 1e-5 * Eigen::VectorXd::Ones(1);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+  RegressionDataset<LinearCombination<ConstantPerIntervalFeature>> sum_dataset(
+      {sums}, targets);
+
+  const auto both = concatenate_datasets(dataset, sum_dataset);
+
+  const auto fit_model = model.fit(both);
+
+  const auto pred = fit_model.predict(interval_features).joint();
+
+  const auto ones = Eigen::VectorXd::Ones(pred.mean.size());
+  EXPECT_NEAR(ones.dot(pred.mean), 0., 1e-6);
+  EXPECT_NEAR(ones.dot(pred.covariance * ones), 0., 1e-5);
+}
+
+TEST(test_gp, test_unobservablemodel_with_diff_constraint) {
+
+  const auto dataset = test_unobservable_dataset();
+  const auto model = test_unobservable_model();
+
+  const auto inducing_points = create_inducing_points(dataset.features);
+
+  std::vector<ConstantPerIntervalFeature> interval_features;
+  for (const auto &f : inducing_points) {
+    if (f.is<ConstantPerIntervalFeature>()) {
+      interval_features.emplace_back(f.get<ConstantPerIntervalFeature>());
+    }
+  }
+
+  std::vector<ConstantPerIntervalFeature> diff_features = {
+      interval_features[0], interval_features[1]};
+
+  Eigen::Vector2d diff_coefs;
+  diff_coefs << 1, -1;
+
+  LinearCombination<ConstantPerIntervalFeature> difference(diff_features,
+                                                           diff_coefs);
+
+  Eigen::VectorXd mean = Eigen::VectorXd::Zero(1);
+  Eigen::VectorXd variance = 1e-5 * Eigen::VectorXd::Ones(1);
+  MarginalDistribution targets(mean, variance.asDiagonal());
+  RegressionDataset<LinearCombination<ConstantPerIntervalFeature>> diff_dataset(
+      {difference}, targets);
+
+  const auto both = concatenate_datasets(dataset, diff_dataset);
+
+  const auto fit_model = model.fit(both);
+
+  const auto pred = fit_model.predict(diff_features).joint();
+
+  EXPECT_NEAR(diff_coefs.dot(pred.mean), 0., 1e-6);
+  EXPECT_NEAR(diff_coefs.dot(pred.covariance * diff_coefs), 0., 1e-5);
 }
 
 } // namespace albatross
