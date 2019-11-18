@@ -17,6 +17,11 @@ namespace albatross {
 
 template <typename X> struct LinearCombination {
 
+  static_assert(
+      !is_measurement<X>::value,
+      "Putting a Measurement type inside a LinearCombination will lead to "
+      "unexpected behavior due to the ordering of the DefaultCaller");
+
   LinearCombination(){};
 
   LinearCombination(const std::vector<X> &values_)
@@ -359,9 +364,9 @@ template <typename SubCaller> struct VariantForwarder {
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller =
-    internal::VariantForwarder<internal::MeasurementForwarder<
-    internal::LinearCombinationCaller<internal::SymmetricCaller<internal::DirectCaller>>>>;
+using DefaultCaller = internal::VariantForwarder<
+    internal::MeasurementForwarder<internal::LinearCombinationCaller<
+        internal::SymmetricCaller<internal::DirectCaller>>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call

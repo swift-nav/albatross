@@ -62,13 +62,27 @@ template <typename T>
 struct is_vector<std::vector<T>> : public std::true_type {};
 
 /*
+ * is_templated_type
+ */
+template <template <typename...> class Wrapper, typename T>
+struct is_templated_type : public std::false_type {};
+
+template <template <typename...> class Wrapper, typename... Ts>
+struct is_templated_type<Wrapper, Wrapper<Ts...>> : public std::true_type {};
+
+/*
  * is_variant
  */
 
-template <typename T> struct is_variant : public std::false_type {};
+template <typename T>
+struct is_variant : public is_templated_type<variant, T> {};
 
-template <typename... Ts>
-struct is_variant<variant<Ts...>> : public std::true_type {};
+/*
+ * is_measurement
+ */
+
+template <typename T>
+struct is_measurement : public is_templated_type<Measurement, T> {};
 
 /*
  * is_in_variant
