@@ -359,9 +359,9 @@ template <typename SubCaller> struct VariantForwarder {
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller = internal::LinearCombinationCaller<
+using DefaultCaller =
     internal::VariantForwarder<internal::MeasurementForwarder<
-        internal::SymmetricCaller<internal::DirectCaller>>>>;
+    internal::LinearCombinationCaller<internal::SymmetricCaller<internal::DirectCaller>>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call
