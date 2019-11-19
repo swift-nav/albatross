@@ -64,9 +64,7 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
 
     train_features = features;
     Eigen::MatrixXd cov(train_cov);
-    if (targets.has_covariance()) {
-      cov += targets.covariance;
-    }
+    cov += targets.covariance;
     assert(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
     // Precompute the information vector
@@ -102,7 +100,7 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
   Eigen::VectorXd explained_variance =
       explained.cwiseProduct(cross_cov).array().colwise().sum();
   Eigen::VectorXd marginal_variance = prior_variance - explained_variance;
-  return MarginalDistribution(pred, marginal_variance.asDiagonal());
+  return MarginalDistribution(pred, marginal_variance);
 }
 
 template <typename CovarianceRepresentation>
@@ -397,8 +395,8 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
     Eigen::VectorXd yi = subset(dataset.targets.mean, indices[i]);
     Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
     const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-    output[group_keys[i]] = MarginalDistribution(
-        yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal().asDiagonal());
+    output[group_keys[i]] =
+        MarginalDistribution(yi - A_ldlt.solve(vi), A_ldlt.inverse_diagonal());
   }
   return output;
 }
@@ -486,9 +484,7 @@ auto update(
   auto pred = fit_model.predict(dataset.features).joint();
 
   Eigen::VectorXd delta = dataset.targets.mean - pred.mean;
-  if (dataset.targets.has_covariance()) {
-    pred.covariance += dataset.targets.covariance;
-  }
+  pred.covariance += dataset.targets.covariance;
   const auto S_ldlt = pred.covariance.ldlt();
 
   const auto model = fit_model.get_model();

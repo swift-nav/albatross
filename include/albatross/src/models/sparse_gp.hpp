@@ -211,10 +211,8 @@ public:
       auto subset_features =
           subset(out_of_order_measurement_features, pair.second);
       K_ff.blocks.emplace_back(this->covariance_function_(subset_features));
-      if (out_of_order_targets.has_covariance()) {
-        K_ff.blocks.back().diagonal() +=
-            subset(out_of_order_targets.covariance.diagonal(), pair.second);
-      }
+      K_ff.blocks.back().diagonal() +=
+          subset(out_of_order_targets.covariance.diagonal(), pair.second);
     }
 
     const auto features =

@@ -75,11 +75,11 @@ using ParameterStore = std::map<ParameterKey, Parameter>;
 /*
  * Distributions
  */
-template <typename CovarianceType> struct Distribution;
+template <typename Derived> struct DistributionBase;
 
-using JointDistribution = Distribution<Eigen::MatrixXd>;
 using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
-using MarginalDistribution = Distribution<DiagonalMatrixXd>;
+struct JointDistribution;
+struct MarginalDistribution;
 
 /*
  * Models

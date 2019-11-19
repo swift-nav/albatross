@@ -23,6 +23,20 @@ template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
   bool operator==(const Fit &other) const { return (coefs == other.coefs); }
 };
 
+inline bool all_same_value(const Eigen::VectorXd &x) {
+  if (x.size() == 0) {
+    return true;
+  } else {
+    const double first = x[0];
+    for (Eigen::Index i = 0; i < x.size(); ++i) {
+      if (x[i] != first) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
 /*
  * This model supports a family of models which consist of
  * first creating a design matrix, A, then solving least squares.  Ie,
@@ -41,7 +55,7 @@ public:
                     const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
-    assert(!targets.has_covariance());
+    assert(all_same_value(targets.covariance.diagonal()));
     // Build the design matrix
     int m = static_cast<int>(features.size());
     int n = static_cast<int>(features[0].size());

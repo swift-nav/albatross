@@ -77,11 +77,11 @@ concatenate_mean_predictions(const GroupIndexer<GroupKey> &indexer,
   return pred;
 }
 
-template <typename CovarianceType, typename GroupKey,
+template <typename DistributionType, typename GroupKey,
           template <typename...> class PredictionContainer>
 inline MarginalDistribution concatenate_marginal_predictions(
     const GroupIndexer<GroupKey> &indexer,
-    const PredictionContainer<GroupKey, Distribution<CovarianceType>> &preds) {
+    const PredictionContainer<GroupKey, DistributionType> &preds) {
   assert(indexer.size() == preds.size());
 
   Eigen::Index n =
@@ -119,11 +119,12 @@ Eigen::VectorXd cross_validated_scores(
   return combine(folds.apply(score_one_group));
 }
 
-template <typename FeatureType, typename CovarianceType, typename GroupKey>
-static inline Eigen::VectorXd cross_validated_scores(
-    const PredictionMetric<Eigen::VectorXd> &metric,
-    const RegressionFolds<GroupKey, FeatureType> &folds,
-    const Grouped<GroupKey, Distribution<CovarianceType>> &predictions) {
+template <typename FeatureType, typename DistributionType, typename GroupKey,
+          std::enable_if_t<is_distribution<DistributionType>::value, int> = 0>
+static inline Eigen::VectorXd
+cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
+                       const RegressionFolds<GroupKey, FeatureType> &folds,
+                       const Grouped<GroupKey, DistributionType> &predictions) {
 
   const auto get_mean = [](const auto &pred) { return pred.mean; };
 

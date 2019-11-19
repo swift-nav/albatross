@@ -93,12 +93,7 @@ public:
             const std::vector<FeatureType> &features) const {
     const auto joint_pred =
         model.predict_(features, fit, PredictTypeIdentity<JointDistribution>());
-    if (joint_pred.has_covariance()) {
-      Eigen::VectorXd diag = joint_pred.covariance.diagonal();
-      return MarginalDistribution(joint_pred.mean, diag.asDiagonal());
-    } else {
-      return MarginalDistribution(joint_pred.mean);
-    }
+    return joint_pred.marginal();
   }
 };
 

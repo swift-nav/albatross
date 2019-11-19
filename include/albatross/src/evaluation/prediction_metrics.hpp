@@ -99,9 +99,7 @@ negative_log_likelihood(const JointDistribution &prediction,
                         const MarginalDistribution &truth) {
   const Eigen::VectorXd mean = prediction.mean - truth.mean;
   Eigen::MatrixXd covariance(prediction.covariance);
-  if (truth.has_covariance()) {
-    covariance += truth.covariance;
-  }
+  covariance += truth.covariance;
   return albatross::negative_log_likelihood(mean, covariance);
 }
 
@@ -110,9 +108,7 @@ negative_log_likelihood(const MarginalDistribution &prediction,
                         const MarginalDistribution &truth) {
   const Eigen::VectorXd mean = prediction.mean - truth.mean;
   Eigen::VectorXd variance(prediction.covariance.diagonal());
-  if (truth.has_covariance()) {
-    variance += truth.covariance.diagonal();
-  }
+  variance += truth.covariance.diagonal();
   return albatross::negative_log_likelihood(mean, variance.asDiagonal());
 }
 
@@ -125,9 +121,7 @@ struct NegativeLogLikelihood : public PredictionMetric<PredictType> {
 inline double chi_squared_cdf(const JointDistribution &prediction,
                               const MarginalDistribution &truth) {
   Eigen::MatrixXd covariance(prediction.covariance);
-  if (truth.has_covariance()) {
-    covariance += truth.covariance;
-  }
+  covariance += truth.covariance;
   return chi_squared_cdf(prediction.mean - truth.mean, covariance);
 }
 

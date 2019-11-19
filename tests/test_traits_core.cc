@@ -236,7 +236,8 @@ public:
   _predict_impl(const std::vector<X> &, const Fit<HasJointPredictImpl> &,
                 PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
-    return JointDistribution(mean);
+    const auto cov = Eigen::MatrixXd::Zero(0, 0);
+    return JointDistribution(mean, cov);
   }
 };
 
@@ -259,7 +260,8 @@ public:
   _predict_impl(const std::vector<X> &, const Fit<HasAllPredictImpls> &,
                 PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
-    return JointDistribution(mean);
+    const auto cov = Eigen::MatrixXd::Zero(0, 0);
+    return JointDistribution(mean, cov);
   }
 };
 

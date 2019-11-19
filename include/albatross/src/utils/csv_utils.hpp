@@ -145,7 +145,7 @@ to_map(const FeatureType &feature, double target, double target_variance,
 template <typename FeatureType, typename DistributionType>
 inline std::map<std::string, std::string>
 to_map(const RegressionDataset<FeatureType> &dataset,
-       const Distribution<DistributionType> &predictions, std::size_t i) {
+       const DistributionBase<DistributionType> &predictions, std::size_t i) {
   assert(dataset.targets.size() == predictions.size());
   assert(i < dataset.features.size() && i >= 0);
   const auto ei = static_cast<Eigen::Index>(i);
@@ -172,10 +172,10 @@ inline void replace_last_character_with_newline(std::ostream &stream) {
   stream << std::endl;
 }
 
-template <typename FeatureType, typename CovarianceType>
+template <typename FeatureType, typename DistributionType>
 inline std::vector<std::string>
 get_column_names(const RegressionDataset<FeatureType> &dataset,
-                 const Distribution<CovarianceType> &predictions) {
+                 const DistributionBase<DistributionType> &predictions) {
   const auto first_row = to_map(dataset, predictions, 0);
   return map_keys(first_row);
 }
@@ -200,10 +200,10 @@ inline void write_header(std::ostream &stream,
   replace_last_character_with_newline(stream);
 }
 
-template <typename FeatureType, typename CovarianceType>
+template <typename FeatureType, typename DistributionType>
 inline void write_to_csv(std::ostream &stream,
                          const RegressionDataset<FeatureType> &dataset,
-                         const Distribution<CovarianceType> &predictions,
+                         const DistributionBase<DistributionType> &predictions,
                          const std::vector<std::string> &columns) {
 
   for (std::size_t i = 0; i < dataset.features.size(); i++) {
@@ -215,7 +215,7 @@ inline void write_to_csv(std::ostream &stream,
 template <typename FeatureType, typename CovarianceType>
 inline void write_to_csv(std::ostream &stream,
                          const RegressionDataset<FeatureType> &dataset,
-                         const Distribution<CovarianceType> &predictions,
+                         const DistributionBase<CovarianceType> &predictions,
                          bool include_header = true) {
   const auto columns = get_column_names(dataset, predictions);
   if (include_header) {
@@ -236,11 +236,12 @@ inline void write_to_csv(std::ostream &stream,
   write_to_csv(stream, dataset, zero_predictions, include_header);
 }
 
-template <typename FeatureType, typename CovarianceType>
+template <typename FeatureType, typename DistributionType,
+          std::enable_if_t<is_distribution<DistributionType>::value, int> = 0>
 inline void
 write_to_csv(std::ostream &stream,
              const std::vector<RegressionDataset<FeatureType>> &datasets,
-             const std::vector<Distribution<CovarianceType>> &predictions) {
+             const std::vector<DistributionType> &predictions) {
   const auto columns = get_column_names(datasets[0], predictions[0]);
   write_header(stream, columns);
   assert(datasets.size() == predictions.size());

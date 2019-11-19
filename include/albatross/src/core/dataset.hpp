@@ -56,6 +56,12 @@ template <typename FeatureType> struct RegressionDataset {
   group_by(GrouperFunc grouper) const;
 };
 
+template <typename FeatureType>
+inline auto create_dataset(const std::vector<FeatureType> &features,
+                           const MarginalDistribution &targets) {
+  return RegressionDataset<FeatureType>(features, targets);
+}
+
 /*
  * Convenience method which subsets the features and targets of a dataset.
  */

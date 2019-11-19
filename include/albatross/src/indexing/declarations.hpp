@@ -36,6 +36,12 @@ template <typename SizeType>
 Eigen::MatrixXd subset_cols(const Eigen::MatrixXd &v,
                             const std::vector<SizeType> &col_indices);
 
+template <typename SizeType>
+void set_subset(const Eigen::VectorXd &from,
+                const std::vector<SizeType> &indices, Eigen::VectorXd *to);
+
+Eigen::VectorXd concatenate(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
+
 } // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_DECLARATIONS_HPP_ */

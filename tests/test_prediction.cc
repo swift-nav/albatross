@@ -87,9 +87,10 @@ public:
   JointDistribution
   _predict_impl(const std::vector<X> &features, const Fit<JointOnlyModel> &,
                 PredictTypeIdentity<JointDistribution>) const {
-    auto mean =
-        Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
-    return JointDistribution(mean);
+    const Eigen::Index n = static_cast<Eigen::Index>(features.size());
+    const auto mean = Eigen::VectorXd::Zero(n);
+    const auto covariance = Eigen::MatrixXd::Zero(n, n);
+    return JointDistribution(mean, covariance);
   }
 };
 
