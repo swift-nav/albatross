@@ -92,6 +92,8 @@ struct NullLeastSquaresImpl {};
 
 template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
 
+template <typename FeatureType> struct LinearCombination;
+
 /*
  * Cross Validation
  */

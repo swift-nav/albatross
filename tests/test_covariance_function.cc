@@ -169,4 +169,51 @@ TEST(test_covariance_function, test_variant_recurssion_bug) {
   EXPECT_EQ(cov(y, vy), cov(y, y));
 }
 
+TEST(test_covariance_function, test_caller_ordering) {
+  using ComplicatedFeature =
+      variant<X, Y, Measurement<Y>, Measurement<LinearCombination<Y>>>;
+
+  const HasMultiple cov;
+
+  const ComplicatedFeature x = X();
+
+  const Y y;
+  const Measurement<Y> meas_y = as_measurement(y);
+  const std::vector<Y> two_ys = {Y(), Y()};
+  const LinearCombination<Y> sum_of_two_ys(two_ys);
+  const ComplicatedFeature meas_lin_combination_y =
+      as_measurement(sum_of_two_ys);
+
+  const double x_y = cov(x, y);
+  const double x_sum_of_two_ys = 2 * cov(x, y);
+
+  EXPECT_EQ(cov(x, meas_y), x_y);
+  EXPECT_EQ(cov(x, sum_of_two_ys), x_sum_of_two_ys);
+}
+
+TEST(test_covariance_function, test_linear_combinations) {
+  HasMultiple cov_func;
+  X x;
+  Y y;
+
+  const auto one_x = cov_func(x, x);
+  const auto one_xy = cov_func(y, x);
+
+  const auto sum_x = sum(x, x);
+  EXPECT_EQ(cov_func(sum_x, x), 2. * one_x);
+  EXPECT_EQ(cov_func(x, sum_x), 2. * one_x);
+  EXPECT_EQ(cov_func(sum_x, sum_x), 4. * one_x);
+  const auto sum_xy = sum(x, y);
+  EXPECT_EQ(cov_func(x, sum_xy), one_x + one_xy);
+
+  const auto diff_y = difference(y, y);
+  EXPECT_EQ(cov_func(diff_y, diff_y), 0.);
+  const auto diff_xy = difference(x, y);
+  EXPECT_EQ(cov_func(x, diff_xy), one_x - one_xy);
+
+  std::vector<X> xs = {X(), X()};
+  const auto mean_x = mean(xs);
+  EXPECT_EQ(cov_func(mean_x, mean_x), 0.25 * cov_func(sum_x, sum_x));
+}
+
 } // namespace albatross

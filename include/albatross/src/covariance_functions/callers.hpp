@@ -15,23 +15,6 @@
 
 namespace albatross {
 
-template <typename X> struct LinearCombination {
-
-  LinearCombination(){};
-
-  LinearCombination(const std::vector<X> &values_)
-      : values(values_), coefficients(Eigen::VectorXd::Ones(values_.size())){};
-
-  LinearCombination(const std::vector<X> &values_,
-                    const Eigen::VectorXd &coefficients_)
-      : values(values_), coefficients(coefficients_) {
-    assert(values_.size() == static_cast<std::size_t>(coefficients_.size()));
-  };
-
-  std::vector<X> values;
-  Eigen::VectorXd coefficients;
-};
-
 /*
  * Implementing a CovarianceFunction requires defining a method with
  * signature:
@@ -359,9 +342,9 @@ template <typename SubCaller> struct VariantForwarder {
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller = internal::LinearCombinationCaller<
-    internal::VariantForwarder<internal::MeasurementForwarder<
-        internal::SymmetricCaller<internal::DirectCaller>>>>;
+using DefaultCaller = internal::VariantForwarder<internal::MeasurementForwarder<
+    internal::LinearCombinationCaller<internal::VariantForwarder<
+        internal::SymmetricCaller<internal::DirectCaller>>>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call

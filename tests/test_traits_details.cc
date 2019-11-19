@@ -35,6 +35,7 @@ TEST(test_traits_core, test_variant_size) {
 TEST(test_traits_core, test_is_variant) {
   EXPECT_TRUE(is_variant<variant<int>>::value);
   EXPECT_TRUE(bool(is_variant<variant<int, double>>::value));
+  EXPECT_FALSE(bool(is_variant<Measurement<int>>::value));
   EXPECT_FALSE(is_variant<int>::value);
   EXPECT_FALSE(is_variant<double>::value);
 }
@@ -136,6 +137,15 @@ TEST(test_traits_core, test_is_sub_variant) {
   EXPECT_FALSE(bool(is_sub_variant<variant<Y, X>, variant<Y, Z>>::value));
   EXPECT_FALSE(bool(is_sub_variant<variant<X, Y>, variant<Y, Z>>::value));
   EXPECT_FALSE(bool(is_sub_variant<variant<X>, variant<Y, Z>>::value));
+}
+
+TEST(test_traits_core, test_is_measurement) {
+  EXPECT_TRUE(is_measurement<Measurement<int>>::value);
+  EXPECT_TRUE(bool(is_measurement<Measurement<double>>::value));
+  EXPECT_TRUE(bool(is_measurement<Measurement<variant<int, double>>>::value));
+  EXPECT_FALSE(is_measurement<int>::value);
+  EXPECT_FALSE(is_measurement<double>::value);
+  EXPECT_FALSE(is_measurement<variant<double>>::value);
 }
 
 class Complete {};

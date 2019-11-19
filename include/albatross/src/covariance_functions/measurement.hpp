@@ -17,6 +17,11 @@ namespace albatross {
 
 template <typename X> struct Measurement {
 
+  static_assert(!is_variant<X>::value,
+                "Wrapping a variant in the measurement tag can lead to "
+                "unexpected behavior.  It's preferable to convert to a variant "
+                "of measurements, see as_measurement()");
+
   Measurement() : value(){};
 
   Measurement(const X &x) { value = x; }
