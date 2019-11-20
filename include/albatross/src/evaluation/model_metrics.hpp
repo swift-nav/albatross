@@ -16,6 +16,17 @@
 namespace albatross {
 
 template <typename MetricType> class ModelMetric {
+
+private:
+  // Declaring these private makes it impossible to accidentally do things like:
+  //     class A : public ModelMetric<B> {}
+  // or
+  //     using A = ModelMetric<B>;
+  //
+  // which if unchecked can lead to some very strange behavior.
+  ModelMetric(){};
+  friend MetricType;
+
 public:
   template <typename FeatureType, typename ModelType,
             typename std::enable_if<
