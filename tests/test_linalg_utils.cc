@@ -14,6 +14,9 @@
 #include <albatross/utils/LinalgUtils>
 #include <gtest/gtest.h>
 
+#include <albatross/Indexing>
+#include <albatross/src/utils/random_utils.hpp>
+
 namespace albatross {
 
 TEST(test_linalg_utils, test_print_eigen_values) {
@@ -35,6 +38,29 @@ TEST(test_linalg_utils, test_print_eigen_values) {
   print_large_eigen_directions(random, features, k - 4,
                                details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
                                &oss);
+}
+
+TEST(test_linalg_utils, test_lyapunov_solver) {
+
+  std::default_random_engine gen(2012);
+
+  Eigen::Index k = 10;
+  Eigen::MatrixXd C(k, k);
+  gaussian_fill(C, gen);
+  C = C.colPivHouseholderQr().matrixQ();
+  C.array() *= 0.1;
+
+  const auto X = random_covariance_matrix(k, gen);
+
+  const auto Q = X - C * X * C.transpose();
+
+  const auto actual = lyapunov_solve(C, Q);
+
+  std::cout << actual << std::endl;
+  std::cout << "=============" << std::endl;
+  std::cout << Q << std::endl;
+  std::cout << "=============" << std::endl;
+  std::cout << (actual - Q).norm() << std::endl;
 }
 
 } // namespace albatross

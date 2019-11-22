@@ -12,7 +12,6 @@
 #include <gtest/gtest.h>
 
 #include <albatross/Evaluation>
-#include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/utils/random_utils.hpp>
 
 namespace albatross {

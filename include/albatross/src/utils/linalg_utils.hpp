@@ -88,6 +88,19 @@ inline void print_large_eigen_directions(
                                    print_if_above, stream);
 }
 
+inline Eigen::MatrixXd lyapunov_solve(const Eigen::MatrixXd &C,
+                                      const Eigen::MatrixXd &Q) {
+  Eigen::MatrixXd solution = Q;
+  Eigen::MatrixXd accumulator = Q;
+
+  for (std::size_t i = 0; i < 50000; ++i) {
+    accumulator = C * accumulator * C.transpose();
+    //    std::cout << i << "  " << accumulator.norm() << std::endl;
+    solution += accumulator;
+  }
+  return solution;
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_UTILS_LINALG_UTILS_HPP_ */

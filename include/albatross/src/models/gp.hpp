@@ -508,6 +508,65 @@ auto update(
       model, NewFitType(new_features, new_covariance, new_information));
 }
 
+Eigen::MatrixXd lyapunov_solve(const Eigen::MatrixXd &C,
+                               const Eigen::MatrixXd &Q);
+
+JointDistribution merge(const Eigen::VectorXd &m_a, const Eigen::MatrixXd &E_a,
+                        const Eigen::VectorXd &m_b, const Eigen::MatrixXd &E_b,
+                        const Eigen::MatrixXd &S_zz) {
+  const auto S_zz_ldlt = S_zz.ldlt();
+
+  Eigen::MatrixXd S_zz_i_E_b = S_zz_ldlt.solve(E_b);
+  Eigen::MatrixXd S_zz_i_E_a = S_zz_ldlt.solve(E_a);
+
+  const Eigen::MatrixXd C_1 = (S_zz_i_E_b * S_zz_i_E_a).transpose();
+  const Eigen::MatrixXd Q_1 = E_a + C_1 * E_a;
+  const Eigen::MatrixXd T_1 = lyapunov_solve(C_1, Q_1);
+
+  const Eigen::MatrixXd lhs = C_1 * T_1 * C_1.transpose() - T_1;
+  std::cout << "LHS + Q_1" << std::endl;
+  std::cout << lhs + Q_1 << std::endl;
+
+  const Eigen::MatrixXd C_3 = (S_zz_i_E_a * S_zz_i_E_b).transpose();
+  const Eigen::MatrixXd Q_3 = E_b + C_3 * E_b;
+  const Eigen::MatrixXd T_3 = lyapunov_solve(C_3, Q_3);
+
+  const Eigen::MatrixXd T_2 = E_a * S_zz_ldlt.solve(T_3);
+  const Eigen::MatrixXd T_4 = E_b * S_zz_ldlt.solve(T_1);
+  const Eigen::MatrixXd E_ab = T_1 - T_2 + T_3 - T_4;
+
+  const Eigen::VectorXd p_a = S_zz_ldlt.solve(m_a);
+  const Eigen::VectorXd p_b = S_zz_ldlt.solve(m_b);
+  const Eigen::VectorXd p_ba = T_3 * p_a;
+  const Eigen::VectorXd p_ab = T_1 * p_b;
+
+  Eigen::MatrixXd S_zz_i_p_ba = S_zz_ldlt.solve(p_ba);
+  Eigen::MatrixXd S_zz_i_p_ab = S_zz_ldlt.solve(p_ab);
+  Eigen::VectorXd m_ab =
+      m_a + m_b + E_a * S_zz_i_p_ba - p_ab + E_b * S_zz_i_p_ab - p_ba;
+
+  return JointDistribution(m_ab, S_zz - E_ab);
+}
+
+template <typename ModelType, typename SolverA, typename SolverB,
+          typename FeatureType>
+JointDistribution merge(
+    const FitModel<ModelType, Fit<GPFit<SolverA, FeatureType>>> &fit_model_a,
+    const FitModel<ModelType, Fit<GPFit<SolverB, FeatureType>>> &fit_model_b) {
+
+  const auto features_z = fit_model_b.get_fit().train_features;
+  const auto S_zz = fit_model_a.get_model().get_covariance()(features_z);
+  const auto z_a = fit_model_a.predict(features_z).joint();
+  const auto z_b = fit_model_b.predict(features_z).joint();
+
+  const Eigen::MatrixXd E_a = S_zz - z_a.covariance;
+  const Eigen::MatrixXd E_b = S_zz - z_b.covariance;
+  const Eigen::VectorXd m_a = z_a.mean;
+  const Eigen::VectorXd m_b = z_b.mean;
+
+  return merge(m_a, E_a, m_b, E_b, S_zz);
+}
+
 } // namespace albatross
 
 #endif

@@ -14,6 +14,8 @@
 
 #include "test_utils.h"
 
+#include <albatross/src/utils/random_utils.hpp>
+
 namespace albatross {
 
 /*
@@ -70,7 +72,7 @@ public:
   ConstantEverywhere(){};
   ~ConstantEverywhere(){};
 
-  double variance = 10.;
+  double variance = 0.1;
 
   /*
    * This will create a covariance matrix that looks like,
@@ -167,6 +169,127 @@ TEST(test_gp, test_update_model_trait) {
                          variant<double, int>>>>;
 
   EXPECT_TRUE(bool(std::is_same<UpdatedFitType, ExpectedType>::value));
+}
+
+TEST(test_gp, test_conditionally_independent_update) {
+
+  Eigen::VectorXd m_a(5);
+  m_a << -0.23815646, 0.77162991, 0.63831216, -0.49488014, -0.08042518;
+
+  Eigen::MatrixXd E_a(5, 5);
+  E_a.row(0) << 0.09412242, -0.05731543, -0.06418745, 0.06777603, 0.01962483;
+  E_a.row(1) << -0.05731543, 0.68019083, 0.1327259, -0.1612869, -0.26964463;
+  E_a.row(2) << -0.06418745, 0.1327259, 0.44875809, -0.27393564, 0.17234932;
+  E_a.row(3) << 0.06777603, -0.1612869, -0.27393564, 0.18412076, -0.05782831;
+  E_a.row(4) << 0.01962483, -0.26964463, 0.17234932, -0.05782831, 0.23420138;
+
+  Eigen::VectorXd m_b(5);
+  m_b << 0.88905815, 0.4911579, 0.3107074, -0.52662019, -0.02583927;
+
+  Eigen::MatrixXd E_b(5, 5);
+  E_b.row(0) << 0.26633483, 0.09568965, -0.16568656, 0.00831657, -0.12015643;
+  E_b.row(1) << 0.09568965, 0.11533427, 0.01014716, -0.06732859, -0.06957063;
+  E_b.row(2) << -0.16568656, 0.01014716, 0.51135832, -0.26282571, 0.26183115;
+  E_b.row(3) << 0.00831657, -0.06732859, -0.26282571, 0.17290452, -0.09956082;
+  E_b.row(4) << -0.12015643, -0.06957063, 0.26183115, -0.09956082, 0.18919072;
+
+  Eigen::MatrixXd S_zz(5, 5);
+  S_zz.row(0) << 0.50038084, -0.0027054, -0.21695976, 0.19367812, -0.01512259;
+  S_zz.row(1) << -0.0027054, 0.91975717, 0.07426668, -0.01012945, -0.30699883;
+  S_zz.row(2) << -0.21695976, 0.07426668, 0.6843842, -0.33736966, 0.25493624;
+  S_zz.row(3) << 0.19367812, -0.01012945, -0.33736966, 0.59627826, 0.06192099;
+  S_zz.row(4) << -0.01512259, -0.30699883, 0.25493624, 0.06192099, 0.45977261;
+
+  const auto actual = merge(m_a, E_a, m_b, E_b, S_zz);
+
+  Eigen::VectorXd expected_mean(5);
+  expected_mean << 0.66554097, 0.80310721, 0.34832714, -0.70518971, -0.23896764;
+  EXPECT_LE((actual.mean - expected_mean).norm(), 1e-5);
+
+  Eigen::MatrixXd expected_cov(5, 5);
+  expected_cov.row(0) << 0.18476623, 0.02672488, -0.03349548, 0.14801588,
+      0.04311095;
+  expected_cov.row(1) << 0.02672465, 0.22749397, -0.02329003, 0.14191864,
+      -0.0107679;
+  expected_cov.row(2) << -0.03349546, -0.02329307, 0.11873036, -0.03912292,
+      0.00496675;
+  expected_cov.row(3) << 0.14801585, 0.14192053, -0.03912261, 0.38109587,
+      0.12980902;
+  expected_cov.row(4) << 0.04311105, -0.01076949, 0.00496555, 0.1298096,
+      0.16257862;
+
+  EXPECT_LE((actual.covariance - expected_cov).norm(), 1e-3);
+}
+
+TEST(test_gp, test_conditionally_independent_update_gp) {
+
+  const auto inducing_points =
+      create_inducing_points(test_unobservable_dataset().features);
+
+  ConstantEverywhere constant;
+  ConstantPerInterval per_interval;
+  IndependentNoise<double> meas_noise;
+
+  const auto cov = constant + per_interval + meas_noise;
+
+  // First we fit a model directly to the training data and use
+  // that to get a prediction of the inducing points.
+  auto model = gp_from_covariance(cov, "unobservable");
+
+  const Eigen::MatrixXd inducing_prior = cov(inducing_points);
+
+  std::default_random_engine gen(2012);
+  const Eigen::VectorXd truth = random_multivariate_normal(inducing_prior, gen);
+
+  auto random_dataset = [&]() {
+    std::vector<double> random_features(50);
+    for (auto &d : random_features) {
+      d = std::uniform_real_distribution<double>(-1., 4.)(gen);
+    }
+
+    const Eigen::MatrixXd cross = cov(random_features, inducing_points);
+    const Eigen::MatrixXd prior = cov(random_features);
+
+    const Eigen::VectorXd posterior_mean =
+        cross * inducing_prior.ldlt().solve(truth);
+    const Eigen::MatrixXd posterior_cov =
+        prior - cross * inducing_prior.ldlt().solve(cross.transpose());
+
+    const auto noise_sample = random_multivariate_normal(posterior_cov, gen);
+    const MarginalDistribution random_targets(posterior_mean + noise_sample);
+
+    return RegressionDataset<double>(random_features, random_targets);
+  };
+
+  const auto dataset_a = random_dataset();
+  const auto dataset_b = random_dataset();
+  const auto dataset_ab = concatenate_datasets(dataset_a, dataset_b);
+
+  const auto fit_model_a = model.fit(dataset_a);
+  const auto fit_model_b = model.fit(dataset_b);
+  const auto fit_model_ab = model.fit(dataset_ab);
+
+  const auto inducing_pred_a = fit_model_a.predict(inducing_points).joint();
+  const auto inducing_pred_b = fit_model_b.predict(inducing_points).joint();
+  const auto inducing_pred_ab = fit_model_ab.predict(inducing_points).joint();
+
+  std::cout << "=====a      " << inducing_pred_a.mean.transpose() << std::endl;
+  std::cout << inducing_pred_a.covariance << std::endl;
+  std::cout << "=====b      " << inducing_pred_b.mean.transpose() << std::endl;
+  std::cout << inducing_pred_b.covariance << std::endl;
+  std::cout << "=====ab     " << inducing_pred_ab.mean.transpose() << std::endl;
+  std::cout << inducing_pred_ab.covariance << std::endl;
+
+  const auto fit_ssr_a =
+      model.fit_from_prediction(inducing_points, inducing_pred_a);
+  const auto fit_ssr_b =
+      model.fit_from_prediction(inducing_points, inducing_pred_b);
+
+  const auto merged = merge(fit_ssr_a, fit_ssr_b);
+
+  std::cout << "=====merged " << merged.mean.transpose() << std::endl;
+  std::cout << merged.covariance << std::endl;
+  std::cout << "=====true   " << truth.transpose() << std::endl;
 }
 
 TEST(test_gp, test_update_model_same_types) {
