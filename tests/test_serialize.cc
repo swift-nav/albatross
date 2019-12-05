@@ -18,6 +18,7 @@
 #include <albatross/serialize/GP>
 #include <albatross/serialize/LeastSquares>
 #include <albatross/serialize/Ransac>
+#include <albatross/utils/RandomUtils>
 
 #include <gtest/gtest.h>
 
@@ -258,7 +259,8 @@ struct BlockSymmetricMatrix
 
   RepresentationType create() const override {
 
-    const auto X = random_covariance_matrix(5);
+    std::default_random_engine gen(2012);
+    const auto X = random_covariance_matrix(5, gen);
 
     const Eigen::MatrixXd A = X.topLeftCorner(3, 3);
     const Eigen::MatrixXd B = X.topRightCorner(3, 2);

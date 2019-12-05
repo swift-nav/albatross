@@ -142,31 +142,6 @@ inline auto truncated_psd_solve(
   return output;
 }
 
-template <typename _Scalar, int _Rows, int _Cols,
-          typename RandomNumberGenerator>
-void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix, double mean,
-                   double sd, RandomNumberGenerator &rng) {
-  std::normal_distribution<_Scalar> dist(mean, sd);
-  for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
-    for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
-      matrix(i, j) = dist(rng);
-    }
-  }
-}
-
-template <typename _Scalar, int _Rows, int _Cols>
-void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix) {
-  std::default_random_engine rng;
-  gaussian_fill(matrix, 0., 1., rng);
-}
-
-template <typename _Scalar, int _Rows, int _Cols,
-          typename RandomNumberGenerator>
-void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix,
-                   RandomNumberGenerator &rng) {
-  gaussian_fill(matrix, 0., 1., rng);
-}
-
 } // namespace albatross
 
 #endif

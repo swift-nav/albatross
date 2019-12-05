@@ -15,6 +15,7 @@
 #include <Eigen/Cholesky>
 
 #include <albatross/GP>
+#include <albatross/utils/RandomUtils>
 
 #include "test_utils.h"
 
@@ -115,7 +116,8 @@ TEST(test_block_utils, test_matrix_l) {
 
 TEST(test_block_utils, test_block_symmetric) {
 
-  const auto X = random_covariance_matrix(5);
+  std::default_random_engine gen(2012);
+  const auto X = random_covariance_matrix(5, gen);
 
   const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(X.cols(), 3);
   const Eigen::MatrixXd expected = X.ldlt().solve(rhs);

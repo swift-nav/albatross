@@ -68,6 +68,85 @@ random_without_replacement(const std::vector<X> &xs, std::size_t n,
   return random_sample;
 }
 
+template <typename _Scalar, int _Rows, int _Cols, typename DistributionType,
+          typename RandomNumberGenerator>
+void random_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix,
+                 DistributionType &dist, RandomNumberGenerator &rng) {
+
+  auto random_sample = [&]() { return dist(rng); };
+
+  matrix =
+      Eigen::MatrixXd::NullaryExpr(matrix.rows(), matrix.cols(), random_sample);
+}
+
+template <typename _Scalar, int _Rows, int _Cols,
+          typename RandomNumberGenerator>
+void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix, double mean,
+                   double sd, RandomNumberGenerator &rng) {
+  std::normal_distribution<_Scalar> dist(mean, sd);
+  random_fill(matrix, dist, rng);
+}
+
+template <typename _Scalar, int _Rows, int _Cols,
+          typename RandomNumberGenerator>
+void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix,
+                   RandomNumberGenerator &rng) {
+  gaussian_fill(matrix, 0., 1., rng);
+}
+
+template <typename _Scalar, int _Rows, int _Cols>
+void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix) {
+  std::default_random_engine rng;
+  gaussian_fill(matrix, 0., 1., rng);
+}
+
+template <typename Distribution>
+inline Eigen::MatrixXd
+random_covariance_matrix(Eigen::Index k, Distribution &eigen_value_distribution,
+                         std::default_random_engine &gen) {
+
+  Eigen::MatrixXd Q(k, k);
+  gaussian_fill(Q, gen);
+  Q = Q.colPivHouseholderQr().matrixQ();
+
+  Eigen::VectorXd diag(k);
+
+  random_fill(diag, eigen_value_distribution, gen);
+
+  return Q * diag.asDiagonal() * Q.transpose();
+}
+
+inline Eigen::MatrixXd
+random_covariance_matrix(Eigen::Index k, std::default_random_engine &gen) {
+  std::gamma_distribution<double> distribution(1.0, 1.0);
+  return random_covariance_matrix(k, distribution, gen);
+}
+
+inline Eigen::VectorXd
+random_multivariate_normal(const Eigen::VectorXd &mean,
+                           const Eigen::MatrixXd &cov,
+                           std::default_random_engine &gen) {
+  std::normal_distribution<double> dist;
+  assert(mean.size() == cov.rows());
+  assert(cov.rows() == cov.cols());
+
+  Eigen::VectorXd sample(mean.size());
+  gaussian_fill(sample, gen);
+
+  sample = cov.llt().matrixL() * sample;
+
+  sample += mean;
+
+  return sample;
+}
+
+inline Eigen::VectorXd
+random_multivariate_normal(const Eigen::MatrixXd &cov,
+                           std::default_random_engine &gen) {
+  return random_multivariate_normal(Eigen::VectorXd::Zero(cov.rows()), cov,
+                                    gen);
+}
+
 } // namespace albatross
 
 #endif
