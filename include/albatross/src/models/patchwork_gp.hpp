@@ -61,6 +61,10 @@ DEFINE_CLASS_METHOD_TRAITS(nearest_group);
 
 DEFINE_CLASS_METHOD_TRAITS(grouper);
 
+/*
+ * Here we make sure that a given class T contains all the required methods
+ * to be PatchworkFunctions and that the types involved are consistent.
+ */
 template <typename T, typename FeatureType>
 class patchwork_functions_are_valid {
 
@@ -103,7 +107,8 @@ public:
  *   model_i.predict(feature) - model_j.predict(feature)
  *
  * Patchwork Krigging uses these to force equivalence between two
- * otherwise independent models.
+ * otherwise independent models.  These are the \delta_{k,l} variables
+ * in Equation 2 from the paper referenced above.
  */
 template <typename GroupKey, typename FeatureType> struct BoundaryFeature {
 
@@ -147,6 +152,10 @@ auto as_boundary_features(GroupKey &&lhs, GroupKey &&rhs,
 
 /*
  * GroupFeature
+ *
+ * This is used to indicate which model a particular Feature corresponds
+ * to.  It corresponds (loosely) to the f_i in Equations 3 and 4 from
+ * the paper referenced above.
  */
 
 template <typename GroupKey, typename FeatureType> struct GroupFeature {
@@ -203,12 +212,18 @@ auto as_group_features(const GroupKey &key,
   return group_features;
 }
 
+/*
+ * Here we define the rules laid out in Equations 3 and 4 of the referenced
+ * paper.  The rules consist of defining the covariance between boundary
+ * features, group features and in the trivial case two normal features.
+ */
 template <typename SubCaller> struct PatchworkCallerBase {
   template <
       typename CovFunc, typename X, typename Y,
       typename std::enable_if<
           has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    // The trivial case, forward on to the underlying covariance.
     return SubCaller::call(cov_func, x, y);
   }
 
@@ -217,6 +232,8 @@ template <typename SubCaller> struct PatchworkCallerBase {
   static double call(const CovFunc &cov_func,
                      const GroupFeature<GroupKey, FeatureTypeX> &x,
                      const GroupFeature<GroupKey, FeatureTypeY> &y) {
+    // The covariance between any two group features is only defined if
+    // the two are in the same group.
     if (x.key == y.key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
     } else {
@@ -229,6 +246,7 @@ template <typename SubCaller> struct PatchworkCallerBase {
   static double call(const CovFunc &cov_func,
                      const GroupFeature<GroupKey, FeatureTypeX> &x,
                      const BoundaryFeature<GroupKey, FeatureTypeY> &y) {
+    // This is Equation 3 in the referenced paper.
     if (x.key == y.lhs) {
       return SubCaller::call(cov_func, x.feature, y.feature);
     } else if (x.key == y.rhs) {
@@ -243,7 +261,7 @@ template <typename SubCaller> struct PatchworkCallerBase {
   static double call(const CovFunc &cov_func,
                      const BoundaryFeature<GroupKey, FeatureTypeX> &x,
                      const BoundaryFeature<GroupKey, FeatureTypeY> &y) {
-
+    // This is Equation 4 in the referenced paper.
     if (x.lhs == y.lhs && x.rhs == y.rhs) {
       return 2 * SubCaller::call(cov_func, x.feature, y.feature);
     } else if (x.lhs == y.lhs && x.rhs != y.rhs) {
@@ -274,13 +292,6 @@ struct Fit<PatchworkGPFit<FitModel<ModelType, FitType>, GroupKey>> {
 
   Grouped<GroupKey, FitModel<ModelType, FitType>> fit_models;
 
-  //  Eigen::MatrixXd C_bb_inv_C_bd;
-  //  Grouped<GroupKey, Eigen::VectorXd> information;
-  //  PatchworkFunctions patchwork_functions;
-  //  using GroupKey = typename
-  //  details::grouper_result<PatchworkFunctions::GrouperFunction,
-  //                                                    FeatureType>::type;
-
   Fit(){};
 
   Fit(const Grouped<GroupKey, FitModel<ModelType, FitType>> &fit_models_)
@@ -293,6 +304,10 @@ struct Fit<PatchworkGPFit<FitModel<ModelType, FitType>, GroupKey>> {
 template <typename BoundaryFunction, typename GroupKey>
 auto build_boundary_features(const BoundaryFunction &boundary_function,
                              const std::vector<GroupKey> &groups) {
+  /*
+   * Loop through all combinations of groups (without permutations) and
+   * assemble the boundary features.
+   */
   using BoundarySubFeatureType =
       typename invoke_result<BoundaryFunction, GroupKey,
                              GroupKey>::type::value_type;
@@ -351,7 +366,6 @@ public:
     }
 
     auto get_obs_vector = [](const auto &fit_model) {
-      // TOOD: should these be converted to Measurement<> types?
       return fit_model.predict(fit_model.get_fit().train_features).mean();
     };
     const auto obs_vectors = patchwork_fit.fit_models.apply(get_obs_vector);
