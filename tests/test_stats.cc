@@ -13,6 +13,8 @@
 #include <albatross/Common>
 #include <albatross/Distribution>
 #include <albatross/Stats>
+#include <albatross/utils/RandomUtils>
+
 #include <albatross/src/utils/eigen_utils.hpp>
 #include <gtest/gtest.h>
 
@@ -71,34 +73,6 @@ TEST(test_stats, test_uniform_ks) {
   EXPECT_LT(uniform_ks_test(samples), 0.05);
 }
 
-Eigen::MatrixXd random_covariance(Eigen::Index k,
-                                  std::default_random_engine &gen) {
-
-  // Create diagonal with a wide range of scales.
-  Eigen::VectorXd diag(k);
-  for (Eigen::Index i = 0; i < diag.size(); ++i) {
-    diag[i] = pow(2, 3 - i);
-  }
-
-  // Generate a random covariance with the prescribed eigen values.
-  Eigen::MatrixXd matrix(k, k);
-  gaussian_fill(matrix, gen);
-  const Eigen::MatrixXd random_rotation =
-      matrix.colPivHouseholderQr().matrixQ();
-  Eigen::MatrixXd random_covariance = random_rotation * diag.asDiagonal();
-  random_covariance = random_covariance * random_rotation.transpose();
-  return random_covariance;
-}
-
-Eigen::VectorXd random_sample(const Eigen::MatrixXd &covariance,
-                              std::default_random_engine &gen) {
-  // Sample from a mnv distribution with given covariance
-  Eigen::VectorXd sample(covariance.rows());
-  gaussian_fill(sample, gen);
-  sample = covariance.llt().matrixL() * sample;
-  return sample;
-}
-
 TEST(test_stats, test_chi_squared_cdf) {
 
   Eigen::Index k = 5;
@@ -106,8 +80,8 @@ TEST(test_stats, test_chi_squared_cdf) {
   std::size_t iterations = 1000;
   std::vector<double> cdfs(iterations);
   for (std::size_t i = 0; i < iterations; ++i) {
-    const auto covariance = random_covariance(k, gen);
-    const auto sample = random_sample(covariance, gen);
+    const auto covariance = random_covariance_matrix(k, gen);
+    const auto sample = random_multivariate_normal(covariance, gen);
     // Collect all the cdfs
     cdfs[i] = chi_squared_cdf(sample, covariance);
   }
@@ -123,8 +97,8 @@ TEST(test_stats, test_chi_squared_cdf_monotonic) {
 
   std::default_random_engine gen(2012);
 
-  const auto covariance = random_covariance(k, gen);
-  const auto sample = random_sample(covariance, gen);
+  const auto covariance = random_covariance_matrix(k, gen);
+  const auto sample = random_multivariate_normal(covariance, gen);
 
   std::size_t iterations = 50;
   ASSERT_LT(chi_squared_cdf(sample, covariance), 1.);

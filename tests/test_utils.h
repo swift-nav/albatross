@@ -163,13 +163,6 @@ inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
   return points;
 }
 
-inline auto random_covariance_matrix(Eigen::Index k = 5) {
-  Eigen::MatrixXd X = Eigen::MatrixXd::Random(k, k);
-  X = X.transpose() * X;
-  X.diagonal() += 0.1 * Eigen::VectorXd::Ones(k);
-  return X;
-}
-
 template <typename CovarianceFunction, typename FeatureType>
 void expect_state_space_representation_quality(
     const CovarianceFunction &cov_func,
