@@ -43,6 +43,8 @@ struct is_valid_fit_type : public std::false_type {};
 template <typename FitParameter>
 struct is_valid_fit_type<Fit<FitParameter>> : public std::true_type {};
 
+DEFINE_CLASS_METHOD_TRAITS(_fit_impl);
+
 /*
  * This determines whether or not a class (T) has a method defined for,
  *   `Fit<U, FeatureType> _fit_impl(const std::vector<FeatureType>&,
@@ -51,17 +53,15 @@ struct is_valid_fit_type<Fit<FitParameter>> : public std::true_type {};
  */
 template <typename T, typename FeatureType> class has_valid_fit {
   template <typename C,
-            typename FitType = decltype(std::declval<const C>()._fit_impl(
-                std::declval<const std::vector<FeatureType> &>(),
-                std::declval<const MarginalDistribution &>()))>
+            typename FitType = typename class_method__fit_impl_traits<
+                C, const std::vector<FeatureType> &,
+                const MarginalDistribution &>::return_type>
   static typename is_valid_fit_type<FitType>::type test(C *);
   template <typename> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
-
-DEFINE_CLASS_METHOD_TRAITS(_fit_impl);
 
 template <typename T, typename FeatureType>
 class has_possible_fit : public has__fit_impl<T, std::vector<FeatureType> &,

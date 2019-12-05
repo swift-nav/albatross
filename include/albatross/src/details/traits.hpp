@@ -162,6 +162,35 @@ struct variant_size<variant<Ts...>>
     : public std::tuple_size<std::tuple<Ts...>> {};
 
 /*
+ * Eigen helpers
+ */
+template <typename T> class is_eigen_plain_object {
+  template <typename C>
+  static typename std::enable_if<
+      std::is_base_of<Eigen::PlainObjectBase<C>, C>::value,
+      std::true_type>::type
+  test(int);
+
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T> class is_eigen_xpr {
+  template <
+      typename C,
+      typename BaseType = typename Eigen::internal::dense_xpr_base<C>::type,
+      std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
+  static std::true_type test(int);
+
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
  * invocable and invoke result
  *
  * both copied from the possible implementation provided here:

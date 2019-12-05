@@ -78,6 +78,8 @@ public:
 
   std::pair<KeyType, ValueType> first_group() const { return *map_.begin(); }
 
+  ValueType first_value() const { return map_.begin()->first; }
+
   auto min_value() const {
     const auto value_compare = [](const auto &x, const auto &y) {
       return x.second < y.second;
@@ -244,6 +246,17 @@ public:
     }
     return output;
   }
+};
+
+template <typename KeyType, typename EigenXpr>
+class Grouped<KeyType, EigenXpr,
+              std::enable_if_t<is_eigen_xpr<EigenXpr>::value>>
+    : public GroupedBase<KeyType, EigenXpr> {
+  static_assert(
+      delay_static_assert<EigenXpr>::value,
+      "Storing the result of Eigen operations is dangerous since they often "
+      "contain references which can easily lose scope, consider explicitly "
+      "forming an Eigen::MatrixXd (or similar) as the value type");
 };
 
 template <typename KeyType>

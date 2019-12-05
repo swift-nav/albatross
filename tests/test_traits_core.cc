@@ -308,9 +308,33 @@ public:
 
 class HasNoName {};
 
-TEST(test_traits_covariance, test_has_name) {
+TEST(test_traits_core, test_has_name) {
   EXPECT_TRUE(bool(has_name<HasName>::value));
   EXPECT_FALSE(bool(has_name<HasNoName>::value));
+}
+
+TEST(test_traits_core, test_eigen_plain_objects) {
+  EXPECT_TRUE(bool(is_eigen_plain_object<Eigen::MatrixXd>::value));
+  EXPECT_FALSE(bool(is_eigen_xpr<Eigen::MatrixXd>::value));
+
+  EXPECT_TRUE(bool(is_eigen_plain_object<Eigen::VectorXd>::value));
+  EXPECT_FALSE(bool(is_eigen_xpr<Eigen::VectorXd>::value));
+
+  EXPECT_TRUE(bool(is_eigen_plain_object<Eigen::Matrix<int, 3, 4>>::value));
+  EXPECT_FALSE(bool(is_eigen_xpr<Eigen::Matrix<int, 3, 4>>::value));
+}
+
+TEST(test_traits_core, test_eigen_expressions) {
+  Eigen::MatrixXd a;
+  Eigen::MatrixXd b;
+
+  using ProductType = decltype(a * b);
+  EXPECT_FALSE(bool(is_eigen_plain_object<ProductType>::value));
+  EXPECT_TRUE(bool(is_eigen_xpr<ProductType>::value));
+
+  using LDLTType = Eigen::LDLT<Eigen::MatrixXd>;
+  EXPECT_FALSE(bool(is_eigen_plain_object<LDLTType>::value));
+  EXPECT_FALSE(bool(is_eigen_xpr<LDLTType>::value));
 }
 
 } // namespace albatross
