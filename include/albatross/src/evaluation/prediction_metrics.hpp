@@ -71,13 +71,29 @@ struct RootMeanSquareError : public PredictionMetric<Eigen::VectorXd> {
       : PredictionMetric<Eigen::VectorXd>(root_mean_square_error) {}
 };
 
+static inline double standard_deviation(const Eigen::VectorXd &x) {
+  if (x.size() == 0) {
+    return NAN;
+  }
+
+  if (x.size() == 1) {
+    return 0.;
+  }
+
+  double output = 0.;
+  double mean = x.mean();
+  const auto n_elements = static_cast<double>(x.size());
+
+  for (Eigen::Index i = 0; i < x.size(); ++i) {
+    output += pow(x[i] - mean, 2.) / (n_elements - 1);
+  }
+
+  return std::sqrt(output);
+}
+
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
                                         const Eigen::VectorXd &truth) {
-  Eigen::VectorXd error = prediction - truth;
-  const auto n_elements = static_cast<double>(error.size());
-  const double mean_error = error.sum() / n_elements;
-  error.array() -= mean_error;
-  return std::sqrt(error.dot(error) / (n_elements - 1));
+  return standard_deviation(prediction - truth);
 }
 
 static inline double standard_deviation(const Eigen::VectorXd &prediction,
