@@ -178,10 +178,13 @@ public:
 };
 
 template <typename T> class is_eigen_xpr {
-  template <
-      typename C,
-      typename BaseType = typename Eigen::internal::dense_xpr_base<C>::type,
-      std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
+  // Here we check if T is a generic eigen expression, but we then
+  // want to rule out cases where T is a plain_object such as
+  // an Eigen::MatrixXd.
+  template <typename C,
+            typename IsGenericXpr =
+                typename Eigen::internal::generic_xpr_base<C>::type,
+            std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
   static std::true_type test(int);
 
   template <typename C> static std::false_type test(...);
