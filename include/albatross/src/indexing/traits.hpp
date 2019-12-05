@@ -61,27 +61,30 @@ struct grouper_result
     : public invoke_result<GrouperFunction,
                            typename const_ref<ValueType>::type> {};
 
-template <typename GrouperFunction, typename ValueType>
-class group_key_is_valid {
+template <typename GroupKey> class group_key_is_valid {
+
+  template <typename C, std::enable_if_t<is_valid_map_key<C>::value, int> = 0>
+  static std::true_type test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<GroupKey>(0))::value;
+};
+
+template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
 
   template <
       typename C,
-      typename std::enable_if_t<
-          is_valid_map_key<typename grouper_result<C, ValueType>::type>::value,
-          int> = 0>
+      typename GroupKey = typename grouper_result<C, ValueType>::type,
+      typename std::enable_if<is_invocable_const_ref<C, ValueType>::value &&
+                                  group_key_is_valid<GroupKey>::value,
+                              int>::type = 0>
   static std::true_type test(C *);
   template <typename> static std::false_type test(...);
 
 public:
   static constexpr bool value = decltype(test<GrouperFunction>(0))::value;
-};
-
-template <typename GrouperFunction, typename ValueType>
-struct is_valid_grouper {
-
-  static constexpr bool value =
-      is_invocable_const_ref<GrouperFunction, ValueType>::value &&
-      group_key_is_valid<GrouperFunction, ValueType>::value;
+  ;
 };
 
 /*

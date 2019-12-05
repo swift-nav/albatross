@@ -162,6 +162,38 @@ struct variant_size<variant<Ts...>>
     : public std::tuple_size<std::tuple<Ts...>> {};
 
 /*
+ * Eigen helpers
+ */
+template <typename T> class is_eigen_plain_object {
+  template <typename C>
+  static typename std::enable_if<
+      std::is_base_of<Eigen::PlainObjectBase<C>, C>::value,
+      std::true_type>::type
+  test(int);
+
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T> class is_eigen_xpr {
+  // Here we check if T is a generic eigen expression, but we then
+  // want to rule out cases where T is a plain_object such as
+  // an Eigen::MatrixXd.
+  template <typename C,
+            typename IsGenericXpr =
+                typename Eigen::internal::generic_xpr_base<C>::type,
+            std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
+  static std::true_type test(int);
+
+  template <typename C> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+/*
  * invocable and invoke result
  *
  * both copied from the possible implementation provided here:
