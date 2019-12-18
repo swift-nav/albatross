@@ -28,7 +28,7 @@ struct ExamplePatchworkFunctions {
   long int grouper(const double &x) const { return lround(floor(x / width)); }
 
   std::vector<double> boundary(long int x, long int y) const {
-    if (fabs(x - y) == 1) {
+    if (std::abs(x - y) == 1) {
       double center = width * 0.5 * (x + y);
       std::vector<double> boundary = {center - 1., center, center + 1.};
       return boundary;
@@ -41,7 +41,7 @@ struct ExamplePatchworkFunctions {
     long int nearest = query;
     long int nearest_distance = std::numeric_limits<long int>::max();
     for (const auto &group : groups) {
-      const auto distance = abs(query - group);
+      const auto distance = std::abs(query - group);
       if (distance < nearest_distance) {
         nearest = group;
         nearest_distance = distance;
