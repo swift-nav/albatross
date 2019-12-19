@@ -30,7 +30,7 @@ inline double chi_squared_cdf_unsafe(double x, std::size_t degrees_of_freedom) {
   return incomplete_gamma(0.5 * degrees_of_freedom, 0.5 * x);
 }
 
-inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
+inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
 
   if (std::isnan(x) || x < 0.) {
     return NAN;
@@ -48,12 +48,16 @@ inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
     return 1.;
   }
 
+  if (std::isinf(degrees_of_freedom)) {
+    return 0.;
+  }
+
   return chi_squared_cdf_unsafe(x, degrees_of_freedom);
 }
 
 } // namespace details
 
-inline double chi_squared_cdf(double x, std::size_t degrees_of_freedom) {
+inline double chi_squared_cdf(double x, double degrees_of_freedom) {
   return details::chi_squared_cdf_safe(x, degrees_of_freedom);
 }
 
