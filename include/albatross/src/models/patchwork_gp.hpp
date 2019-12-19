@@ -299,22 +299,37 @@ template <typename SubCaller> struct PatchworkCallerBase {
 using PatchworkCaller =
     internal::SymmetricCaller<PatchworkCallerBase<DefaultCaller>>;
 
-template <typename FitModelType, typename GroupKey> struct PatchworkGPFit {};
+template <typename FitModelType, typename GroupKey,
+          typename BoundaryFeatureType>
+struct PatchworkGPFit {};
 
-template <typename ModelType, typename FitType, typename GroupKey>
-struct Fit<PatchworkGPFit<FitModel<ModelType, FitType>, GroupKey>> {
+template <typename ModelType, typename FitType, typename GroupKey,
+          typename BoundaryFeatureType>
+struct Fit<PatchworkGPFit<FitModel<ModelType, FitType>, GroupKey,
+                          BoundaryFeatureType>> {
 
-  using FeatureType = typename FitType::Feature;
+  using CovarianceRepresentation = decltype(FitType::train_covariance);
 
   Grouped<GroupKey, FitModel<ModelType, FitType>> fit_models;
+  Grouped<GroupKey, Eigen::MatrixXd> information;
+  std::vector<BoundaryFeatureType> boundary_features;
+  Grouped<GroupKey, CovarianceRepresentation> C_dd;
+  Grouped<GroupKey, Eigen::MatrixXd> C_db;
+  Eigen::SerializableLDLT C_bb_ldlt;
+  Eigen::SerializableLDLT S_bb_ldlt;
 
   Fit(){};
 
-  Fit(const Grouped<GroupKey, FitModel<ModelType, FitType>> &fit_models_)
-      : fit_models(fit_models_){};
-
-  Fit(const Grouped<GroupKey, FitModel<ModelType, FitType>> &&fit_models_)
-      : fit_models(std::move(fit_models_)){};
+  Fit(const Grouped<GroupKey, FitModel<ModelType, FitType>> &fit_models_,
+      const Grouped<GroupKey, Eigen::MatrixXd> &information_,
+      const std::vector<BoundaryFeatureType> &boundary_features_,
+      const Grouped<GroupKey, CovarianceRepresentation> &C_dd_,
+      const Grouped<GroupKey, Eigen::MatrixXd> &C_db_,
+      const Eigen::SerializableLDLT &C_bb_ldlt_,
+      const Eigen::SerializableLDLT &S_bb_ldlt_)
+      : fit_models(fit_models_), information(information_),
+        boundary_features(boundary_features_), C_dd(C_dd_), C_db(C_db_),
+        C_bb_ldlt(C_bb_ldlt_), S_bb_ldlt(S_bb_ldlt_){};
 };
 
 template <typename BoundaryFunction, typename GroupKey>
@@ -345,6 +360,38 @@ auto build_boundary_features(const BoundaryFunction &boundary_function,
   return boundary_features;
 }
 
+template <typename GroupKey, typename Solver, int Rows, int Cols>
+auto block_solver(
+    const Grouped<GroupKey, Solver> &A,
+    const Grouped<GroupKey, Eigen::MatrixXd> &C,
+    const Eigen::SerializableLDLT &S,
+    const Grouped<GroupKey, Eigen::Matrix<double, Rows, Cols>> &rhs) {
+  // A^-1 rhs + A^-1 C (B - C^T A^-1 C)^-1 C^T A^-1 rhs
+  // A^-1 rhs + A^-1 C S^-1 C^T A^-1 rhs
+
+  const auto Ai_rhs = block_diag_solve(A, rhs);
+
+  // S^-1 C^T A^-1 rhs
+  auto SiCtAi_rhs_block = [&](const Eigen::MatrixXd &C_i,
+                              const auto &Ai_rhs_i) {
+    return Eigen::MatrixXd(S.solve(C_i.transpose() * Ai_rhs_i));
+  };
+  const Eigen::MatrixXd SiCtAi_rhs =
+      block_accumulate(C, Ai_rhs, SiCtAi_rhs_block);
+
+  auto product_with_SiCtAi_rhs = [&](const auto &key, const auto &C_i) {
+    return Eigen::MatrixXd(C_i * SiCtAi_rhs);
+  };
+  const auto CSiCtAi_rhs = C.apply(product_with_SiCtAi_rhs);
+
+  auto output = block_diag_solve(A, CSiCtAi_rhs);
+  // Adds A^-1 rhs to A^-1 C S^-1 C^T A^-1 rhs
+  auto add_Ai_rhs = [&](const auto &key, const auto &group) {
+    return Eigen::MatrixXd(group + Ai_rhs.at(key)).eval();
+  };
+  return output.apply(add_Ai_rhs);
+};
+
 template <typename CovFunc, typename PatchworkFunctions>
 class PatchworkGaussianProcess
     : public GaussianProcessBase<
@@ -361,30 +408,24 @@ public:
                            PatchworkFunctions patchwork_functions)
       : Base(covariance_function), patchwork_functions_(patchwork_functions){};
 
+  template <typename X, typename Y>
+  Eigen::MatrixXd patchwork_covariance_matrix(const std::vector<X> &xs,
+                                              const std::vector<Y> &ys) const {
+    auto patchwork_caller = [&](const auto &x, const auto &y) {
+      return PatchworkCaller::call(this->covariance_function_, x, y);
+    };
+
+    return compute_covariance_matrix(patchwork_caller, xs, ys);
+  };
+
   template <typename FitModelType, typename GroupKey>
   auto
   from_fit_models(const Grouped<GroupKey, FitModelType> &fit_models) const {
-    using PatchworkFitType = Fit<PatchworkGPFit<FitModelType, GroupKey>>;
-    return FitModel<PatchworkGaussianProcess, PatchworkFitType>(
-        *this, PatchworkFitType(fit_models));
-  };
-
-  template <typename FeatureType, typename FitModelType, typename GroupKey>
-  JointDistribution _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<PatchworkGPFit<FitModelType, GroupKey>> &patchwork_fit,
-      PredictTypeIdentity<JointDistribution> &&) const {
-
-    const auto fit_models = patchwork_fit.fit_models;
-
-    if (fit_models.size() == 1) {
-      return fit_models.values()[0].predict(features).joint();
-    }
 
     auto get_obs_vector = [](const auto &fit_model) {
       return fit_model.predict(fit_model.get_fit().train_features).mean();
     };
-    const auto obs_vectors = patchwork_fit.fit_models.apply(get_obs_vector);
+    const auto obs_vectors = fit_models.apply(get_obs_vector);
 
     auto boundary_function = [&](const GroupKey &x, const GroupKey &y) {
       return patchwork_functions_.boundary(x, y);
@@ -392,14 +433,6 @@ public:
 
     const auto boundary_features =
         build_boundary_features(boundary_function, fit_models.keys());
-
-    auto patchwork_caller = [&](const auto &x, const auto &y) {
-      return PatchworkCaller::call(this->covariance_function_, x, y);
-    };
-
-    auto patchwork_covariance_matrix = [&](const auto &xs, const auto &ys) {
-      return compute_covariance_matrix(patchwork_caller, xs, ys);
-    };
 
     // C_bb is the covariance matrix between all boundaries, it will
     // have a lot of zeros so it could be decomposed more efficiently
@@ -414,16 +447,12 @@ public:
     };
     const auto C_dd = fit_models.apply(get_train_covariance);
 
-    auto get_features = [](const auto &fit_model) {
-      return fit_model.get_fit().train_features;
-    };
-
     // C_db holds the covariance between each model and all boundaries.
     // The actual storage is effectively a map with values which correspond
     // to the covariance between that model's features and the boundaries.
     auto C_db_one_group = [&](const auto &key, const auto &fit_model) {
       const auto group_features =
-          as_group_features(key, get_features(fit_model));
+          as_group_features(key, fit_model.get_fit().train_features);
       return patchwork_covariance_matrix(group_features, boundary_features);
     };
     const auto C_db = fit_models.apply(C_db_one_group);
@@ -434,39 +463,8 @@ public:
         C_bb - block_inner_product(C_db, C_dd_inv_C_db);
     const auto S_bb_ldlt = S_bb.ldlt();
 
-    auto solver = [&](const auto &rhs) {
-      // A^-1 rhs + A^-1 C (B - C^T A^-1 C)^-1 C^T A^-1 rhs
-      // A^-1 rhs + A^-1 C S^-1 C^T A^-1 rhs
-
-      // A = C_dd
-      // B = C_bb
-      // C = C_db
-      // S = S_bb = (B - C^T A^-1 C)
-      const auto Ai_rhs = block_diag_solve(C_dd, rhs);
-
-      // S_bb^-1 C^T A^-1 rhs
-      auto SiCtAi_rhs_block = [&](const Eigen::MatrixXd &C_db_i,
-                                  const auto &Ai_rhs_i) {
-        return Eigen::MatrixXd(S_bb_ldlt.solve(C_db_i.transpose() * Ai_rhs_i));
-      };
-      const Eigen::MatrixXd SiCtAi_rhs =
-          block_accumulate(C_db, Ai_rhs, SiCtAi_rhs_block);
-
-      auto product_with_SiCtAi_rhs = [&](const auto &key, const auto &C_db_i) {
-        return Eigen::MatrixXd(C_db_i * SiCtAi_rhs);
-      };
-      const auto CSiCtAi_rhs = C_db.apply(product_with_SiCtAi_rhs);
-
-      auto output = block_diag_solve(C_dd, CSiCtAi_rhs);
-      // Adds A^-1 rhs to A^-1 C S^-1 C^T A^-1 rhs
-      auto add_Ai_rhs = [&](const auto &key, const auto &group) {
-        return (group + Ai_rhs.at(key)).eval();
-      };
-      return output.apply(add_Ai_rhs);
-    };
-
     const auto ys = fit_models.apply(get_obs_vector);
-    const auto information = solver(ys);
+    const auto information = block_solver(C_dd, C_db, S_bb_ldlt, ys);
 
     Eigen::VectorXd C_bb_inv_C_bd_information =
         Eigen::VectorXd::Zero(C_bb.rows());
@@ -477,37 +475,58 @@ public:
     };
     C_db.apply(accumulate_C_bb_inv_C_bd_information);
 
-    /*
-     * PREDICT
-     */
+    using BoundaryFeatureType = typename std::decay<typename decltype(
+        boundary_features)::value_type>::type;
+
+    using PatchworkFitType =
+        Fit<PatchworkGPFit<FitModelType, GroupKey, BoundaryFeatureType>>;
+    return FitModel<PatchworkGaussianProcess, PatchworkFitType>(
+        *this, PatchworkFitType(fit_models, information, boundary_features,
+                                C_dd, C_db, C_bb_ldlt, S_bb_ldlt));
+  };
+
+  template <typename FeatureType, typename FitModelType, typename GroupKey,
+            typename BoundaryFeatureType>
+  JointDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<PatchworkGPFit<FitModelType, GroupKey, BoundaryFeatureType>>
+          &patchwork_fit,
+      PredictTypeIdentity<JointDistribution> &&) const {
+
+    if (patchwork_fit.fit_models.size() == 1) {
+      return patchwork_fit.fit_models.values()[0].predict(features).joint();
+    }
+
     auto predict_grouper = [&](const auto &f) {
       return patchwork_functions_.nearest_group(
-          C_db.keys(), patchwork_functions_.grouper(f));
+          patchwork_fit.C_db.keys(), patchwork_functions_.grouper(f));
     };
 
     auto group_features = as_group_features(features, predict_grouper);
 
-    const Eigen::MatrixXd C_fb =
-        patchwork_covariance_matrix(group_features, boundary_features);
+    const Eigen::MatrixXd C_fb = patchwork_covariance_matrix(
+        group_features, patchwork_fit.boundary_features);
     const Eigen::MatrixXd C_fb_bb_inv =
-        C_bb_ldlt.solve(C_fb.transpose()).transpose();
+        patchwork_fit.C_bb_ldlt.solve(C_fb.transpose()).transpose();
 
     auto compute_cross_block_transpose = [&](const auto &key,
                                              const auto &fit_model) {
       const auto train_features =
-          as_group_features(key, get_features(fit_model));
+          as_group_features(key, fit_model.get_fit().train_features);
       Eigen::MatrixXd block =
           patchwork_covariance_matrix(train_features, group_features);
-      block -= C_db.at(key) * C_fb_bb_inv.transpose();
+      block -= patchwork_fit.C_db.at(key) * C_fb_bb_inv.transpose();
       return block;
     };
 
     const auto cross_transpose =
-        fit_models.apply(compute_cross_block_transpose);
-    const auto C_dd_inv_cross = solver(cross_transpose);
+        patchwork_fit.fit_models.apply(compute_cross_block_transpose);
+    const auto C_dd_inv_cross =
+        block_solver(patchwork_fit.C_dd, patchwork_fit.C_db,
+                     patchwork_fit.S_bb_ldlt, cross_transpose);
 
     const Eigen::VectorXd mean =
-        block_inner_product(cross_transpose, information);
+        block_inner_product(cross_transpose, patchwork_fit.information);
     const Eigen::MatrixXd explained =
         block_inner_product(cross_transpose, C_dd_inv_cross);
 
