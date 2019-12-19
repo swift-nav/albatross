@@ -51,37 +51,52 @@ struct ExamplePatchworkFunctions {
   }
 };
 
+RegressionDataset<double>
+shuffle_dataset(const RegressionDataset<double> &dataset) {
+  RegressionDataset<double> output(dataset);
+
+  std::default_random_engine gen(2012);
+  std::size_t n = dataset.size();
+  std::uniform_int_distribution<std::size_t> dist(0, n - 1);
+
+  for (std::size_t i = 0; i < n - 1; ++i) {
+    std::size_t j = dist(gen);
+    if (i != j) {
+      std::swap(output.features[i], output.features[j]);
+      std::swap(output.targets.mean[i], output.targets.mean[j]);
+    }
+  }
+  return output;
+}
+
 template <typename CovFunc>
 void expect_patchwork_gp_performance(const CovFunc &covariance,
                                      double mean_threshold,
                                      double cov_threshold) {
+  // There was a subtle bug which dealt with out of order groups
+  // shuffling tests that edge case.
+  const auto dataset = shuffle_dataset(make_toy_linear_data());
 
-  auto dataset = make_toy_linear_data();
-  auto direct = gp_from_covariance(covariance, "direct");
+  const auto direct = gp_from_covariance(covariance, "direct");
 
-  ExamplePatchworkFunctions patchwork_functions;
+  const ExamplePatchworkFunctions patchwork_functions;
   const auto patchwork =
       patchwork_gp_from_covariance(covariance, patchwork_functions);
 
-  auto direct_fit = direct.fit(dataset);
-  auto patchwork_fit = patchwork.fit(dataset);
+  const auto direct_fit = direct.fit(dataset);
+  const auto patchwork_fit = patchwork.fit(dataset);
 
-  auto test_features = linspace(0.01, 9.9, 11);
+  const auto test_features = linspace(0.01, 9.9, 11);
 
-  auto direct_pred = direct_fit.predict(test_features).joint();
-  auto patchwork_pred = patchwork_fit.predict(test_features).joint();
+  const auto direct_pred = direct_fit.predict(test_features).joint();
+  const auto patchwork_pred = patchwork_fit.predict(test_features).joint();
 
-  std::ofstream ofs("test.csv");
-  RegressionDataset<double> direct_dataset(test_features,
-                                           direct_pred.marginal());
-  write_to_csv(ofs, direct_dataset, patchwork_pred.marginal());
-
-  double patchwork_error =
+  const double patchwork_error =
       root_mean_square_error(patchwork_pred.mean, direct_pred.mean);
 
   EXPECT_LT(patchwork_error, mean_threshold);
 
-  double patchwork_cov_diff =
+  const double patchwork_cov_diff =
       (patchwork_pred.covariance - direct_pred.covariance).norm();
 
   EXPECT_LT(patchwork_cov_diff, cov_threshold);

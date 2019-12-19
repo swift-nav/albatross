@@ -82,12 +82,17 @@ class patchwork_functions_are_valid {
   static constexpr bool has_valid_boundary =
       is_vector<BoundaryReturnType>::value;
 
-  using NearestGroupReturnType = typename class_method_nearest_group_traits<
-      T, typename const_ref<std::vector<GroupKey>>::type,
-      ConstRefGroupKey>::return_type;
+  template <typename Key, std::enable_if_t<!std::is_void<Key>::value, int> = 0,
+            typename NearestGroupReturnType =
+                typename class_method_nearest_group_traits<
+                    T, typename const_ref<std::vector<Key>>::type,
+                    ConstRefGroupKey>::return_type>
+  static NearestGroupReturnType nearest_group_test(int);
+
+  template <typename C> static void nearest_group_test(...);
 
   static constexpr bool has_valid_nearest_group =
-      std::is_same<NearestGroupReturnType, GroupKey>::value;
+      std::is_same<decltype(nearest_group_test<GroupKey>(0)), GroupKey>::value;
 
 public:
   static constexpr bool value =
@@ -482,7 +487,6 @@ public:
 
     auto group_features = as_group_features(features, predict_grouper);
 
-    std::cout << "C_fb" << std::endl;
     const Eigen::MatrixXd C_fb =
         patchwork_covariance_matrix(group_features, boundary_features);
     const Eigen::MatrixXd C_fb_bb_inv =
