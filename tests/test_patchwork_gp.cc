@@ -23,7 +23,9 @@ namespace albatross {
 
 struct ExamplePatchworkFunctions {
 
-  double width = 5.;
+  ExamplePatchworkFunctions() : width(5.) {}
+
+  ExamplePatchworkFunctions(double width_) : width(width_){};
 
   long int grouper(const double &x) const { return lround(floor(x / width)); }
 
@@ -49,6 +51,8 @@ struct ExamplePatchworkFunctions {
     }
     return nearest;
   }
+
+  double width;
 };
 
 RegressionDataset<double>
@@ -69,17 +73,16 @@ shuffle_dataset(const RegressionDataset<double> &dataset) {
   return output;
 }
 
-template <typename CovFunc>
-void expect_patchwork_gp_performance(const CovFunc &covariance,
-                                     double mean_threshold,
-                                     double cov_threshold) {
+template <typename CovFunc, typename PatchworkFunctions>
+void expect_patchwork_gp_performance(
+    const CovFunc &covariance, const PatchworkFunctions &patchwork_functions,
+    double mean_threshold, double cov_threshold) {
   // There was a subtle bug which dealt with out of order groups
   // shuffling tests that edge case.
   const auto dataset = shuffle_dataset(make_toy_linear_data());
 
   const auto direct = gp_from_covariance(covariance, "direct");
 
-  const ExamplePatchworkFunctions patchwork_functions;
   const auto patchwork =
       patchwork_gp_from_covariance(covariance, patchwork_functions);
 
@@ -116,16 +119,59 @@ TEST(test_patchwork_gp, test_traits) {
 
 TEST(test_patchwork_gp, test_sanity) {
 
+  const ExamplePatchworkFunctions patchwork_functions;
+
   auto covariance = make_simple_covariance_function();
 
   covariance.set_param("squared_exponential_length_scale", 1000.);
-  expect_patchwork_gp_performance(covariance, 0.1, 0.3);
+  expect_patchwork_gp_performance(covariance, patchwork_functions, 0.1, 0.3);
 
   covariance.set_param("squared_exponential_length_scale", 100.);
-  expect_patchwork_gp_performance(covariance, 1e-2, 0.3);
+  expect_patchwork_gp_performance(covariance, patchwork_functions, 1e-2, 0.3);
 
   covariance.set_param("squared_exponential_length_scale", 10.);
-  expect_patchwork_gp_performance(covariance, 5e-2, 0.3);
+  expect_patchwork_gp_performance(covariance, patchwork_functions, 5e-2, 0.3);
+}
+
+TEST(test_patchwork_gp, test_one_group) {
+
+  auto covariance = make_simple_covariance_function();
+
+  // Using a large width makes this just use one group.
+  const ExamplePatchworkFunctions patchwork_functions(1000.);
+
+  expect_patchwork_gp_performance(covariance, patchwork_functions, 1e-6, 1e-6);
+}
+
+TEST(test_patchwork_gp, test_scales) {
+
+  const auto covariance = make_simple_covariance_function();
+
+  const auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
+  const auto test_features = linspace(0.01, 9.9, 11);
+
+  const auto direct = gp_from_covariance(covariance, "direct");
+
+  using namespace std::chrono;
+  high_resolution_clock::time_point start = high_resolution_clock::now();
+  const auto direct_fit = direct.fit(large_dataset);
+  const auto direct_pred = direct_fit.predict(test_features).joint();
+  high_resolution_clock::time_point end = high_resolution_clock::now();
+  const auto direct_duration = duration_cast<microseconds>(end - start).count();
+
+  const ExamplePatchworkFunctions patchwork_functions(100.);
+
+  auto patchwork =
+      patchwork_gp_from_covariance(covariance, patchwork_functions);
+
+  start = high_resolution_clock::now();
+  const auto patchwork_fit = patchwork.fit(large_dataset);
+  const auto patchwork_pred = patchwork_fit.predict(test_features).joint();
+  end = high_resolution_clock::now();
+  auto patchwork_duration = duration_cast<microseconds>(end - start).count();
+
+  // Make sure the patchwork version is a lot faster.
+  EXPECT_LT(patchwork_duration, 0.3 * direct_duration);
 }
 
 } // namespace albatross
