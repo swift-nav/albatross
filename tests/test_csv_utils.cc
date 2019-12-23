@@ -77,12 +77,14 @@ struct TestFeature {
  * try to reassemble the object we wrote to file.
  */
 void read_test_csv(std::istream &stream) {
-  io::CSVReader<12> reader("garbage", stream);
-  reader.read_header(
-      io::ignore_no_column, "bar", "double_or_feature.cereal_class_version",
-      "double_or_feature.data", "double_or_feature.which", "feature.one",
-      "feature.two", "foo", "has_other", "prediction", "prediction_variance",
-      "target", "target_variance");
+  io::CSVReader<16> reader("garbage", stream);
+  reader.read_header(io::ignore_no_column, "bar",
+                     "double_or_feature.cereal_class_version",
+                     "double_or_feature.data.one", "double_or_feature.data.two",
+                     "double_or_feature.data", "double_or_feature.which",
+                     "double_or_feature.which_typeid", "feature.one",
+                     "feature.two", "foo", "has_other", "other", "prediction",
+                     "prediction_variance", "target", "target_variance");
 
   bool more_to_parse = true;
   while (more_to_parse) {
@@ -93,11 +95,16 @@ void read_test_csv(std::istream &stream) {
     TestFeature f;
     int version, which;
     std::string double_or_feature;
+    std::string double_or_feature_one;
+    std::string double_or_feature_two;
+    std::string double_or_feature_which_typeid;
     std::string has_other;
-    more_to_parse =
-        reader.read_row(f.bar, version, double_or_feature, which, f.feature.one,
-                        f.feature.two, f.foo, has_other, prediction,
-                        prediction_variance_str, target, target_variance_str);
+    std::string other;
+    more_to_parse = reader.read_row(
+        f.bar, version, double_or_feature_one, double_or_feature_two,
+        double_or_feature, which, double_or_feature_which_typeid, f.feature.one,
+        f.feature.two, f.foo, has_other, other, prediction,
+        prediction_variance_str, target, target_variance_str);
   }
 }
 
@@ -149,12 +156,14 @@ TEST(test_csv_utils, test_writes_without_predictions) {
  * the CSV were missing columns or had unparsable data.
  */
 void read_test_csv_with_metadata(std::istream &stream) {
-  io::CSVReader<13> reader("garbage", stream);
+  io::CSVReader<17> reader("garbage", stream);
   reader.read_header(
       io::ignore_no_column, "bar", "double_or_feature.cereal_class_version",
-      "double_or_feature.data", "double_or_feature.which", "feature.one",
-      "feature.two", "foo", "has_other", "prediction", "prediction_variance",
-      "target", "target_variance", "time");
+      "double_or_feature.data.one", "double_or_feature.data.two",
+      "double_or_feature.data", "double_or_feature.which",
+      "double_or_feature.which_typeid", "feature.one", "feature.two", "foo",
+      "has_other", "other", "prediction", "prediction_variance", "target",
+      "target_variance", "time");
 
   bool more_to_parse = true;
   while (more_to_parse) {
@@ -166,11 +175,16 @@ void read_test_csv_with_metadata(std::istream &stream) {
     TestFeature f;
     int version, which;
     std::string double_or_feature;
+    std::string double_or_feature_one;
+    std::string double_or_feature_two;
+    std::string double_or_feature_which_typeid;
     std::string has_other;
+    std::string other;
     more_to_parse = reader.read_row(
-        f.bar, version, double_or_feature, which, f.feature.one, f.feature.two,
-        f.foo, has_other, prediction, prediction_variance_str, target,
-        target_variance_str, time);
+        f.bar, version, double_or_feature_one, double_or_feature_two,
+        double_or_feature, which, double_or_feature_which_typeid, f.feature.one,
+        f.feature.two, f.foo, has_other, other, prediction,
+        prediction_variance_str, target, target_variance_str, time);
   }
 }
 

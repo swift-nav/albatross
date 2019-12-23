@@ -176,8 +176,12 @@ template <typename FeatureType, typename DistributionType>
 inline std::vector<std::string>
 get_column_names(const RegressionDataset<FeatureType> &dataset,
                  const DistributionBase<DistributionType> &predictions) {
-  const auto first_row = to_map(dataset, predictions, 0);
-  return map_keys(first_row);
+  std::set<std::string> keys;
+  for (std::size_t i = 0; i < dataset.features.size(); ++i) {
+    const auto next_keys = map_keys(to_map(dataset, predictions, i));
+    keys.insert(next_keys.begin(), next_keys.end());
+  }
+  return std::vector<std::string>(keys.begin(), keys.end());
 }
 
 inline void write_row(std::ostream &stream,
