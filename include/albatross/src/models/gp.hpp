@@ -205,6 +205,8 @@ public:
 
   std::string get_name() const { return model_name_; };
 
+  void set_name(const std::string &model_name) { model_name_ = model_name; };
+
   /*
    * The Gaussian Process Regression model derives its parameters from
    * the covariance functions.

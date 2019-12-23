@@ -417,6 +417,8 @@ public:
 
   struct PatchworkFunctionsWithMeasurement {
 
+    PatchworkFunctionsWithMeasurement(){};
+
     PatchworkFunctionsWithMeasurement(PatchworkFunctions functions)
         : functions_(functions) {}
 

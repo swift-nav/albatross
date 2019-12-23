@@ -14,6 +14,7 @@
 #define ALBATROSS_SRC_CEREAL_GP_HPP_
 
 using albatross::Fit;
+using albatross::GaussianProcessBase;
 using albatross::GPFit;
 
 namespace cereal {
@@ -26,6 +27,26 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_ldlt", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
+}
+
+template <typename Archive, typename CovFunc, typename ImplType>
+void save(Archive &archive, const GaussianProcessBase<CovFunc, ImplType> &gp,
+          const std::uint32_t) {
+  archive(cereal::make_nvp("name", gp.get_name()));
+  archive(cereal::make_nvp("params", gp.get_params()));
+  archive(cereal::make_nvp("insights", gp.insights));
+}
+
+template <typename Archive, typename CovFunc, typename ImplType>
+void load(Archive &archive, GaussianProcessBase<CovFunc, ImplType> &gp,
+          const std::uint32_t) {
+  std::string model_name;
+  archive(cereal::make_nvp("name", model_name));
+  gp.set_name(model_name);
+  albatross::ParameterStore params;
+  archive(cereal::make_nvp("params", params));
+  gp.set_params(params);
+  archive(cereal::make_nvp("insights", gp.insights));
 }
 
 } // namespace cereal
