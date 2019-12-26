@@ -122,36 +122,67 @@ auto build_boundary_features(const BoundaryFunction &boundary_function,
 }
 
 template <typename GroupKey, typename Solver, int Rows, int Cols>
+auto patchwork_solver_from_v(
+    const Grouped<GroupKey, Solver> &A,
+    const Grouped<GroupKey, Eigen::MatrixXd> &C,
+    const Eigen::SerializableLDLT &S,
+    const Grouped<GroupKey, Eigen::Matrix<double, Rows, Cols>> &v) {
+  // This solves a matrix which takes the form:
+  //
+  //     (A - C B^-1 C^T)^{-1}
+  //
+  // Where A is a block diagonal matrix, C and B are dense and
+  //
+  //     S = (B - C^T A^-1 C)
+  //
+  // The block structure is formulated using Grouped objects which
+  // consist of std::map like key value pairs.  For example, `A`
+  // in this case is a map which maps from a GroupKey to the
+  // the corresponding solver for that particular block diagonal
+  // portion.  Similarly `C` is a map from the group key to the
+  // corresponding rows of the dense version of C.
+  //
+  // This matrix can be solved using the matrix inversion lemma,
+  // which is re-iterated in Equation 9:
+  //
+  //   A^-1 + A^-1 C (B - C^T A^-1 C)^-1 C^T A^-1
+  //   A^-1 + A^-1 C S^-1 C^T A^-1
+  //
+  // Here we break it up into a few steps:
+  //
+  //   v = A^-1 rhs    (grouped and precomputed)
+  //   u = S^-1 C^T v  (dense)
+  //   w = A^-1 C U    (grouped)
+  //   output = w + v
+
+  // u = S^-1 C^T v
+  auto compute_u_block = [&](const Eigen::MatrixXd &C_i, const auto &v_i) {
+    return Eigen::MatrixXd(S.solve(C_i.transpose() * v_i));
+  };
+  const Eigen::MatrixXd u = block_accumulate(C, v, compute_u_block);
+
+  // w = A^-1 C u
+  auto compute_Cu_block = [&](const auto &key, const auto &C_i) {
+    return Eigen::MatrixXd(C_i * u);
+  };
+  const auto w = block_diag_solve(A, C.apply(compute_Cu_block));
+  // output = w + z
+  auto add_z = [&](const auto &key, const auto &w_block) {
+    return Eigen::MatrixXd(w_block + v.at(key)).eval();
+  };
+  return w.apply(add_z);
+};
+
+template <typename GroupKey, typename Solver, int Rows, int Cols>
 auto patchwork_solver(
     const Grouped<GroupKey, Solver> &A,
     const Grouped<GroupKey, Eigen::MatrixXd> &C,
     const Eigen::SerializableLDLT &S,
     const Grouped<GroupKey, Eigen::Matrix<double, Rows, Cols>> &rhs) {
-  // A^-1 rhs + A^-1 C (B - C^T A^-1 C)^-1 C^T A^-1 rhs
-  // A^-1 rhs + A^-1 C S^-1 C^T A^-1 rhs
-
-  const auto Ai_rhs = block_diag_solve(A, rhs);
-
-  // S^-1 C^T A^-1 rhs
-  auto SiCtAi_rhs_block = [&](const Eigen::MatrixXd &C_i,
-                              const auto &Ai_rhs_i) {
-    return Eigen::MatrixXd(S.solve(C_i.transpose() * Ai_rhs_i));
-  };
-  const Eigen::MatrixXd SiCtAi_rhs =
-      block_accumulate(C, Ai_rhs, SiCtAi_rhs_block);
-
-  auto product_with_SiCtAi_rhs = [&](const auto &key, const auto &C_i) {
-    return Eigen::MatrixXd(C_i * SiCtAi_rhs);
-  };
-  const auto CSiCtAi_rhs = C.apply(product_with_SiCtAi_rhs);
-
-  auto output = block_diag_solve(A, CSiCtAi_rhs);
-  // Adds A^-1 rhs to A^-1 C S^-1 C^T A^-1 rhs
-  auto add_Ai_rhs = [&](const auto &key, const auto &group) {
-    return Eigen::MatrixXd(group + Ai_rhs.at(key)).eval();
-  };
-  return output.apply(add_Ai_rhs);
-};
+  // v = A^-1 rhs
+  const auto v = block_diag_solve(A, rhs);
+  return patchwork_solver_from_v(A, C, S, v);
+}
 
 template <typename CovFunc, typename PatchworkFunctions>
 class PatchworkGaussianProcess
@@ -202,14 +233,25 @@ public:
 
     assert(boundary_features.size() > 0);
 
+    // The following variable names are meant to approximately match the
+    // notatoin used in Equation 5 (and the following matrices).
+
     // C_bb is the covariance matrix between all boundaries, it will
-    // have a lot of zeros so it could be decomposed more efficiently
+    // have a lot of zeros, so it could be decomposed more efficiently,
+    // but here is treated as a dense matrix.
     const Eigen::MatrixXd C_bb =
         patchwork_covariance_matrix(boundary_features, boundary_features);
     const auto C_bb_ldlt = C_bb.ldlt();
 
-    // C_dd is the large block diagonal matrix, with one block for each model
-    // for which we already have an efficient way of computing the inverse.
+    // C_dd is the large block diagonal matrix, with one block holding the
+    // covariance matrix from each model.  Albatross stores fit
+    // Gaussian processes using a pre-decomposed covariance matrix,
+    // typically the LDLT, we can use directly in subsequent computations.
+    // So C_dd here is actually a map to a "Solver", not an Eigen::MatrixXd.
+    //
+    // Also worth noting that in the paper they show C_dd as a full dense
+    // matrix, but all of the off-diagonal terms are zero so it is indeed
+    // a block diagonal matrix.
     auto get_train_covariance = [](const auto &fit_model) {
       return fit_model.get_fit().train_covariance;
     };
@@ -225,19 +267,35 @@ public:
                                                boundary_features);
     };
     const auto C_db = fit_models.apply(C_db_one_group);
-    const auto C_dd_inv_C_db = block_diag_solve(C_dd, C_db);
 
-    //    S_bb = C_bb - C_db * C_dd^-1 * C_db
+    // S_bb = C_bb - C_db^T * C_dd^-1 * C_db
     const Eigen::MatrixXd S_bb =
-        C_bb - block_inner_product(C_db, C_dd_inv_C_db);
-    const auto S_bb_ldlt = S_bb.ldlt();
+        C_bb - block_inner_product(C_db, block_diag_solve(C_dd, C_db));
+    const Eigen::SerializableLDLT S_bb_ldlt(S_bb.ldlt());
 
-    auto get_obs_vector = [](const auto &fit_model) {
-      return fit_model.predict(fit_model.get_fit().train_features).mean();
+    // Similar to with a Gaussian process we can precompute the "information"
+    // vector which accelerates the prediction step.  In Patchwork
+    // Krigging the "information" is the quantity:
+    //
+    //   information = (C_dd - C_db C_bb^-1 C_bd)^-1 y
+    //               = patchwork_solve(y)
+    //
+    // where y are the measurements (or targets) from each model.  The fit
+    // models don't directly store the measurements in favor of the
+    // information vector (v) corresponding to model k which is given by:
+    //
+    //   v_k = C_k^-1 y_k
+    //
+    // So we could compute: y_k = C_k v_k then pass that on to the
+    // patchwork_solver, but since the patchwork solver is subsequently going
+    // to compute C_k^-1 y_k, we can get a computation speedup by directly
+    // using v_k.
+    auto get_v = [](const auto &fit_model) {
+      return fit_model.get_fit().information;
     };
-
-    const auto ys = fit_models.apply(get_obs_vector);
-    const auto information = patchwork_solver(C_dd, C_db, S_bb_ldlt, ys);
+    const auto vs = fit_models.apply(get_v);
+    // information = (C_dd - Cdb C_bb^-1 C_bd)^-1 ys
+    const auto information = patchwork_solver_from_v(C_dd, C_db, S_bb_ldlt, vs);
 
     Eigen::VectorXd C_bb_inv_C_bd_information =
         Eigen::VectorXd::Zero(C_bb.rows());
@@ -262,45 +320,77 @@ public:
       PredictTypeIdentity<JointDistribution> &&) const {
 
     if (patchwork_fit.fit_models.size() == 1) {
+      // In this situation there are no boundaries, so predictions
+      // can be made directly.
       return patchwork_fit.fit_models.values()[0].predict(features).joint();
     }
 
+    // It's possible that the prediction features are in a group
+    // that was unobserved during training in which case we want
+    // to use the nearest group's model to make the prediction for
+    // those features.
+    const auto training_group_keys = patchwork_fit.C_db.keys();
     auto predict_grouper = [&](const auto &f) {
       return patchwork_functions_.nearest_group(
-          patchwork_fit.C_db.keys(), patchwork_functions_.grouper(f));
+          training_group_keys, patchwork_functions_.grouper(f));
     };
 
     auto group_features = as_group_features(features, predict_grouper);
 
+    // Making a prediction involves using Equations 6 and 7 which
+    // take the form:
+    //
+    //   m = (C_fd - C_fb C_bb^-1 C_db^T) * information
+    //     = cross * information
+    // and
+    //
+    //   E = cross * (C_dd - C_db C_bb^-1 C_db^T) * cross^T
+    //     = cross * patchwork_solve(cross^T)
+    //
+    // Giving:
+    //
+    //   prediction = N(m, P - E)
+    //
+    // where P is the prior covariance and E the explained covariance.
     const Eigen::MatrixXd C_fb = patchwork_covariance_matrix(
         group_features, patchwork_fit.boundary_features);
-    const Eigen::MatrixXd C_fb_bb_inv =
-        patchwork_fit.C_bb_ldlt.solve(C_fb.transpose()).transpose();
 
-    auto compute_cross_block_transpose = [&](const auto &key,
-                                             const auto &fit_model) {
+    // First we compute cross_transpose = cross^T which starts
+    // by computing:
+    //
+    //   Q = C_bb^-1 C_fb^T
+    //
+    // Then forming the grouped matrix:
+    //
+    //   cross_transpose = C_fd^T - Cdb * Q
+    //
+    const Eigen::MatrixXd Q = patchwork_fit.C_bb_ldlt.solve(C_fb.transpose());
+
+    auto compute_cross_transpose = [&](const auto &key, const auto &fit_model) {
       const auto train_features =
           as_group_features(key, fit_model.get_fit().train_features);
-      Eigen::MatrixXd block =
-          this->patchwork_covariance_matrix(train_features, group_features);
-      block -= patchwork_fit.C_db.at(key) * C_fb_bb_inv.transpose();
-      return block;
-    };
 
+      // cross_transpose_group = C_df
+      Eigen::MatrixXd cross_transpose_group =
+          this->patchwork_covariance_matrix(train_features, group_features);
+      // cross_transpose = C_df - C_db * Q
+      cross_transpose_group -= patchwork_fit.C_db.at(key) * Q;
+      return cross_transpose_group;
+    };
     const auto cross_transpose =
-        patchwork_fit.fit_models.apply(compute_cross_block_transpose);
-    const auto C_dd_inv_cross =
-        patchwork_solver(patchwork_fit.C_dd, patchwork_fit.C_db,
-                         patchwork_fit.S_bb_ldlt, cross_transpose);
+        patchwork_fit.fit_models.apply(compute_cross_transpose);
 
     const Eigen::VectorXd mean =
         block_inner_product(cross_transpose, patchwork_fit.information);
-    const Eigen::MatrixXd explained =
-        block_inner_product(cross_transpose, C_dd_inv_cross);
 
+    const auto patchwork_solve_cross_transpose =
+        patchwork_solver(patchwork_fit.C_dd, patchwork_fit.C_db,
+                         patchwork_fit.S_bb_ldlt, cross_transpose);
+    const Eigen::MatrixXd explained =
+        block_inner_product(cross_transpose, patchwork_solve_cross_transpose);
     const Eigen::MatrixXd cov =
         patchwork_covariance_matrix(group_features, group_features) -
-        C_fb_bb_inv * C_fb.transpose() - explained;
+        Q.transpose() * C_fb.transpose() - explained;
 
     return JointDistribution(mean, cov);
   }
@@ -313,7 +403,7 @@ public:
                                                          FeatureType>::value,
                   "Invalid PatchworkFunctions for this FeatureType");
 
-    const auto m = gp_from_covariance(this->covariance_function_, "internal");
+    const auto m = gp_from_covariance(this->covariance_function_);
 
     auto create_fit_model = [&](const auto &dataset) { return m.fit(dataset); };
 
