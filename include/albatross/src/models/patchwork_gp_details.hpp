@@ -79,33 +79,37 @@ public:
  */
 template <typename GroupKey, typename FeatureType> struct BoundaryFeature {
 
-  BoundaryFeature(const GroupKey &left_key_, const GroupKey &right_key_,
-                  const FeatureType &feature_)
-      : left_key(left_key_), right_key(right_key_), feature(feature_){};
+  BoundaryFeature(const GroupKey &left_group_key_,
+                  const GroupKey &right_group_key_, const FeatureType &feature_)
+      : left_group_key(left_group_key_), right_group_key(right_group_key_),
+        feature(feature_){};
 
-  BoundaryFeature(GroupKey &&left_key_, GroupKey &&right_key_,
+  BoundaryFeature(GroupKey &&left_group_key_, GroupKey &&right_group_key_,
                   FeatureType &&feature_)
-      : left_key(std::move(left_key_)), right_key(std::move(right_key_)),
+      : left_group_key(std::move(left_group_key_)),
+        right_group_key(std::move(right_group_key_)),
         feature(std::move(feature_)){};
 
-  GroupKey left_key;
-  GroupKey right_key;
+  GroupKey left_group_key;
+  GroupKey right_group_key;
   FeatureType feature;
 };
 
 template <typename GroupKey, typename FeatureType>
-inline auto as_boundary_feature(GroupKey &&left_key, GroupKey &&right_key,
+inline auto as_boundary_feature(GroupKey &&left_group_key,
+                                GroupKey &&right_group_key,
                                 FeatureType &&feature) {
   using BoundaryFeatureType =
       BoundaryFeature<typename std::decay<GroupKey>::type,
                       typename std::decay<FeatureType>::type>;
-  return BoundaryFeatureType(std::forward<GroupKey>(left_key),
-                             std::forward<GroupKey>(right_key),
+  return BoundaryFeatureType(std::forward<GroupKey>(left_group_key),
+                             std::forward<GroupKey>(right_group_key),
                              std::forward<FeatureType>(feature));
 }
 
 template <typename GroupKey, typename FeatureType>
-inline auto as_boundary_features(GroupKey &&left_key, GroupKey &&right_key,
+inline auto as_boundary_features(GroupKey &&left_group_key,
+                                 GroupKey &&right_group_key,
                                  const std::vector<FeatureType> &features) {
   using BoundaryFeatureType =
       BoundaryFeature<typename std::decay<GroupKey>::type,
@@ -113,7 +117,8 @@ inline auto as_boundary_features(GroupKey &&left_key, GroupKey &&right_key,
 
   std::vector<BoundaryFeatureType> boundary_features;
   for (const auto &f : features) {
-    boundary_features.emplace_back(as_boundary_feature(left_key, right_key, f));
+    boundary_features.emplace_back(
+        as_boundary_feature(left_group_key, right_group_key, f));
   }
   return boundary_features;
 }
@@ -225,9 +230,9 @@ template <typename SubCaller> struct PatchworkCallerBase {
                      const GroupFeature<GroupKey, FeatureTypeX> &x,
                      const BoundaryFeature<GroupKey, FeatureTypeY> &y) {
     // This is Equation 3 in the referenced paper.
-    if (x.key == y.left_key) {
+    if (x.key == y.left_group_key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.key == y.right_key) {
+    } else if (x.key == y.right_group_key) {
       return -SubCaller::call(cov_func, x.feature, y.feature);
     } else {
       return 0.;
@@ -240,17 +245,23 @@ template <typename SubCaller> struct PatchworkCallerBase {
                      const BoundaryFeature<GroupKey, FeatureTypeX> &x,
                      const BoundaryFeature<GroupKey, FeatureTypeY> &y) {
     // This is Equation 4 in the referenced paper.
-    if (x.left_key == y.left_key && x.right_key == y.right_key) {
+    if (x.left_group_key == y.left_group_key &&
+        x.right_group_key == y.right_group_key) {
       return 2 * SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.left_key == y.right_key && x.right_key == y.left_key) {
+    } else if (x.left_group_key == y.right_group_key &&
+               x.right_group_key == y.left_group_key) {
       return -2 * SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.left_key == y.left_key && x.right_key != y.right_key) {
+    } else if (x.left_group_key == y.left_group_key &&
+               x.right_group_key != y.right_group_key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.left_key != y.left_key && x.right_key == y.right_key) {
+    } else if (x.left_group_key != y.left_group_key &&
+               x.right_group_key == y.right_group_key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.left_key == y.right_key && x.right_key != y.left_key) {
+    } else if (x.left_group_key == y.right_group_key &&
+               x.right_group_key != y.left_group_key) {
       return -SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.left_key != y.right_key && x.right_key == y.left_key) {
+    } else if (x.left_group_key != y.right_group_key &&
+               x.right_group_key == y.left_group_key) {
       return -SubCaller::call(cov_func, x.feature, y.feature);
     } else {
       return 0.;

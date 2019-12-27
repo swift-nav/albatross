@@ -234,7 +234,12 @@ public:
     assert(boundary_features.size() > 0);
 
     // The following variable names are meant to approximately match the
-    // notatoin used in Equation 5 (and the following matrices).
+    // notation used in Equation 5 (and the following matrices).  The
+    // subscripts had to be changed.  In particular we've used:
+    //
+    //   d - the data, this is script D in the paper.
+    //   b - the boundaries, this is \del in the paper.
+    //   f - the prediction locations, this is * in the paper.
 
     // C_bb is the covariance matrix between all boundaries, it will
     // have a lot of zeros, so it could be decomposed more efficiently,
@@ -297,15 +302,6 @@ public:
     // information = (C_dd - Cdb C_bb^-1 C_bd)^-1 ys
     const auto information = patchwork_solver_from_v(C_dd, C_db, S_bb_ldlt, vs);
 
-    Eigen::VectorXd C_bb_inv_C_bd_information =
-        Eigen::VectorXd::Zero(C_bb.rows());
-    auto accumulate_C_bb_inv_C_bd_information = [&](const auto &key,
-                                                    const auto &C_bd_i) {
-      C_bb_inv_C_bd_information +=
-          C_bb_ldlt.solve(C_bd_i.transpose() * information.at(key));
-    };
-    C_db.apply(accumulate_C_bb_inv_C_bd_information);
-
     return ReturnType(*this, PatchworkFitType(fit_models, information,
                                               boundary_features, C_dd, C_db,
                                               C_bb_ldlt, S_bb_ldlt));
@@ -351,7 +347,7 @@ public:
     //
     //   prediction = N(m, P - E)
     //
-    // where P is the prior covariance and E the explained covariance.
+    // Where P is the prior covariance and E the explained covariance
     const Eigen::MatrixXd C_fb = patchwork_covariance_matrix(
         group_features, patchwork_fit.boundary_features);
 
@@ -383,6 +379,7 @@ public:
     const Eigen::VectorXd mean =
         block_inner_product(cross_transpose, patchwork_fit.information);
 
+    // This is Equation 7 but split into a few steps.
     const auto patchwork_solve_cross_transpose =
         patchwork_solver(patchwork_fit.C_dd, patchwork_fit.C_db,
                          patchwork_fit.S_bb_ldlt, cross_transpose);
