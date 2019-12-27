@@ -386,8 +386,8 @@ public:
     const Eigen::MatrixXd explained =
         block_inner_product(cross_transpose, patchwork_solve_cross_transpose);
     const Eigen::MatrixXd cov =
-        patchwork_covariance_matrix(group_features, group_features) -
-        Q.transpose() * C_fb.transpose() - explained;
+        patchwork_covariance_matrix(group_features, group_features) - C_fb * Q -
+        explained;
 
     return JointDistribution(mean, cov);
   }
