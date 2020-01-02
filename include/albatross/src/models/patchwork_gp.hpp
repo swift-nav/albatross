@@ -184,14 +184,16 @@ auto patchwork_solver(
   return patchwork_solver_from_v(A, C, S, v);
 }
 
-template <typename CovFunc, typename PatchworkFunctions>
+template <typename CovFunc, typename MeanFunc, typename PatchworkFunctions>
 class PatchworkGaussianProcess
     : public GaussianProcessBase<
-          CovFunc, PatchworkGaussianProcess<CovFunc, PatchworkFunctions>> {
+          CovFunc, MeanFunc,
+          PatchworkGaussianProcess<CovFunc, MeanFunc, PatchworkFunctions>> {
 
 public:
   using Base = GaussianProcessBase<
-      CovFunc, PatchworkGaussianProcess<CovFunc, PatchworkFunctions>>;
+      CovFunc, MeanFunc,
+      PatchworkGaussianProcess<CovFunc, MeanFunc, PatchworkFunctions>>;
 
   PatchworkGaussianProcess() : Base(){};
   PatchworkGaussianProcess(CovFunc &covariance_function)
@@ -199,16 +201,6 @@ public:
   PatchworkGaussianProcess(CovFunc &covariance_function,
                            PatchworkFunctions patchwork_functions)
       : Base(covariance_function), patchwork_functions_(patchwork_functions){};
-
-  template <typename X, typename Y>
-  Eigen::MatrixXd patchwork_covariance_matrix(const std::vector<X> &xs,
-                                              const std::vector<Y> &ys) const {
-    auto patchwork_caller = [&](const auto &x, const auto &y) {
-      return PatchworkCaller::call(this->covariance_function_, x, y);
-    };
-
-    return compute_covariance_matrix(patchwork_caller, xs, ys);
-  };
 
   template <typename FitModelType, typename GroupKey>
   auto
@@ -307,6 +299,30 @@ public:
                                               C_bb_ldlt, S_bb_ldlt));
   };
 
+  template <typename FeatureType>
+  auto _fit_impl(const std::vector<FeatureType> &features,
+                 const MarginalDistribution &targets) const {
+
+    static_assert(details::patchwork_functions_are_valid<PatchworkFunctions,
+                                                         FeatureType>::value,
+                  "Invalid PatchworkFunctions for this FeatureType");
+
+    const auto m = gp_from_covariance_and_mean(this->covariance_function_,
+                                               this->mean_function_);
+
+    auto create_fit_model = [&](const auto &dataset) { return m.fit(dataset); };
+
+    const RegressionDataset<FeatureType> dataset(features, targets);
+
+    auto grouper = [&](const auto &f) {
+      return patchwork_functions_.grouper(f);
+    };
+
+    const auto fit_models = dataset.group_by(grouper).apply(create_fit_model);
+
+    return from_fit_models(fit_models).get_fit();
+  }
+
   template <typename FeatureType, typename FitModelType, typename GroupKey,
             typename BoundaryFeatureType>
   JointDistribution _predict_impl(
@@ -392,28 +408,16 @@ public:
     return JointDistribution(mean, cov);
   }
 
-  template <typename FeatureType>
-  auto _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const {
-
-    static_assert(details::patchwork_functions_are_valid<PatchworkFunctions,
-                                                         FeatureType>::value,
-                  "Invalid PatchworkFunctions for this FeatureType");
-
-    const auto m = gp_from_covariance(this->covariance_function_);
-
-    auto create_fit_model = [&](const auto &dataset) { return m.fit(dataset); };
-
-    const RegressionDataset<FeatureType> dataset(features, targets);
-
-    auto grouper = [&](const auto &f) {
-      return patchwork_functions_.grouper(f);
+private:
+  template <typename X, typename Y>
+  Eigen::MatrixXd patchwork_covariance_matrix(const std::vector<X> &xs,
+                                              const std::vector<Y> &ys) const {
+    auto patchwork_caller = [&](const auto &x, const auto &y) {
+      return PatchworkCaller::call(this->covariance_function_, x, y);
     };
 
-    const auto fit_models = dataset.group_by(grouper).apply(create_fit_model);
-
-    return from_fit_models(fit_models).get_fit();
-  }
+    return compute_covariance_matrix(patchwork_caller, xs, ys);
+  };
 
   struct PatchworkFunctionsWithMeasurement {
 
@@ -449,10 +453,10 @@ public:
 };
 
 template <typename CovFunc, typename PatchworkFunctions>
-inline PatchworkGaussianProcess<CovFunc, PatchworkFunctions>
+inline PatchworkGaussianProcess<CovFunc, ZeroMean, PatchworkFunctions>
 patchwork_gp_from_covariance(CovFunc covariance_function,
                              PatchworkFunctions patchwork_functions) {
-  return PatchworkGaussianProcess<CovFunc, PatchworkFunctions>(
+  return PatchworkGaussianProcess<CovFunc, ZeroMean, PatchworkFunctions>(
       covariance_function, patchwork_functions);
 };
 

@@ -25,7 +25,7 @@ inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
 } // namespace details
 
-template <typename CovFunc, typename GrouperFunction,
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 class SparseGaussianProcessRegression;
 
@@ -119,35 +119,52 @@ struct StateSpaceInducingPointStrategy {
  *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
-template <typename CovFunc, typename GrouperFunction,
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 class SparseGaussianProcessRegression
     : public GaussianProcessBase<
-          CovFunc, SparseGaussianProcessRegression<CovFunc, GrouperFunction,
-                                                   InducingPointStrategy>> {
+          CovFunc, MeanFunc,
+          SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
+                                          InducingPointStrategy>> {
 
 public:
   using Base = GaussianProcessBase<
-      CovFunc, SparseGaussianProcessRegression<CovFunc, GrouperFunction,
-                                               InducingPointStrategy>>;
+      CovFunc, MeanFunc,
+      SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
+                                      InducingPointStrategy>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
-  SparseGaussianProcessRegression(CovFunc &covariance_function)
-      : Base(covariance_function) {
+
+  SparseGaussianProcessRegression(const CovFunc &covariance_function,
+                                  const MeanFunc &mean_function)
+      : Base(covariance_function, mean_function) {
+    initialize_params();
+  };
+  SparseGaussianProcessRegression(CovFunc &&covariance_function,
+                                  MeanFunc &&mean_function)
+      : Base(std::move(covariance_function), std::move(mean_function)) {
+    initialize_params();
+  };
+
+  SparseGaussianProcessRegression(
+      const CovFunc &covariance_function, const MeanFunc &mean_function,
+      const GrouperFunction &independent_group_function,
+      const InducingPointStrategy &inducing_point_strategy,
+      const std::string &model_name)
+      : Base(covariance_function, mean_function, model_name),
+        inducing_point_strategy_(inducing_point_strategy),
+        independent_group_function_(independent_group_function) {
     initialize_params();
   };
   SparseGaussianProcessRegression(
-      CovFunc &covariance_function, GrouperFunction independent_group_function_,
-      InducingPointStrategy &inducing_point_strategy_,
+      CovFunc &&covariance_function, MeanFunc &&mean_function,
+      GrouperFunction &&independent_group_function,
+      InducingPointStrategy &&inducing_point_strategy,
       const std::string &model_name)
-      : Base(covariance_function, model_name),
-        inducing_point_strategy(inducing_point_strategy_),
-        independent_group_function(independent_group_function_) {
-    initialize_params();
-  };
-  SparseGaussianProcessRegression(CovFunc &covariance_function,
-                                  const std::string &model_name)
-      : Base(covariance_function, model_name) {
+      : Base(std::move(covariance_function), std::move(mean_function),
+             model_name),
+        inducing_point_strategy_(std::move(inducing_point_strategy)),
+        independent_group_function_(std::move(independent_group_function)) {
     initialize_params();
   };
 
@@ -160,7 +177,8 @@ public:
   }
 
   ParameterStore get_params() const override {
-    auto params = this->covariance_function_.get_params();
+    auto params = map_join(this->mean_function_.get_params(),
+                           this->covariance_function_.get_params());
     params[details::measurement_nugget_name()] = measurement_nugget_;
     params[details::inducing_nugget_name()] = inducing_nugget_;
     return params;
@@ -170,6 +188,8 @@ public:
                            const Parameter &param) override {
     if (map_contains(this->covariance_function_.get_params(), name)) {
       this->covariance_function_.set_param(name, param);
+    } else if (map_contains(this->mean_function_.get_params(), name)) {
+      this->mean_function_.set_param(name, param);
     } else if (name == details::measurement_nugget_name()) {
       measurement_nugget_ = param;
     } else if (name == details::inducing_nugget_name()) {
@@ -191,11 +211,11 @@ public:
         "InducingPointStrategy is not defined for the required types");
 
     const auto indexer =
-        group_by(out_of_order_features, independent_group_function).indexers();
+        group_by(out_of_order_features, independent_group_function_).indexers();
 
     // Determine the set of inducing points, u.
-    const auto u = inducing_point_strategy(this->covariance_function_,
-                                           out_of_order_features);
+    const auto u = inducing_point_strategy_(this->covariance_function_,
+                                            out_of_order_features);
 
     const auto out_of_order_measurement_features =
         as_measurements(out_of_order_features);
@@ -214,7 +234,9 @@ public:
 
     const auto features =
         subset(out_of_order_measurement_features, reordered_inds);
-    const auto targets = subset(out_of_order_targets, reordered_inds);
+    auto targets = subset(out_of_order_targets, reordered_inds);
+
+    this->mean_function_.remove_from(features, &targets.mean);
 
     Eigen::Index m = static_cast<Eigen::Index>(u.size());
 
@@ -310,30 +332,62 @@ public:
     return Fit<GPFit<DirectInverse, InducingPointFeatureType>>(u, solver, v);
   }
 
+private:
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  InducingPointStrategy inducing_point_strategy;
-  GrouperFunction independent_group_function;
+  InducingPointStrategy inducing_point_strategy_;
+  GrouperFunction independent_group_function_;
+};
+
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
+          typename InducingPointStrategy>
+auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
+                                        MeanFunc &&mean_function,
+                                        GrouperFunction &&grouper_function,
+                                        InducingPointStrategy &&strategy,
+                                        const std::string &model_name) {
+  return SparseGaussianProcessRegression<
+      typename std::decay<CovFunc>::type, typename std::decay<ZeroMean>::type,
+      typename std::decay<GrouperFunction>::type,
+      typename std::decay<InducingPointStrategy>::type>(
+      std::forward<CovFunc>(covariance_function),
+      std::forward<MeanFunc>(mean_function),
+      std::forward<GrouperFunction>(grouper_function),
+      std::forward<InducingPointStrategy>(strategy), model_name);
+};
+
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction>
+auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
+                                        MeanFunc &&mean_function,
+                                        GrouperFunction &&grouper_function,
+                                        const std::string &model_name) {
+  return sparse_gp_from_covariance_and_mean(
+      std::forward<CovFunc>(covariance_function),
+      std::forward<MeanFunc>(mean_function),
+      std::forward<GrouperFunction>(grouper_function),
+      StateSpaceInducingPointStrategy(), model_name);
 };
 
 template <typename CovFunc, typename GrouperFunction,
           typename InducingPointStrategy>
-auto sparse_gp_from_covariance(CovFunc covariance_function,
-                               GrouperFunction grouper_function,
-                               InducingPointStrategy &strategy,
+auto sparse_gp_from_covariance(CovFunc &&covariance_function,
+                               GrouperFunction &&grouper_function,
+                               InducingPointStrategy &&strategy,
                                const std::string &model_name) {
-  return SparseGaussianProcessRegression<CovFunc, GrouperFunction,
-                                         InducingPointStrategy>(
-      covariance_function, grouper_function, strategy, model_name);
+  return sparse_gp_from_covariance_and_mean(
+      std::forward<CovFunc>(covariance_function), ZeroMean(),
+      std::forward<GrouperFunction>(grouper_function),
+      std::forward<InducingPointStrategy>(strategy), model_name);
 };
 
 template <typename CovFunc, typename GrouperFunction>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
                                GrouperFunction grouper_function,
                                const std::string &model_name) {
-  StateSpaceInducingPointStrategy strategy;
-  return sparse_gp_from_covariance(covariance_function, grouper_function,
-                                   strategy, model_name);
+  return sparse_gp_from_covariance_and_mean(
+      std::forward<CovFunc>(covariance_function), ZeroMean(),
+      std::forward<GrouperFunction>(grouper_function),
+      StateSpaceInducingPointStrategy(), model_name);
 };
 
 } // namespace albatross
