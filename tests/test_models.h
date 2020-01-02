@@ -38,6 +38,25 @@ public:
   auto get_dataset() const { return make_toy_linear_data(); }
 };
 
+class MakeGaussianProcessWithMean {
+  const double a = 5.;
+  const double b = 1.;
+
+public:
+  MakeGaussianProcessWithMean(){};
+
+  auto get_model() const {
+    IndependentNoise<double> meas_noise(0.1);
+
+    LinearMean linear_mean;
+    linear_mean.offset.value = a;
+    linear_mean.slope.value = b;
+    return gp_from_covariance_and_mean(meas_noise, linear_mean);
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(a, b); }
+};
+
 class MakeRansacGaussianProcess {
 public:
   auto get_model() const {
@@ -84,6 +103,38 @@ public:
   auto get_dataset() const { return make_toy_linear_data(); }
 };
 
+class MakeRansacChiSquaredGaussianProcessWithMean {
+
+  const double a = 5.;
+  const double b = 1.;
+
+public:
+  auto get_model() const {
+
+    IndependentNoise<double> meas_noise(0.1);
+    LinearMean linear_mean;
+    linear_mean.offset.value = a;
+    linear_mean.slope.value = b;
+    const auto gp = gp_from_covariance_and_mean(meas_noise, linear_mean);
+
+    RansacConfig config;
+    config.inlier_threshold = 1.;
+    config.random_sample_size = 3;
+    config.min_consensus_size = 3;
+    config.max_iterations = 20;
+    config.max_failed_candidates = 20;
+
+    GaussianProcessRansacStrategy<ChiSquaredCdf, ChiSquaredConsensusMetric,
+                                  ChiSquaredIsValidCandidateMetric,
+                                  LeaveOneOutGrouper>
+        ransac_strategy;
+
+    return gp.ransac(ransac_strategy, config);
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(a, b); }
+};
+
 namespace adapted {
 
 inline std::vector<double>
@@ -99,10 +150,10 @@ convert_features(const std::vector<AdaptedFeature> &features) {
 
 template <typename CovarianceFunc>
 class AdaptedGaussianProcess
-    : public GaussianProcessBase<CovarianceFunc,
+    : public GaussianProcessBase<CovarianceFunc, ZeroMean,
                                  AdaptedGaussianProcess<CovarianceFunc>> {
 public:
-  using Base = GaussianProcessBase<CovarianceFunc,
+  using Base = GaussianProcessBase<CovarianceFunc, ZeroMean,
                                    AdaptedGaussianProcess<CovarianceFunc>>;
 
   using Base::_fit_impl;
@@ -218,8 +269,10 @@ public:
 };
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
+                         MakeGaussianProcessWithMean,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
                          MakeRansacChiSquaredGaussianProcess,
+                         MakeRansacChiSquaredGaussianProcessWithMean,
                          MakeRansacAdaptedGaussianProcess, MakeNullModel>
     ExampleModels;
 

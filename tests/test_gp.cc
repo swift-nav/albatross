@@ -12,7 +12,7 @@
 
 #include <gtest/gtest.h>
 
-#include "test_utils.h"
+#include "test_models.h"
 
 namespace albatross {
 
@@ -400,6 +400,34 @@ TEST(test_gp, test_unobservablemodel_with_diff_constraint) {
 
   EXPECT_NEAR(diff_coefs.dot(pred.mean), 0., 1e-6);
   EXPECT_NEAR(diff_coefs.dot(pred.covariance * diff_coefs), 0., 1e-5);
+}
+
+TEST(test_gp, test_nonzero_mean) {
+
+  MakeGaussianProcessWithMean gp_with_mean_case;
+
+  const auto dataset = gp_with_mean_case.get_dataset();
+  const auto model = gp_with_mean_case.get_model();
+
+  const auto fit_model = model.fit(dataset);
+
+  const auto covariance_function = model.get_covariance();
+  const auto measurement_features = as_measurements(dataset.features);
+  const auto train_cov = covariance_function(measurement_features);
+  const auto train_ldlt = train_cov.ldlt();
+  const Eigen::VectorXd information = train_ldlt.solve(dataset.targets.mean);
+
+  const std::vector<double> prediction_features = {-20., 0.01};
+
+  const auto cross = covariance_function(dataset.features, prediction_features);
+  const auto prior = covariance_function(prediction_features);
+  const auto pred_without_mean =
+      gp_joint_prediction(cross, prior, information, train_ldlt);
+
+  const auto actual = fit_model.predict(prediction_features).joint();
+
+  // The prediction without using the mean should be very different.
+  EXPECT_GT((pred_without_mean.mean - actual.mean).norm(), 1.);
 }
 
 } // namespace albatross

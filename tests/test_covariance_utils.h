@@ -61,6 +61,20 @@ public:
   std::string name_ = "has_multiple";
 };
 
+class HasMultipleMean : public MeanFunction<HasMultiple> {
+public:
+  double _call_impl(const X &) const { return 1.; };
+
+  double _call_impl(const Y &) const { return 3.; };
+
+  double _call_impl(const W &) const { return 7.; };
+
+  // These are all invalid:
+  double _call_impl(const Z &) { return 1.; };
+
+  double _call_impl(V &) const { return 11.; };
+};
+
 class HasPublicCallImpl {
 public:
   double _call_impl(const X &, const Y &) const { return 1.; };

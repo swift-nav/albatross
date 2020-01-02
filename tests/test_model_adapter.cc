@@ -17,9 +17,10 @@ namespace albatross {
 
 template <typename CovFunc>
 class TestAdaptedModel
-    : public GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>> {
+    : public GaussianProcessBase<CovFunc, ZeroMean, TestAdaptedModel<CovFunc>> {
 public:
-  using Base = GaussianProcessBase<CovFunc, TestAdaptedModel<CovFunc>>;
+  using Base =
+      GaussianProcessBase<CovFunc, ZeroMean, TestAdaptedModel<CovFunc>>;
 
   template <typename FeatureType>
   using FitType = typename Base::template CholeskyFit<FeatureType>;

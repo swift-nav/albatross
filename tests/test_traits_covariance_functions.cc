@@ -126,72 +126,86 @@ TEST(test_traits_covariance_function, test_vector_operator_inspection) {
       has_call_operator<HasMultiple, std::vector<Z>, std::vector<Z>>::value));
 }
 
-TEST(test_traits_covariance_function, test_has_valid_caller_for_all_variants) {
+TEST(test_traits_covariance_function,
+     test_has_valid_cov_caller_for_all_variants) {
 
   // With one type
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<W>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<X>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<Y>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<W>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y>>::value));
 
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Z>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Z>>::value));
 
   // With two types
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<X, W>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<W, X>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<X, Y>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<Y, X>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, W>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<W, X>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, Y>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y, X>>::value));
 
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<X, Z>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, Z>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Z, X>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Z, X>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<W, Z>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<W, Z>>::value));
 
   // With three types
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<W, X, Y>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<W, Y, X>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<X, W, Y>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<X, Y, W>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<Y, X, W>>::value));
-  EXPECT_TRUE(bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                                     variant<Y, W, X>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<W, X, Y>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<W, Y, X>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, W, Y>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, Y, W>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y, X, W>>::value));
+  EXPECT_TRUE(
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y, W, X>>::value));
 
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<X, Y, Z>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, Y, Z>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<X, Z, Y>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<X, Z, Y>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Y, X, Z>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y, X, Z>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Y, Z, X>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Y, Z, X>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Z, X, Y>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Z, X, Y>>::value));
   EXPECT_FALSE(
-      bool(has_valid_caller_for_all_variants<HasMultiple, DefaultCaller,
-                                             variant<Z, Y, X>>::value));
+      bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
+                                                 variant<Z, Y, X>>::value));
 }
 
 TEST(test_traits_covariance_function,
