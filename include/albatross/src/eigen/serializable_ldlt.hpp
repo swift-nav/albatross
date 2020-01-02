@@ -19,11 +19,26 @@ class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
   SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
 
-  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()){};
+  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()) {
+    assert_valid();
+  };
 
   SerializableLDLT(const LDLT<MatrixXd, Lower> &ldlt)
       // Can we get around copying here?
-      : LDLT<MatrixXd, Lower>(ldlt){};
+      : LDLT<MatrixXd, Lower>(ldlt) {
+    assert_valid();
+  };
+
+  SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
+      : LDLT<MatrixXd, Lower>(std::move(ldlt)) {
+    assert_valid();
+  };
+
+  void assert_valid() const {
+    if (this->vectorD().minCoeff() <= 0.) {
+      assert(false && "Attempt to compute LDLT of a non PSD matrix");
+    }
+  }
 
   LDLT<MatrixXd, Lower>::TranspositionType &mutable_transpositions() {
     return this->m_transpositions;
@@ -61,9 +76,11 @@ public:
         this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
     // L^-1 P
     this->matrixL().solveInPlace(inverse_cholesky);
+
     // D^-1/2 L^-1 P
     const auto sqrt_diag =
         this->vectorD().array().sqrt().inverse().matrix().asDiagonal();
+
     inverse_cholesky = sqrt_diag * inverse_cholesky;
 
     assert(!inverse_cholesky.hasNaN());
