@@ -27,6 +27,14 @@
 #define EXAMPLE_CONSTANT_VALUE 3.14159
 #endif
 
+#ifndef EXAMPLE_SCALE_VALUE
+#define EXAMPLE_SCALE_VALUE 10.
+#endif
+
+#ifndef EXAMPLE_TRANSLATION_VALUE
+#define EXAMPLE_TRANSLATION_VALUE 3.
+#endif
+
 /*
  * Randomly samples n points between low and high.
  */
@@ -56,12 +64,14 @@ std::vector<double> uniform_points_on_line(const std::size_t n,
   return xs;
 };
 
+double sinc(double x) { return x == 0 ? 1. : sin(x) / x; }
+
 /*
  * The noise free function we're attempting to estimate.
  */
 double truth(double x) {
-  double sinx_x = x == 0 ? 1. : sin(x) / x;
-  return x * EXAMPLE_SLOPE_VALUE + EXAMPLE_CONSTANT_VALUE + 10. * sinx_x;
+  return x * EXAMPLE_SLOPE_VALUE + EXAMPLE_CONSTANT_VALUE +
+         EXAMPLE_SCALE_VALUE * sinc(x - EXAMPLE_TRANSLATION_VALUE);
 }
 
 /*
@@ -142,7 +152,7 @@ void write_predictions_to_csv(
   output.open(output_path);
 
   const std::size_t k = 161;
-  auto grid_xs = uniform_points_on_line(k, low - 2., high + 2.);
+  auto grid_xs = uniform_points_on_line(k, low - 10., high + 10.);
 
   auto prediction =
       fit_model.predict_with_measurement_noise(grid_xs).marginal();

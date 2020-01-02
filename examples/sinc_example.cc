@@ -21,6 +21,7 @@
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
 DEFINE_string(n, "10", "number of training points to use.");
+DEFINE_string(mode, "radial", "which modelling approach to use.");
 DEFINE_bool(tune, false, "a flag indication parameters should be tuned first.");
 
 using albatross::get_tuner;
@@ -28,17 +29,22 @@ using albatross::ParameterStore;
 using albatross::RegressionDataset;
 
 template <typename ModelType>
-albatross::ParameterStore tune_model(ModelType &model,
-                                     RegressionDataset<double> &data) {
+void run_model(ModelType &model, RegressionDataset<double> &data, double low,
+               double high) {
+
+  if (FLAGS_tune) {
+    albatross::LeaveOneOutLikelihood<> loo_nll;
+    model.set_params(get_tuner(model, loo_nll, data).tune());
+  }
+
+  std::cout << pretty_param_details(model.get_params()) << std::endl;
+  const auto fit_model = model.fit(data);
+
   /*
-   * Now we tune the model by finding the hyper parameters that
-   * maximize the likelihood (or minimize the negative log likelihood).
+   * Make predictions at a bunch of locations which we can then
+   * visualize if desired.
    */
-  std::cout << "Tuning the model." << std::endl;
-
-  albatross::LeaveOneOutLikelihood<> loo_nll;
-
-  return get_tuner(model, loo_nll, data).tune();
+  write_predictions_to_csv(FLAGS_output, fit_model, low, high);
 }
 
 int main(int argc, char *argv[]) {
@@ -46,8 +52,8 @@ int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = std::stoi(FLAGS_n);
-  const double low = -3.;
-  const double high = 13.;
+  const double low = -10.;
+  const double high = 23.;
   const double meas_noise_sd = 1.;
 
   if (FLAGS_input == "") {
@@ -61,29 +67,27 @@ int main(int argc, char *argv[]) {
   RegressionDataset<double> data = read_csv_input(FLAGS_input);
 
   std::cout << "Defining the model." << std::endl;
+
   using Noise = IndependentNoise<double>;
-  using SquaredExp = SquaredExponential<EuclideanDistance>;
-
-  Polynomial<1> polynomial(100.);
-
   Noise indep_noise(meas_noise_sd);
-  SquaredExp squared_exponential(3.5, 5.7);
-  auto cov = polynomial + squared_exponential + measurement_only(indep_noise);
+  indep_noise.sigma_independent_noise.prior = LogScaleUniformPrior(1e-3, 1e2);
 
-  std::cout << cov.pretty_string() << std::endl;
-
-  auto model = gp_from_covariance(cov);
-
-  if (FLAGS_tune) {
-    model.set_params(tune_model(model, data));
+  if (FLAGS_mode == "radial") {
+    // this approach uses a squared exponential radial function to capture
+    // the function we're estimating using non-parametric techniques
+    const Polynomial<1> polynomial(100.);
+    using SquaredExp = SquaredExponential<EuclideanDistance>;
+    const SquaredExp squared_exponential(3.5, 5.7);
+    auto cov = polynomial + squared_exponential + measurement_only(indep_noise);
+    auto model = gp_from_covariance(cov);
+    run_model(model, data, low, high);
+  } else if (FLAGS_mode == "parametric") {
+    // Here we assume we know the "truth" is made up of a linear trend and
+    // a scaled and translated sinc function with added noise and capture
+    // this all through the use of a mean function.
+    const LinearMean linear;
+    const SincFunction sinc;
+    auto model = gp_from_covariance_and_mean(indep_noise, linear + sinc);
+    run_model(model, data, low, high);
   }
-
-  std::cout << pretty_param_details(model.get_params()) << std::endl;
-  const auto fit_model = model.fit(data);
-
-  /*
-   * Make predictions at a bunch of locations which we can then
-   * visualize if desired.
-   */
-  write_predictions_to_csv(FLAGS_output, fit_model, low, high);
 }
