@@ -43,11 +43,11 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
                 "caller does not support the required arguments");
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, Y>::value,
                 "caller does not return a double");
-  int m = static_cast<int>(xs.size());
-  int n = static_cast<int>(ys.size());
+  Eigen::Index m = static_cast<Eigen::Index>(xs.size());
+  Eigen::Index n = static_cast<Eigen::Index>(ys.size());
   Eigen::MatrixXd C(m, n);
 
-  int i, j;
+  Eigen::Index i, j;
   std::size_t si, sj;
   for (i = 0; i < m; i++) {
     si = static_cast<std::size_t>(i);
@@ -70,10 +70,10 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
                 "caller does not return a double");
 
-  int n = static_cast<int>(xs.size());
+  Eigen::Index n = static_cast<Eigen::Index>(xs.size());
   Eigen::MatrixXd C(n, n);
 
-  int i, j;
+  Eigen::Index i, j;
   std::size_t si, sj;
   for (i = 0; i < n; i++) {
     si = static_cast<std::size_t>(i);
