@@ -53,6 +53,13 @@ public:
                                 has_valid_cov_caller<U, Caller, B, B>::value;
 };
 
+template <typename MeanFunc, typename Caller, typename FeatureType>
+class has_valid_mean_caller
+    : public has_call_with_return_type<Caller, double,
+                                       typename const_ref<MeanFunc>::type,
+                                       typename const_ref<FeatureType>::type> {
+};
+
 /*
  * This determines whether or not a class has a method defined for,
  *   `operator() (const X &x, const Y &y, const Z &z, ...)`
@@ -107,17 +114,17 @@ public:
  */
 
 template <typename U, typename Caller, typename A>
-struct has_valid_caller_for_all_variants : public std::false_type {};
+struct has_valid_cov_caller_for_all_variants : public std::false_type {};
 
 template <typename U, typename Caller, typename A>
-struct has_valid_caller_for_all_variants<U, Caller, variant<A>>
+struct has_valid_cov_caller_for_all_variants<U, Caller, variant<A>>
     : public has_valid_cov_caller<U, Caller, A, A> {};
 
 template <typename U, typename Caller, typename A, typename... Ts>
-struct has_valid_caller_for_all_variants<U, Caller, variant<A, Ts...>> {
+struct has_valid_cov_caller_for_all_variants<U, Caller, variant<A, Ts...>> {
   static constexpr bool value =
       has_valid_cov_caller<U, Caller, A, A>::value &&
-      has_valid_caller_for_all_variants<U, Caller, variant<Ts...>>::value;
+      has_valid_cov_caller_for_all_variants<U, Caller, variant<Ts...>>::value;
 };
 
 /*
@@ -127,10 +134,10 @@ struct has_valid_caller_for_all_variants<U, Caller, variant<A, Ts...>> {
 template <typename CovFunc, typename Caller, typename... Ts, typename... Ys>
 struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ys...>> {
   static constexpr bool value =
-      (has_valid_caller_for_all_variants<CovFunc, Caller,
-                                         variant<Ts...>>::value &&
-       has_valid_caller_for_all_variants<CovFunc, Caller,
-                                         variant<Ys...>>::value);
+      (has_valid_cov_caller_for_all_variants<CovFunc, Caller,
+                                             variant<Ts...>>::value &&
+       has_valid_cov_caller_for_all_variants<CovFunc, Caller,
+                                             variant<Ys...>>::value);
 };
 
 /*
@@ -146,7 +153,8 @@ struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
 template <typename U, typename Caller, typename A, typename B, typename... Ts>
 struct has_valid_cross_cov_caller<U, Caller, A, variant<B, Ts...>> {
   static constexpr bool value =
-      has_valid_caller_for_all_variants<U, Caller, variant<B, Ts...>>::value &&
+      has_valid_cov_caller_for_all_variants<U, Caller,
+                                            variant<B, Ts...>>::value &&
       (has_valid_cross_cov_caller<U, Caller, A, B>::value ||
        has_valid_cross_cov_caller<U, Caller, A, variant<Ts...>>::value);
 };
@@ -193,6 +201,29 @@ template <typename U, typename Caller, typename... Ts>
 struct has_valid_variant_cov_caller<U, Caller, variant<Ts...>, variant<Ts...>> {
   static constexpr bool value =
       has_valid_cov_caller<U, Caller, variant<Ts...>, variant<Ts...>>::value;
+};
+
+/*
+ * Checks if a type has a valid mean call for any of the types in a variant.
+ */
+template <typename U, typename Caller, typename A, typename = void>
+struct has_valid_variant_mean_caller : public std::false_type {};
+
+/*
+ * Collapse from the right
+ */
+template <typename U, typename Caller, typename A>
+struct has_valid_variant_mean_caller<U, Caller, variant<A>,
+                                     std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value = has_valid_mean_caller<U, Caller, A>::value;
+};
+
+template <typename U, typename Caller, typename A, typename... Ts>
+struct has_valid_variant_mean_caller<U, Caller, variant<A, Ts...>,
+                                     std::enable_if_t<!is_variant<A>::value>> {
+  static constexpr bool value =
+      has_valid_mean_caller<U, Caller, A>::value ||
+      has_valid_variant_mean_caller<U, Caller, variant<Ts...>>::value;
 };
 
 } // namespace albatross

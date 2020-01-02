@@ -86,6 +86,29 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
   return C;
 }
 
+/*
+ * Mean of all elements of a vector.
+ */
+template <typename MeanFuncCaller, typename X>
+inline Eigen::VectorXd compute_mean_vector(MeanFuncCaller caller,
+                                           const std::vector<X> &xs) {
+  static_assert(is_invocable<MeanFuncCaller, X>::value,
+                "caller does not support the required arguments");
+  static_assert(is_invocable_with_result<MeanFuncCaller, double, X>::value,
+                "caller does not return a double");
+
+  Eigen::Index n = static_cast<Eigen::Index>(xs.size());
+  Eigen::VectorXd m(n);
+
+  Eigen::Index i;
+  std::size_t si;
+  for (i = 0; i < n; i++) {
+    si = static_cast<std::size_t>(i);
+    m[i] = caller(xs[si]);
+  }
+  return m;
+}
+
 namespace internal {
 
 /*
@@ -93,11 +116,20 @@ namespace internal {
  */
 struct DirectCaller {
 
+  // Covariance Functions
   template <typename CovFunc, typename X, typename Y,
             typename std::enable_if<has_valid_call_impl<CovFunc, X, Y>::value,
                                     int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return cov_func._call_impl(x, y);
+  }
+
+  // Mean Functions
+  template <typename MeanFunc, typename X,
+            typename std::enable_if<has_valid_call_impl<MeanFunc, X>::value,
+                                    int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return mean_func._call_impl(x);
   }
 };
 
@@ -107,9 +139,9 @@ struct DirectCaller {
  */
 template <typename SubCaller> struct SymmetricCaller {
 
-  /*
-   * CovFunc has a direct call implementation for X and Y
-   */
+  // Covariance Functions
+
+  // CovFunc has a direct call implementation for X and Y
   template <
       typename CovFunc, typename X, typename Y,
       typename std::enable_if<
@@ -118,9 +150,7 @@ template <typename SubCaller> struct SymmetricCaller {
     return SubCaller::call(cov_func, x, y);
   }
 
-  /*
-   * CovFunc has a call for Y and X but not X and Y
-   */
+  // CovFunc has a call for Y and X but not X and Y
   template <typename CovFunc, typename X, typename Y,
             typename std::enable_if<
                 (has_valid_cov_caller<CovFunc, SubCaller, Y, X>::value &&
@@ -128,6 +158,15 @@ template <typename SubCaller> struct SymmetricCaller {
                 int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return SubCaller::call(cov_func, y, x);
+  }
+
+  // Mean Functions
+  template <
+      typename MeanFunc, typename X,
+      typename std::enable_if<
+          has_valid_mean_caller<MeanFunc, SubCaller, X>::value, int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return SubCaller::call(mean_func, x);
   }
 };
 
@@ -141,6 +180,7 @@ template <typename SubCaller> struct SymmetricCaller {
  */
 template <typename SubCaller> struct MeasurementForwarder {
 
+  // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
       typename std::enable_if<
@@ -181,10 +221,30 @@ template <typename SubCaller> struct MeasurementForwarder {
                      const Measurement<Y> &y) {
     return SubCaller::call(cov_func, x, y.value);
   }
+
+  // Mean Functions
+  template <
+      typename MeanFunc, typename X,
+      typename std::enable_if<
+          has_valid_mean_caller<MeanFunc, SubCaller, X>::value, int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return SubCaller::call(mean_func, x);
+  }
+
+  template <typename MeanFunc, typename X,
+            typename std::enable_if<
+                has_valid_mean_caller<MeanFunc, SubCaller, X>::value &&
+                    !has_valid_mean_caller<MeanFunc, SubCaller,
+                                           Measurement<X>>::value,
+                int>::type = 0>
+  static double call(const MeanFunc &mean_func, const Measurement<X> &x) {
+    return SubCaller::call(mean_func, x.value);
+  }
 };
 
 template <typename SubCaller> struct LinearCombinationCaller {
 
+  // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
       typename std::enable_if<
@@ -234,6 +294,28 @@ template <typename SubCaller> struct LinearCombinationCaller {
     }
     return sum;
   }
+
+  // Mean Functions
+  template <
+      typename MeanFunc, typename X,
+      typename std::enable_if<
+          has_valid_mean_caller<MeanFunc, SubCaller, X>::value, int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return SubCaller::call(mean_func, x);
+  }
+
+  template <
+      typename MeanFunc, typename X,
+      typename std::enable_if<
+          has_valid_mean_caller<MeanFunc, SubCaller, X>::value, int>::type = 0>
+  static double call(const MeanFunc &mean_func,
+                     const LinearCombination<X> &xs) {
+    double sum = 0.;
+    for (std::size_t i = 0; i < xs.values.size(); ++i) {
+      sum += xs.coefficients[i] * SubCaller::call(mean_func, xs.values[i]);
+    }
+    return sum;
+  }
 };
 
 /*
@@ -258,6 +340,8 @@ template <typename SubCaller> struct LinearCombinationCaller {
  *
  */
 template <typename SubCaller> struct VariantForwarder {
+
+  // Covariance Functions
 
   // directly forward on the case where both types aren't variants
   template <typename CovFunc, typename X, typename Y,
@@ -334,6 +418,54 @@ template <typename SubCaller> struct VariantForwarder {
                      const variant<Ys...> &y) {
     return x.match(
         [&y, &cov_func](const auto &xx) { return call(cov_func, xx, y); });
+  }
+
+  // Mean Functions
+
+  /*
+   * This visitor helps deal with enabling and disabling the call operator
+   * depending on whether pairs of types in variants are defined.
+   */
+  template <typename MeanFunc> struct MeanCallVisitor {
+
+    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func){};
+
+    template <typename X,
+              typename std::enable_if<
+                  has_valid_mean_caller<MeanFunc, SubCaller, X>::value,
+                  int>::type = 0>
+    double operator()(const X &x) const {
+      return SubCaller::call(mean_func_, x);
+    };
+
+    template <typename X,
+              typename std::enable_if<
+                  !has_valid_mean_caller<MeanFunc, SubCaller, X>::value,
+                  int>::type = 0>
+    double operator()(const X &x) const {
+      return 0.;
+    };
+
+    const MeanFunc &mean_func_;
+  };
+
+  template <typename MeanFunc, typename X,
+            typename std::enable_if<
+                !is_variant<X>::value &&
+                    has_valid_mean_caller<MeanFunc, SubCaller, X>::value,
+                int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return SubCaller::call(mean_func, x);
+  }
+
+  template <typename MeanFunc, typename X,
+            typename std::enable_if<is_variant<X>::value &&
+                                        has_valid_variant_mean_caller<
+                                            MeanFunc, SubCaller, X>::value,
+                                    int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    MeanCallVisitor<MeanFunc> visitor(mean_func);
+    return apply_visitor(visitor, x);
   }
 };
 

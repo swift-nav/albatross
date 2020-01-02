@@ -15,12 +15,6 @@
 
 namespace albatross {
 
-template <typename X, typename Y> class SumOfCovarianceFunctions;
-
-template <typename X, typename Y> class ProductOfCovarianceFunctions;
-
-template <typename Derived> class CallTrace;
-
 /*
  * CovarianceFunction is a CRTP base class which can be used in a
  * way similar to a polymorphic abstract class.  For example if
