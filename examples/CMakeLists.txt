@@ -72,9 +72,24 @@ target_link_libraries(sparse_example
 add_custom_target(run_sparse_example
   DEPENDS sparse_example
   COMMAND sparse_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv
-  COMMENT "Running inspection_example"
+  COMMENT "Running sparse_example"
   )
 
+
+add_executable(patchwork_example
+  patchwork_example.cc
+  )
+target_link_libraries(patchwork_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_patchwork_example
+  DEPENDS patchwork_example
+  COMMAND patchwork_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv
+  COMMENT "Running patchwork_example"
+  )
 
 set(albatross_example_BINARIES
   sinc_example

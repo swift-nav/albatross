@@ -192,6 +192,10 @@ public:
 
   std::size_t size() const { return features_.size(); }
 
+  explicit operator JointDistribution() const { return this->joint(); };
+
+  explicit operator MarginalDistribution() const { return this->marginal(); };
+
 private:
   template <typename T> struct get_type {};
 

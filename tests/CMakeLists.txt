@@ -23,6 +23,7 @@ add_executable(albatross_unit_tests
   test_model_metrics.cc  
   test_models.cc
   test_parameter_handling_mixin.cc
+  test_patchwork_gp.cc
   test_prediction.cc
   test_radial.cc
   test_random_utils.cc

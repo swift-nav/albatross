@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
   std::cout << cov.pretty_string() << std::endl;
 
-  LeaveOneOut loo;
+  LeaveOneOutGrouper loo;
   UniformlySpacedInducingPoints strategy(FLAGS_k);
   auto model = sparse_gp_from_covariance(cov, loo, strategy, "example");
   //  auto model = gp_from_covariance(cov, "example");
