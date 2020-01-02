@@ -133,15 +133,15 @@ inline auto as_boundary_features(GroupKey &&left_group_key,
 
 template <typename GroupKey, typename FeatureType> struct GroupFeature {
 
-  GroupFeature() : key(), feature(){};
+  GroupFeature() : group_key(), feature(){};
 
   GroupFeature(const GroupKey &key_, const FeatureType &feature_)
-      : key(key_), feature(feature_){};
+      : group_key(key_), feature(feature_){};
 
   GroupFeature(GroupKey &&key_, FeatureType &&feature_)
-      : key(std::move(key_)), feature(std::move(feature_)){};
+      : group_key(std::move(key_)), feature(std::move(feature_)){};
 
-  GroupKey key;
+  GroupKey group_key;
   FeatureType feature;
 };
 
@@ -217,7 +217,7 @@ template <typename SubCaller> struct PatchworkCallerBase {
                      const GroupFeature<GroupKey, FeatureTypeY> &y) {
     // The covariance between any two group features is only defined if
     // the two are in the same group.
-    if (x.key == y.key) {
+    if (x.group_key == y.group_key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
     } else {
       return 0.;
@@ -230,9 +230,9 @@ template <typename SubCaller> struct PatchworkCallerBase {
                      const GroupFeature<GroupKey, FeatureTypeX> &x,
                      const BoundaryFeature<GroupKey, FeatureTypeY> &y) {
     // This is Equation 3 in the referenced paper.
-    if (x.key == y.left_group_key) {
+    if (x.group_key == y.left_group_key) {
       return SubCaller::call(cov_func, x.feature, y.feature);
-    } else if (x.key == y.right_group_key) {
+    } else if (x.group_key == y.right_group_key) {
       return -SubCaller::call(cov_func, x.feature, y.feature);
     } else {
       return 0.;
