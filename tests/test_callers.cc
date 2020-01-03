@@ -23,6 +23,14 @@ template <typename T> using Identity = T;
 template <typename Caller, template <typename T> class XWrapper = Identity,
           template <typename T> class YWrapper = Identity>
 inline void expect_direct_calls_true() {
+
+  EXPECT_TRUE(
+      bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<X>>::value));
+  EXPECT_TRUE(
+      bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<Y>>::value));
+  EXPECT_TRUE(
+      bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<W>>::value));
+
   EXPECT_TRUE(bool(caller_has_valid_call<Caller, HasMultiple, XWrapper<X>,
                                          YWrapper<X>>::value));
   EXPECT_TRUE(bool(caller_has_valid_call<Caller, HasMultiple, XWrapper<X>,
@@ -44,6 +52,13 @@ inline void expect_symmetric_calls_true() {
 template <typename Caller, template <typename T> class XWrapper = Identity,
           template <typename T> class YWrapper = Identity>
 inline void expect_all_calls_false() {
+
+  EXPECT_FALSE(
+      bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<Z>>::value));
+
+  EXPECT_FALSE(
+      bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<V>>::value));
+
   EXPECT_FALSE(bool(caller_has_valid_call<Caller, HasMultiple, XWrapper<X>,
                                           YWrapper<W>>::value));
   EXPECT_FALSE(bool(caller_has_valid_call<Caller, HasMultiple, XWrapper<Y>,

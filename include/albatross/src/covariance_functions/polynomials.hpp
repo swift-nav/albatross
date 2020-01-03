@@ -89,6 +89,23 @@ private:
   std::map<int, std::string> param_names_;
 };
 
+class LinearMean : public MeanFunction<LinearMean> {
+
+public:
+  ALBATROSS_DECLARE_PARAMS(slope, offset);
+
+  std::string get_name() const { return "linear"; }
+
+  LinearMean() {
+    slope = {0., GaussianPrior(0., 1000.)};
+    offset = {0., GaussianPrior(0., 1000.)};
+  }
+
+  double _call_impl(const double &x) const {
+    return slope.value * x + offset.value;
+  }
+};
+
 } // namespace albatross
 
 #endif

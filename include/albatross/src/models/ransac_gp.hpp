@@ -154,7 +154,8 @@ template <typename ModelType, typename FeatureType, typename InlierMetric,
           typename GroupKey>
 inline RansacFunctions<FitAndIndices<ModelType, FeatureType>, GroupKey>
 get_gp_ransac_functions(
-    const ModelType &model, const RegressionDataset<FeatureType> &dataset,
+    const ModelType &model,
+    const RegressionDataset<FeatureType> &dataset_with_mean,
     const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric,
     const IsValidCandidateMetric &is_valid_candidate_metric) {
@@ -162,6 +163,8 @@ get_gp_ransac_functions(
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
+  RegressionDataset<FeatureType> dataset(dataset_with_mean);
+  model.get_mean().remove_from(dataset.features, &dataset.targets.mean);
   const auto full_cov = model.compute_covariance(dataset.features);
 
   const auto fitter = get_gp_ransac_fitter<ModelType, FeatureType, GroupKey>(

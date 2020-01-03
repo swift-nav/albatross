@@ -19,21 +19,23 @@
 
 namespace albatross {
 
-class SlopeTerm : public CovarianceFunction<SlopeTerm> {
+class SincFunction : public MeanFunction<SincFunction> {
+
 public:
-  SlopeTerm(double sigma_slope = 0.1) {
-    this->params_["sigma_slope"] = sigma_slope;
-  };
+  ALBATROSS_DECLARE_PARAMS(scale, translation);
 
-  ~SlopeTerm(){};
+  std::string get_name() const { return "sinc"; }
 
-  std::string get_name() const { return "slope_term"; }
+  SincFunction() {
+    scale = {EXAMPLE_SCALE_VALUE, GaussianPrior(1., 1000.)};
+    translation = {EXAMPLE_TRANSLATION_VALUE, GaussianPrior(0., 1000.)};
+  }
 
-  double _call_impl(const double &x, const double &y) const {
-    double sigma_slope = this->params_.at("sigma_slope").value;
-    return sigma_slope * sigma_slope * x * y;
+  double _call_impl(const double &x) const {
+    return scale.value * sinc(x - translation.value);
   }
 };
+
 } // namespace albatross
 
 #endif

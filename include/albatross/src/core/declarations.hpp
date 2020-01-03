@@ -82,11 +82,28 @@ struct JointDistribution;
 struct MarginalDistribution;
 
 /*
+ * Covariance Functions
+ */
+template <typename X, typename Y> class SumOfCovarianceFunctions;
+
+template <typename X, typename Y> class ProductOfCovarianceFunctions;
+
+template <typename Derived> class CallTrace;
+
+struct ZeroMean;
+
+template <typename X, typename Y> class SumOfMeanFunctions;
+
+template <typename X, typename Y> class ProductOfMeanFunctions;
+
+/*
  * Models
  */
-template <typename CovarianceFunc, typename ImplType> class GaussianProcessBase;
+template <typename CovarianceFunc, typename MeanFunction, typename ImplType>
+class GaussianProcessBase;
 
-template <typename CovarianceFunc> class GaussianProcessRegression;
+template <typename CovarianceFunc, typename MeanFunction = ZeroMean>
+class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
 

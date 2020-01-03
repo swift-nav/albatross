@@ -58,7 +58,9 @@ class PositivePrior : public Prior {
 public:
   double log_pdf(double x) const override { return x > 0. ? 0. : -LARGE_VAL; }
   std::string get_name() const override { return "positive"; };
-  double lower_bound() const override { return 0.; }
+  double lower_bound() const override {
+    return std::numeric_limits<double>::epsilon();
+  }
   double upper_bound() const override { return LARGE_VAL; }
 };
 
