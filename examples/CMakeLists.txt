@@ -13,6 +13,21 @@ add_custom_target(run_sinc_example
   COMMENT "Running sinc_example"
   )
 
+add_executable(sampler_example
+  sampler_example.cc
+  )
+target_link_libraries(sampler_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_sampler_example
+  DEPENDS sampler_example
+  COMMAND sampler_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
+  COMMENT "Running sampler_example"
+  )
+
 
 add_executable(inspection_example
   inspection.cc

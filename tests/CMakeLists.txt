@@ -28,6 +28,7 @@ add_executable(albatross_unit_tests
   test_radial.cc
   test_random_utils.cc
   test_ransac.cc
+  test_samplers.cc
   test_scaling_function.cc
   test_serializable_ldlt.cc
   test_serialize.cc
