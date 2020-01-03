@@ -408,6 +408,39 @@ template <> struct IndexerBuilder<LeaveOneOutGrouper> {
   }
 };
 
+struct KFoldGrouper {
+
+  KFoldGrouper(std::size_t k_ = 2) : k(k_){};
+
+  std::size_t k;
+
+  template <typename Arg> std::size_t operator()(const Arg &) const {
+    static_assert(
+        delay_static_assert<Arg>::value,
+        "You shouldn't be calling KFoldGrouper directly, pass it into "
+        "group_by as a GrouperFunction");
+    return 0;
+  };
+};
+
+template <> struct IndexerBuilder<KFoldGrouper> {
+
+  template <typename Iterable>
+  static auto build(const KFoldGrouper &grouper_function,
+                    const Iterable &iterable) {
+    GroupIndexer<std::size_t> output;
+    std::size_t i = 0;
+    auto it = iterable.begin();
+    while (it != iterable.end()) {
+      // Add the current index.
+      output[i % grouper_function.k].push_back(i);
+      ++i;
+      ++it;
+    }
+    return output;
+  }
+};
+
 template <typename GrouperFunction, typename Iterable>
 inline auto build_indexer(const GrouperFunction &grouper_function,
                           const Iterable &iterable) {
