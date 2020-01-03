@@ -29,16 +29,20 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("train_features", fit.train_features));
 }
 
-template <typename Archive, typename CovFunc, typename ImplType>
-void save(Archive &archive, const GaussianProcessBase<CovFunc, ImplType> &gp,
+template <typename Archive, typename CovFunc, typename MeanFunc,
+          typename ImplType>
+void save(Archive &archive,
+          const GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
           const std::uint32_t) {
   archive(cereal::make_nvp("name", gp.get_name()));
   archive(cereal::make_nvp("params", gp.get_params()));
   archive(cereal::make_nvp("insights", gp.insights));
 }
 
-template <typename Archive, typename CovFunc, typename ImplType>
-void load(Archive &archive, GaussianProcessBase<CovFunc, ImplType> &gp,
+template <typename Archive, typename CovFunc, typename MeanFunc,
+          typename ImplType>
+void load(Archive &archive,
+          GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
           const std::uint32_t) {
   std::string model_name;
   archive(cereal::make_nvp("name", model_name));

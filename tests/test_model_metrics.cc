@@ -28,7 +28,7 @@ public:
  */
 typedef ::testing::Types<LeaveOneOutLikelihood<JointDistribution>,
                          LeaveOneOutLikelihood<MarginalDistribution>,
-                         LeaveOneOutRMSE, GaussianProcessLikelihood>
+                         LeaveOneOutRMSE, GaussianProcessNegativeLogLikelihood>
     MetricsToTest;
 
 TYPED_TEST_CASE(ModelMetricTester, MetricsToTest);

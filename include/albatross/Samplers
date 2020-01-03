@@ -20,6 +20,5 @@
 #include <albatross/src/samplers/state.hpp>
 #include <albatross/src/samplers/callbacks.hpp>
 #include <albatross/src/samplers/ensemble.hpp>
-#include <albatross/src/models/mcmc.hpp>
 
 #endif
