@@ -63,6 +63,10 @@ inline void save(Archive &archive, const variant<VariantTypes...> &f,
                  const std::uint32_t) {
 
   archive(cereal::make_nvp("which", f.which()));
+  f.match([&](const auto &x) {
+    std::string which_typeid = typeid(x).name();
+    archive(cereal::make_nvp("which_typeid", which_typeid));
+  });
   f.match([&archive](const auto &x) { archive(cereal::make_nvp("data", x)); });
 }
 
@@ -71,6 +75,8 @@ inline void load(Archive &archive, variant<VariantTypes...> &v,
                  const std::uint32_t) {
   int which;
   archive(cereal::make_nvp("which", which));
+  std::string which_typeid;
+  archive(cereal::make_nvp("which_typeid", which_typeid));
   assert(which < static_cast<int>(sizeof...(VariantTypes)));
   mapbox_variant_detail::load_variant<0, variant<VariantTypes...>,
                                       VariantTypes...>(archive, which, v);

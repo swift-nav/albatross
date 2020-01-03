@@ -20,7 +20,7 @@ template <typename X> struct ToVariantIdentity {};
 } // namespace details
 
 /*
- * In this case X is a variant which is compatible so we need to
+ * In this case X is a sub variant which is compatible so we need to
  * convert it.
  */
 template <typename... Ts, typename X>
@@ -37,6 +37,14 @@ inline std::enable_if_t<
     !is_variant<X>::value && is_in_variant<X, variant<Ts...>>::value, void>
 set_variant(const X &x, variant<Ts...> *to_set) {
   *to_set = x;
+}
+
+template <typename... Ts, typename X>
+inline std::enable_if_t<
+    !is_variant<X>::value && !is_in_variant<X, variant<Ts...>>::value, void>
+set_variant(const X &x, variant<Ts...> *to_set) {
+  static_assert(delay_static_assert<X>::value,
+                "Incompatible type. X does not belong to variant.");
 }
 
 /*

@@ -458,6 +458,26 @@ TEST(test_groupby, test_group_by_get_group) {
   }
 }
 
+TEST(test_groupby, test_group_by_erase) {
+
+  const auto fib = fibonacci(20);
+
+  const auto groups = group_by(fib, number_of_digits).groups();
+
+  auto modified = group_by(fib, number_of_digits).groups();
+  const long int to_remove = 2;
+  modified.erase(to_remove);
+
+  EXPECT_TRUE(map_contains(groups, to_remove));
+  EXPECT_FALSE(map_contains(modified, to_remove));
+
+  for (const auto &pair : groups) {
+    if (pair.first != to_remove) {
+      EXPECT_EQ(pair.second, modified.at(pair.first));
+    }
+  }
+}
+
 template <typename T> inline double test_sum(const std::vector<T> &ts) {
   double output = 0.;
   for (const auto &t : ts) {
