@@ -24,7 +24,7 @@ target_link_libraries(sampler_example
   )
 add_custom_target(run_sampler_example
   DEPENDS sampler_example
-  COMMAND sampler_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
+  COMMAND sampler_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv --maxiter 100
   COMMENT "Running sampler_example"
   )
 

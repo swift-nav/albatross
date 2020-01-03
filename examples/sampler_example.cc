@@ -104,9 +104,6 @@ int main(int argc, char *argv[]) {
     const SincFunction sinc;
     auto model = gp_from_covariance_and_mean(indep_noise, linear + sinc);
 
-    std::cout << pretty_params(model.get_params()) << std::endl;
-    //    model.set_param_values({});
-
     run_sampler(model, data);
   } else if (FLAGS_mode == "test_gp") {
     /*
