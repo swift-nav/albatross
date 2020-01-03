@@ -111,6 +111,44 @@ inline std::string pretty_param_details(const ParameterStore &params) {
   return ss.str();
 }
 
+inline TunableParameters get_tunable_parameters(const ParameterStore &params) {
+  TunableParameters output;
+
+  for (const auto &pair : params) {
+    if (!pair.second.is_fixed()) {
+      double v = pair.second.value;
+      double lb = pair.second.prior.lower_bound();
+      double ub = pair.second.prior.upper_bound();
+
+      // Without these checks nlopt will fail in a much more obscure way.
+      if (v < lb) {
+        std::cout << "INVALID PARAMETER: " << pair.first
+                  << " expected to be greater than " << lb << " but is: " << v
+                  << std::endl;
+        assert(false);
+      }
+      if (v > ub) {
+        std::cout << "INVALID PARAMETER: " << pair.first
+                  << " expected to be less than " << ub << " but is: " << v
+                  << std::endl;
+        assert(false);
+      }
+
+      bool use_log_scale = pair.second.prior.is_log_scale();
+      if (use_log_scale) {
+        lb = log(lb);
+        ub = log(ub);
+        v = log(v);
+      }
+
+      output.values.push_back(v);
+      output.lower_bounds.push_back(lb);
+      output.upper_bounds.push_back(ub);
+    }
+  }
+  return output;
+}
+
 /*
  * This mixin class is intended to be included an any class which
  * depends on some set of parameters which we want to programatically
@@ -216,45 +254,11 @@ public:
    */
 
   TunableParameters get_tunable_parameters() const {
-    TunableParameters output;
-
-    const ParameterStore params = get_params();
-    for (const auto &pair : params) {
-      if (!pair.second.is_fixed()) {
-        double v = pair.second.value;
-        double lb = pair.second.prior.lower_bound();
-        double ub = pair.second.prior.upper_bound();
-
-        // Without these checks nlopt will fail in a much more obscure way.
-        if (v < lb) {
-          std::cout << "INVALID PARAMETER: " << pair.first
-                    << " expected to be greater than " << lb << " but is: " << v
-                    << std::endl;
-          assert(false);
-        }
-        if (v > ub) {
-          std::cout << "INVALID PARAMETER: " << pair.first
-                    << " expected to be less than " << ub << " but is: " << v
-                    << std::endl;
-          assert(false);
-        }
-
-        bool use_log_scale = pair.second.prior.is_log_scale();
-        if (use_log_scale) {
-          lb = log(lb);
-          ub = log(ub);
-          v = log(v);
-        }
-
-        output.values.push_back(v);
-        output.lower_bounds.push_back(lb);
-        output.upper_bounds.push_back(ub);
-      }
-    }
-    return output;
+    return albatross::get_tunable_parameters(this->get_params());
   }
 
-  void set_tunable_params_values(const std::vector<ParameterValue> &x) {
+  void set_tunable_params_values(const std::vector<ParameterValue> &x,
+                                 bool force_bounds = true) {
     const ParameterStore params = get_params();
     std::size_t i = 0;
     for (const auto &pair : params) {
@@ -265,15 +269,17 @@ public:
           v = exp(v);
         }
 
-        const double lb = pair.second.prior.lower_bound();
-        if (v < lb) {
-          v = lb;
-        };
+        if (force_bounds) {
+          const double lb = pair.second.prior.lower_bound();
+          if (v < lb) {
+            v = lb;
+          };
 
-        const double ub = pair.second.prior.upper_bound();
-        if (v > ub) {
-          v = ub;
-        };
+          const double ub = pair.second.prior.upper_bound();
+          if (v > ub) {
+            v = ub;
+          };
+        }
 
         unchecked_set_param(pair.first, v);
         i++;

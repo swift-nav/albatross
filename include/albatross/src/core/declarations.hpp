@@ -153,6 +153,16 @@ template <typename InlierMetric, typename ConsensusMetric,
 struct GaussianProcessRansacStrategy;
 
 /*
+ * Samplers
+ */
+
+struct SamplerState;
+
+struct NullCallback;
+
+using EnsembleSamplerState = std::vector<SamplerState>;
+
+/*
  * Traits
  */
 
