@@ -178,6 +178,10 @@ protected:
   using CholeskyFit = GPFitType<Eigen::SerializableLDLT, FitFeatureType>;
 
 public:
+  GaussianProcessBase(const GaussianProcessBase &other)
+      : covariance_function_(other.covariance_function_),
+        mean_function_(other.mean_function_), model_name_(other.model_name_){};
+
   GaussianProcessBase()
       : covariance_function_(), mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
@@ -396,6 +400,17 @@ public:
     return covariance_function_.state_space_representation(features);
   }
 
+  template <typename FeatureType>
+  double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
+    Eigen::VectorXd zero_mean(dataset.targets.mean);
+    const auto measurement_features = as_measurements(dataset.features);
+    mean_function_.remove_from(measurement_features, &zero_mean);
+    const Eigen::MatrixXd cov = covariance_function_(measurement_features);
+    double ll = -negative_log_likelihood(zero_mean, cov);
+    ll += this->prior_log_likelihood();
+    return ll;
+  }
+
 protected:
   /*
    * CRTP Helpers
@@ -557,18 +572,14 @@ auto gp_from_covariance_and_mean(CovFunc &&covariance_function,
 /*
  * Model Metric
  */
-struct GaussianProcessLikelihood {
+struct GaussianProcessNegativeLogLikelihood {
 
   template <typename FeatureType, typename CovFunc, typename MeanFunc,
             typename GPImplType>
   double operator()(
       const RegressionDataset<FeatureType> &dataset,
       const GaussianProcessBase<CovFunc, MeanFunc, GPImplType> &model) const {
-    const auto gp_fit = model.fit(dataset).get_fit();
-    double nll =
-        negative_log_likelihood(dataset.targets.mean, gp_fit.train_covariance);
-    nll -= model.prior_log_likelihood();
-    return nll;
+    return -model.log_likelihood(dataset);
   }
 };
 

@@ -29,11 +29,15 @@ public:
     this->params_["center"] = {1., UniformPrior(-10., 10.)};
   }
 
+  TestAdaptedModel(const TestAdaptedModel &other) : Base(other) {
+    this->params_["center"] = other.get_params()["center"];
+  };
+
   std::vector<double>
   convert(const std::vector<AdaptedFeature> &features) const {
     std::vector<double> converted;
     for (const auto &f : features) {
-      converted.push_back(f.value - this->get_param_value("center"));
+      converted.push_back(f.value - this->params_.at("center").value);
     }
     return converted;
   }

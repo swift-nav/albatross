@@ -88,7 +88,13 @@ public:
   double lower_bound() const override { return lower_; }
   double upper_bound() const override { return upper_; }
 
-  double log_pdf(double) const override { return -log(upper_ - lower_); }
+  double log_pdf(double x) const override {
+    if (x >= lower_ && x <= upper_) {
+      return -log(upper_ - lower_);
+    } else {
+      return -LARGE_VAL;
+    }
+  }
 
   double lower_;
   double upper_;
