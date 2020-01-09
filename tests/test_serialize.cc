@@ -382,4 +382,29 @@ REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_model_serializes,
 INSTANTIATE_TYPED_TEST_CASE_P(test_serialize, RegressionModelTester,
                               ExampleModels);
 
+TEST(test_serialize, test_variant_version_1_backward_compatibility) {
+
+  int one = 1;
+  variant<int, double> foo = one;
+
+  // Serialize it using version 0
+  std::ostringstream os;
+  {
+    cereal::JSONOutputArchive oarchive(os);
+    save(oarchive, foo, 0);
+  }
+  std::cout << os.str() << std::endl;
+
+  // Deserialize it.
+  std::istringstream is(os.str());
+  variant<int, double> deserialized;
+  {
+    cereal::JSONInputArchive iarchive(is);
+    load(iarchive, deserialized, 0);
+  }
+  // Make sure the original and deserialized representations are
+  // equivalent.
+  EXPECT_TRUE(foo == deserialized);
+}
+
 } // namespace albatross
