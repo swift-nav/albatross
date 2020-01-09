@@ -17,6 +17,10 @@
  * A lot of this is borrowed from cereal's std::variant.
  */
 
+#ifndef VARIANT_SERIALIZATION_VERSION
+#define VARIANT_SERIALIZATION_VERSION 1
+#endif
+
 namespace cereal {
 
 namespace mapbox_variant_detail {
@@ -60,27 +64,49 @@ inline void save(Archive &archive, const variant<VariantTypes...> &&f,
 
 template <class Archive, typename... VariantTypes>
 inline void save(Archive &archive, const variant<VariantTypes...> &f,
-                 const std::uint32_t) {
+                 const std::uint32_t version) {
 
   archive(cereal::make_nvp("which", f.which()));
-  f.match([&](const auto &x) {
-    std::string which_typeid = typeid(x).name();
-    archive(cereal::make_nvp("which_typeid", which_typeid));
-  });
+  if (version > 0) {
+    f.match([&](const auto &x) {
+      std::string which_typeid = typeid(x).name();
+      archive(cereal::make_nvp("which_typeid", which_typeid));
+    });
+  }
   f.match([&archive](const auto &x) { archive(cereal::make_nvp("data", x)); });
 }
 
 template <class Archive, typename... VariantTypes>
 inline void load(Archive &archive, variant<VariantTypes...> &v,
-                 const std::uint32_t) {
+                 const std::uint32_t version) {
   int which;
   archive(cereal::make_nvp("which", which));
-  std::string which_typeid;
-  archive(cereal::make_nvp("which_typeid", which_typeid));
-  assert(which < static_cast<int>(sizeof...(VariantTypes)));
+  if (version > 0) {
+    std::string which_typeid;
+    archive(cereal::make_nvp("which_typeid", which_typeid));
+    assert(which < static_cast<int>(sizeof...(VariantTypes)));
+  }
   mapbox_variant_detail::load_variant<0, variant<VariantTypes...>,
                                       VariantTypes...>(archive, which, v);
 }
+
+// Here we define the version for variant serialization following the
+// example given here: https://github.com/USCiLab/cereal/issues/319
+namespace detail {
+template <typename... VariantTypes> struct Version<variant<VariantTypes...>> {
+  static const std::uint32_t version;
+  static std::uint32_t registerVersion() {
+    ::cereal::detail::StaticObject<Versions>::getInstance().mapping.emplace(
+        std::type_index(typeid(variant<VariantTypes...>)).hash_code(),
+        VARIANT_SERIALIZATION_VERSION);
+    return VARIANT_SERIALIZATION_VERSION;
+  }
+  static void unused() { (void)version; }
+};
+template <typename... VariantTypes>
+const std::uint32_t Version<variant<VariantTypes...>>::version =
+    Version<variant<VariantTypes...>>::registerVersion();
+} // namespace detail
 
 } // namespace cereal
 #endif /* INCLUDE_ALBATROSS_SRC_CEREAL_VARIANT_HPP_ */
