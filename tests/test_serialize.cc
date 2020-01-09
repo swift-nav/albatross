@@ -382,8 +382,7 @@ REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_model_serializes,
 INSTANTIATE_TYPED_TEST_CASE_P(test_serialize, RegressionModelTester,
                               ExampleModels);
 
-TEST(test_serialize, test_variant_version_1_backward_compatibility) {
-
+TEST(test_serialize, test_variant_version_0) {
   int one = 1;
   variant<int, double> foo = one;
 
