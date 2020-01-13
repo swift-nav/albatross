@@ -117,6 +117,8 @@ struct StateSpaceInducingPointStrategy {
  * get those deails straight:
  *
  *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
+ *        (beware, the final formulae are correct but there are typos in
+ *         their derivations).
  *     - https://github.com/SheffieldML/GPy see fitc.py
  */
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
@@ -200,22 +202,23 @@ public:
     }
   }
 
-  template <typename FeatureType>
-  auto _fit_impl(const std::vector<FeatureType> &out_of_order_features,
-                 const MarginalDistribution &out_of_order_targets) const {
-    static_assert(is_invocable<GrouperFunction, FeatureType>::value,
-                  "GrouperFunction is not defined for the required types");
-    static_assert(
-        is_invocable<InducingPointStrategy, CovFunc,
-                     std::vector<FeatureType>>::value,
-        "InducingPointStrategy is not defined for the required types");
+  struct SparseGPComponents {
+    Eigen::LLT<Eigen::MatrixXd> K_uu_llt;
+    Eigen::MatrixXd P;
+    BlockDiagonalLLT A_llt;
+    Eigen::MatrixXd RtR;
+    Eigen::SerializableLDLT B_ldlt;
+    Eigen::VectorXd y;
+  };
+
+  template <typename FeatureType, typename InducingFeatureType>
+  SparseGPComponents
+  sparse_components(const std::vector<FeatureType> &out_of_order_features,
+                    const std::vector<InducingFeatureType> &inducing_features,
+                    const MarginalDistribution &out_of_order_targets) const {
 
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();
-
-    // Determine the set of inducing points, u.
-    const auto u = inducing_point_strategy_(this->covariance_function_,
-                                            out_of_order_features);
 
     const auto out_of_order_measurement_features =
         as_measurements(out_of_order_features);
@@ -236,12 +239,14 @@ public:
         subset(out_of_order_measurement_features, reordered_inds);
     auto targets = subset(out_of_order_targets, reordered_inds);
 
-    this->mean_function_.remove_from(features, &targets.mean);
+    this->mean_function_.remove_from(
+        subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    Eigen::Index m = static_cast<Eigen::Index>(u.size());
+    Eigen::Index m = static_cast<Eigen::Index>(inducing_features.size());
 
-    const Eigen::MatrixXd K_fu = this->covariance_function_(features, u);
-    Eigen::MatrixXd K_uu = this->covariance_function_(u);
+    const Eigen::MatrixXd K_fu =
+        this->covariance_function_(features, inducing_features);
+    Eigen::MatrixXd K_uu = this->covariance_function_(inducing_features);
 
     K_uu.diagonal() +=
         inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
@@ -253,16 +258,16 @@ public:
     //          = P^T P
     const Eigen::MatrixXd P = K_uu_llt.matrixL().solve(K_fu.transpose());
 
-    BlockDiagonal Q_ff;
+    // We only need the diagonal blocks of Q_ff to get A
+    BlockDiagonal Q_ff_diag;
     Eigen::Index i = 0;
     for (const auto &pair : indexer) {
       Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
       auto P_cols = P.block(0, i, P.rows(), cols);
-      Q_ff.blocks.emplace_back(P_cols.transpose() * P_cols);
+      Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
       i += cols;
     }
-
-    auto A = K_ff - Q_ff;
+    auto A = K_ff - Q_ff_diag;
 
     // It's possible that the inducing points will perfectly describe
     // some of the data, in which case we need to add a bit of extra
@@ -273,7 +278,6 @@ public:
     }
 
     /*
-     *
      * The end goal here is to produce a vector, v, and matrix, C, such that
      * for a prediction, f*, we can do,
      *
@@ -291,7 +295,9 @@ public:
      *
      *     K_** - K_*u * C^-1 * K_u* = K_** - Q_** + K_*u S K_u*
      *                               = K_** - K_*u (K_uu^-1 - S) K_u*
+     *
      *  which leads to:
+     *
      *     C^-1 = K_uu^-1 - S
      *                                                  (Expansion of S)
      *          = K_uu^-1 - (K_uu + K_uf A^-1 K_fu)^-1
@@ -315,21 +321,98 @@ public:
     RtR = RtR.transpose() * RtR;
     const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
-    const auto B_ldlt = B.ldlt();
-    const Eigen::MatrixXd L_uu_inv =
-        K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
-    const Eigen::MatrixXd BiLi = B_ldlt.solve(L_uu_inv);
-    const Eigen::MatrixXd RtRBiLi = RtR * B_ldlt.solve(L_uu_inv);
-    const auto LT = K_uu_llt.matrixL().transpose();
+    const Eigen::SerializableLDLT B_ldlt(B);
 
-    Eigen::VectorXd v = BiLi.transpose() * P * A_llt.solve(targets.mean);
+    SparseGPComponents components = {
+        K_uu_llt, P, A_llt, RtR, B_ldlt, targets.mean,
+    };
+
+    return components;
+  }
+
+  template <typename FeatureType>
+  auto _fit_impl(const std::vector<FeatureType> &features,
+                 const MarginalDistribution &targets) const {
+
+    // Determine the set of inducing points, u.
+    const auto u =
+        inducing_point_strategy_(this->covariance_function_, features);
+
+    const auto sc = sparse_components(features, u, targets);
+
+    const Eigen::Index m = sc.K_uu_llt.rows();
+    const Eigen::MatrixXd L_uu_inv =
+        sc.K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
+    const Eigen::MatrixXd BiLi = sc.B_ldlt.solve(L_uu_inv);
+    const Eigen::MatrixXd RtRBiLi = sc.RtR * sc.B_ldlt.solve(L_uu_inv);
+    const auto LT = sc.K_uu_llt.matrixL().transpose();
+    Eigen::VectorXd v = BiLi.transpose() * sc.P * sc.A_llt.solve(sc.y);
 
     const Eigen::MatrixXd C_inv = LT.solve(RtRBiLi);
-
     DirectInverse solver(C_inv);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
     return Fit<GPFit<DirectInverse, InducingPointFeatureType>>(u, solver, v);
+  }
+
+  template <typename FeatureType>
+  double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
+
+    const auto u =
+        inducing_point_strategy_(this->covariance_function_, dataset.features);
+
+    const SparseGPComponents sc =
+        sparse_components(dataset.features, u, dataset.targets);
+
+    // The log likelihood for y ~ N(0, K) is:
+    //
+    //   L = 1/2 (n log(2 pi) + log(|K|) + y^T K^-1 y)
+    //
+    // where in our case we have K = A + Q_ff
+
+    // First we get the determinant, |K|:
+    //
+    //   |K| = |A + Q_ff|
+    //       = |K_uu + K_uf A^-1 K_fu| |K_uu^-1| |A|
+    //       = |LL^T + K_uf A^-1 K_fu| |L^-T L^-1| |A|
+    //       = |L^-1| |LL^T + K_uf A^-1 K_fu| |L^-T| |A|
+    //       = |I + L^-1 K_uf A^-1 K_fu L^-T| |A|
+    //       = |I + P A^-1 P^T| |A|
+    //       = |B| |A|
+    //
+    // which is derived here (though there are errors in their derivation):
+    //   https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
+
+    const double log_det_a = sc.A_llt.log_determinant();
+    const double log_det_b = sc.B_ldlt.vectorD().array().log().sum();
+    const double log_det = log_det_a + log_det_b;
+
+    // Then we need the Mahalanobis distance. To do so we'll draw heavily
+    // on some of the definitions used early in this module.
+    //
+    //   d = y^T K^-1 y
+    //     = y^T (A + Q_ff)^-1 y
+    //     = y^T (A^-1 + A^-1 K_fu S^-1 K_uf A^-1) y
+    //     = y^T (A^-1 + A^-1 P^T B^-1 P A^-1) y
+    //     = y^T A^-1 y + y^T A^-1 P^T B^-1 P A^-1 y
+    //     = y^T (A^-1 y) + (B^{-1/2} P A^-1 y)^T (B^{-1/2} P A^-1 y)
+    //     = y^T y_a + c^T c
+    //
+    // with
+    //
+    //   y_a = A^-1 y   and  c = B^{-1/2} P y_a
+
+    Eigen::VectorXd y_a = sc.A_llt.solve(sc.y);
+    Eigen::VectorXd c = sc.B_ldlt.sqrt_solve((sc.P * y_a).eval());
+
+    double log_quadratic = sc.y.transpose() * y_a;
+    log_quadratic -= c.transpose() * c;
+
+    const double rank = static_cast<double>(sc.y.size());
+    const double log_dimension = rank * log(2 * M_PI);
+
+    return -0.5 * (log_det + log_quadratic + log_dimension) +
+           this->prior_log_likelihood();
   }
 
 private:
@@ -347,7 +430,7 @@ auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
                                         InducingPointStrategy &&strategy,
                                         const std::string &model_name) {
   return SparseGaussianProcessRegression<
-      typename std::decay<CovFunc>::type, typename std::decay<ZeroMean>::type,
+      typename std::decay<CovFunc>::type, typename std::decay<MeanFunc>::type,
       typename std::decay<GrouperFunction>::type,
       typename std::decay<InducingPointStrategy>::type>(
       std::forward<CovFunc>(covariance_function),
