@@ -11,6 +11,7 @@
  */
 
 #include <albatross/Core>
+#include <albatross/Indexing>
 #include <albatross/src/eigen/serializable_ldlt.hpp>
 
 #include <gtest/gtest.h>
@@ -42,6 +43,27 @@ TEST_F(SerializableLDLTTest, test_inverse_diagonal) {
   const auto inverse = cov.inverse();
   const auto diag = serializable_ldlt.inverse_diagonal();
   EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-8);
+}
+
+TEST_F(SerializableLDLTTest, test_sqrt_solve) {
+  auto ldlt = cov.ldlt();
+  const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
+  const Eigen::VectorXd expected = cov.llt().matrixL().solve(information);
+  const Eigen::VectorXd actual = serializable_ldlt.sqrt_solve(information);
+
+  // The sqrt solves aren't unique, but we can check the outer product
+  EXPECT_NEAR(expected.transpose() * expected, actual.transpose() * actual,
+              1e-4);
+
+  // And can also check that the sqrt solve when applied twice produces the
+  // inverse.
+  Eigen::MatrixXd identity =
+      Eigen::MatrixXd::Identity(information.size(), information.size());
+  Eigen::MatrixXd inv = serializable_ldlt.sqrt_solve(identity);
+  inv = inv.transpose() * inv;
+  const Eigen::VectorXd actual_inverse = inv * information;
+
+  EXPECT_LE((cov.ldlt().solve(information) - actual_inverse).norm(), 1e-8);
 }
 
 } // namespace albatross
