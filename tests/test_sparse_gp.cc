@@ -19,13 +19,13 @@
 
 namespace albatross {
 
-std::string get_group(const double &f) {
-  return std::to_string(static_cast<int>(f) / 10);
+inline long int get_group(const double &f) {
+  return static_cast<double>(floor(f / 5.));
 }
 
 struct LeaveOneIntervalOut {
 
-  std::string operator()(const double &f) const { return get_group(f); }
+  long int operator()(const double &f) const { return get_group(f); }
 };
 
 template <typename GrouperFunction>
@@ -34,8 +34,7 @@ public:
   GrouperFunction grouper;
 };
 
-typedef ::testing::Types<LeaveOneOutGrouper, LeaveOneIntervalOut>
-    IndependenceAssumptions;
+typedef ::testing::Types<LeaveOneIntervalOut> IndependenceAssumptions;
 TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
 
 template <typename CovFunc, typename GrouperFunction>
@@ -131,6 +130,11 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
   auto covariance = make_simple_covariance_function();
 
   auto direct = gp_from_covariance(covariance, "direct");
+  // We need to make sure the priors on the parameters don't enter
+  // into the log_likelihood computation.
+  for (const auto &p : direct.get_params()) {
+    direct.set_prior(p.first, FixedPrior());
+  }
 
   using namespace std::chrono;
   high_resolution_clock::time_point start = high_resolution_clock::now();
@@ -149,6 +153,53 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   // Make sure the sparse version is a lot faster.
   EXPECT_LT(sparse_duration, 0.3 * direct_duration);
+}
+
+TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
+
+  auto grouper = this->grouper;
+  auto dataset = make_toy_sine_data(5., 10., 0.1, 12);
+  auto covariance = make_simple_covariance_function();
+
+  UniformlySpacedInducingPoints strategy(2);
+  auto sparse =
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+  const auto inducing_points = strategy(covariance, dataset.features);
+  // We need to make sure the priors on the parameters don't enter
+  // into the log_likelihood computation.
+  for (const auto &p : sparse.get_params()) {
+    sparse.set_prior(p.first, FixedPrior());
+  }
+
+  // Here we build up the dense equivalent to the sparse GP covariance matrix
+  // which we can then use to sanity check the likelihood computation
+  const auto measurements = as_measurements(dataset.features);
+  Eigen::MatrixXd K_uu = covariance(inducing_points);
+
+  const double inducing_nugget = sparse.get_params()["inducing_nugget"].value;
+  const double measurement_nugget =
+      sparse.get_params()["measurement_nugget_"].value;
+  K_uu.diagonal() += inducing_nugget * Eigen::VectorXd::Ones(K_uu.rows());
+
+  const Eigen::MatrixXd K_fu = covariance(measurements, inducing_points);
+  const Eigen::MatrixXd Q_ff = K_fu * (K_uu.ldlt().solve(K_fu.transpose()));
+
+  Eigen::MatrixXd K = Q_ff;
+  const auto indexers = group_by(dataset.features, grouper).indexers();
+  for (const auto &idx_pair : indexers) {
+    for (const Eigen::Index i : idx_pair.second) {
+      for (const Eigen::Index j : idx_pair.second) {
+        K(i, j) = covariance(measurements[i], measurements[j]);
+      }
+    }
+  }
+  K += dataset.targets.covariance;
+  K.diagonal() += measurement_nugget * Eigen::VectorXd::Ones(K.rows());
+
+  const double expected = -negative_log_likelihood(dataset.targets.mean, K);
+  const double actual = sparse.log_likelihood(dataset);
+
+  EXPECT_NEAR(expected, actual, 1e-6);
 }
 
 } // namespace albatross

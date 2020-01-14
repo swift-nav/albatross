@@ -52,6 +52,19 @@ TEST(test_block_utils, test_to_dense) {
   EXPECT_LE((block_result - dense).norm(), 1e-6);
 }
 
+TEST(test_block_utils, test_block_llt) {
+  const auto example = block_example();
+  const BlockDiagonalLLT llt = example.block.llt();
+
+  const Eigen::MatrixXd expect_identity = llt.solve(example.dense);
+  const Eigen::MatrixXd identity =
+      Eigen::MatrixXd::Identity(example.dense.rows(), example.dense.cols());
+  EXPECT_LT((expect_identity - identity).norm(), 1e-8);
+
+  EXPECT_NEAR(example.dense.determinant(),
+              exp(example.block.llt().log_determinant()), 1e-8);
+}
+
 TEST(test_block_utils, test_diagonal) {
 
   auto example = block_example();

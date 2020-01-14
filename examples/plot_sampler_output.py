@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     limits = [rescale(lim) for lim in limits]
 
-    bins = [np.linspace(lim[0], lim[1], 40) for lim in limits]
+    bins = [np.linspace(lim[0], lim[1], 20) for lim in limits]
 
     k = data.shape[1]
     fig = plt.figure(figsize=(16, 16))
@@ -67,7 +67,12 @@ if __name__ == "__main__":
 
     for i in range(len(columns)):
         for j in range(i + 1):
-            ax = fig.add_subplot(grid[i, j], xticklabels=[])
+            if i == j or i == len(columns) - 1:
+                ax_kwdargs = {}
+            else:
+                ax_kwdargs = {"xticks": []}
+
+            ax = fig.add_subplot(grid[i, j], **ax_kwdargs)
 
             if i == j:
                 ax.hist(data[:, i], bins=40, color='steelblue')

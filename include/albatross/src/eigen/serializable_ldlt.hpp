@@ -52,6 +52,24 @@ public:
 
   bool is_initialized() const { return this->m_isInitialized; }
 
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+    Eigen::Matrix<_Scalar, _Rows, _Cols> output = this->transpositionsP() * rhs;
+    output = this->matrixL().solve(output);
+    const auto sqrt_diag = this->vectorD().array().sqrt().matrix().asDiagonal();
+    return sqrt_diag.inverse() * output;
+  }
+
+  double log_determinant() const {
+    // The log determinant can be found by starting with the full decomposition
+    //   log(|A|) = log(|P| |L| |D| |L| |P^T|)
+    // then realizing that P and L are both unit matrices so we get:
+    //   log(|A|) = log(|D|)
+    //            = sum(log(diag(D)))
+    return this->vectorD().array().log().sum();
+  }
+
   std::vector<Eigen::MatrixXd>
   inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
 

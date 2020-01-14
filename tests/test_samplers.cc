@@ -14,6 +14,7 @@
 
 #include <albatross/Core>
 #include <albatross/Samplers>
+#include <albatross/SparseGP>
 
 #include <fstream>
 
@@ -133,7 +134,56 @@ TEST(test_samplers, test_samplers_gp) {
   const auto ensemble_samples =
       ensemble_sampler(model, dataset, walkers, max_iterations, gen, callback);
 
-  assert(oss->str().size() > 1);
+  EXPECT_GT(oss->str().size(), 1);
+}
+
+inline long int get_group(const double &f) {
+  return static_cast<double>(floor(f / 5.));
+}
+
+struct LeaveOneIntervalOut {
+  long int operator()(const double &f) const { return get_group(f); }
+};
+
+TEST(test_samplers, test_samplers_sparse_gp) {
+  const double a = 3.14;
+  const double b = sqrt(2.);
+  const double meas_noise_sd = 1.;
+  const auto dataset = make_toy_linear_data(a, b, meas_noise_sd, 50);
+
+  std::default_random_engine gen(2012);
+  const std::size_t walkers = 32;
+
+  using Noise = IndependentNoise<double>;
+  Noise indep_noise(meas_noise_sd);
+  indep_noise.sigma_independent_noise.value = 1.;
+  indep_noise.sigma_independent_noise.prior = LogScaleUniformPrior(1e-3, 1e2);
+  auto meas_noise = measurement_only(indep_noise);
+  LinearMean linear;
+  linear.offset.value = a;
+  linear.slope.value = b;
+
+  LeaveOneIntervalOut grouper;
+  UniformlySpacedInducingPoints strategy(5);
+
+  auto model = sparse_gp_from_covariance_and_mean(meas_noise, linear, grouper,
+                                                  strategy, "test");
+  model.set_prior("inducing_nugget", FixedPrior());
+  model.set_prior("measurement_nugget", FixedPrior());
+
+  std::size_t max_iterations = 100;
+
+  std::shared_ptr<std::ostringstream> oss =
+      std::make_shared<std::ostringstream>();
+  std::shared_ptr<std::ostream> ostream =
+      static_cast<std::shared_ptr<std::ostream>>(oss);
+
+  auto callback = get_csv_writing_callback(model, ostream);
+
+  const auto ensemble_samples =
+      ensemble_sampler(model, dataset, walkers, max_iterations, gen, callback);
+
+  EXPECT_GT(oss->str().size(), 1);
 }
 
 } // namespace albatross

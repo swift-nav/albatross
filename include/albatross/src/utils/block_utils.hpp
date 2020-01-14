@@ -167,6 +167,8 @@ struct BlockDiagonalLLT {
 
   BlockTriangularView<const Eigen::MatrixXd> matrixL() const;
 
+  double log_determinant() const;
+
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
@@ -290,6 +292,14 @@ BlockDiagonalLLT::matrixL() const {
   for (const auto &b : blocks) {
     Eigen::TriangularView<const Eigen::MatrixXd, Eigen::Lower> L = b.matrixL();
     output.blocks.push_back(L);
+  }
+  return output;
+}
+
+inline double BlockDiagonalLLT::log_determinant() const {
+  double output = 0.;
+  for (const auto &b : blocks) {
+    output += 2. * log(b.matrixL().determinant());
   }
   return output;
 }

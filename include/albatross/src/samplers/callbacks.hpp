@@ -36,7 +36,7 @@ write_ensemble_sampler_state(std::ostream &stream, const ModelType &model,
                              std::size_t iteration,
                              const std::vector<std::string> &columns) {
 
-  ModelType m;
+  ModelType m(model);
   for (std::size_t i = 0; i < ensemble.size(); ++i) {
     std::map<std::string, std::string> row;
 
@@ -53,11 +53,13 @@ write_ensemble_sampler_state(std::ostream &stream, const ModelType &model,
 
 template <typename ModelType> struct CsvWritingCallback {
 
-  CsvWritingCallback(std::shared_ptr<std::ostream> &stream_)
-      : stream(stream_){};
+  CsvWritingCallback(const ModelType &model_,
+                     std::shared_ptr<std::ostream> &stream_)
+      : model(model_), stream(stream_){};
 
-  CsvWritingCallback(std::shared_ptr<std::ostream> &&stream_)
-      : stream(std::move(stream_)){};
+  CsvWritingCallback(const ModelType &model_,
+                     std::shared_ptr<std::ostream> &&stream_)
+      : model(model_), stream(std::move(stream_)){};
 
   void operator()(std::size_t iteration,
                   const EnsembleSamplerState &ensembles) {
@@ -76,14 +78,15 @@ template <typename ModelType> struct CsvWritingCallback {
 template <typename ModelType>
 CsvWritingCallback<ModelType> get_csv_writing_callback(const ModelType &model,
                                                        std::string path) {
-  return CsvWritingCallback<ModelType>(std::make_shared<std::ofstream>(path));
+  return CsvWritingCallback<ModelType>(model,
+                                       std::make_shared<std::ofstream>(path));
 }
 
 template <typename ModelType>
 CsvWritingCallback<ModelType>
 get_csv_writing_callback(const ModelType &model,
                          std::shared_ptr<std::ostream> &stream) {
-  return CsvWritingCallback<ModelType>(stream);
+  return CsvWritingCallback<ModelType>(model, stream);
 }
 
 } // namespace albatross
