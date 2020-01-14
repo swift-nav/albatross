@@ -19,7 +19,9 @@
 
 namespace albatross {
 
-long int get_group(const double &f) { return lround(floor(f / 5.)); }
+inline long int get_group(const double &f) {
+  return static_cast<double>(floor(f / 5.));
+}
 
 struct LeaveOneIntervalOut {
 

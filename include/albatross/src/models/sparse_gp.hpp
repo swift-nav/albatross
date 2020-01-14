@@ -368,8 +368,11 @@ public:
     //
     //   L = 1/2 (n log(2 pi) + log(|K|) + y^T K^-1 y)
     //
-    // where in our case we have K = A + Q_ff
-
+    // where in our case we have
+    //   K = A + Q_ff
+    // and
+    //   Q_ff = K_fu K_uu^-1 K_uf
+    //
     // First we get the determinant, |K|:
     //
     //   |K| = |A + Q_ff|
@@ -380,8 +383,9 @@ public:
     //       = |I + P A^-1 P^T| |A|
     //       = |B| |A|
     //
-    // which is derived here (though there are errors in their derivation):
+    // which is derived here:
     //   https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
+    // though as of Jan 2020 there are typos in the derivation.
 
     const double log_det_a = sc.A_llt.log_determinant();
     const double log_det_b = sc.B_ldlt.vectorD().array().log().sum();
@@ -393,6 +397,7 @@ public:
     //   d = y^T K^-1 y
     //     = y^T (A + Q_ff)^-1 y
     //     = y^T (A^-1 + A^-1 K_fu S^-1 K_uf A^-1) y
+    //         with S = K_uu + K_uf A^-1 K_fu  (woodbury identity)
     //     = y^T (A^-1 + A^-1 P^T B^-1 P A^-1) y
     //     = y^T A^-1 y + y^T A^-1 P^T B^-1 P A^-1 y
     //     = y^T (A^-1 y) + (B^{-1/2} P A^-1 y)^T (B^{-1/2} P A^-1 y)

@@ -61,6 +61,15 @@ public:
     return sqrt_diag.inverse() * output;
   }
 
+  double log_determinant() const {
+    // The log determinant can be found by starting with the full decomposition
+    //   log(|A|) = log(|P| |L| |D| |L| |P^T|)
+    // then realizing that P and L are both unit matrices so we get:
+    //   log(|A|) = log(|D|)
+    //            = sum(log(diag(D)))
+    return this->vectorD().array().log().sum();
+  }
+
   std::vector<Eigen::MatrixXd>
   inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
 

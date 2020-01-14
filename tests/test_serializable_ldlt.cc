@@ -45,6 +45,16 @@ TEST_F(SerializableLDLTTest, test_inverse_diagonal) {
   EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-8);
 }
 
+TEST_F(SerializableLDLTTest, test_log_det) {
+  auto ldlt = cov.ldlt();
+  const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
+  const double expected = log(cov.determinant());
+  const double actual = serializable_ldlt.log_determinant();
+
+  // The sqrt solves aren't unique, but we can check the outer product
+  EXPECT_NEAR(expected, actual, 1e-8);
+}
+
 TEST_F(SerializableLDLTTest, test_sqrt_solve) {
   auto ldlt = cov.ldlt();
   const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
