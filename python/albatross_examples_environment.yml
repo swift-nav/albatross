@@ -1,0 +1,21 @@
+name: albatross
+dependencies:
+- python=3.7
+- pip
+- numpy
+- scipy
+- matplotlib
+- pandas
+- seaborn
+- jupyter
+- xarray
+- pyproj>=1.9.3,<2
+- basemap
+- basemap-data-hires
+- sphinx
+- pip:
+  - ipdb
+  - gnss
+  - progressbar
+  - sphinx-autobuild
+  - sphinx_rtd_theme

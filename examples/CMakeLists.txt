@@ -59,6 +59,20 @@ add_custom_target(run_temperature_example
   COMMENT "Running temperature_example"
   )
 
+add_executable(temperature_location_example
+  temperature_example/temperature_location_example.cc
+  )
+target_link_libraries(temperature_location_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_temperature_location_example
+  DEPENDS temperature_location_example
+  COMMAND temperature_location_example -input ${PROJECT_SOURCE_DIR}/examples/temperature_example/midwest_year.csv -predict ${PROJECT_SOURCE_DIR}/examples/temperature_example/unknown_location.csv -output ./location_predictions.csv
+  COMMENT "Running temperature_location_example"
+  )
 
 add_executable(call_trace_example
   call_trace_example.cc

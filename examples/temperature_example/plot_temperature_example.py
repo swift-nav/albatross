@@ -1,4 +1,5 @@
 import sys
+import gnss
 import pyproj
 import argparse
 import numpy as np
@@ -81,14 +82,20 @@ def get_basemap(lons, lats, pad=0.1, lat_pad=None, lon_pad=None, **kwdargs):
     m.drawstates()
     return m
 
+def add_lat_lon_height(df):
+    llh = [gnss.llh_from_ecef(xyz)
+           for xyz in preds[['ecef_x', 'ecef_y', 'ecef_z']].values]
+    lat, lon, h = zip(*llh)
+    df['lat'] = np.round(lat, 8)
+    df['lon'] = np.round(lon, 8)
+    df['height'] = np.round(h, 8)
+    return df
 
 def create_parser():
     p = argparse.ArgumentParser()
     p.add_argument("train")
     p.add_argument("predictions")
-#     p.add_argument("--output")
     return p
-
 
 if __name__ == "__main__":
 
@@ -97,8 +104,9 @@ if __name__ == "__main__":
 
     # read in the training and prediction data
     preds = pd.read_csv(args.predictions)
-    pred_lons = preds['lon'].values
+    preds = add_lat_lon_height(preds)
     pred_lats = preds['lat'].values
+    pred_lons = preds['lon'].values
 
     df = pd.read_csv(args.train)
     lons = df['LON'].values
@@ -107,6 +115,7 @@ if __name__ == "__main__":
     norm = plt.Normalize(vmin=df['TEMP'].values.min(), vmax=df['TEMP'].values.max())
 
     ncols = np.nonzero(np.diff(preds['lat'].values) != 0)[0][0] + 1
+    assert ncols > 1
     nrows = float(preds.shape[0]) / ncols
     if not (nrows - int(nrows) == 0.):
         raise ValueError("Couldn't infer data shape")
@@ -125,10 +134,12 @@ if __name__ == "__main__":
         land_values = basemap.maskoceans(pred_lons.reshape(nrows, ncols),
                                          pred_lats.reshape(nrows, ncols),
                                          pred_values.reshape(nrows, ncols), inlands=False)
+
         pm = bm.pcolormesh(pred_x.reshape(nrows, ncols),
                       pred_y.reshape(nrows, ncols),
                       land_values.reshape(nrows, ncols),
                       alpha=0.7,
+                      norm=norm,
                       cmap=plt.get_cmap('coolwarm'),
                       linewidths=0, zorder=10000, **kwdargs)
 
@@ -151,5 +162,6 @@ if __name__ == "__main__":
 
     plot_variable('prediction', "Degrees F")
     plt.savefig("mean_temperature.png", norm=norm)
+
     plot_variable('prediction_variance', "Standard Deviation (F)", vmax=3.0)
     plt.savefig("sd_temperature.png")
