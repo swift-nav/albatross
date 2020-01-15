@@ -230,6 +230,8 @@ public:
 
   ~GaussianProcessBase(){};
 
+  static const std::uint32_t serialization_version = 1;
+
   // Create a fit based on a subset of predicted features (with the given joint
   // distribution) - the fit type also requires the prior covariance of the
   // features to determine the model that will give the same mean and covariance

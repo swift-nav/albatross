@@ -392,7 +392,6 @@ TEST(test_serialize, test_variant_version_0) {
     cereal::JSONOutputArchive oarchive(os);
     save(oarchive, foo, 0);
   }
-  std::cout << os.str() << std::endl;
 
   // Deserialize it.
   std::istringstream is(os.str());
@@ -404,6 +403,20 @@ TEST(test_serialize, test_variant_version_0) {
   // Make sure the original and deserialized representations are
   // equivalent.
   EXPECT_TRUE(foo == deserialized);
+}
+
+TEST(test_serialize, test_gp_serialize_version) {
+  MakeGaussianProcess test_case;
+
+  EXPECT_TRUE(bool(cereal::detail::has_serialization_version<decltype(
+                       test_case.get_model())>::value));
+
+  const std::uint32_t expected_version =
+      test_case.get_model().serialization_version;
+  const std::uint32_t actual_version =
+      cereal::detail::Version<decltype(test_case.get_model())>::version;
+
+  EXPECT_EQ(actual_version, expected_version);
 }
 
 } // namespace albatross

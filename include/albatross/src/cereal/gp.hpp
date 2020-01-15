@@ -59,30 +59,6 @@ void load(Archive &archive,
   archive(cereal::make_nvp("insights", gp.insights));
 }
 
-// Here we define the version for variant serialization following the
-// example given here: https://github.com/USCiLab/cereal/issues/319
-namespace detail {
-template <typename CovFunc, typename MeanFunc, typename ImplType>
-struct Version<GaussianProcessBase<CovFunc, MeanFunc, ImplType>> {
-  static const std::uint32_t version;
-  static std::uint32_t registerVersion() {
-    ::cereal::detail::StaticObject<Versions>::getInstance().mapping.emplace(
-        std::type_index(
-            typeid(GaussianProcessBase<CovFunc, MeanFunc, ImplType>))
-            .hash_code(),
-        GP_SERIALIZATION_VERSION);
-    return GP_SERIALIZATION_VERSION;
-  }
-  static void unused() { (void)version; }
-};
-
-template <typename CovFunc, typename MeanFunc, typename ImplType>
-const std::uint32_t
-    Version<GaussianProcessBase<CovFunc, MeanFunc, ImplType>>::version =
-        Version<GaussianProcessBase<CovFunc, MeanFunc,
-                                    ImplType>>::registerVersion();
-} // namespace detail
-
 } // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_GP_HPP_ */
