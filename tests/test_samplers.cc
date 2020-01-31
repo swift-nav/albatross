@@ -151,9 +151,6 @@ TEST(test_samplers, test_samplers_sparse_gp) {
   const double meas_noise_sd = 1.;
   const auto dataset = make_toy_linear_data(a, b, meas_noise_sd, 50);
 
-  std::default_random_engine gen(2012);
-  const std::size_t walkers = 32;
-
   using Noise = IndependentNoise<double>;
   Noise indep_noise(meas_noise_sd);
   indep_noise.sigma_independent_noise.value = 1.;
@@ -171,19 +168,31 @@ TEST(test_samplers, test_samplers_sparse_gp) {
   model.set_prior("inducing_nugget", FixedPrior());
   model.set_prior("measurement_nugget", FixedPrior());
 
+  std::default_random_engine gen(2012);
+  const std::size_t walkers = 32;
+
   std::size_t max_iterations = 100;
 
   std::shared_ptr<std::ostringstream> oss =
       std::make_shared<std::ostringstream>();
-  std::shared_ptr<std::ostream> ostream =
+  std::shared_ptr<std::ostream> os =
       static_cast<std::shared_ptr<std::ostream>>(oss);
 
-  auto callback = get_csv_writing_callback(model, ostream);
+  auto csv_callback = CsvWritingCallback(model.get_params(), os);
+  const auto samples = ensemble_sampler(model, dataset, walkers, max_iterations,
+                                        gen, csv_callback);
 
-  const auto ensemble_samples =
-      ensemble_sampler(model, dataset, walkers, max_iterations, gen, callback);
-
+  EXPECT_GT(samples.size(), 0);
   EXPECT_GT(oss->str().size(), 1);
+
+  std::istringstream iss(oss->str());
+  const auto initial_params = initial_params_from_csv(model.get_params(), iss);
+
+  EXPECT_EQ(initial_params.size(), samples[0].size());
+
+  oss = std::make_shared<std::ostringstream>();
+  auto ml_callback = MaximumLikelihoodTrackingCallback(model.get_params(), oss);
+  ensemble_sampler(model, dataset, walkers, max_iterations, gen, ml_callback);
 }
 
 } // namespace albatross
