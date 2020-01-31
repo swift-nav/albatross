@@ -91,8 +91,16 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
 
       // proposed = x_j + z * (x_k - x_j)
       for (std::size_t i = 0; i < n_dim; ++i) {
-        double v_j = next_ensembles[j].params[i];
-        proposed.params[i] = v_j + z * (proposed.params[i] - v_j);
+        const double v_j = next_ensembles[j].params[i];
+        double delta = (proposed.params[i] - v_j);
+        // Occasionally (especially with bounds) some
+        // parameters can end up identical across samples
+        // in this occasion we switch to a gaussian style
+        // move with very small variance.
+        if (delta == 0.) {
+          delta = 1e-6;
+        }
+        proposed.params[i] = v_j + z * delta;
       }
 
       proposed.log_prob = compute_log_prob(proposed.params);
