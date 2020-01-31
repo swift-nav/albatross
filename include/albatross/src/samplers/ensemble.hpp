@@ -35,28 +35,6 @@ inline std::size_t random_complement(std::size_t n, std::size_t i,
   }
 }
 
-template <typename JitterDistribution>
-std::vector<std::vector<double>> initial_params_from_jitter(
-    const ParameterStore &params, JitterDistribution &jitter_distribution,
-    std::default_random_engine &gen, std::size_t n = -1) {
-
-  n = std::max(n, 2 * params.size() + 1);
-
-  std::vector<std::vector<double>> output;
-  std::vector<double> double_params = get_tunable_parameters(params).values;
-  output.push_back(double_params);
-  for (std::size_t i = 0; i < n - 1; ++i) {
-
-    std::vector<double> perturbed(double_params);
-    for (auto &d : perturbed) {
-      d += jitter_distribution(gen);
-    };
-
-    output.push_back(perturbed);
-  }
-  return output;
-}
-
 void assert_valid_states(const EnsembleSamplerState &ensembles) {
   for (std::size_t i = 0; i < ensembles.size(); ++i) {
     assert(std::isfinite(ensembles[i].log_prob));
