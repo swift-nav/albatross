@@ -122,39 +122,6 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
   return next_ensembles;
 }
 
-template <typename ComputeLogProb>
-inline EnsembleSamplerState
-ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
-                            const EnsembleSamplerState &ensembles,
-                            std::default_random_engine &gen) {
-
-  EnsembleSamplerState output;
-  for (const auto &state : ensembles) {
-    if (std::isfinite(state.log_prob)) {
-      output.push_back(state);
-    }
-  }
-  assert(output.size() > 2 && "Need at least two finite initial states");
-
-  std::uniform_real_distribution<double> uniform_real(0.0, 1.0);
-
-  while (output.size() < ensembles.size()) {
-    const auto random_pair = random_without_replacement(output, 2, gen);
-
-    SamplerState attempt(random_pair[0]);
-    for (std::size_t i = 0; i < attempt.params.size(); ++i) {
-      const auto a = uniform_real(gen);
-      attempt.params[i] += a * (random_pair[1].params[i] - attempt.params[i]);
-    }
-
-    attempt.log_prob = compute_log_prob(attempt.params);
-    if (std::isfinite(attempt.log_prob)) {
-      output.push_back(attempt);
-    }
-  }
-  return output;
-}
-
 template <typename ComputeLogProb, typename CallbackFunc = NullCallback>
 std::vector<EnsembleSamplerState>
 ensemble_sampler(ComputeLogProb &&compute_log_prob,

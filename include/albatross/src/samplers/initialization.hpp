@@ -29,7 +29,12 @@ inline std::vector<std::string> split_string(const std::string &s,
 std::vector<double> parse_line(const std::string &line) {
   std::vector<double> output;
   for (const auto &s : split_string(line, ',')) {
-    output.push_back(std::stod(s));
+    try {
+      output.push_back(std::stod(s));
+    } catch (...) {
+      output.push_back(NAN);
+      std::cout << "BAD VALUE: " << s << std::endl;
+    }
   }
   return output;
 }
@@ -51,6 +56,8 @@ initial_params_from_csv(std::istream &ss) {
 
   while (std::getline(ss, line)) {
     const std::vector<double> values = parse_line(line);
+
+    // Only store the params from the last iteration in the file.
     if (values[0] > iteration) {
       iteration = values[0];
       output.clear();
@@ -58,6 +65,7 @@ initial_params_from_csv(std::istream &ss) {
 
     std::map<std::string, double> param_values;
     assert(values.size() == columns.size());
+    // Skip the first three columns which contain metadata
     for (std::size_t i = 3; i < columns.size(); ++i) {
       param_values[columns[i]] = values[i];
     }
@@ -106,6 +114,48 @@ std::vector<std::vector<double>> initial_params_from_jitter(
     };
 
     output.push_back(perturbed);
+  }
+  return output;
+}
+
+template <typename ComputeLogProb>
+inline EnsembleSamplerState
+ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
+                            const EnsembleSamplerState &ensembles,
+                            std::default_random_engine &gen) {
+
+  auto all_finite = [](const std::vector<double> &xs) {
+    for (const auto &x : xs) {
+      if (!std::isfinite(x)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  EnsembleSamplerState output;
+  for (const auto &state : ensembles) {
+    if (std::isfinite(state.log_prob) && all_finite(state.params)) {
+      output.push_back(state);
+    }
+  }
+  assert(output.size() > 2 && "Need at least two finite initial states");
+
+  std::uniform_real_distribution<double> uniform_real(0.0, 1.0);
+
+  while (output.size() < ensembles.size()) {
+    const auto random_pair = random_without_replacement(output, 2, gen);
+
+    SamplerState attempt(random_pair[0]);
+    for (std::size_t i = 0; i < attempt.params.size(); ++i) {
+      const auto a = uniform_real(gen);
+      attempt.params[i] += a * (random_pair[1].params[i] - attempt.params[i]);
+    }
+
+    attempt.log_prob = compute_log_prob(attempt.params);
+    if (std::isfinite(attempt.log_prob)) {
+      output.push_back(attempt);
+    }
   }
   return output;
 }

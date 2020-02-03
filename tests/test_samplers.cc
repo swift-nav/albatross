@@ -182,17 +182,26 @@ TEST(test_samplers, test_samplers_sparse_gp) {
   const auto samples = ensemble_sampler(model, dataset, walkers, max_iterations,
                                         gen, csv_callback);
 
+  const std::string csv_data = oss->str();
   EXPECT_GT(samples.size(), 0);
-  EXPECT_GT(oss->str().size(), 1);
+  EXPECT_GT(csv_data.size(), 1);
 
-  std::istringstream iss(oss->str());
+  std::istringstream iss(csv_data);
   const auto initial_params = initial_params_from_csv(model.get_params(), iss);
 
   EXPECT_EQ(initial_params.size(), samples[0].size());
 
   oss = std::make_shared<std::ostringstream>();
   auto ml_callback = MaximumLikelihoodTrackingCallback(model.get_params(), oss);
-  ensemble_sampler(model, dataset, walkers, max_iterations, gen, ml_callback);
+
+  auto compute_ll = [&](const std::vector<double> &param_values) {
+    decltype(model) m(model);
+    m.set_tunable_params_values(param_values);
+    return m.log_likelihood(dataset);
+  };
+
+  ensemble_sampler(compute_ll, initial_params, max_iterations, gen,
+                   ml_callback);
 }
 
 } // namespace albatross
