@@ -121,4 +121,61 @@ TEST(test_tune, test_multiple_datasets) {
   auto params = tuner.tune();
 }
 
+template <typename ObjectiveFunction>
+Eigen::VectorXd nlopt_solve(GenericTuner &tuner, ObjectiveFunction &objective) {
+  const auto output = tuner.tune(objective);
+  auto x = get_tunable_parameters(output).values;
+  const Eigen::Map<Eigen::VectorXd> eigen_output(
+      &x[0], static_cast<Eigen::Index>(x.size()));
+  return eigen_output;
+}
+
+TEST(test_tune, test_generic) {
+
+  std::default_random_engine gen(2012);
+  Eigen::Index k = 3;
+  const auto cov = random_covariance_matrix(k, gen).ldlt();
+  const auto truth = Eigen::VectorXd::Ones(k);
+  const auto mean = cov.solve(truth);
+
+  auto mahalanobis_distance_eigen = [&](const Eigen::VectorXd &eigen_x) {
+    return (cov.solve(eigen_x) - mean).norm();
+  };
+
+  auto mahalanobis_distance_vector = [&](const std::vector<double> &vector_x) {
+    std::vector<double> x(vector_x);
+    const Eigen::Map<Eigen::VectorXd> eigen_x(
+        &x[0], static_cast<Eigen::Index>(x.size()));
+    return mahalanobis_distance_eigen(eigen_x);
+  };
+
+  auto mahalanobis_distance_params = [&](const ParameterStore &params) {
+    return mahalanobis_distance_vector(get_tunable_parameters(params).values);
+  };
+
+  std::ostringstream output_stream;
+  std::vector<double> initial_x(mean.size());
+  for (auto &d : initial_x) {
+    d = 0.;
+  }
+  GenericTuner tuner(initial_x, output_stream);
+
+  // Make sure the generic tuner can use any of the different objective function
+  // signatures.
+  const auto eigen_result = tuner.tune(mahalanobis_distance_eigen);
+  EXPECT_LT((eigen_result - truth).norm(), 1e-4);
+
+  auto vector_result = tuner.tune(mahalanobis_distance_vector);
+  const Eigen::Map<Eigen::VectorXd> eigen_vector_output(
+      &vector_result[0], static_cast<Eigen::Index>(vector_result.size()));
+  EXPECT_LT((eigen_vector_output - truth).norm(), 1e-4);
+
+  const auto params_result = tuner.tune(mahalanobis_distance_params);
+  auto param_vector = get_tunable_parameters(params_result).values;
+  const Eigen::Map<Eigen::VectorXd> eigen_param_output(
+      &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+
+  EXPECT_LT((eigen_param_output - truth).norm(), 1e-4);
+}
+
 } // namespace albatross

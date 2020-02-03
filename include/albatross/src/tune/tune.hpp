@@ -34,50 +34,194 @@ inline std::string to_string(const nlopt::result result) {
   return result_strings[result];
 }
 
-/*
- * This function API is defined by nlopt, when an optimization algorithm
- * requires the gradient nlopt expects that the grad argument gets
- * modified inside this function.  The TuneModelConfig which holds
- * any information about which functions to call etc, needs to be passed
- * in through a void pointer.
- */
-template <typename ModelType, typename MetricType, typename FeatureType>
-double objective_function(const std::vector<double> &x,
-                          std::vector<double> &grad, void *void_tune_config) {
-  if (!grad.empty()) {
-    throw std::invalid_argument("The algorithm being used by nlopt requires"
-                                "a gradient but one isn't available.");
-  }
-
-  const ModelTuner<ModelType, MetricType, FeatureType> config =
-      *static_cast<ModelTuner<ModelType, MetricType, FeatureType> *>(
-          void_tune_config);
-
-  ModelType model(config.model);
-  model.set_tunable_params_values(x);
-
-  if (!model.params_are_valid()) {
-    config.output_stream << "Invalid Parameters:" << std::endl;
-    config.output_stream << pretty_param_details(model.get_params())
-                         << std::endl;
-    assert(false);
-  }
-
-  std::vector<double> metrics;
-  for (std::size_t i = 0; i < config.datasets.size(); i++) {
-    metrics.push_back(config.metric(config.datasets[i], model));
-  }
-  double metric = config.aggregator(metrics);
-
-  if (std::isnan(metric)) {
-    metric = INFINITY;
-  }
-  config.output_stream << "-------------------" << std::endl;
-  config.output_stream << model.pretty_string() << std::endl;
-  config.output_stream << "objective: " << metric << std::endl;
-  config.output_stream << "-------------------" << std::endl;
-  return metric;
+template <typename ObjectiveFunction>
+inline double objective_function_wrapper(const std::vector<double> &x,
+                                         std::vector<double> &grad,
+                                         void *objective_func) {
+  return (*static_cast<ObjectiveFunction *>(objective_func))(x, grad);
 }
+
+template <typename ObjectiveFunction>
+inline void set_objective_function(nlopt::opt &optimizer,
+                                   ObjectiveFunction &objective) {
+  optimizer.set_min_objective(objective_function_wrapper<ObjectiveFunction>,
+                              (void *)&objective);
+}
+
+inline nlopt::opt
+default_optimizer(const ParameterStore &params,
+                  const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
+  // The various algorithms in nlopt are coded by the first two characters.
+  // In this case LN stands for local, gradient free.
+  const auto tunable_params = get_tunable_parameters(params);
+
+  nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
+  optimizer.set_ftol_abs(1e-8);
+  optimizer.set_ftol_rel(1e-6);
+  optimizer.set_lower_bounds(tunable_params.lower_bounds);
+  optimizer.set_upper_bounds(tunable_params.upper_bounds);
+  // the sensitivity to parameters varies greatly between parameters so
+  // terminating based on change in x isn't a great criteria, we only
+  // terminate based on xtol if the change is super small.
+  optimizer.set_xtol_abs(1e-18);
+  optimizer.set_xtol_rel(1e-18);
+  return optimizer;
+}
+
+inline ParameterStore uniformative_params(const std::vector<double> &values) {
+  ParameterStore params;
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    params[std::to_string(i)] = {values[i], UninformativePrior()};
+  }
+  return params;
+}
+
+inline ParameterStore run_optimizer(const ParameterStore &params,
+                                    nlopt::opt &optimizer,
+                                    std::ostream &output_stream) {
+
+  auto x = get_tunable_parameters(params).values;
+
+  assert(static_cast<std::size_t>(optimizer.get_dimension()) == x.size());
+
+  double minf;
+  nlopt::result result = optimizer.optimize(x, minf);
+
+  const auto output = set_tunable_params_values(params, x);
+  output_stream << "==================" << std::endl;
+  output_stream << "TUNED PARAMS" << std::endl;
+  output_stream << "minimum: " << minf << std::endl;
+  output_stream << "nlopt termination code: " << to_string(result) << std::endl;
+  output_stream << "==================" << std::endl;
+  output_stream << pretty_params(output) << std::endl;
+
+  return output;
+}
+
+struct GenericTuner {
+  ParameterStore initial_params;
+  nlopt::opt optimizer;
+  std::ostream &output_stream;
+
+  GenericTuner(const ParameterStore &initial_params_,
+               std::ostream &output_stream_ = std::cout)
+      : initial_params(initial_params_), optimizer(),
+        output_stream(output_stream_) {
+    optimizer = default_optimizer(initial_params);
+  };
+
+  GenericTuner(const std::vector<double> &initial_params,
+               std::ostream &output_stream_ = std::cout)
+      : GenericTuner(uniformative_params(initial_params), output_stream_){};
+
+  template <
+      typename ObjectiveFunction,
+      std::enable_if_t<is_invocable<ObjectiveFunction, ParameterStore>::value,
+                       int> = 0>
+  ParameterStore tune(ObjectiveFunction &objective) {
+
+    static_assert(is_invocable_with_result<ObjectiveFunction, double,
+                                           ParameterStore>::value,
+                  "ObjectiveFunction was expected to take the form `double "
+                  "f(const ParameterStore &x)`");
+
+    auto param_wrapped_objective = [&](const std::vector<double> &x,
+                                       std::vector<double> &grad) {
+      ParameterStore params = set_tunable_params_values(initial_params, x);
+
+      if (!params_are_valid(params)) {
+        this->output_stream << "Invalid Parameters:" << std::endl;
+        this->output_stream << pretty_param_details(params) << std::endl;
+        assert(false);
+      }
+
+      double metric = objective(params);
+
+      if (std::isnan(metric)) {
+        metric = INFINITY;
+      }
+      this->output_stream << "-------------------" << std::endl;
+      this->output_stream << pretty_params(params) << std::endl;
+      this->output_stream << "objective: " << metric << std::endl;
+      this->output_stream << "-------------------" << std::endl;
+      return metric;
+    };
+
+    set_objective_function(optimizer, param_wrapped_objective);
+
+    return run_optimizer(initial_params, optimizer, output_stream);
+  }
+
+  template <
+      typename ObjectiveFunction,
+      std::enable_if_t<
+          is_invocable<ObjectiveFunction, std::vector<double>>::value, int> = 0>
+  std::vector<double> tune(ObjectiveFunction &objective) {
+
+    static_assert(is_invocable_with_result<ObjectiveFunction, double,
+                                           std::vector<double>>::value,
+                  "ObjectiveFunction was expected to take the form `double "
+                  "f(const std::vector<double> &x)`");
+
+    auto grad_free_objective = [&](const std::vector<double> &x,
+                                   std::vector<double> &grad) {
+      assert(grad.size() == 0 &&
+             "Gradient based algorithm used with a gradient free objective");
+
+      double metric = objective(x);
+
+      if (std::isnan(metric)) {
+        metric = INFINITY;
+      }
+      this->output_stream << "-------------------" << std::endl;
+      for (std::size_t i = 0; i < x.size(); ++i) {
+        this->output_stream << "  " << i << " : " << x[i] << std::endl;
+      }
+      this->output_stream << "objective: " << metric << std::endl;
+      this->output_stream << "-------------------" << std::endl;
+      return metric;
+    };
+
+    set_objective_function(optimizer, grad_free_objective);
+    const auto params = run_optimizer(initial_params, optimizer, output_stream);
+    return get_tunable_parameters(params).values;
+  }
+
+  template <
+      typename ObjectiveFunction,
+      std::enable_if_t<is_invocable<ObjectiveFunction, Eigen::VectorXd>::value,
+                       int> = 0>
+  Eigen::VectorXd tune(ObjectiveFunction &objective) {
+
+    static_assert(is_invocable_with_result<ObjectiveFunction, double,
+                                           Eigen::VectorXd>::value,
+                  "ObjectiveFunction was expected to take the form `double "
+                  "f(const Eigen::VectorXd &x)`");
+
+    auto objective_converted_to_eigen = [&](const std::vector<double> &x) {
+      std::vector<double> x_copy(x);
+      const Eigen::Map<Eigen::VectorXd> eigen_x(
+          &x_copy[0], static_cast<Eigen::Index>(x_copy.size()));
+
+      return objective(eigen_x);
+    };
+
+    auto vector_output = tune(objective_converted_to_eigen);
+    const Eigen::Map<Eigen::VectorXd> eigen_output(
+        &vector_output[0], static_cast<Eigen::Index>(vector_output.size()));
+    return eigen_output;
+  }
+
+  template <typename ObjectiveFunction,
+            std::enable_if_t<
+                !is_invocable<ObjectiveFunction, std::vector<double>>::value &&
+                    !is_invocable<ObjectiveFunction, ParameterStore>::value &&
+                    !is_invocable<ObjectiveFunction, Eigen::VectorXd>::value,
+                int> = 0>
+  void tune(ObjectiveFunction &objective)
+      ALBATROSS_FAIL(ObjectiveFunction,
+                     "Unsupported function signature for ObjectiveFunction");
+};
 
 template <typename ModelType, typename MetricType, class FeatureType>
 struct ModelTuner {
@@ -97,46 +241,29 @@ struct ModelTuner {
              std::ostream &output_stream_)
       : model(model_), metric(metric_), datasets(datasets_),
         aggregator(aggregator_), output_stream(output_stream_), optimizer() {
-    initialize_optimizer();
+    optimizer = default_optimizer(model.get_params());
   };
 
   ParameterStore tune() {
-    auto x = model.get_tunable_parameters().values;
 
-    assert(x.size());
-    optimizer.set_min_objective(
-        objective_function<ModelType, MetricType, FeatureType>, (void *)this);
-    double minf;
-    nlopt::result result = optimizer.optimize(x, minf);
+    auto objective = [&](const ParameterStore &params) {
+      ModelType m(model);
+      m.set_params(params);
+      std::vector<double> metrics;
+      for (std::size_t i = 0; i < this->datasets.size(); i++) {
+        metrics.push_back(this->metric(this->datasets[i], m));
+      }
+      return this->aggregator(metrics);
+    };
 
-    // Tell the user what the final parameters were.
-    model.set_tunable_params_values(x);
-    output_stream << "==================" << std::endl;
-    output_stream << "TUNED MODEL PARAMS" << std::endl;
-    output_stream << "nlopt termination code: " << to_string(result)
-                  << std::endl;
-    output_stream << "==================" << std::endl;
-    output_stream << model.pretty_string() << std::endl;
-
-    return model.get_params();
+    GenericTuner generic_tuner(model.get_params(), output_stream);
+    generic_tuner.optimizer = optimizer;
+    return generic_tuner.tune(objective);
   }
 
   void
   initialize_optimizer(const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
-    // The various algorithms in nlopt are coded by the first two characters.
-    // In this case LN stands for local, gradient free.
-    auto tunable_params = model.get_tunable_parameters();
-
-    optimizer = nlopt::opt(algorithm, (unsigned)tunable_params.values.size());
-    optimizer.set_ftol_abs(1e-8);
-    optimizer.set_ftol_rel(1e-6);
-    optimizer.set_lower_bounds(tunable_params.lower_bounds);
-    optimizer.set_upper_bounds(tunable_params.upper_bounds);
-    // the sensitivity to parameters varies greatly between parameters so
-    // terminating based on change in x isn't a great criteria, we only
-    // terminate based on xtol if the change is super small.
-    optimizer.set_xtol_abs(1e-18);
-    optimizer.set_xtol_rel(1e-18);
+    optimizer = default_optimizer(model.get_params(), algorithm);
   }
 };
 

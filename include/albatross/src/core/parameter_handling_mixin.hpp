@@ -165,8 +165,8 @@ inline double ensure_value_within_bounds(const Parameter &param,
 }
 
 inline ParameterStore
-set_tunable_params_values(const std::vector<ParameterValue> &x,
-                          const ParameterStore &params,
+set_tunable_params_values(const ParameterStore &params,
+                          const std::vector<ParameterValue> &x,
                           const bool force_bounds = true) {
   ParameterStore output(params);
   std::size_t i = 0;
@@ -188,6 +188,15 @@ set_tunable_params_values(const std::vector<ParameterValue> &x,
   // Make sure we used all the parameters that were passed in.
   assert(x.size() == i);
   return output;
+}
+
+inline bool params_are_valid(const ParameterStore &params) {
+  for (const auto &pair : params) {
+    if (!pair.second.is_valid()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /*
@@ -271,12 +280,7 @@ public:
   }
 
   bool params_are_valid() const {
-    for (const auto &pair : get_params()) {
-      if (!pair.second.is_valid()) {
-        return false;
-      }
-    }
-    return true;
+    return albatross::params_are_valid(this->get_params());
   }
 
   double prior_log_likelihood() const {
@@ -302,7 +306,7 @@ public:
                                  bool force_bounds = true) {
 
     const auto modified_params =
-        albatross::set_tunable_params_values(x, get_params(), force_bounds);
+        albatross::set_tunable_params_values(get_params(), x, force_bounds);
 
     for (const auto &pair : modified_params) {
       unchecked_set_param(pair.first, pair.second);
