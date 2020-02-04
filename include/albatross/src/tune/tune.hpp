@@ -68,7 +68,7 @@ default_optimizer(const ParameterStore &params,
   return optimizer;
 }
 
-inline ParameterStore uniformative_params(const std::vector<double> &values) {
+inline ParameterStore uninformative_params(const std::vector<double> &values) {
   ParameterStore params;
   for (std::size_t i = 0; i < values.size(); ++i) {
     params[std::to_string(i)] = {values[i], UninformativePrior()};
@@ -112,7 +112,7 @@ struct GenericTuner {
 
   GenericTuner(const std::vector<double> &initial_params,
                std::ostream &output_stream_ = std::cout)
-      : GenericTuner(uniformative_params(initial_params), output_stream_){};
+      : GenericTuner(uninformative_params(initial_params), output_stream_){};
 
   template <
       typename ObjectiveFunction,
