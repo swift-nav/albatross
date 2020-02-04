@@ -114,4 +114,33 @@ TEST(test_variant_utils, test_to_variant_vector) {
   }
 }
 
+TEST(test_variant_utils, test_extract_from_variants) {
+  const auto doubles = linspace(0., 10., 11);
+  const auto variants =
+      to_variant_vector<variant<int, double, VariantUtilsTestType>>(doubles);
+  EXPECT_EQ(variants.size(), doubles.size());
+
+  const std::vector<double> actual = extract_from_variants<double>(variants);
+
+  EXPECT_EQ(actual, doubles);
+
+  double a = 1.;
+  double b = 2.;
+  VariantUtilsTestType x_a = {a};
+  VariantUtilsTestType x_b = {b};
+
+  std::vector<variant<double, VariantUtilsTestType>> mixed;
+  mixed.emplace_back(a);
+  mixed.emplace_back(b);
+  mixed.emplace_back(x_a);
+  mixed.emplace_back(x_b);
+
+  const auto only_test_types =
+      extract_from_variants<VariantUtilsTestType>(mixed);
+
+  EXPECT_EQ(only_test_types[0], x_a);
+  EXPECT_EQ(only_test_types[1], x_b);
+  EXPECT_EQ(only_test_types.size(), 2);
+}
+
 } // namespace albatross
