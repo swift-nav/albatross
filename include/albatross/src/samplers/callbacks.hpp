@@ -39,7 +39,7 @@ inline void write_ensemble_sampler_state(
     std::map<std::string, std::string> row;
 
     const auto params =
-        set_tunable_params_values(ensemble[i].params, param_store);
+        set_tunable_params_values(param_store, ensemble[i].params);
     for (const auto &param : params) {
       row[param.first] = std::to_string(param.second.value);
     }
@@ -65,7 +65,7 @@ struct MaximumLikelihoodTrackingCallback {
     for (const auto &state : ensembles) {
       if (state.log_prob > max_ll) {
         max_ll = state.log_prob;
-        param_store = set_tunable_params_values(state.params, param_store);
+        param_store = set_tunable_params_values(param_store, state.params);
         (*stream) << "===================" << std::endl;
         (*stream) << "Iteration: " << iteration << std::endl;
         (*stream) << "LL: " << max_ll << std::endl;
