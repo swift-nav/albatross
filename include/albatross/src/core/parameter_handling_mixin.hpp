@@ -149,6 +149,47 @@ inline TunableParameters get_tunable_parameters(const ParameterStore &params) {
   return output;
 }
 
+inline double ensure_value_within_bounds(const Parameter &param,
+                                         const double value) {
+  const double lb = param.prior.lower_bound();
+  if (value < lb) {
+    return lb;
+  };
+
+  const double ub = param.prior.upper_bound();
+  if (value > ub) {
+    return ub;
+  };
+
+  return value;
+}
+
+inline ParameterStore
+set_tunable_params_values(const std::vector<ParameterValue> &x,
+                          const ParameterStore &params,
+                          const bool force_bounds = true) {
+  ParameterStore output(params);
+  std::size_t i = 0;
+  for (const auto &pair : params) {
+    if (!pair.second.is_fixed()) {
+      double v = x[i];
+      const bool use_log_scale = pair.second.prior.is_log_scale();
+      if (use_log_scale) {
+        v = exp(v);
+      }
+      if (force_bounds) {
+        v = ensure_value_within_bounds(pair.second, v);
+      }
+
+      output[pair.first].value = v;
+      i++;
+    }
+  }
+  // Make sure we used all the parameters that were passed in.
+  assert(x.size() == i);
+  return output;
+}
+
 /*
  * This mixin class is intended to be included an any class which
  * depends on some set of parameters which we want to programatically
@@ -259,34 +300,13 @@ public:
 
   void set_tunable_params_values(const std::vector<ParameterValue> &x,
                                  bool force_bounds = true) {
-    const ParameterStore params = get_params();
-    std::size_t i = 0;
-    for (const auto &pair : params) {
-      if (!pair.second.is_fixed()) {
-        double v = x[i];
-        const bool use_log_scale = pair.second.prior.is_log_scale();
-        if (use_log_scale) {
-          v = exp(v);
-        }
 
-        if (force_bounds) {
-          const double lb = pair.second.prior.lower_bound();
-          if (v < lb) {
-            v = lb;
-          };
+    const auto modified_params =
+        albatross::set_tunable_params_values(x, get_params(), force_bounds);
 
-          const double ub = pair.second.prior.upper_bound();
-          if (v > ub) {
-            v = ub;
-          };
-        }
-
-        unchecked_set_param(pair.first, v);
-        i++;
-      }
+    for (const auto &pair : modified_params) {
+      unchecked_set_param(pair.first, pair.second);
     }
-    // Make sure we used all the parameters that were passed in.
-    assert(x.size() == i);
   }
 
   ParameterValue get_param_value(const ParameterKey &name) const {

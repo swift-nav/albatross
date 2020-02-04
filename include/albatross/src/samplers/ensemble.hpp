@@ -35,28 +35,6 @@ inline std::size_t random_complement(std::size_t n, std::size_t i,
   }
 }
 
-template <typename JitterDistribution>
-std::vector<std::vector<double>> initial_params_from_jitter(
-    const ParameterStore &params, JitterDistribution &jitter_distribution,
-    std::default_random_engine &gen, std::size_t n = -1) {
-
-  n = std::max(n, 2 * params.size() + 1);
-
-  std::vector<std::vector<double>> output;
-  std::vector<double> double_params = get_tunable_parameters(params).values;
-  output.push_back(double_params);
-  for (std::size_t i = 0; i < n - 1; ++i) {
-
-    std::vector<double> perturbed(double_params);
-    for (auto &d : perturbed) {
-      d += jitter_distribution(gen);
-    };
-
-    output.push_back(perturbed);
-  }
-  return output;
-}
-
 void assert_valid_states(const EnsembleSamplerState &ensembles) {
   for (std::size_t i = 0; i < ensembles.size(); ++i) {
     assert(std::isfinite(ensembles[i].log_prob));
@@ -113,8 +91,16 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
 
       // proposed = x_j + z * (x_k - x_j)
       for (std::size_t i = 0; i < n_dim; ++i) {
-        double v_j = next_ensembles[j].params[i];
-        proposed.params[i] = v_j + z * (proposed.params[i] - v_j);
+        const double v_j = next_ensembles[j].params[i];
+        double delta = (proposed.params[i] - v_j);
+        // Occasionally (especially with bounds) some
+        // parameters can end up identical across samples
+        // in this occasion we switch to a gaussian style
+        // move with very small variance.
+        if (delta == 0.) {
+          delta = 1e-6;
+        }
+        proposed.params[i] = v_j + z * delta;
       }
 
       proposed.log_prob = compute_log_prob(proposed.params);
@@ -134,39 +120,6 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
   }
 
   return next_ensembles;
-}
-
-template <typename ComputeLogProb>
-inline EnsembleSamplerState
-ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
-                            const EnsembleSamplerState &ensembles,
-                            std::default_random_engine &gen) {
-
-  EnsembleSamplerState output;
-  for (const auto &state : ensembles) {
-    if (std::isfinite(state.log_prob)) {
-      output.push_back(state);
-    }
-  }
-  assert(output.size() > 2 && "Need at least two finite initial states");
-
-  std::uniform_real_distribution<double> uniform_real(0.0, 1.0);
-
-  while (output.size() < ensembles.size()) {
-    const auto random_pair = random_without_replacement(output, 2, gen);
-
-    SamplerState attempt(random_pair[0]);
-    for (std::size_t i = 0; i < attempt.params.size(); ++i) {
-      const auto a = uniform_real(gen);
-      attempt.params[i] += a * (random_pair[1].params[i] - attempt.params[i]);
-    }
-
-    attempt.log_prob = compute_log_prob(attempt.params);
-    if (std::isfinite(attempt.log_prob)) {
-      output.push_back(attempt);
-    }
-  }
-  return output;
 }
 
 template <typename ComputeLogProb, typename CallbackFunc = NullCallback>
