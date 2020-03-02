@@ -7,7 +7,7 @@ A framework for statistical modelling in C++, with a focus on Gaussian processes
 
 .. _`albatross`: https://travis-ci.com/swift-nav/albatross
 
-.. |Build Status| image:: https://travis-ci.com/swift-nav/albatross.svg?token=ZCoayM24vorooTuykqeC&branch=master
+.. |Build Status| image:: https://api.travis-ci.com/swift-nav/albatross.svg
 
 ***********
 Features
