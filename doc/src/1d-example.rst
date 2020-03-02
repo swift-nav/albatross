@@ -4,7 +4,7 @@
 
 .. _1d-example:
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_function_30.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_function_30.png
    :align: center
 
 --------------
@@ -63,7 +63,7 @@ and :math:`\mathbf{I}(b)` evaluates to one if :math:`b` is true and zero otherwi
 We built this model in ``albatross`` (see next section) and used synthetic data to give
 us an idea of how the resulting model would perform:
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_example_radial_only.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_example_radial_only.png
    :align: center
 
 From this plot we can see that the resulting model does a pretty good job of
@@ -103,7 +103,7 @@ Now we can assemble this into a new covariance function,
 
 create a Gaussian process from it and plot the resulting predictions which look like:
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_example_radial_with_linear.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_example_radial_with_linear.png
    :align: center
 
 This plot shows that the model's ability to extrapolate has been been significantly improved.
@@ -172,7 +172,7 @@ Here are the resulting predictions when we have only two noisy observations,
 2 Observations
 ---------------
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_function_2.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_function_2.png
    :align: center
 
 not great, but at least it knows it isn't great.  As we start to add more observations
@@ -182,20 +182,20 @@ we can watch the model slowly get more confident,
 5 Observations
 ---------------
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_function_5.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_function_5.png
    :align: center
 
 ---------------
 10 Observations
 ---------------
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_function_10.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_function_10.png
    :align: center
 
 ---------------
 30 Observations
 ---------------
 
-.. image:: https://raw.githubusercontent.com/swift-nav/albatross/update_docs/examples/images/sinc_function_30.png
+.. image:: https://raw.githubusercontent.com/swift-nav/albatross/master/examples/images/sinc_function_30.png
    :align: center
 

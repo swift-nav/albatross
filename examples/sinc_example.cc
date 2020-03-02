@@ -68,17 +68,22 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Defining the model." << std::endl;
 
-  using Noise = IndependentNoise<double>;
-  Noise indep_noise(meas_noise_sd);
-  indep_noise.sigma_independent_noise.prior = LogScaleUniformPrior(1e-3, 1e2);
+  IndependentNoise<double> indep_noise(meas_noise_sd);
+  indep_noise.sigma_independent_noise = {1., LogScaleUniformPrior(1e-3, 1e2)};
 
-  if (FLAGS_mode == "radial") {
+  if (FLAGS_mode == "radial_only") {
     // this approach uses a squared exponential radial function to capture
     // the function we're estimating using non-parametric techniques
-    const Polynomial<1> polynomial(100.);
-    using SquaredExp = SquaredExponential<EuclideanDistance>;
-    const SquaredExp squared_exponential(3.5, 5.7);
-    auto cov = polynomial + squared_exponential + measurement_only(indep_noise);
+    const SquaredExponential<EuclideanDistance> squared_exponential(3.5, 100.);
+    auto cov = squared_exponential + measurement_only(indep_noise);
+    auto model = gp_from_covariance(cov);
+    run_model(model, data, low, high);
+  } else if (FLAGS_mode == "radial") {
+    // this approach uses a squared exponential radial function to capture
+    // the function we're estimating using non-parametric techniques
+    const Polynomial<1> linear(100.);
+    const SquaredExponential<EuclideanDistance> squared_exponential(3.5, 5.7);
+    auto cov = linear + squared_exponential + measurement_only(indep_noise);
     auto model = gp_from_covariance(cov);
     run_model(model, data, low, high);
   } else if (FLAGS_mode == "parametric") {
@@ -87,7 +92,8 @@ int main(int argc, char *argv[]) {
     // this all through the use of a mean function.
     const LinearMean linear;
     const SincFunction sinc;
-    auto model = gp_from_covariance_and_mean(indep_noise, linear + sinc);
+    auto model = gp_from_covariance_and_mean(measurement_only(indep_noise),
+                                             linear + sinc);
     run_model(model, data, low, high);
   }
 }
