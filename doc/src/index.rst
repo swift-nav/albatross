@@ -111,7 +111,7 @@ The ensemble sampler was inspired by `emcee`_ which itself was inspired by the p
 Like this project? Want to get paid to help us apply it to our GNSS models? `Join us`_ at `Swift Navigation`_ !
 
 
-.. image:: https://static.fjcdn.com/gifs/Albatross_408ca5_5434150.gif
+.. image:: https://bigmemes.funnyjunk.com/gifs/Albatross_408ca5_5434150.gif
    :align: center
 
 .. _`cross validation` : https://web.stanford.edu/~hastie/ElemStatLearn/
