@@ -285,11 +285,23 @@ enum PredictLevel { MEAN, MARGINAL, JOINT };
  * testing depending on what sort of predictions are available.
  */
 template <typename PredictionType, typename = void> struct TestPredictVariants {
+
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const auto get_mean = pred.template get<Eigen::VectorXd>();
     EXPECT_EQ(get_mean, pred_mean);
     EXPECT_GT(pred_mean.size(), 0);
+    return PredictLevel::MEAN;
+  }
+
+  PredictLevel
+  test_order(const PredictionType &pred,
+             const std::vector<PredictionType> &individual_preds) const {
+    const Eigen::VectorXd pred_mean = pred.mean();
+    EXPECT_EQ(pred_mean.size(), individual_preds.size());
+    for (std::size_t i = 0; i < individual_preds.size(); ++i) {
+      EXPECT_NEAR(pred_mean[i], individual_preds[i].mean()[0], 1e-6);
+    }
     return PredictLevel::MEAN;
   }
 
@@ -304,12 +316,26 @@ template <typename PredictionType>
 struct TestPredictVariants<
     PredictionType, std::enable_if_t<has_marginal<PredictionType>::value &&
                                      !has_joint<PredictionType>::value>> {
+
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const MarginalDistribution marginal = pred.marginal();
     const auto get_marginal = pred.template get<MarginalDistribution>();
     EXPECT_EQ(get_marginal, marginal);
     EXPECT_LE((pred_mean - marginal.mean).norm(), 1e-8);
+    return PredictLevel::MARGINAL;
+  }
+
+  PredictLevel
+  test_order(const PredictionType &pred,
+             const std::vector<PredictionType> &individual_preds) const {
+    const MarginalDistribution pred_marginal = pred.marginal();
+    EXPECT_EQ(pred_marginal.size(), individual_preds.size());
+    for (std::size_t i = 0; i < individual_preds.size(); ++i) {
+      const auto pred_i = individual_preds[i].marginal();
+      EXPECT_NEAR(pred_marginal.mean[i], pred_i.mean[0], 1e-6);
+      EXPECT_NEAR(pred_marginal.get_diagonal(i), pred_i.get_diagonal(0), 1e-6);
+    }
     return PredictLevel::MARGINAL;
   }
 
@@ -337,6 +363,19 @@ struct TestPredictVariants<PredictionType,
     EXPECT_LE(
         (marginal.covariance.diagonal() - joint.covariance.diagonal()).norm(),
         1e-8);
+    return PredictLevel::JOINT;
+  }
+
+  PredictLevel
+  test_order(const PredictionType &pred,
+             const std::vector<PredictionType> &individual_preds) const {
+    const JointDistribution pred_joint = pred.joint();
+    EXPECT_EQ(pred_joint.size(), individual_preds.size());
+    for (std::size_t i = 0; i < individual_preds.size(); ++i) {
+      const auto pred_i = individual_preds[i].joint();
+      EXPECT_NEAR(pred_joint.mean[i], pred_i.mean[0], 1e-6);
+      EXPECT_NEAR(pred_joint.get_diagonal(i), pred_i.get_diagonal(0), 1e-6);
+    }
     return PredictLevel::JOINT;
   }
 

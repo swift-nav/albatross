@@ -30,6 +30,47 @@ TYPED_TEST_P(RegressionModelTester, test_performs_reasonably_on_linear_data) {
   EXPECT_LE(rmse, 0.5);
 }
 
+template <typename PredictionType>
+void expect_predict_order_preserved(
+    const PredictionType &pred,
+    const std::vector<PredictionType> &individual_preds) {
+  TestPredictVariants<PredictionType> tester;
+  const auto level = tester.test_order(pred, individual_preds);
+  // Just in case the traits above don't work.
+  if (has_mean<PredictionType>::value) {
+    EXPECT_GE(level, PredictLevel::MEAN);
+  }
+
+  if (has_marginal<PredictionType>::value) {
+    EXPECT_GE(level, PredictLevel::MARGINAL);
+  }
+
+  if (has_joint<PredictionType>::value) {
+    EXPECT_GE(level, PredictLevel::JOINT);
+  }
+}
+
+template <typename T> std::vector<T> empty_vector_helper(const T &) {
+  return std::vector<T>();
+}
+
+TYPED_TEST_P(RegressionModelTester, test_predict_order_preserved) {
+  auto dataset = this->test_case.get_dataset();
+  auto model = this->test_case.get_model();
+
+  const auto fit_model = model.fit(dataset.features, dataset.targets);
+  const auto pred = fit_model.predict(dataset.features);
+
+  auto individual_preds = empty_vector_helper(pred);
+  for (std::size_t i = 0; i < dataset.features.size(); ++i) {
+    std::vector<std::size_t> i_vector = {i};
+    individual_preds.emplace_back(
+        fit_model.predict(subset(dataset.features, i_vector)));
+  }
+
+  expect_predict_order_preserved(pred, individual_preds);
+}
+
 Eigen::Index silly_function_to_increment_stack_pointer() {
   Eigen::VectorXd x(10);
   return x.size();
@@ -56,7 +97,8 @@ TYPED_TEST_P(RegressionModelTester, test_correct_derived_type) {
 
 REGISTER_TYPED_TEST_CASE_P(RegressionModelTester,
                            test_performs_reasonably_on_linear_data,
-                           test_predict_variants, test_correct_derived_type);
+                           test_predict_order_preserved, test_predict_variants,
+                           test_correct_derived_type);
 
 INSTANTIATE_TYPED_TEST_CASE_P(test_models, RegressionModelTester,
                               ExampleModels);
