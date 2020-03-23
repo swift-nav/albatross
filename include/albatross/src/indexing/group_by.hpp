@@ -101,34 +101,8 @@ public:
    * groups you would like to keep.  This is done by providing a function which
    * returns bool when provided with a group (or group key and group)
    */
-  template <
-      typename FilterFunction,
-      typename std::enable_if<details::is_valid_value_only_filter_function<
-                                  FilterFunction, ValueType>::value,
-                              int>::type = 0>
-  auto filter(const FilterFunction &f) const {
-    Grouped<KeyType, ValueType> output;
-    for (const auto &pair : map_) {
-      if (f(pair.second)) {
-        output.emplace(pair.first, pair.second);
-      }
-    }
-    return output;
-  }
-
-  template <
-      typename FilterFunction,
-      typename std::enable_if<details::is_valid_key_value_filter_function<
-                                  FilterFunction, KeyType, ValueType>::value,
-                              int>::type = 0>
-  auto filter(const FilterFunction &f) const {
-    Grouped<KeyType, ValueType> output;
-    for (const auto &pair : map_) {
-      if (f(pair.first, pair.second)) {
-        output.emplace(pair.first, pair.second);
-      }
-    }
-    return output;
+  template <typename FilterFunction> auto filter(FilterFunction &&f) const {
+    return albatross::filter(map_, std::forward<FilterFunction>(f));
   }
 
   /*
@@ -137,62 +111,8 @@ public:
    * (or group key and group).  If the function returns something other than
    * void the results will be aggregated into a new Grouped object.
    */
-  template <
-      typename ApplyFunction,
-      typename ApplyType = typename details::key_value_apply_result<
-          ApplyFunction, KeyType, ValueType>::type,
-      typename std::enable_if<details::is_valid_key_value_apply_function<
-                                  ApplyFunction, KeyType, ValueType>::value &&
-                                  std::is_same<void, ApplyType>::value,
-                              int>::type = 0>
-  void apply(const ApplyFunction &f) const {
-    for (const auto &pair : map_) {
-      f(pair.first, pair.second);
-    }
-  }
-
-  template <
-      typename ApplyFunction,
-      typename ApplyType = typename details::key_value_apply_result<
-          ApplyFunction, KeyType, ValueType>::type,
-      typename std::enable_if<details::is_valid_key_value_apply_function<
-                                  ApplyFunction, KeyType, ValueType>::value &&
-                                  !std::is_same<void, ApplyType>::value,
-                              int>::type = 0>
-  auto apply(const ApplyFunction &f) const {
-    Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : map_) {
-      output.emplace(pair.first, f(pair.first, pair.second));
-    }
-    return output;
-  }
-
-  template <typename ApplyFunction,
-            typename ApplyType = typename details::value_only_apply_result<
-                ApplyFunction, ValueType>::type,
-            typename std::enable_if<details::is_valid_value_only_apply_function<
-                                        ApplyFunction, ValueType>::value &&
-                                        !std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
-  auto apply(const ApplyFunction &f) const {
-    Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : map_) {
-      output.emplace(pair.first, f(pair.second));
-    }
-    return output;
-  }
-
-  template <typename ApplyFunction,
-            typename ApplyType = typename details::value_only_apply_result<
-                ApplyFunction, ValueType>::type,
-            typename std::enable_if<details::is_valid_value_only_apply_function<
-                                        ApplyFunction, ValueType>::value &&
-                                        std::is_same<void, ApplyType>::value,
-                                    int>::type = 0>
-  auto apply(const ApplyFunction &f) const {
-    for (const auto &pair : map_) {
-      f(pair.second);
-    }
+  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
+    return albatross::apply(map_, std::forward<ApplyFunction>(f));
   }
 
 protected:

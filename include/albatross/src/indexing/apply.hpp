@@ -15,21 +15,7 @@
 
 namespace albatross {
 
-template <typename ToKeepFunction, typename ValueType,
-          typename std::enable_if<details::is_valid_value_only_filter_function<
-                                      ToKeepFunction, ValueType>::value,
-                                  int>::type = 0>
-inline auto filter(const std::vector<ValueType> &values,
-                   const ToKeepFunction &to_keep) {
-  std::vector<ValueType> output;
-  for (const auto &v : values) {
-    if (to_keep(v)) {
-      output.emplace_back(v);
-    }
-  }
-  return output;
-}
-
+// Vector
 template <typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
               ApplyFunction, ValueType>::type,
@@ -37,7 +23,7 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-void apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+inline void apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
   std::for_each(xs.begin(), xs.end(), f);
 }
 
@@ -48,10 +34,77 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+inline std::vector<ApplyType> apply(const std::vector<ValueType> &xs,
+                                    const ApplyFunction &f) {
   std::vector<ApplyType> output(xs.size());
   std::transform(xs.begin(), xs.end(), output.begin(), f);
   return output;
+}
+
+// Map
+
+template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
+    typename ApplyFunction,
+    typename ApplyType = typename details::key_value_apply_result<
+        ApplyFunction, KeyType, ValueType>::type,
+    typename std::enable_if<details::is_valid_key_value_apply_function<
+                                ApplyFunction, KeyType, ValueType>::value &&
+                                std::is_same<void, ApplyType>::value,
+                            int>::type = 0>
+inline void apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+  for (const auto &pair : map) {
+    f(pair.first, pair.second);
+  }
+}
+
+template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
+    typename ApplyFunction,
+    typename ApplyType = typename details::key_value_apply_result<
+        ApplyFunction, KeyType, ValueType>::type,
+    typename std::enable_if<details::is_valid_key_value_apply_function<
+                                ApplyFunction, KeyType, ValueType>::value &&
+                                !std::is_same<void, ApplyType>::value,
+                            int>::type = 0>
+inline Grouped<KeyType, ApplyType> apply(const Map<KeyType, ValueType> &map,
+                                         const ApplyFunction &f) {
+  Grouped<KeyType, ApplyType> output;
+  for (const auto &pair : map) {
+    output.emplace(pair.first, f(pair.first, pair.second));
+  }
+  return output;
+}
+
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline Grouped<KeyType, ApplyType> apply(const Map<KeyType, ValueType> &map,
+                                         const ApplyFunction &f) {
+  Grouped<KeyType, ApplyType> output;
+  for (const auto &pair : map) {
+    output.emplace(pair.first, f(pair.second));
+  }
+  return output;
+}
+
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline void apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+  for (const auto &pair : map) {
+    f(pair.second);
+  }
 }
 
 } // namespace albatross
