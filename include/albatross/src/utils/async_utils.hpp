@@ -38,7 +38,6 @@ void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
     futures.emplace_back(async_safe(f, x));
   }
   for (auto &f : futures) {
-    f.wait();
     f.get();
   }
 }
@@ -58,7 +57,6 @@ auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
 
   std::vector<ApplyType> output;
   for (auto &f : futures) {
-    f.wait();
     output.emplace_back(f.get());
   }
   return output;

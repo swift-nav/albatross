@@ -32,10 +32,10 @@ TEST(test_async_utils, test_async_apply_with_capture) {
 
   auto add_to_sum = [&](const int x) {
     std::this_thread::sleep_for(std::chrono::milliseconds(abs(x - 2)));
-    mu.lock();
+
+    std::lock_guard<std::mutex> lock(mu);
     sum += x;
     order_processed.push_back(x);
-    mu.unlock();
   };
 
   async_apply(xs, add_to_sum);
@@ -52,9 +52,9 @@ TEST(test_async_utils, test_async_apply_with_return) {
   std::mutex mu;
   auto compute_power = [&](const int x) {
     std::this_thread::sleep_for(std::chrono::milliseconds(abs(x - 2)));
-    mu.lock();
+
+    std::lock_guard<std::mutex> lock(mu);
     order_processed.push_back(x);
-    mu.unlock();
     return x * x;
   };
 
