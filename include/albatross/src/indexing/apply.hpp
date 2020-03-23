@@ -15,6 +15,7 @@
 
 namespace albatross {
 
+// Vector
 template <typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
               ApplyFunction, ValueType>::type,
@@ -39,13 +40,10 @@ auto apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
   return output;
 }
 
-/*
- * Using Apply with Grouped objects consists of performing some operation
- * to each group.  This is done by provided a function which takes a group
- * (or group key and group).  If the function returns something other than
- * void the results will be aggregated into a new Grouped object.
- */
+// Map
+
 template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
     typename ApplyFunction,
     typename ApplyType = typename details::key_value_apply_result<
         ApplyFunction, KeyType, ValueType>::type,
@@ -53,13 +51,14 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-void apply(const ApplyFunction &f) const {
-  for (const auto &pair : map_) {
+void apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+  for (const auto &pair : map) {
     f(pair.first, pair.second);
   }
 }
 
 template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
     typename ApplyFunction,
     typename ApplyType = typename details::key_value_apply_result<
         ApplyFunction, KeyType, ValueType>::type,
@@ -67,38 +66,40 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 !std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-auto apply(const ApplyFunction &f) const {
+auto apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
   Grouped<KeyType, ApplyType> output;
-  for (const auto &pair : map_) {
+  for (const auto &pair : map) {
     output.emplace(pair.first, f(pair.first, pair.second));
   }
   return output;
 }
 
-template <typename ApplyFunction,
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
               ApplyFunction, ValueType>::type,
           typename std::enable_if<details::is_valid_value_only_apply_function<
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto apply(const ApplyFunction &f) const {
+auto apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
   Grouped<KeyType, ApplyType> output;
-  for (const auto &pair : map_) {
+  for (const auto &pair : map) {
     output.emplace(pair.first, f(pair.second));
   }
   return output;
 }
 
-template <typename ApplyFunction,
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
               ApplyFunction, ValueType>::type,
           typename std::enable_if<details::is_valid_value_only_apply_function<
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto apply(const ApplyFunction &f) const {
-  for (const auto &pair : map_) {
+auto apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+  for (const auto &pair : map) {
     f(pair.second);
   }
 }

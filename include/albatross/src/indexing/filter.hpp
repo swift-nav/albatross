@@ -22,7 +22,7 @@ template <typename ToKeepFunction, typename ValueType,
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
 inline auto filter(const std::vector<ValueType> &values,
-                   const ToKeepFunction &to_keep) {
+                   ToKeepFunction to_keep) {
   std::vector<ValueType> output;
   for (const auto &v : values) {
     if (to_keep(v)) {
@@ -34,20 +34,15 @@ inline auto filter(const std::vector<ValueType> &values,
 
 // Map
 
-/*
- * Filtering a Grouped object consists of deciding which of the
- * groups you would like to keep.  This is done by providing a function which
- * returns bool when provided with a group (or group key and group)
- */
-template <
-    typename FilterFunction,
-    typename std::enable_if<details::is_valid_value_only_filter_function<
-                                FilterFunction, ValueType>::value,
-                            int>::type = 0>
-auto filter(const FilterFunction &f) const {
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ToKeepFunction,
+          typename std::enable_if<details::is_valid_value_only_filter_function<
+                                      ToKeepFunction, ValueType>::value,
+                                  int>::type = 0>
+auto filter(const Map<KeyType, ValueType> &map, ToKeepFunction to_keep) {
   Grouped<KeyType, ValueType> output;
-  for (const auto &pair : map_) {
-    if (f(pair.second)) {
+  for (const auto &pair : map) {
+    if (to_keep(pair.second)) {
       output.emplace(pair.first, pair.second);
     }
   }
@@ -55,14 +50,15 @@ auto filter(const FilterFunction &f) const {
 }
 
 template <
-    typename FilterFunction,
+    template <typename...> class Map, typename KeyType, typename ValueType,
+    typename ToKeepFunction,
     typename std::enable_if<details::is_valid_key_value_filter_function<
-                                FilterFunction, KeyType, ValueType>::value,
+                                ToKeepFunction, KeyType, ValueType>::value,
                             int>::type = 0>
-auto filter(const FilterFunction &f) const {
+auto filter(const Map<KeyType, ValueType> &map, ToKeepFunction to_keep) {
   Grouped<KeyType, ValueType> output;
-  for (const auto &pair : map_) {
-    if (f(pair.first, pair.second)) {
+  for (const auto &pair : map) {
+    if (to_keep(pair.first, pair.second)) {
       output.emplace(pair.first, pair.second);
     }
   }
