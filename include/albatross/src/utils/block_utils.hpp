@@ -60,7 +60,7 @@ inline Eigen::MatrixXd block_accumulate(const Grouped<GroupKey, X> &lhs,
   assert(lhs.size() == rhs.size());
   assert(lhs.size() > 0);
 
-  auto one_group = [&](const auto &key) {
+  auto one_group = [&](const GroupKey &key) {
     assert(map_contains(lhs, key) && map_contains(rhs, key));
     return apply_function(lhs.at(key), rhs.at(key));
   };
