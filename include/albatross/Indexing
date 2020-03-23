@@ -17,7 +17,8 @@
 
 #include <albatross/src/indexing/traits.hpp>
 #include <albatross/src/indexing/subset.hpp>
-#include <albatross/src/indexing/group_by.hpp>
+#include <albatross/src/indexing/filter.hpp>
 #include <albatross/src/indexing/apply.hpp>
+#include <albatross/src/indexing/group_by.hpp>
 
 #endif

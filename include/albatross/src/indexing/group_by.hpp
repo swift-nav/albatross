@@ -96,6 +96,25 @@ public:
     return std::max_element(begin(), end(), value_compare)->second;
   }
 
+  /*
+   * Filtering a Grouped object consists of deciding which of the
+   * groups you would like to keep.  This is done by providing a function which
+   * returns bool when provided with a group (or group key and group)
+   */
+  template <typename FilterFunction> auto filter(FilterFunction &&f) const {
+    return albatross::filter(map_, std::forward<FilterFunction>(f));
+  }
+
+  /*
+   * Using Apply with Grouped objects consists of performing some operation
+   * to each group.  This is done by provided a function which takes a group
+   * (or group key and group).  If the function returns something other than
+   * void the results will be aggregated into a new Grouped object.
+   */
+  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
+    return albatross::apply(map_, std::forward<ApplyFunction>(f));
+  }
+
 protected:
   std::map<KeyType, ValueType> map_;
 };
