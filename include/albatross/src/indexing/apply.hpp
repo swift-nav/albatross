@@ -16,6 +16,7 @@
 namespace albatross {
 
 // Vector
+
 template <typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
               ApplyFunction, ValueType>::type,
@@ -23,8 +24,8 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline void apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
-  std::for_each(xs.begin(), xs.end(), f);
+inline void apply(const std::vector<ValueType> &xs, ApplyFunction &&f) {
+  std::for_each(xs.begin(), xs.end(), std::forward<ApplyFunction>(f));
 }
 
 template <typename ValueType, typename ApplyFunction,
@@ -35,9 +36,10 @@ template <typename ValueType, typename ApplyFunction,
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
 inline std::vector<ApplyType> apply(const std::vector<ValueType> &xs,
-                                    const ApplyFunction &f) {
+                                    ApplyFunction &&f) {
   std::vector<ApplyType> output(xs.size());
-  std::transform(xs.begin(), xs.end(), output.begin(), f);
+  std::transform(xs.begin(), xs.end(), output.begin(),
+                 std::forward<ApplyFunction>(f));
   return output;
 }
 
@@ -52,7 +54,7 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-inline void apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+inline void apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
   for (const auto &pair : map) {
     f(pair.first, pair.second);
   }
@@ -68,7 +70,7 @@ template <
                                 !std::is_same<void, ApplyType>::value,
                             int>::type = 0>
 inline Grouped<KeyType, ApplyType> apply(const Map<KeyType, ValueType> &map,
-                                         const ApplyFunction &f) {
+                                         ApplyFunction &&f) {
   Grouped<KeyType, ApplyType> output;
   for (const auto &pair : map) {
     output.emplace(pair.first, f(pair.first, pair.second));
@@ -85,7 +87,7 @@ template <template <typename...> class Map, typename KeyType,
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
 inline Grouped<KeyType, ApplyType> apply(const Map<KeyType, ValueType> &map,
-                                         const ApplyFunction &f) {
+                                         ApplyFunction &&f) {
   Grouped<KeyType, ApplyType> output;
   for (const auto &pair : map) {
     output.emplace(pair.first, f(pair.second));
@@ -101,7 +103,7 @@ template <template <typename...> class Map, typename KeyType,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline void apply(const Map<KeyType, ValueType> &map, const ApplyFunction &f) {
+inline void apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
   for (const auto &pair : map) {
     f(pair.second);
   }

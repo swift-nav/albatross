@@ -143,7 +143,12 @@ class is_valid_filter_function {
   template <typename> static std::false_type test(...);
 
 public:
-  static constexpr bool value = decltype(test<FilterFunction>(0))::value;
+  // The functions passed into these checks are often derived from
+  // universal references which may add qualifiers to the type, without
+  // the use of decay here these qualifiers may interfere with
+  // the validity check.
+  static constexpr bool value =
+      decltype(test<typename std::decay<FilterFunction>::type>(0))::value;
 };
 
 template <typename FilterFunction, typename KeyType, typename ArgType>

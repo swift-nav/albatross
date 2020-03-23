@@ -22,7 +22,7 @@ template <typename ToKeepFunction, typename ValueType,
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
 inline std::vector<ValueType> filter(const std::vector<ValueType> &values,
-                                     ToKeepFunction to_keep) {
+                                     ToKeepFunction &&to_keep) {
   std::vector<ValueType> output;
   for (const auto &v : values) {
     if (to_keep(v)) {
@@ -40,7 +40,7 @@ template <template <typename...> class Map, typename KeyType,
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
 inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
-                                          ToKeepFunction to_keep) {
+                                          ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.second)) {
@@ -57,7 +57,7 @@ template <
                                 ToKeepFunction, KeyType, ValueType>::value,
                             int>::type = 0>
 inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
-                                          ToKeepFunction to_keep) {
+                                          ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.first, pair.second)) {
