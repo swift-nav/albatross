@@ -21,8 +21,8 @@ template <typename ToKeepFunction, typename ValueType,
           typename std::enable_if<details::is_valid_value_only_filter_function<
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
-inline auto filter(const std::vector<ValueType> &values,
-                   ToKeepFunction to_keep) {
+inline std::vector<ValueType> filter(const std::vector<ValueType> &values,
+                                     ToKeepFunction to_keep) {
   std::vector<ValueType> output;
   for (const auto &v : values) {
     if (to_keep(v)) {
@@ -39,7 +39,8 @@ template <template <typename...> class Map, typename KeyType,
           typename std::enable_if<details::is_valid_value_only_filter_function<
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
-auto filter(const Map<KeyType, ValueType> &map, ToKeepFunction to_keep) {
+inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
+                                          ToKeepFunction to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.second)) {
@@ -55,7 +56,8 @@ template <
     typename std::enable_if<details::is_valid_key_value_filter_function<
                                 ToKeepFunction, KeyType, ValueType>::value,
                             int>::type = 0>
-auto filter(const Map<KeyType, ValueType> &map, ToKeepFunction to_keep) {
+inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
+                                          ToKeepFunction to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.first, pair.second)) {
