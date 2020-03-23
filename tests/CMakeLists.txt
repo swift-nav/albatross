@@ -1,5 +1,6 @@
 add_executable(albatross_unit_tests 
   test_apply.cc
+  test_async_utils.cc
   test_block_utils.cc
   test_call_trace.cc
   test_callers.cc
