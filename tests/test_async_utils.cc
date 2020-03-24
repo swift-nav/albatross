@@ -45,31 +45,6 @@ TEST(test_async_utils, test_async_apply_with_capture) {
   EXPECT_NE(order_processed, xs);
 }
 
-TEST(test_async_utils, test_async_apply_with_return) {
-  std::vector<int> xs = {0, 1, 2, 3, 4, 5};
-  std::vector<int> order_processed;
-
-  std::mutex mu;
-  auto compute_power = [&](const int x) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(abs(x - 2)));
-
-    std::lock_guard<std::mutex> lock(mu);
-    order_processed.push_back(x);
-    return x * x;
-  };
-
-  std::vector<int> expected;
-  for (const auto &x : xs) {
-    expected.push_back(x * x);
-  }
-
-  const auto actual = async_apply(xs, compute_power);
-
-  EXPECT_EQ(expected, actual);
-  // Make sure the async apply was indeed processed out of order.
-  EXPECT_NE(order_processed, xs);
-}
-
 TEST(test_async_utils, test_async_is_faster) {
 
   auto slow_process = [&](const int i) {
@@ -92,8 +67,10 @@ TEST(test_async_utils, test_async_is_faster) {
   EXPECT_LT(end - start, std::chrono::seconds(inds.size() - 1));
 
   const auto start_direct = std::chrono::system_clock::now();
-  apply(inds, slow_process);
+  const auto expected = apply(inds, slow_process);
   const auto end_direct = std::chrono::system_clock::now();
+
+  EXPECT_EQ(actual, expected);
 
   EXPECT_GT(end_direct - start_direct, std::chrono::seconds(inds.size() - 1));
 }
