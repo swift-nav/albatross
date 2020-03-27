@@ -113,14 +113,17 @@ public:
 template <typename ModelType, typename FeatureType, typename FitType>
 class Prediction {
 
+  using PlainModelType = typename std::decay<ModelType>::type;
+  using PlainFitType = typename std::decay<FitType>::type;
+
 public:
-  Prediction(const ModelType &model, const FitType &fit,
+  Prediction(const PlainModelType &model, const PlainFitType &fit,
              const std::vector<FeatureType> &features)
       : model_(model), fit_(fit), features_(features) {}
 
-  Prediction(const ModelType &model, const FitType &fit,
-             std::vector<FeatureType> &&features)
-      : model_(model), fit_(fit), features_(std::move(features)) {}
+  Prediction(PlainModelType &&model, PlainFitType &&fit,
+             const std::vector<FeatureType> &features)
+      : model_(std::move(model)), fit_(std::move(fit)), features_(features) {}
 
   // Mean
   template <typename DummyType = FeatureType,

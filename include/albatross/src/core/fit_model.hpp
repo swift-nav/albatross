@@ -30,23 +30,32 @@ public:
   FitModel(const ModelType &model, Fit &&fit)
       : model_(model), fit_(std::move(fit)) {}
 
+  // When FitModel is an lvalue we store a reference to the fit
+  // inside the resulting Prediction class.
+  template <typename PredictFeatureType>
+  const PredictionReference<ModelType, PredictFeatureType, Fit>
+  predict(const std::vector<PredictFeatureType> &features) const & {
+    return PredictionReference<ModelType, PredictFeatureType, Fit>(model_, fit_,
+                                                                   features);
+  }
+
+  // When FitModel is an rvalue the Fit will be a temporary so
+  // we move it into the Prediction class to be stored there.
   template <typename PredictFeatureType>
   Prediction<ModelType, PredictFeatureType, Fit>
-  predict(const std::vector<PredictFeatureType> &features) const {
-    return Prediction<ModelType, PredictFeatureType, Fit>(model_, fit_,
-                                                          features);
+  predict(const std::vector<PredictFeatureType> &features) && {
+    return Prediction<ModelType, PredictFeatureType, Fit>(
+        std::move(model_), std::move(fit_), features);
   }
 
   template <typename PredictFeatureType>
-  Prediction<ModelType, Measurement<PredictFeatureType>, Fit>
-  predict_with_measurement_noise(
+  auto predict_with_measurement_noise(
       const std::vector<PredictFeatureType> &features) const {
     std::vector<Measurement<PredictFeatureType>> measurements;
     for (const auto &f : features) {
       measurements.emplace_back(Measurement<PredictFeatureType>(f));
     }
-    return Prediction<ModelType, Measurement<PredictFeatureType>, Fit>(
-        model_, fit_, measurements);
+    return predict(measurements);
   }
 
   Fit get_fit() const { return fit_; }
