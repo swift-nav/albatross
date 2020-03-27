@@ -32,7 +32,8 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+inline void async_apply(const std::vector<ValueType> &xs,
+                        ApplyFunction &&f) {
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
     futures.emplace_back(async_safe(f, x));
@@ -49,7 +50,8 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+inline auto async_apply(const std::vector<ValueType> &xs,
+                        ApplyFunction &&f) {
   std::vector<std::future<ApplyType>> futures;
   for (const auto &x : xs) {
     futures.emplace_back(async_safe(f, x));
@@ -60,6 +62,92 @@ auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
     output.emplace_back(f.get());
   }
   return output;
+}
+
+// Map
+
+template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
+    typename ApplyFunction,
+    typename ApplyType = typename details::key_value_apply_result<
+        ApplyFunction, KeyType, ValueType>::type,
+    typename std::enable_if<details::is_valid_key_value_apply_function<
+                                ApplyFunction, KeyType, ValueType>::value &&
+                                std::is_same<void, ApplyType>::value,
+                            int>::type = 0>
+inline void async_apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
+  std::vector<std::future<void>> futures;
+  for (const auto &pair : map) {
+    futures.emplace_back(async_safe(f, pair.first, pair.second));
+  }
+  for (auto &f : futures) {
+    f.get();
+  }
+}
+
+template <
+    template <typename...> class Map, typename KeyType, typename ValueType,
+    typename ApplyFunction,
+    typename ApplyType = typename details::key_value_apply_result<
+        ApplyFunction, KeyType, ValueType>::type,
+    typename std::enable_if<details::is_valid_key_value_apply_function<
+                                ApplyFunction, KeyType, ValueType>::value &&
+                                !std::is_same<void, ApplyType>::value,
+                            int>::type = 0>
+inline Grouped<KeyType, ApplyType>
+async_apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
+
+  std::map<KeyType, std::future<ApplyType>> futures;
+  for (const auto &pair : map) {
+    futures[pair.first] = async_safe(f, pair.first, pair.second);
+  }
+
+  Grouped<KeyType, ApplyType> output;
+  for (auto &pair : futures) {
+    output.emplace(pair.first, pair.second.get());
+  }
+  return output;
+}
+
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline Grouped<KeyType, ApplyType>
+async_apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
+
+  std::map<KeyType, std::future<ApplyType>> futures;
+  for (const auto &pair : map) {
+    futures[pair.first] = async_safe(f, pair.second);
+  }
+
+  Grouped<KeyType, ApplyType> output;
+  for (auto &pair : futures) {
+    output.emplace(pair.first, pair.second.get());
+  }
+  return output;
+}
+
+template <template <typename...> class Map, typename KeyType,
+          typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline void async_apply(const Map<KeyType, ValueType> &map, ApplyFunction &&f) {
+  std::vector<std::future<void>> futures;
+  for (const auto &pair : map) {
+    futures.emplace_back(async_safe(f, pair.second));
+  }
+  for (auto &f : futures) {
+    f.get();
+  }
 }
 
 } // namespace albatross
