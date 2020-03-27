@@ -31,10 +31,10 @@ namespace albatross {
  * This type conversion utility will turn a type `T` into `const T&`
  */
 template <class T> struct const_ref {
-  typedef
-      typename std::add_lvalue_reference<typename std::add_const<T>::type>::type
-          type;
+  typedef std::add_lvalue_reference_t<std::add_const_t<T>> type;
 };
+
+template <typename T> using const_ref_t = typename const_ref<T>::type;
 
 /*
  * Model
@@ -50,8 +50,7 @@ class Prediction;
 
 template <typename ModelType, typename FeatureType, typename FitType>
 using PredictionReference =
-    Prediction<typename const_ref<ModelType>::type, FeatureType,
-               typename const_ref<FitType>::type>;
+    Prediction<const_ref_t<ModelType>, FeatureType, const_ref_t<FitType>>;
 
 template <typename ModelType, typename FitType> class FitModel;
 
