@@ -24,6 +24,19 @@ using mapbox::util::variant;
 namespace albatross {
 
 /*
+ * We frequently inspect for definitions of functions which
+ * must be defined for const references to objects
+ * (so that repeated evaluations return the same thing
+ *  and so the computations are not repeatedly copying.)
+ * This type conversion utility will turn a type `T` into `const T&`
+ */
+template <class T> struct const_ref {
+  typedef std::add_lvalue_reference_t<std::add_const_t<T>> type;
+};
+
+template <typename T> using const_ref_t = typename const_ref<T>::type;
+
+/*
  * Model
  */
 template <typename ModelType> class ModelBase;
@@ -34,6 +47,10 @@ template <typename T> struct PredictTypeIdentity;
 
 template <typename ModelType, typename FeatureType, typename FitType>
 class Prediction;
+
+template <typename ModelType, typename FeatureType, typename FitType>
+using PredictionReference =
+    Prediction<const_ref_t<ModelType>, FeatureType, const_ref_t<FitType>>;
 
 template <typename ModelType, typename FitType> class FitModel;
 

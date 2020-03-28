@@ -16,19 +16,6 @@
 namespace albatross {
 
 /*
- * We frequently inspect for definitions of functions which
- * must be defined for const references to objects
- * (so that repeated evaluations return the same thing
- *  and so the computations are not repeatedly copying.)
- * This type conversion utility will turn a type `T` into `const T&`
- */
-template <class T> struct const_ref {
-  typedef
-      typename std::add_lvalue_reference<typename std::add_const<T>::type>::type
-          type;
-};
-
-/*
  * This little trick was borrowed from cereal, you can think of it as
  * a function that will always return false ... but that doesn't
  * get resolved until template instantiation, which when combined
