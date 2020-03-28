@@ -34,7 +34,7 @@ template <typename ValueType, typename ApplyFunction,
                                   int>::type = 0>
 inline void async_apply(const std::vector<ValueType> &xs, ApplyFunction &&f) {
   std::vector<std::future<void>> futures;
-  for (const auto &x : xs) {
+  for (const ValueType &x : xs) {
     futures.emplace_back(async_safe(f, x));
   }
   for (auto &f : futures) {
@@ -51,7 +51,7 @@ template <typename ValueType, typename ApplyFunction,
                                   int>::type = 0>
 inline auto async_apply(const std::vector<ValueType> &xs, ApplyFunction &&f) {
   std::vector<std::future<ApplyType>> futures;
-  for (const auto &x : xs) {
+  for (const ValueType &x : xs) {
     futures.emplace_back(async_safe(f, x));
   }
 
