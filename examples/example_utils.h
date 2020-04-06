@@ -159,7 +159,7 @@ void write_predictions_to_csv(
 
   Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
   for (std::size_t i = 0; i < k; i++) {
-    targets[static_cast<Eigen::Index>(i)] = truth(grid_xs[i]);
+    targets[static_cast<Eigen::Index>(i)] = std::sin(grid_xs[i]);
   }
 
   const albatross::RegressionDataset<double> dataset(grid_xs, targets);

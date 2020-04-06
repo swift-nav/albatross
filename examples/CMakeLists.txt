@@ -13,6 +13,22 @@ add_custom_target(run_sinc_example
   COMMENT "Running sinc_example"
   )
 
+add_executable(derivative_example
+  derivative_example.cc
+  )
+target_link_libraries(derivative_example
+  albatross
+  gflags
+  pthread
+  nlopt
+  )
+add_custom_target(run_derivative_example
+  DEPENDS derivative_example
+  COMMAND derivative_example -output ./sinc_predictions.csv
+  COMMENT "Running derivative_example"
+  )
+
+
 add_executable(sampler_example
   sampler_example.cc
   )
