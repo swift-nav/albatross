@@ -23,6 +23,7 @@
 
 #include <albatross/src/covariance_functions/traits.hpp>
 #include <albatross/src/covariance_functions/callers.hpp>
+#include <albatross/src/covariance_functions/derivative.hpp>
 #include <albatross/src/covariance_functions/covariance_function.hpp>
 #include <albatross/src/covariance_functions/mean_function.hpp>
 #include <albatross/src/covariance_functions/call_trace.hpp>

@@ -28,6 +28,26 @@ inline double squared_exponential_covariance(double distance,
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
+inline double squared_exponential_covariance_derivative(double distance,
+                                                        double length_scale,
+                                                        double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  return -2 * distance / (length_scale * length_scale) *
+         squared_exponential_covariance(distance, length_scale, sigma);
+}
+
+inline double squared_exponential_covariance_second_derivative(
+    double distance, double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  const auto ratio = distance / length_scale;
+  return (4. * ratio * ratio - 2.) / (length_scale * length_scale) *
+         squared_exponential_covariance(distance, length_scale, sigma);
+}
+
 /*
  * SquaredExponential distance
  *    covariance(d) = sigma^2 exp(-(d/length_scale)^2)
@@ -81,6 +101,38 @@ public:
     return squared_exponential_covariance(
         distance, squared_exponential_length_scale.value,
         sigma_squared_exponential.value);
+  }
+
+  // This operator is only defined when the distance metric is also defined.
+  template <typename X,
+            typename std::enable_if<
+                has_call_operator<DistanceMetricType, X &, X &>::value,
+                int>::type = 0>
+  double _call_impl(const Derivative<X> &x, const X &y) const {
+    double distance = this->distance_metric_(x.value, y);
+    double distance_derivative = this->distance_metric_.derivative(x.value, y);
+    return distance_derivative * squared_exponential_covariance_derivative(
+                                     distance,
+                                     squared_exponential_length_scale.value,
+                                     sigma_squared_exponential.value);
+  }
+
+  // This operator is only defined when the distance metric is also defined.
+  template <typename X,
+            typename std::enable_if<
+                has_call_operator<DistanceMetricType, X &, X &>::value,
+                int>::type = 0>
+  double _call_impl(const SecondDerivative<X> &x, const X &y) const {
+    double d = this->distance_metric_(x.value, y);
+    double d_1 = this->distance_metric_.derivative(x.value, y);
+    double d_2 = this->distance_metric_.second_derivative(x.value, y);
+    double f_1 = squared_exponential_covariance_derivative(
+        d, squared_exponential_length_scale.value,
+        sigma_squared_exponential.value);
+    double f_2 = squared_exponential_covariance_second_derivative(
+        d, squared_exponential_length_scale.value,
+        sigma_squared_exponential.value);
+    return d_2 * f_1 + d_1 * d_1 * f_2;
   }
 
   DistanceMetricType distance_metric_;

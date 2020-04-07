@@ -350,13 +350,11 @@ public:
     return pred;
   }
 
-  template <
-      typename FeatureType, typename FitFeaturetype,
-      typename CovarianceRepresentation,
-      typename std::enable_if<
-          has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
-              has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
-          int>::type = 0>
+  template <typename FeatureType, typename FitFeaturetype,
+            typename CovarianceRepresentation,
+            typename std::enable_if<
+                has_call_operator<CovFunc, FeatureType, FitFeaturetype>::value,
+                int>::type = 0>
   Eigen::VectorXd _predict_impl(
       const std::vector<FeatureType> &features,
       const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,

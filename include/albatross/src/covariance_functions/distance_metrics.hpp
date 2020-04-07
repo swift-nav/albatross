@@ -37,6 +37,17 @@ public:
     return fabs(x - y);
   }
 
+  double derivative(const double &x, const double &y) const {
+    if (x - y == 0.) {
+      return 1.;
+    }
+    return (x - y) / fabs(x - y);
+  }
+
+  double second_derivative(const double &x, const double &y) const {
+    return 0.;
+  }
+
   template <typename _Scalar, int _Rows>
   double operator()(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
                     const Eigen::Matrix<_Scalar, _Rows, 1> &y) const {
