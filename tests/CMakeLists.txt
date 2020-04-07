@@ -18,6 +18,7 @@ add_executable(albatross_unit_tests
   test_gp.cc
   test_group_by.cc
   test_indexing.cc
+  test_interpolate.cc
   test_linalg_utils.cc
   test_map_utils.cc
   test_model_adapter.cc

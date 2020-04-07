@@ -34,17 +34,18 @@ inline double squared_exponential_covariance_derivative(double distance,
   if (length_scale <= 0.) {
     return 0.;
   }
-  return -2 * distance / (length_scale * length_scale) * squared_exponential_covariance(distance, length_scale, sigma);
+  return -2 * distance / (length_scale * length_scale) *
+         squared_exponential_covariance(distance, length_scale, sigma);
 }
 
-inline double squared_exponential_covariance_second_derivative(double distance,
-                                                        double length_scale,
-                                                        double sigma = 1.) {
+inline double squared_exponential_covariance_second_derivative(
+    double distance, double length_scale, double sigma = 1.) {
   if (length_scale <= 0.) {
     return 0.;
   }
   const auto ratio = distance / length_scale;
-  return (4. * ratio * ratio - 2.) / (length_scale * length_scale) * squared_exponential_covariance(distance, length_scale, sigma);
+  return (4. * ratio * ratio - 2.) / (length_scale * length_scale) *
+         squared_exponential_covariance(distance, length_scale, sigma);
 }
 
 /*
@@ -111,8 +112,9 @@ public:
     double distance = this->distance_metric_(x.value, y);
     double distance_derivative = this->distance_metric_.derivative(x.value, y);
     return distance_derivative * squared_exponential_covariance_derivative(
-        distance, squared_exponential_length_scale.value,
-        sigma_squared_exponential.value);
+                                     distance,
+                                     squared_exponential_length_scale.value,
+                                     sigma_squared_exponential.value);
   }
 
   template <typename X,
@@ -123,7 +125,8 @@ public:
     const double distance = this->distance_metric_(x.value, y.value);
     const double d_x = this->distance_metric_.derivative(x.value, y.value);
     const double d_y = this->distance_metric_.derivative(y.value, x.value);
-    const double d_xy = this->distance_metric_.second_derivative(x.value, y.value);
+    const double d_xy =
+        this->distance_metric_.second_derivative(x.value, y.value);
 
     const double f_d = squared_exponential_covariance_derivative(
         distance, squared_exponential_length_scale.value,
@@ -133,7 +136,8 @@ public:
         distance, squared_exponential_length_scale.value,
         sigma_squared_exponential.value);
 
-    std::cout << x.value << "  " << y.value << "  " << d_xy << ", " << f_d << ", " << d_x << ", " << d_y << ", " << f_dd << std::endl;
+    std::cout << x.value << "  " << y.value << "  " << d_xy << ", " << f_d
+              << ", " << d_x << ", " << d_y << ", " << f_dd << std::endl;
     return d_xy * f_d + d_x * d_y * f_dd;
   }
 
@@ -160,7 +164,8 @@ public:
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
                 int>::type = 0>
-  double _call_impl(const SecondDerivative<X> &x, const SecondDerivative<X> &y) const {
+  double _call_impl(const SecondDerivative<X> &x,
+                    const SecondDerivative<X> &y) const {
     return NAN;
   }
 

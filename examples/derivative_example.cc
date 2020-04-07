@@ -51,8 +51,7 @@ void run_model(ModelType &model, RegressionDataset<double> &data, double low,
     derivs.emplace_back(d);
   }
 
-  auto prediction =
-      fit_model.predict_with_measurement_noise(derivs).marginal();
+  auto prediction = fit_model.predict_with_measurement_noise(derivs).marginal();
 
   Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
   for (std::size_t i = 0; i < k; i++) {
@@ -75,7 +74,8 @@ int main(int argc, char *argv[]) {
   int n = std::stoi(FLAGS_n);
   const double low = 0.;
   const double high = 10.;
-  const double meas_noise_sd = std::sqrt(std::numeric_limits<double>::epsilon());
+  const double meas_noise_sd =
+      std::sqrt(std::numeric_limits<double>::epsilon());
 
   auto xs = random_points_on_line(n, low, high);
 
@@ -108,5 +108,4 @@ int main(int argc, char *argv[]) {
   model.set_param_values(params);
 
   run_model(model, dataset, low, high);
-
 }

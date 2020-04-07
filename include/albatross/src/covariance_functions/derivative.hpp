@@ -15,26 +15,24 @@
 
 namespace albatross {
 
-template <typename T>
-struct Derivative {
+template <typename T> struct Derivative {
 
-  Derivative() : value() {};
+  Derivative() : value(){};
 
-  Derivative(const T &t) : value(t) {};
-
-  T value;
-};
-
-template <typename T>
-struct SecondDerivative {
-
-  SecondDerivative() : value() {};
-
-  SecondDerivative(const T &t) : value(t) {};
+  Derivative(const T &t) : value(t){};
 
   T value;
 };
 
-}
+template <typename T> struct SecondDerivative {
+
+  SecondDerivative() : value(){};
+
+  SecondDerivative(const T &t) : value(t){};
+
+  T value;
+};
+
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_COVARIANCE_FUNCTIONS_DERIVATIVE_HPP_ */
