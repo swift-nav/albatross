@@ -39,8 +39,8 @@ template <template <typename...> class Map, typename KeyType,
           typename std::enable_if<details::is_valid_value_only_filter_function<
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
-inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
-                                          ToKeepFunction &&to_keep) {
+inline Grouped<KeyType, ValueType>
+filter_map(const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.second)) {
@@ -56,8 +56,8 @@ template <
     typename std::enable_if<details::is_valid_key_value_filter_function<
                                 ToKeepFunction, KeyType, ValueType>::value,
                             int>::type = 0>
-inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
-                                          ToKeepFunction &&to_keep) {
+inline Grouped<KeyType, ValueType>
+filter_map(const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.first, pair.second)) {
@@ -65,6 +65,17 @@ inline Grouped<KeyType, ValueType> filter(const Map<KeyType, ValueType> &map,
     }
   }
   return output;
+}
+
+template <typename KeyType, typename ValueType, typename ToKeepFunction>
+inline auto filter(const std::map<KeyType, ValueType> &map,
+                   ToKeepFunction &&f) {
+  return filter_map(map, std::forward<ToKeepFunction>(f));
+}
+
+template <typename KeyType, typename ValueType, typename ToKeepFunction>
+inline auto filter(const Grouped<KeyType, ValueType> &map, ToKeepFunction &&f) {
+  return filter_map(map, std::forward<ToKeepFunction>(f));
 }
 
 } // namespace albatross
