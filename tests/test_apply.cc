@@ -133,6 +133,22 @@ TEST(test_apply, test_vector_apply_void) {
   EXPECT_EQ(call_count, xs.size());
 }
 
+struct AutoApplyTest {
+  AutoApplyTest(int x_) : x(x_){};
+  int x;
+};
+
+TEST(test_apply, test_works_with_auto) {
+
+  std::vector<AutoApplyTest> values;
+  values.emplace_back(0);
+  values.emplace_back(1);
+
+  auto apply_func_with_auto = [](const auto &f) { return f.x; };
+
+  const auto output = apply(values, apply_func_with_auto);
+}
+
 TEST(test_apply, test_vector_apply_all) {
 
   std::vector<std::vector<bool>> input;
