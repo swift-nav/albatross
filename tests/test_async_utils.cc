@@ -61,7 +61,7 @@ TEST(test_async_utils, test_async_apply_with_capture_map) {
     order_processed.push_back(x);
   };
 
-  async_apply_map(xs, add_to_sum);
+  async_apply(xs, add_to_sum);
 
   EXPECT_EQ(sum, 15);
   // Make sure the async apply was indeed processed out of order.
@@ -86,7 +86,7 @@ TEST(test_async_utils, test_async_apply_with_capture_map_key) {
     std::cout << key << std::endl;
   };
 
-  async_apply_map(xs, add_to_sum);
+  async_apply(xs, add_to_sum);
 
   EXPECT_EQ(sum, 15);
   // Make sure the async apply was indeed processed out of order.
@@ -135,7 +135,7 @@ TEST(test_async_utils, test_async_is_faster_maps) {
   std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}};
 
   const auto start = std::chrono::system_clock::now();
-  const auto actual = async_apply_map(xs, slow_square);
+  const auto actual = async_apply(xs, slow_square);
   const auto end = std::chrono::system_clock::now();
 
   EXPECT_LT(end - start, std::chrono::seconds(xs.size() - 1));
@@ -171,7 +171,7 @@ TEST(test_async_utils, test_async_is_faster_map_key) {
   std::map<double, int> xs = {{0., 0}, {1., 1}, {2., 2}, {3., 3}};
 
   const auto start = std::chrono::system_clock::now();
-  const auto actual = async_apply_map(xs, slow_square);
+  const auto actual = async_apply(xs, slow_square);
   const auto end = std::chrono::system_clock::now();
 
   EXPECT_LT(end - start, std::chrono::seconds(xs.size() - 1));
