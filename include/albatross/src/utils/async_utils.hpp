@@ -150,15 +150,17 @@ inline Grouped<KeyType, ApplyType> async_apply_map(
   return output;
 }
 
-    template <typename KeyType, typename ValueType, typename ApplyFunction>
-    inline auto async_apply(const std::map<KeyType, ValueType> &map, ApplyFunction &&f) {
-      return async_apply_map(map, std::forward<ApplyFunction>(f));
-    }
+template <typename KeyType, typename ValueType, typename ApplyFunction>
+inline auto async_apply(const std::map<KeyType, ValueType> &map,
+                        ApplyFunction &&f) {
+  return async_apply_map(map, std::forward<ApplyFunction>(f));
+}
 
-    template <typename KeyType, typename ValueType, typename ApplyFunction>
-    inline auto async_apply(const Grouped<KeyType, ValueType> &map, ApplyFunction &&f) {
-      return async_apply_map(map, std::forward<ApplyFunction>(f));
-    }
+template <typename KeyType, typename ValueType, typename ApplyFunction>
+inline auto async_apply(const Grouped<KeyType, ValueType> &map,
+                        ApplyFunction &&f) {
+  return async_apply_map(map, std::forward<ApplyFunction>(f));
+}
 
 }  // namespace albatross
 
