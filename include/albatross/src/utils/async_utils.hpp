@@ -62,6 +62,47 @@ auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
   return output;
 }
 
-} // namespace albatross
+template <typename KeyType, typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+void async_apply(const std::map<KeyType, ValueType> &xs,
+                 const ApplyFunction &f) {
+  std::map<KeyType, std::future<void>> futures;
+  for (const auto &x : xs) {
+    futures[x.first] = async_safe(f, x.second);
+  }
+  for (auto &f : futures) {
+    f.second.get();
+  }
+  std::cout << "This was called, void" << std::endl;
+}
+
+template <typename KeyType, typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+auto async_apply(const std::map<KeyType, ValueType> &xs,
+                 const ApplyFunction &f) {
+  std::map<KeyType, std::future<ApplyType>> futures;
+  for (const auto &x : xs) {
+    futures[x.first] = async_safe(f, x.second);
+  }
+
+  std::map<KeyType, ApplyType> output;
+  for (auto &f : futures) {
+    output[f.first] = f.second.get();
+  }
+  std::cout << "This was called, return" << std::endl;
+  return output;
+}
+
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_UTILS_ASYNC_UTILS_HPP_ */
