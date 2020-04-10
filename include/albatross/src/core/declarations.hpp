@@ -113,6 +113,8 @@ template <typename X, typename Y> class SumOfMeanFunctions;
 
 template <typename X, typename Y> class ProductOfMeanFunctions;
 
+template <typename X> struct LinearCombination;
+
 /*
  * Models
  */
@@ -187,6 +189,8 @@ template <typename First, typename Second> struct TypePair {
   using first_type = First;
   using second_type = Second;
 };
+
+template <typename T> struct is_measurement;
 
 } // namespace albatross
 
