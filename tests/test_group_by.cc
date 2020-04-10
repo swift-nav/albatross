@@ -283,6 +283,11 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_combine) {
 
   const auto combined = grouped.apply(only_keep_one).combine();
 
+  const auto async_combined = grouped.async_apply(only_keep_one).combine();
+
+  // Async an normal apply should match
+  EXPECT_EQ(combined, async_combined);
+
   // Same number of final combined elements as there are groups.
   EXPECT_EQ(grouped.size(), combined.size());
 }
@@ -296,7 +301,11 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_void) {
   const auto increment_count = [&](const auto &, const auto &) { ++count; };
 
   grouped.apply(increment_count);
+  EXPECT_EQ(grouped.size(), count);
 
+  // Again but with async
+  count = 0;
+  grouped.async_apply(increment_count);
   EXPECT_EQ(grouped.size(), count);
 }
 
@@ -305,11 +314,14 @@ TYPED_TEST_P(GroupByTester, test_groupby_apply_value_only) {
   const auto grouped = group_by(parent, this->test_case.get_grouper());
 
   std::size_t count = 0;
-
   const auto increment_count = [&](const auto &) { ++count; };
 
   grouped.apply(increment_count);
+  EXPECT_EQ(grouped.size(), count);
 
+  // Again but with async
+  count = 0;
+  grouped.async_apply(increment_count);
   EXPECT_EQ(grouped.size(), count);
 }
 
@@ -318,13 +330,16 @@ TYPED_TEST_P(GroupByTester, test_groupby_index_apply) {
   const auto grouped = group_by(parent, this->test_case.get_grouper());
 
   std::size_t count = 0;
-
   const auto increment_count = [&](const auto &, const GroupIndices &) {
     ++count;
   };
 
   grouped.index_apply(increment_count);
+  EXPECT_EQ(grouped.size(), count);
 
+  // Again but with async
+  count = 0;
+  grouped.async_index_apply(increment_count);
   EXPECT_EQ(grouped.size(), count);
 }
 

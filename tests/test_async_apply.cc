@@ -13,7 +13,6 @@
 #include <gtest/gtest.h>
 
 #include <albatross/Indexing>
-#include <albatross/utils/AsyncUtils>
 #include <albatross/utils/RandomUtils>
 
 #include <chrono>

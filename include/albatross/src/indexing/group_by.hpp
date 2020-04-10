@@ -115,6 +115,10 @@ public:
     return albatross::apply(map_, std::forward<ApplyFunction>(f));
   }
 
+  template <typename ApplyFunction> auto async_apply(ApplyFunction &&f) const {
+    return albatross::async_apply(map_, std::forward<ApplyFunction>(f));
+  }
+
 protected:
   std::map<KeyType, ValueType> map_;
 };
@@ -188,20 +192,13 @@ public:
   using Base = GroupedBase<KeyType, GroupIndices>;
   using Base::Base;
 
-  template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_result<
-                ApplyFunction, KeyType, GroupIndices>::type,
-            typename std::enable_if<
-                details::is_valid_index_apply_function<ApplyFunction, KeyType,
-                                                       GroupIndices>::value &&
-                    !std::is_same<void, ApplyType>::value,
-                int>::type = 0>
-  auto index_apply(const ApplyFunction &f) const {
-    Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : this->map_) {
-      output.emplace(pair.first, f(pair.first, pair.second));
-    }
-    return output;
+  template <typename ApplyFunction> auto index_apply(ApplyFunction &&f) const {
+    return apply(this->map_, std::forward<ApplyFunction>(f));
+  }
+
+  template <typename ApplyFunction>
+  auto async_index_apply(ApplyFunction &&f) const {
+    return async_apply(this->map_, std::forward<ApplyFunction>(f));
   }
 };
 
@@ -401,8 +398,12 @@ public:
 
   std::size_t size() const { return indexers().size(); }
 
-  template <typename ApplyFunction> auto apply(const ApplyFunction &f) const {
-    return groups().apply(f);
+  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
+    return groups().apply(std::forward<ApplyFunction>(f));
+  }
+
+  template <typename ApplyFunction> auto async_apply(ApplyFunction &&f) const {
+    return groups().async_apply(std::forward<ApplyFunction>(f));
   }
 
   ValueType get_group(const KeyType &key) const {
@@ -415,38 +416,17 @@ public:
                           albatross::subset(parent_, first_indexer.second));
   }
 
-  template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_result<
-                ApplyFunction, KeyType, GroupIndices>::type,
-            typename std::enable_if<
-                details::is_valid_index_apply_function<ApplyFunction, KeyType,
-                                                       GroupIndices>::value &&
-                    !std::is_same<void, ApplyType>::value,
-                int>::type = 0>
-  auto index_apply(const ApplyFunction &f) const {
-    Grouped<KeyType, ApplyType> output;
-    for (const auto &pair : indexers()) {
-      output.emplace(pair.first, f(pair.first, pair.second));
-    }
-    return output;
+  template <typename ApplyFunction> auto index_apply(ApplyFunction &&f) const {
+    return albatross::apply(indexers(), std::forward<ApplyFunction>(f));
   }
 
-  template <typename ApplyFunction,
-            typename ApplyType = typename details::key_value_apply_result<
-                ApplyFunction, KeyType, GroupIndices>::type,
-            typename std::enable_if<
-                details::is_valid_index_apply_function<ApplyFunction, KeyType,
-                                                       GroupIndices>::value &&
-                    std::is_same<void, ApplyType>::value,
-                int>::type = 0>
-  void index_apply(const ApplyFunction &f) const {
-    for (const auto &pair : indexers()) {
-      f(pair.first, pair.second);
-    }
+  template <typename ApplyFunction>
+  auto async_index_apply(ApplyFunction &&f) const {
+    return albatross::async_apply(indexers(), std::forward<ApplyFunction>(f));
   }
 
-  template <typename FilterFunction> auto filter(FilterFunction f) const {
-    return groups().filter(f);
+  template <typename FilterFunction> auto filter(FilterFunction &&f) const {
+    return groups().filter(std::forward<FilterFunction>(f));
   }
 
   Grouped<KeyType, std::size_t> counts() const {
