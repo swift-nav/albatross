@@ -32,10 +32,10 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(f, x));
+    futures.emplace_back(async_safe(func, x));
   }
   for (auto &f : futures) {
     f.get();
@@ -49,10 +49,10 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &f) {
+auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
   std::vector<std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(f, x));
+    futures.emplace_back(async_safe(func, x));
   }
 
   std::vector<ApplyType> output;
@@ -70,16 +70,15 @@ template <template <typename...> class Map, typename KeyType,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-void async_apply_map(const Map<KeyType, ValueType> &xs,
-                     const ApplyFunction &f) {
+inline void async_apply_map(const Map<KeyType, ValueType> &xs,
+                            const ApplyFunction &func) {
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(f, x.second));
+    futures.emplace_back(async_safe(func, x.second));
   }
   for (auto &f : futures) {
     f.get();
   }
-  std::cout << "This was called, void, no key" << std::endl;
 }
 
 template <template <typename...> class Map, typename KeyType,
@@ -91,17 +90,16 @@ template <template <typename...> class Map, typename KeyType,
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
 inline Grouped<KeyType, ApplyType> async_apply_map(
-    const Map<KeyType, ValueType> &xs, const ApplyFunction &f) {
-  Map<KeyType, std::future<ApplyType>> futures;
+    const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+  Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures[x.first] = async_safe(f, x.second);
+    futures[x.first] = async_safe(func, x.second);
   }
 
-  Map<KeyType, ApplyType> output;
+  Grouped<KeyType, ApplyType> output;
   for (auto &f : futures) {
     output[f.first] = f.second.get();
   }
-  std::cout << "This was called, return, no key" << std::endl;
   return output;
 }
 
@@ -114,16 +112,15 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-void async_apply_map(const Map<KeyType, ValueType> &xs,
-                     const ApplyFunction &f) {
+inline void async_apply_map(const Map<KeyType, ValueType> &xs,
+                            const ApplyFunction &func) {
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(f, x.first, x.second));
+    futures.emplace_back(async_safe(func, x.first, x.second));
   }
   for (auto &f : futures) {
     f.get();
   }
-  std::cout << "This was called, void, with key" << std::endl;
 }
 
 template <
@@ -136,17 +133,16 @@ template <
                                 !std::is_same<void, ApplyType>::value,
                             int>::type = 0>
 inline Grouped<KeyType, ApplyType> async_apply_map(
-    const Map<KeyType, ValueType> &xs, const ApplyFunction &f) {
-  Map<KeyType, std::future<ApplyType>> futures;
+    const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+  Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures[x.first] = async_safe(f, x.first, x.second);
+    futures[x.first] = async_safe(func, x.first, x.second);
   }
 
-  Map<KeyType, ApplyType> output;
+  Grouped<KeyType, ApplyType> output;
   for (auto &f : futures) {
     output[f.first] = f.second.get();
   }
-  std::cout << "This was called, return, with key" << std::endl;
   return output;
 }
 
