@@ -155,17 +155,19 @@ block_subtract(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
 template <typename MatrixType, unsigned int Mode = Eigen::Lower>
 struct BlockTriangularView;
 
-struct BlockDiagonalLLT;
+struct BlockDiagonalLDLT;
 struct BlockDiagonal;
 
-struct BlockDiagonalLLT {
-  std::vector<Eigen::LLT<Eigen::MatrixXd>> blocks;
+struct BlockDiagonalLDLT {
+  std::vector<Eigen::SerializableLDLT> blocks;
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
-  BlockTriangularView<const Eigen::MatrixXd> matrixL() const;
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
   double log_determinant() const;
 
@@ -203,7 +205,7 @@ struct BlockDiagonal {
 
   Eigen::VectorXd diagonal() const;
 
-  BlockDiagonalLLT llt() const;
+  BlockDiagonalLDLT ldlt() const;
 
   Eigen::Index rows() const;
 
@@ -270,11 +272,11 @@ template <typename Solver> struct BlockSymmetric {
 };
 
 /*
- * BlockDiagonalLLT
+ * BlockDiagonalLDLT
  */
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   assert(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
@@ -286,25 +288,29 @@ BlockDiagonalLLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   return output;
 }
 
-inline BlockTriangularView<const Eigen::MatrixXd>
-BlockDiagonalLLT::matrixL() const {
-  BlockTriangularView<const Eigen::MatrixXd> output;
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  assert(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   for (const auto &b : blocks) {
-    Eigen::TriangularView<const Eigen::MatrixXd, Eigen::Lower> L = b.matrixL();
-    output.blocks.push_back(L);
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
+    i += b.rows();
   }
   return output;
 }
 
-inline double BlockDiagonalLLT::log_determinant() const {
+inline double BlockDiagonalLDLT::log_determinant() const {
   double output = 0.;
   for (const auto &b : blocks) {
-    output += 2. * log(b.matrixL().determinant());
+    output += b.log_determinant();
   }
   return output;
 }
 
-inline Eigen::Index BlockDiagonalLLT::rows() const {
+inline Eigen::Index BlockDiagonalLDLT::rows() const {
   Eigen::Index n = 0;
   for (const auto &b : blocks) {
     n += b.rows();
@@ -312,7 +318,7 @@ inline Eigen::Index BlockDiagonalLLT::rows() const {
   return n;
 }
 
-inline Eigen::Index BlockDiagonalLLT::cols() const {
+inline Eigen::Index BlockDiagonalLDLT::cols() const {
   Eigen::Index n = 0;
   for (const auto &b : blocks) {
     n += b.cols();
@@ -444,10 +450,10 @@ inline Eigen::VectorXd BlockDiagonal::diagonal() const {
   return output;
 }
 
-inline BlockDiagonalLLT BlockDiagonal::llt() const {
-  BlockDiagonalLLT output;
+inline BlockDiagonalLDLT BlockDiagonal::ldlt() const {
+  BlockDiagonalLDLT output;
   for (const auto &b : blocks) {
-    output.blocks.emplace_back(b.llt());
+    output.blocks.emplace_back(b.ldlt());
   }
   return output;
 }

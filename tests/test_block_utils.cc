@@ -52,17 +52,17 @@ TEST(test_block_utils, test_to_dense) {
   EXPECT_LE((block_result - dense).norm(), 1e-6);
 }
 
-TEST(test_block_utils, test_block_llt) {
+TEST(test_block_utils, test_block_ldlt) {
   const auto example = block_example();
-  const BlockDiagonalLLT llt = example.block.llt();
+  const BlockDiagonalLDLT ldlt = example.block.ldlt();
 
-  const Eigen::MatrixXd expect_identity = llt.solve(example.dense);
+  const Eigen::MatrixXd expect_identity = ldlt.solve(example.dense);
   const Eigen::MatrixXd identity =
       Eigen::MatrixXd::Identity(example.dense.rows(), example.dense.cols());
   EXPECT_LT((expect_identity - identity).norm(), 1e-8);
 
   EXPECT_NEAR(example.dense.determinant(),
-              exp(example.block.llt().log_determinant()), 1e-8);
+              exp(example.block.ldlt().log_determinant()), 1e-8);
 }
 
 TEST(test_block_utils, test_diagonal) {
@@ -96,35 +96,28 @@ TEST(test_block_utils, test_solve) {
   auto dense = example.dense;
 
   Eigen::VectorXd rhs = Eigen::VectorXd::Random(dense.cols());
-  const auto block_result = block_diag.llt().solve(rhs);
+  const auto block_result = block_diag.ldlt().solve(rhs);
 
-  const Eigen::VectorXd dense_result = dense.llt().solve(rhs);
+  const Eigen::VectorXd dense_result = dense.ldlt().solve(rhs);
 
   EXPECT_LE((block_result - dense_result).norm(), 1e-6);
 }
 
-TEST(test_block_utils, test_matrix_l) {
+TEST(test_block_utils, test_sqrt_methods) {
 
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
 
   Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(dense.cols(), 3);
-  const auto block_llt = block_diag.llt();
-  const auto block_l_val = block_llt.matrixL();
-  const auto block_result = block_l_val * rhs;
-  Eigen::MatrixXd block_l = block_l_val.toDense();
+  const auto block_ldlt = block_diag.ldlt();
 
-  const auto dense_llt = dense.llt();
-  Eigen::MatrixXd dense_l = dense_llt.matrixL();
-  const Eigen::MatrixXd dense_result = dense_l * rhs;
+  const Eigen::MatrixXd block_result = block_ldlt.sqrt_solve(rhs);
 
-  EXPECT_LE((block_l - dense_l).norm(), 1e-6);
+  const Eigen::SerializableLDLT dense_ldlt = dense.ldlt();
+  const Eigen::MatrixXd dense_result = dense_ldlt.sqrt_solve(rhs);
+
   EXPECT_LE((block_result - dense_result).norm(), 1e-6);
-
-  EXPECT_LE((block_l_val.solve(rhs) - dense_l.colPivHouseholderQr().solve(rhs))
-                .norm(),
-            1e-6);
 }
 
 TEST(test_block_utils, test_block_symmetric) {

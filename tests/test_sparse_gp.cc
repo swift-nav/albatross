@@ -146,6 +146,8 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
   auto sparse =
       sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
 
+  sparse.set_param_value("inducing_nugget", 1e-6);
+
   start = high_resolution_clock::now();
   auto sparse_fit = sparse.fit(large_dataset);
   end = high_resolution_clock::now();
