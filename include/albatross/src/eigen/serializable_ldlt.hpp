@@ -52,13 +52,20 @@ public:
 
   bool is_initialized() const { return this->m_isInitialized; }
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-    Eigen::Matrix<_Scalar, _Rows, _Cols> output = this->transpositionsP() * rhs;
+  template <class Rhs>
+  Eigen::MatrixXd sqrt_solve(const MatrixBase<Rhs> &rhs) const {
+    Eigen::MatrixXd output = this->transpositionsP() * rhs;
     output = this->matrixL().solve(output);
     const auto sqrt_diag = this->vectorD().array().sqrt().matrix().asDiagonal();
-    return sqrt_diag.inverse() * output;
+    return this->transpositionsP().transpose() * (sqrt_diag.inverse() * output);
+  }
+
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  sqrt_transpose_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+    const auto sqrt_diag = this->vectorD().array().sqrt().matrix().asDiagonal();
+    return this->transpositionsP().transpose() *
+           (this->matrixL().transpose().solve(sqrt_diag.inverse() * rhs));
   }
 
   double log_determinant() const {

@@ -203,9 +203,9 @@ public:
   }
 
   struct SparseGPComponents {
-    Eigen::LLT<Eigen::MatrixXd> K_uu_llt;
+    Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd P;
-    BlockDiagonalLLT A_llt;
+    BlockDiagonalLDLT A_ldlt;
     Eigen::MatrixXd RtR;
     Eigen::SerializableLDLT B_ldlt;
     Eigen::VectorXd y;
@@ -251,12 +251,12 @@ public:
     K_uu.diagonal() +=
         inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
 
-    const auto K_uu_llt = K_uu.llt();
+    const Eigen::SerializableLDLT K_uu_ldlt = K_uu.ldlt();
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu L^-T L^-1 K_uf
     //          = P^T P
-    const Eigen::MatrixXd P = K_uu_llt.matrixL().solve(K_fu.transpose());
+    const Eigen::MatrixXd P = K_uu_ldlt.sqrt_solve(K_fu.transpose());
 
     // We only need the diagonal blocks of Q_ff to get A
     BlockDiagonal Q_ff_diag;
@@ -314,17 +314,16 @@ public:
      *
      *     v = L^-T B^-1 P * A^-1 y
      */
-    const auto A_llt = A.llt();
+    const auto A_ldlt = A.ldlt();
     Eigen::MatrixXd Pt = P.transpose();
-    const auto A_sqrt = A_llt.matrixL();
-    Eigen::MatrixXd RtR = A_sqrt.solve(Pt);
+    Eigen::MatrixXd RtR = A_ldlt.sqrt_solve(Pt);
     RtR = RtR.transpose() * RtR;
     const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
     const Eigen::SerializableLDLT B_ldlt(B);
 
     SparseGPComponents components = {
-        K_uu_llt, P, A_llt, RtR, B_ldlt, targets.mean,
+        K_uu_ldlt, P, A_ldlt, RtR, B_ldlt, targets.mean,
     };
 
     return components;
@@ -340,15 +339,14 @@ public:
 
     const auto sc = sparse_components(features, u, targets);
 
-    const Eigen::Index m = sc.K_uu_llt.rows();
+    const Eigen::Index m = sc.K_uu_ldlt.rows();
     const Eigen::MatrixXd L_uu_inv =
-        sc.K_uu_llt.matrixL().solve(Eigen::MatrixXd::Identity(m, m));
+        sc.K_uu_ldlt.sqrt_solve(Eigen::MatrixXd::Identity(m, m));
     const Eigen::MatrixXd BiLi = sc.B_ldlt.solve(L_uu_inv);
-    const Eigen::MatrixXd RtRBiLi = sc.RtR * sc.B_ldlt.solve(L_uu_inv);
-    const auto LT = sc.K_uu_llt.matrixL().transpose();
-    Eigen::VectorXd v = BiLi.transpose() * sc.P * sc.A_llt.solve(sc.y);
+    const Eigen::MatrixXd RtRBiLi = sc.RtR * BiLi;
+    Eigen::VectorXd v = BiLi.transpose() * sc.P * sc.A_ldlt.solve(sc.y);
 
-    const Eigen::MatrixXd C_inv = LT.solve(RtRBiLi);
+    const Eigen::MatrixXd C_inv = sc.K_uu_ldlt.sqrt_transpose_solve(RtRBiLi);
     DirectInverse solver(C_inv);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
@@ -387,7 +385,7 @@ public:
     //   https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
     // though as of Jan 2020 there are typos in the derivation.
 
-    const double log_det_a = sc.A_llt.log_determinant();
+    double log_det_a = sc.A_ldlt.log_determinant();
     const double log_det_b = sc.B_ldlt.vectorD().array().log().sum();
     const double log_det = log_det_a + log_det_b;
 
@@ -407,7 +405,7 @@ public:
     //
     //   y_a = A^-1 y   and  c = B^{-1/2} P y_a
 
-    Eigen::VectorXd y_a = sc.A_llt.solve(sc.y);
+    Eigen::VectorXd y_a = sc.A_ldlt.solve(sc.y);
     Eigen::VectorXd c = sc.B_ldlt.sqrt_solve((sc.P * y_a).eval());
 
     double log_quadratic = sc.y.transpose() * y_a;
