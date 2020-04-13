@@ -36,9 +36,9 @@ auto select_overload(ReturnType (*fptr)(const Arg &)) {
  * that facilitates applying a function to all values, filtering etc ...
  */
 
-template <typename KeyType, typename ValueType>
-class GroupedBase {
- public:
+template <typename KeyType, typename ValueType> class GroupedBase {
+
+public:
   GroupedBase() : map_(){};
   GroupedBase(const GroupedBase &other) = default;
   GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)){};
@@ -101,8 +101,7 @@ class GroupedBase {
    * groups you would like to keep.  This is done by providing a function which
    * returns bool when provided with a group (or group key and group)
    */
-  template <typename FilterFunction>
-  auto filter(FilterFunction &&f) const {
+  template <typename FilterFunction> auto filter(FilterFunction &&f) const {
     return albatross::filter(map_, std::forward<FilterFunction>(f));
   }
 
@@ -112,17 +111,15 @@ class GroupedBase {
    * (or group key and group).  If the function returns something other than
    * void the results will be aggregated into a new Grouped object.
    */
-  template <typename ApplyFunction>
-  auto apply(ApplyFunction &&f) const {
+  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
     return albatross::apply(map_, std::forward<ApplyFunction>(f));
   }
 
-  template <typename ApplyFunction>
-  auto async_apply(ApplyFunction &&f) const {
+  template <typename ApplyFunction> auto async_apply(ApplyFunction &&f) const {
     return albatross::async_apply(map_, std::forward<ApplyFunction>(f));
   }
 
- protected:
+protected:
   std::map<KeyType, ValueType> map_;
 };
 
@@ -142,7 +139,7 @@ class Grouped<KeyType, ValueType,
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
 
- public:
+public:
   bool all() const { return albatross::all(this->values()); }
 
   auto any() const { return albatross::any(this->values()); }
@@ -159,7 +156,7 @@ class Grouped<KeyType, ValueType,
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
 
- public:
+public:
   auto sum() const {
     ValueType output = 0.;
     for (const auto &pair : this->map_) {
@@ -191,7 +188,7 @@ class Grouped<KeyType, EigenXpr,
 template <typename KeyType>
 class Grouped<KeyType, GroupIndices>
     : public GroupedBase<KeyType, GroupIndices> {
- public:
+public:
   using Base = GroupedBase<KeyType, GroupIndices>;
   using Base::Base;
 
@@ -219,15 +216,15 @@ class Grouped<KeyType, GroupIndices>
  */
 template <template <typename...> class Map, typename KeyType,
           typename FeatureType>
-RegressionDataset<FeatureType> combine(
-    const Map<KeyType, RegressionDataset<FeatureType>> &groups) {
+RegressionDataset<FeatureType>
+combine(const Map<KeyType, RegressionDataset<FeatureType>> &groups) {
   return concatenate_datasets(map_values(groups));
 }
 
 template <template <typename...> class Map, typename KeyType,
           typename FeatureType>
-std::vector<FeatureType> combine(
-    const Map<KeyType, std::vector<FeatureType>> &groups) {
+std::vector<FeatureType>
+combine(const Map<KeyType, std::vector<FeatureType>> &groups) {
   return concatenate(map_values(groups));
 }
 
@@ -249,7 +246,7 @@ Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
  */
 template <typename KeyType, typename ValueType>
 class CombinableBase : public GroupedBase<KeyType, ValueType> {
- public:
+public:
   using Base = GroupedBase<KeyType, ValueType>;
   using Base::Base;
 
@@ -276,8 +273,8 @@ class Grouped<KeyType, std::vector<FeatureType>>
  * indices not the actual values.  This `IndexBuilder` class is responsible
  * for distinguishing between these different approaches.
  */
-template <typename GrouperFunction>
-struct IndexerBuilder {
+template <typename GrouperFunction> struct IndexerBuilder {
+
   template <
       typename Iterable,
       typename IterableValue = typename const_ref<typename std::iterator_traits<
@@ -308,8 +305,7 @@ struct IndexerBuilder {
 };
 
 struct LeaveOneOutGrouper {
-  template <typename Arg>
-  std::size_t operator()(const Arg &) const {
+  template <typename Arg> std::size_t operator()(const Arg &) const {
     static_assert(
         delay_static_assert<Arg>::value,
         "You shouldn't be calling LeaveOneOutGrouper directly, pass it into "
@@ -318,8 +314,8 @@ struct LeaveOneOutGrouper {
   };
 };
 
-template <>
-struct IndexerBuilder<LeaveOneOutGrouper> {
+template <> struct IndexerBuilder<LeaveOneOutGrouper> {
+
   template <typename Iterable>
   static auto build(const LeaveOneOutGrouper &grouper_function,
                     const Iterable &iterable) {
@@ -337,12 +333,12 @@ struct IndexerBuilder<LeaveOneOutGrouper> {
 };
 
 struct KFoldGrouper {
+
   KFoldGrouper(std::size_t k_ = 2) : k(k_){};
 
   std::size_t k;
 
-  template <typename Arg>
-  std::size_t operator()(const Arg &) const {
+  template <typename Arg> std::size_t operator()(const Arg &) const {
     static_assert(
         delay_static_assert<Arg>::value,
         "You shouldn't be calling KFoldGrouper directly, pass it into "
@@ -351,8 +347,8 @@ struct KFoldGrouper {
   };
 };
 
-template <>
-struct IndexerBuilder<KFoldGrouper> {
+template <> struct IndexerBuilder<KFoldGrouper> {
+
   template <typename Iterable>
   static auto build(const KFoldGrouper &grouper_function,
                     const Iterable &iterable) {
@@ -381,9 +377,9 @@ inline auto build_indexer(const GrouperFunction &grouper_function,
  * This is the base class holding common operations for classes which can
  * be grouped.
  */
-template <typename Derived>
-class GroupByBase {
- public:
+template <typename Derived> class GroupByBase {
+
+public:
   using KeyType = typename details::group_by_traits<Derived>::KeyType;
   using ValueType = typename details::group_by_traits<Derived>::ValueType;
   using GrouperType = typename details::group_by_traits<Derived>::GrouperType;
@@ -409,8 +405,7 @@ class GroupByBase {
 
   std::size_t size() const { return indexers().size(); }
 
-  template <typename ApplyFunction>
-  auto apply(const ApplyFunction &f) const {
+  template <typename ApplyFunction> auto apply(const ApplyFunction &f) const {
     return groups().apply(f);
   }
 
@@ -459,8 +454,7 @@ class GroupByBase {
     }
   }
 
-  template <typename FilterFunction>
-  auto filter(FilterFunction f) const {
+  template <typename FilterFunction> auto filter(FilterFunction f) const {
     return groups().filter(f);
   }
 
@@ -472,12 +466,12 @@ class GroupByBase {
     return output;
   }
 
- protected:
+protected:
   ValueType parent_;
   GrouperType grouper_;
   IndexerType indexers_;
 
- private:
+private:
   IndexerType build_indexers() const {
     return albatross::build_indexer(grouper_, derived()._get_iterable());
   }
@@ -496,11 +490,12 @@ template <typename FeatureType, typename GrouperFunction>
 class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
     : public GroupByBase<
           GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
+
   static_assert(!std::is_same<GrouperFunction, void>::value,
                 "GrouperFunction is void (this may indicate the function won't "
                 "compile).");
 
- public:
+public:
   using Base =
       GroupByBase<GroupBy<RegressionDataset<FeatureType>, GrouperFunction>>;
   using Base::Base;
@@ -514,11 +509,12 @@ class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<std::vector<FeatureType>, GrouperFunction>
     : public GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
+
   static_assert(!std::is_same<GrouperFunction, void>::value,
                 "GrouperFunction is void (this may indicate the function won't "
                 "compile).");
 
- public:
+public:
   using Base = GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>>;
   using Base::Base;
 
@@ -553,6 +549,6 @@ auto group_by(const std::vector<FeatureType> &vector, GrouperFunc grouper) {
                                                         std::move(grouper));
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_GROUPBY_HPP_ */

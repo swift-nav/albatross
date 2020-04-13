@@ -89,8 +89,8 @@ template <template <typename...> class Map, typename KeyType,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline Grouped<KeyType, ApplyType> async_apply_map(
-    const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+inline Grouped<KeyType, ApplyType>
+async_apply_map(const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
   Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
     futures[x.first] = async_safe(func, x.second);
@@ -132,8 +132,8 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 !std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-inline Grouped<KeyType, ApplyType> async_apply_map(
-    const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+inline Grouped<KeyType, ApplyType>
+async_apply_map(const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
   Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
     futures[x.first] = async_safe(func, x.first, x.second);
@@ -158,6 +158,6 @@ inline auto async_apply(const Grouped<KeyType, ValueType> &map,
   return async_apply_map(map, std::forward<ApplyFunction>(f));
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_UTILS_ASYNC_UTILS_HPP_ */
