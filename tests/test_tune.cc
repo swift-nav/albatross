@@ -22,7 +22,7 @@ TEST(test_tune, test_single_dataset) {
   auto model = test_case.get_model();
 
   LeaveOneOutLikelihood<> loo_nll;
-  std::ostringstream output_stream;
+  std::ostringstream output_stream("/dev/null");
   auto tuner =
       get_tuner(model, loo_nll, dataset, mean_aggregator, output_stream);
   tuner.optimizer.set_maxeval(20);
@@ -53,7 +53,7 @@ TEST(test_tune, test_with_prior_bounds) {
   }
 
   LeaveOneOutLikelihood<> loo_nll;
-  std::ostringstream output_stream;
+  std::ostringstream output_stream("/dev/null");
   auto tuner =
       get_tuner(model, loo_nll, dataset, mean_aggregator, output_stream);
   tuner.optimizer.set_maxeval(20);
@@ -79,7 +79,7 @@ TEST(test_tune, test_with_prior) {
 
   // Tune using likelihood which will include the parameter priors
   LeaveOneOutLikelihood<> loo_nll;
-  std::ostringstream output_stream;
+  std::ostringstream output_stream("/dev/null");
   auto tuner = get_tuner(model_with_priors, loo_nll, dataset, mean_aggregator,
                          output_stream);
   tuner.optimizer.set_maxeval(50);
@@ -114,7 +114,7 @@ TEST(test_tune, test_multiple_datasets) {
                                                      another_dataset};
 
   LeaveOneOutLikelihood<> loo_nll;
-  std::ostringstream output_stream;
+  std::ostringstream output_stream("/dev/null");
   auto tuner = get_tuner(model_no_priors, loo_nll, datasets, mean_aggregator,
                          output_stream);
   tuner.optimizer.set_maxeval(20);
@@ -153,7 +153,7 @@ TEST(test_tune, test_generic) {
     return mahalanobis_distance_vector(get_tunable_parameters(params).values);
   };
 
-  std::ostringstream output_stream;
+  std::ostringstream output_stream("/dev/null");
   std::vector<double> initial_x(mean.size());
   for (auto &d : initial_x) {
     d = 0.;
