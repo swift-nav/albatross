@@ -115,6 +115,10 @@ public:
     return albatross::apply(map_, std::forward<ApplyFunction>(f));
   }
 
+  template <typename ApplyFunction> auto async_apply(ApplyFunction &&f) const {
+    return albatross::async_apply(map_, std::forward<ApplyFunction>(f));
+  }
+
 protected:
   std::map<KeyType, ValueType> map_;
 };
@@ -403,6 +407,11 @@ public:
 
   template <typename ApplyFunction> auto apply(const ApplyFunction &f) const {
     return groups().apply(f);
+  }
+
+  template <typename ApplyFunction>
+  auto async_apply(const ApplyFunction &f) const {
+    return groups().async_apply(f);
   }
 
   ValueType get_group(const KeyType &key) const {
