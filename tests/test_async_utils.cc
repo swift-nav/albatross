@@ -83,7 +83,6 @@ TEST(test_async_utils, test_async_apply_map_key_value_function) {
     std::lock_guard<std::mutex> lock(mu);
     sum += x;
     order_processed.push_back(x);
-    std::cout << key << std::endl;
   };
 
   async_apply(xs, add_to_sum);

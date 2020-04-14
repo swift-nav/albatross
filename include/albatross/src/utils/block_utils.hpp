@@ -169,6 +169,16 @@ struct BlockDiagonalLDLT {
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  async_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+
+  template <class _Scalar, int _Rows, int _Cols>
+  Eigen::Matrix<_Scalar, _Rows, _Cols>
+  async_sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+
+  std::map<size_t,Eigen::Index> block_to_row_map() const;
+
   double log_determinant() const;
 
   Eigen::Index rows() const;
@@ -299,6 +309,47 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
     output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
     i += b.rows();
   }
+  return output;
+}
+
+inline std::map<size_t,Eigen::Index> BlockDiagonalLDLT::block_to_row_map() const {
+  Eigen::Index row = 0;
+  std::map<size_t,Eigen::Index> block_to_row;
+  for (size_t i = 0; i < blocks.size(); ++i) {
+    block_to_row[i] = row;
+    row += blocks[i].rows();
+  }
+  assert(row == cols());
+  return block_to_row;
+}
+
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  assert(cols() == rhs.rows());
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+
+  auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
+      const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
+      output.block(row, 0, blocks[i].rows(), rhs.cols()) = blocks[i].solve(rhs_chunk);
+  };
+
+  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
+  return output;
+}
+
+template <class _Scalar, int _Rows, int _Cols>
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_sqrt_solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  assert(cols() == rhs.rows());
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+
+  auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
+      const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
+      output.block(row, 0, blocks[i].rows(), rhs.cols()) = blocks[i].sqrt_solve(rhs_chunk);
+  };
+
+  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
   return output;
 }
 
