@@ -177,7 +177,7 @@ struct BlockDiagonalLDLT {
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   async_sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
-  std::map<size_t,Eigen::Index> block_to_row_map() const;
+  std::map<size_t, Eigen::Index> block_to_row_map() const;
 
   double log_determinant() const;
 
@@ -312,14 +312,17 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
   return output;
 }
 
-inline std::map<size_t,Eigen::Index> BlockDiagonalLDLT::block_to_row_map() const {
+inline std::map<size_t, Eigen::Index>
+BlockDiagonalLDLT::block_to_row_map() const {
   Eigen::Index row = 0;
-  std::map<size_t,Eigen::Index> block_to_row;
+  std::map<size_t, Eigen::Index> block_to_row;
+
   for (size_t i = 0; i < blocks.size(); ++i) {
     block_to_row[i] = row;
     row += blocks[i].rows();
   }
   assert(row == cols());
+
   return block_to_row;
 }
 
@@ -328,13 +331,27 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   assert(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
-
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
-      const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
-      output.block(row, 0, blocks[i].rows(), rhs.cols()) = blocks[i].solve(rhs_chunk);
+    const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
+    output.block(row, 0, blocks[i].rows(), rhs.cols()) =
+        blocks[i].solve(rhs_chunk);
   };
 
-  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
+  // Hack to limit future block size. 562 rows failed, 539 rows succeeded
+  const Eigen::Index big_block_threshold = 540;
+  const auto block_to_row = block_to_row_map();
+  std::map<size_t, Eigen::Index> small_blocks;
+  std::map<size_t, Eigen::Index> big_blocks;
+  for (const auto &m : block_to_row) {
+    if (blocks[m.first].rows() >= big_block_threshold) {
+      big_blocks[m.first] = m.second;
+    } else {
+      small_blocks[m.first] = m.second;
+    }
+  }
+  async_apply_map(small_blocks, solve_and_fill_one_block);
+  apply_map(big_blocks, solve_and_fill_one_block);
+  // async_apply_map(block_to_row_map(), solve_and_fill_one_block); //Non-hack
   return output;
 }
 
@@ -345,8 +362,9 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_sqrt_solve(
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
 
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
-      const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
-      output.block(row, 0, blocks[i].rows(), rhs.cols()) = blocks[i].sqrt_solve(rhs_chunk);
+    const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
+    output.block(row, 0, blocks[i].rows(), rhs.cols()) =
+        blocks[i].sqrt_solve(rhs_chunk);
   };
 
   async_apply_map(block_to_row_map(), solve_and_fill_one_block);

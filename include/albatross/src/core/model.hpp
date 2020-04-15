@@ -17,6 +17,8 @@ namespace albatross {
 
 using Insights = std::map<std::string, std::string>;
 
+constexpr bool DEFAULT_USE_ASYNC = false;
+
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
   friend class JointPredictor;
@@ -26,7 +28,7 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   template <typename T, typename FeatureType> friend class fit_model_type;
 
 protected:
-  ModelBase() : insights(){};
+  ModelBase() : insights(), use_async_(DEFAULT_USE_ASYNC){};
 
   /*
    * Fit
@@ -114,6 +116,8 @@ public:
     return derived().name();
   }
 
+  void set_async_flag(const bool use_async) { use_async_ = use_async; }
+
   template <typename FeatureType>
   auto fit(const std::vector<FeatureType> &features,
            const MarginalDistribution &targets) const {
@@ -144,6 +148,7 @@ public:
                                      const RansacConfig &) const;
 
   Insights insights;
+  bool use_async_;
 };
 } // namespace albatross
 #endif
