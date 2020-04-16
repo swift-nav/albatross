@@ -337,21 +337,7 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
         blocks[i].solve(rhs_chunk);
   };
 
-  // Hack to limit future block size. 562 rows failed, 539 rows succeeded
-  const Eigen::Index big_block_threshold = 540;
-  const auto block_to_row = block_to_row_map();
-  std::map<size_t, Eigen::Index> small_blocks;
-  std::map<size_t, Eigen::Index> big_blocks;
-  for (const auto &m : block_to_row) {
-    if (blocks[m.first].rows() >= big_block_threshold) {
-      big_blocks[m.first] = m.second;
-    } else {
-      small_blocks[m.first] = m.second;
-    }
-  }
-  async_apply_map(small_blocks, solve_and_fill_one_block);
-  apply_map(big_blocks, solve_and_fill_one_block);
-  // async_apply_map(block_to_row_map(), solve_and_fill_one_block); //Non-hack
+  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
   return output;
 }
 
