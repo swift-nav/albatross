@@ -344,8 +344,12 @@ public:
         sc.K_uu_ldlt.sqrt_solve(Eigen::MatrixXd::Identity(m, m));
     const Eigen::MatrixXd BiLi = sc.B_ldlt.solve(L_uu_inv);
     const Eigen::MatrixXd RtRBiLi = sc.RtR * BiLi;
-    Eigen::VectorXd v = BiLi.transpose() * sc.P * sc.A_ldlt.solve(sc.y);
-
+    Eigen::VectorXd v;
+    if (Base::use_async_) {
+      v = BiLi.transpose() * sc.P * sc.A_ldlt.async_solve(sc.y);
+    } else {
+      v = BiLi.transpose() * sc.P * sc.A_ldlt.solve(sc.y);
+    }
     const Eigen::MatrixXd C_inv = sc.K_uu_ldlt.sqrt_transpose_solve(RtRBiLi);
     DirectInverse solver(C_inv);
 

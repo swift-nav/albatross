@@ -9,7 +9,7 @@ target_link_libraries(sinc_example
   )
 add_custom_target(run_sinc_example
   DEPENDS sinc_example
-  COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune
+  COMMAND sinc_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv -tune > sinc_example_output.txt
   COMMENT "Running sinc_example"
   )
 
@@ -24,7 +24,7 @@ target_link_libraries(sampler_example
   )
 add_custom_target(run_sampler_example
   DEPENDS sampler_example
-  COMMAND sampler_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv --maxiter 100
+  COMMAND sampler_example -input ${PROJECT_SOURCE_DIR}/examples/sinc_input.csv -output ./sinc_predictions.csv --maxiter 100 > sampler_example_output.txt
   COMMENT "Running sampler_example"
   )
 
@@ -117,4 +117,3 @@ foreach(TARGET IN LISTS albatross_example_BINARIES)
   target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
   set_target_properties(${TARGET} PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 endforeach()
-
