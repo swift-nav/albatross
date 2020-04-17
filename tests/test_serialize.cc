@@ -10,11 +10,6 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Common>
-#include <albatross/GP>
-#include <albatross/Ransac>
-
-#include <albatross/serialize/Common>
 #include <albatross/serialize/GP>
 #include <albatross/serialize/LeastSquares>
 #include <albatross/serialize/Ransac>

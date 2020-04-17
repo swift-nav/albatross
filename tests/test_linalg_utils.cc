@@ -16,6 +16,21 @@
 
 namespace albatross {
 
+TEST(test_linalg_utils, test_qr_sqrt_solve) {
+  const int n = 5;
+  const Eigen::MatrixXd A = Eigen::MatrixXd::Random(2 * n, n);
+
+  const auto qr = A.colPivHouseholderQr();
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(n, 3);
+  const Eigen::MatrixXd expected_quad =
+      rhs.transpose() * (A.transpose() * A).ldlt().solve(rhs);
+  const Eigen::MatrixXd sqrt = sqrt_solve(qr, rhs);
+  const Eigen::MatrixXd actual_quad = sqrt.transpose() * sqrt;
+
+  EXPECT_LT((actual_quad - expected_quad).norm(), 1e-14);
+}
+
 TEST(test_linalg_utils, test_print_eigen_values) {
 
   Eigen::Index k = 10;

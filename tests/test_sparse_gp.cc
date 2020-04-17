@@ -201,7 +201,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
   const double expected = -negative_log_likelihood(dataset.targets.mean, K);
   const double actual = sparse.log_likelihood(dataset);
 
-  EXPECT_NEAR(expected, actual, 1e-6);
+  EXPECT_NEAR(expected, actual, 1e-2);
 }
 
 } // namespace albatross

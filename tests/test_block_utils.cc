@@ -112,10 +112,12 @@ TEST(test_block_utils, test_sqrt_methods) {
   Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(dense.cols(), 3);
   const auto block_ldlt = block_diag.ldlt();
 
-  const Eigen::MatrixXd block_result = block_ldlt.sqrt_solve(rhs);
+  const Eigen::MatrixXd block_sqrt = block_ldlt.sqrt_solve(rhs);
+  const Eigen::MatrixXd block_result = block_sqrt.transpose() * block_sqrt;
 
   const Eigen::SerializableLDLT dense_ldlt = dense.ldlt();
-  const Eigen::MatrixXd dense_result = dense_ldlt.sqrt_solve(rhs);
+  const Eigen::MatrixXd dense_sqrt = dense_ldlt.sqrt_solve(rhs);
+  const Eigen::MatrixXd dense_result = dense_sqrt.transpose() * dense_sqrt;
 
   EXPECT_LE((block_result - dense_result).norm(), 1e-6);
 }

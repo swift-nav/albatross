@@ -74,6 +74,14 @@ TEST_F(SerializableLDLTTest, test_sqrt_solve) {
   const Eigen::VectorXd actual_inverse = inv * information;
 
   EXPECT_LE((cov.ldlt().solve(information) - actual_inverse).norm(), 1e-8);
+
+  const Eigen::MatrixXd L = serializable_ldlt.sqrt_product(identity);
+
+  EXPECT_LE((identity - serializable_ldlt.sqrt_solve(L)).norm(), 1e-14);
+
+  const Eigen::MatrixXd LT = L.transpose();
+  EXPECT_LE((identity - serializable_ldlt.sqrt_transpose_solve(LT)).norm(),
+            1e-14);
 }
 
 } // namespace albatross
