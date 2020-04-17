@@ -17,7 +17,7 @@ namespace albatross {
 
 namespace details {
 
-constexpr double DEFAULT_NUGGET = 1e-12;
+constexpr double DEFAULT_NUGGET = 1e-8;
 
 inline std::string measurement_nugget_name() { return "measurement_nugget"; }
 
@@ -68,6 +68,36 @@ struct StateSpaceInducingPointStrategy {
           "be sure _ssr_impl has been defined for the types concerned");
 };
 
+template <typename FeatureType> struct SparseGPFit {};
+
+template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
+
+  std::vector<FeatureType> train_features;
+  Eigen::SerializableLDLT train_covariance;
+  Eigen::MatrixXd sigma_R;
+  Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
+  Eigen::VectorXd information;
+
+  Fit(){};
+
+  Fit(const std::vector<FeatureType> &features_,
+      const Eigen::SerializableLDLT &train_covariance_,
+      const Eigen::MatrixXd sigma_R_,
+      const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
+      const Eigen::VectorXd &information_)
+      : train_features(features_), train_covariance(train_covariance_),
+        sigma_R(sigma_R_), permutation_indices(permutation_indices_),
+        information(information_) {}
+
+  bool operator==(const Fit<SparseGPFit<FeatureType>> &other) const {
+    return (train_features == other.train_features &&
+            train_covariance == other.train_covariance &&
+            sigma_R == other.sigma_R &&
+            permutation_indices == other.permutation_indices &&
+            information == other.information);
+  }
+};
+
 /*
  *  This class implements an approximation technique for Gaussian processes
  * which relies on an assumption that all observations are independent (or
@@ -113,13 +143,11 @@ struct StateSpaceInducingPointStrategy {
  * S is called sigma and A is lambda.)
  *
  *  Of course, the implementation details end up somewhat more complex in order
- * to improve numerical stability.  A few great resources were heavily used to
- * get those deails straight:
+ * to improve numerical stability.  Here we use an approach based off the QR
+ * decomposition which is described in
  *
- *     - https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
- *        (beware, the final formulae are correct but there are typos in
- *         their derivations).
- *     - https://github.com/SheffieldML/GPy see fitc.py
+ *     Stable and Efficient Gaussian Process Calculations
+ *     http://www.jmlr.org/papers/volume10/foster09a/foster09a.pdf
  */
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
@@ -204,10 +232,9 @@ public:
 
   struct SparseGPComponents {
     Eigen::SerializableLDLT K_uu_ldlt;
-    Eigen::MatrixXd P;
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> B_qr;
     BlockDiagonalLDLT A_ldlt;
-    Eigen::MatrixXd RtR;
-    Eigen::SerializableLDLT B_ldlt;
+    Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
   };
 
@@ -217,6 +244,60 @@ public:
                     const std::vector<InducingFeatureType> &inducing_features,
                     const MarginalDistribution &out_of_order_targets) const {
 
+    // Here we do the majority of the pre-computations required to fit the
+    // model, or evaluate the likelihood.
+    //
+    // It starts by setting up the Sparse Gaussian process covariances
+    //
+    //   [f|u] ~ N(K_fu K_uu^-1 u, K_ff - Q_ff)
+    //
+    // We then set,
+    //
+    //   A = K_ff - Q_ff
+    //     = K_ff - K_fu K_uu^-1 K_uf
+    //
+    // which can be thought of as the covariance in the training data which
+    // is cannot be explained by the inducing points.  The fundamental
+    // assumption in these sparse Gaussian processes is that A is sparse, in
+    // this case block diagonal.
+    //
+    // We then build a matrix B and use its QR decomposition (with pivoting P)
+    //
+    //   B = |A^-1/2 K_fu| = |Q_1| R P^T
+    //       |K_uu^{T/2} |   |Q_2|
+    //
+    // After which we can get the information vector (see _fit_impl)
+    //
+    //   v = (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1 y
+    //     = (B^T B) B^T A^-1/2 y
+    //     = P R^-1 Q_1^T A^-1/2 y
+    //
+    // and can make predictions for new locations (see _predict_impl),
+    //
+    //   [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
+    //            ~ N(m, C)
+    //
+    //  where we have
+    //
+    //    m = K_*u S K_uf A^-1 y
+    //      = K_*u v
+    //
+    //  and
+    //
+    //    C = K_** - Q_** + K_*u S K_u*
+    //
+    //  using
+    //
+    //    Q_** = K_*u K_uu^-1 K_u*
+    //         = (K_uu^{-1/2}  K_u*)^T (K_uu^{-1/2}  K_u*)
+    //         = Q_sqrt^T Q_sqrt
+    //  and
+    //
+    //    K_*u S K_u* = K_*u (K_uu + K_uf A^-1 K_fu)^-1   K_u*
+    //                = K_*u (B^T B)^-1 K_u*
+    //                = K_*u (P R R^T P^T)^-1 K_u*
+    //                = (P R^-T K_u*)^T (P R^-T K_u*)
+    //                = S_sqrt^T S_sqrt
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();
 
@@ -242,8 +323,6 @@ public:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    Eigen::Index m = static_cast<Eigen::Index>(inducing_features.size());
-
     const Eigen::MatrixXd K_fu =
         this->covariance_function_(features, inducing_features);
     Eigen::MatrixXd K_uu = this->covariance_function_(inducing_features);
@@ -254,7 +333,7 @@ public:
     const Eigen::SerializableLDLT K_uu_ldlt = K_uu.ldlt();
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
-    //          = K_fu L^-T L^-1 K_uf
+    //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
     //          = P^T P
     const Eigen::MatrixXd P = K_uu_ldlt.sqrt_solve(K_fu.transpose());
 
@@ -277,59 +356,36 @@ public:
           measurement_nugget_.value * Eigen::VectorXd::Ones(b.rows());
     }
 
-    /*
-     * The end goal here is to produce a vector, v, and matrix, C, such that
-     * for a prediction, f*, we can do,
-     *
-     *     [f*|f=y] ~ N(K_*u * v , K_** - K_*u * C^-1 * K_u*)
-     *
-     *  and it would match the desired prediction described above,
-     *
-     *     [f*|f=y] ~ N(K_*u S K_uf^-1 A^-1 y, K_** − Q_** + K_*u S K_u*)
-     *
-     *  we can find v easily,
-     *
-     *     v = S K_uf A^-1 y
-     *
-     *  and to get C we need to do some algebra,
-     *
-     *     K_** - K_*u * C^-1 * K_u* = K_** - Q_** + K_*u S K_u*
-     *                               = K_** - K_*u (K_uu^-1 - S) K_u*
-     *
-     *  which leads to:
-     *
-     *     C^-1 = K_uu^-1 - S
-     *                                                  (Expansion of S)
-     *          = K_uu^-1 - (K_uu + K_uf A^-1 K_fu)^-1
-     *                                        (Woodbury Matrix Identity)
-     *          = (K_uu^-1 K_uf (A + K_fu K_uu^-1 K_uf)^-1 K_fu K_uu^-1)
-     *                                   (LL^T = K_uu and P = L^-1 K_uf)
-     *          = L^-T P (A + P^T P)^-1 P^T L^-1
-     *                                        (Searle Set of Identities)
-     *          = L^-T P A^-1 P^T (I + P A^-1 P^T)^-1 L^-1
-     *                         (B = (I + P A^-1 P^T) and R = A^-1/2 P^T)
-     *          = L^-T R^T R B^-1 L^-1
-     *
-     *  reusing some of the precomputed values there leads to:
-     *
-     *     v = L^-T B^-1 P * A^-1 y
-     */
     const auto A_ldlt = A.ldlt();
-    Eigen::MatrixXd Pt = P.transpose();
-    Eigen::MatrixXd RtR = A_ldlt.sqrt_solve(Pt);
-    RtR = RtR.transpose() * RtR;
-    const Eigen::MatrixXd B = Eigen::MatrixXd::Identity(m, m) + RtR;
 
-    const Eigen::SerializableLDLT B_ldlt(B);
+    Eigen::MatrixXd B(A.rows() + K_uu.rows(), K_uu.rows());
+    B.topRows(A.rows()) = A_ldlt.sqrt_solve(K_fu);
+
+    Eigen::VectorXd diag = K_uu_ldlt.vectorD();
+    for (Eigen::Index i = 0; i < diag.size(); ++i) {
+      if (diag[i] > 0) {
+        diag[i] = std::sqrt(diag[i]);
+      } else {
+        diag[i] = 0.;
+      }
+    }
+
+    B.bottomRows(K_uu.rows()) =
+        diag.asDiagonal() * (K_uu_ldlt.transpositionsP().transpose() *
+                             K_uu_ldlt.matrixL().toDenseMatrix())
+                                .transpose();
 
     SparseGPComponents components = {
-        K_uu_ldlt, P, A_ldlt, RtR, B_ldlt, targets.mean,
+        K_uu_ldlt, B.colPivHouseholderQr(), A_ldlt, K_fu, targets.mean,
     };
 
     return components;
   }
 
-  template <typename FeatureType>
+  template <
+      typename FeatureType,
+      std::enable_if_t<
+          has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
 
@@ -337,35 +393,103 @@ public:
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
 
-    const auto sc = sparse_components(features, u, targets);
+    const SparseGPComponents sc = sparse_components(features, u, targets);
 
-    const Eigen::Index m = sc.K_uu_ldlt.rows();
-    const Eigen::MatrixXd L_uu_inv =
-        sc.K_uu_ldlt.sqrt_solve(Eigen::MatrixXd::Identity(m, m));
-    const Eigen::MatrixXd BiLi = sc.B_ldlt.solve(L_uu_inv);
-    const Eigen::MatrixXd RtRBiLi = sc.RtR * BiLi;
-    Eigen::VectorXd v;
+    Eigen::VectorXd y_augmented =
+        Eigen::VectorXd::Zero(sc.B_qr.matrixR().rows());
     if (Base::use_async_) {
-      v = BiLi.transpose() * sc.P * sc.A_ldlt.async_solve(sc.y);
+      y_augmented.topRows(sc.y.size()) = sc.A_ldlt.async_sqrt_solve(sc.y);
     } else {
-      v = BiLi.transpose() * sc.P * sc.A_ldlt.solve(sc.y);
+      y_augmented.topRows(sc.y.size()) = sc.A_ldlt.sqrt_solve(sc.y);
     }
-    const Eigen::MatrixXd C_inv = sc.K_uu_ldlt.sqrt_transpose_solve(RtRBiLi);
-    DirectInverse solver(C_inv);
+    const Eigen::VectorXd v = sc.B_qr.solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
-    return Fit<GPFit<DirectInverse, InducingPointFeatureType>>(u, solver, v);
+
+    using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
+    const FitType fit(u, sc.K_uu_ldlt, get_R(sc.B_qr),
+                      sc.B_qr.colsPermutation().indices(), v);
+
+    return fit;
+  }
+
+  // This is included to allow the SparseGP to be compatible with fits
+  // generated using a standard GP (ie things like fit_from_prediction)
+  using Base::_predict_impl;
+
+  template <typename FeatureType, typename FitFeaturetype>
+  Eigen::VectorXd
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<Eigen::VectorXd> &&) const {
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
+    Eigen::VectorXd mean =
+        gp_mean_prediction(cross_cov, sparse_gp_fit.information);
+    this->mean_function_.add_to(features, &mean);
+    return mean;
+  }
+
+  template <typename FeatureType, typename FitFeaturetype>
+  MarginalDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<MarginalDistribution> &&) const {
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
+    Eigen::VectorXd mean =
+        gp_mean_prediction(cross_cov, sparse_gp_fit.information);
+    this->mean_function_.add_to(features, &mean);
+
+    Eigen::VectorXd marginal_variance(
+        static_cast<Eigen::Index>(features.size()));
+    for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
+      marginal_variance[i] = covariance_function_(features[i], features[i]);
+    }
+
+    const Eigen::MatrixXd Q_sqrt =
+        sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
+    marginal_variance -= Q_sqrt.cwiseProduct(cross_cov).array().colwise().sum();
+
+    const Eigen::MatrixXd S_sqrt = sqrt_solve(
+        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    marginal_variance += S_sqrt.cwiseProduct(cross_cov).array().colwise().sum();
+
+    return MarginalDistribution(mean, marginal_variance);
+  }
+
+  template <typename FeatureType, typename FitFeaturetype>
+  JointDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<JointDistribution> &&) const {
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
+    const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
+
+    const Eigen::MatrixXd S_sqrt = sqrt_solve(
+        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+
+    const Eigen::MatrixXd Q_sqrt =
+        sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
+
+    Eigen::MatrixXd covariance = prior_cov - Q_sqrt.transpose() * Q_sqrt;
+    covariance += S_sqrt.transpose() * S_sqrt;
+
+    JointDistribution pred(cross_cov.transpose() * sparse_gp_fit.information,
+                           covariance);
+
+    this->mean_function_.add_to(features, &pred.mean);
+    return pred;
   }
 
   template <typename FeatureType>
   double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
-
     const auto u =
         inducing_point_strategy_(this->covariance_function_, dataset.features);
 
     const SparseGPComponents sc =
         sparse_components(dataset.features, u, dataset.targets);
-
     // The log likelihood for y ~ N(0, K) is:
     //
     //   L = 1/2 (n log(2 pi) + log(|K|) + y^T K^-1 y)
@@ -379,41 +503,40 @@ public:
     //
     //   |K| = |A + Q_ff|
     //       = |K_uu + K_uf A^-1 K_fu| |K_uu^-1| |A|
-    //       = |LL^T + K_uf A^-1 K_fu| |L^-T L^-1| |A|
-    //       = |L^-1| |LL^T + K_uf A^-1 K_fu| |L^-T| |A|
-    //       = |I + L^-1 K_uf A^-1 K_fu L^-T| |A|
-    //       = |I + P A^-1 P^T| |A|
-    //       = |B| |A|
+    //       = |P R^T Q^T Q R P^T| |K_uu^-1| |A|
+    //       = |R^T R| |K_uu^-1| |A|
+    //       = |R|^2 |A| / |K_uu|
     //
-    // which is derived here:
-    //   https://bwengals.github.io/pymc3-fitcvfe-implementation-notes.html
-    // though as of Jan 2020 there are typos in the derivation.
+    // Where the first equality comes from the matrix determinant lemma.
+    // https://en.wikipedia.org/wiki/Matrix_determinant_lemma#Generalization
+    //
+    // After which we can take the log:
+    //
+    //   log(|K|) = 2 log(|R|) + log(|A|) - log(|K_uu|)
+    //
+    const double log_det_a = sc.A_ldlt.log_determinant();
 
-    double log_det_a = sc.A_ldlt.log_determinant();
-    const double log_det_b = sc.B_ldlt.vectorD().array().log().sum();
-    const double log_det = log_det_a + log_det_b;
+    const double log_det_r =
+        sc.B_qr.matrixR().diagonal().array().cwiseAbs().log().sum();
+    const double log_det_K_uu = sc.K_uu_ldlt.log_determinant();
+    const double log_det = log_det_a + 2 * log_det_r - log_det_K_uu;
 
-    // Then we need the Mahalanobis distance. To do so we'll draw heavily
-    // on some of the definitions used early in this module.
+    // q = y^T K^-1 y
+    //   = y^T (A + Q_ff)^-1 y
+    //   = y^T (A^-1 - A^-1 K_fu (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1) y
+    //   = y^T A^-1 y - y^T A^-1 K_fu (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1) y
+    //   = y^T A^-1 y - y^T A^-1 K_fu (R^T R)^-1 K_uf A^-1) y
+    //   = y^T A^-1 y - (R^-T K_uf A^-1 y)^T (R^-T K_uf A^-1 y)
+    //   = y^T y_a - y_b^T y_b
     //
-    //   d = y^T K^-1 y
-    //     = y^T (A + Q_ff)^-1 y
-    //     = y^T (A^-1 + A^-1 K_fu S^-1 K_uf A^-1) y
-    //         with S = K_uu + K_uf A^-1 K_fu  (woodbury identity)
-    //     = y^T (A^-1 + A^-1 P^T B^-1 P A^-1) y
-    //     = y^T A^-1 y + y^T A^-1 P^T B^-1 P A^-1 y
-    //     = y^T (A^-1 y) + (B^{-1/2} P A^-1 y)^T (B^{-1/2} P A^-1 y)
-    //     = y^T y_a + c^T c
-    //
-    // with
-    //
-    //   y_a = A^-1 y   and  c = B^{-1/2} P y_a
+    // with y_b = R^-T K_uf y_a
+    const Eigen::VectorXd y_a = sc.A_ldlt.solve(sc.y);
 
-    Eigen::VectorXd y_a = sc.A_ldlt.solve(sc.y);
-    Eigen::VectorXd c = sc.B_ldlt.sqrt_solve((sc.P * y_a).eval());
+    Eigen::VectorXd y_b = sc.K_fu.transpose() * y_a;
+    y_b = sqrt_solve(sc.B_qr, y_b);
 
     double log_quadratic = sc.y.transpose() * y_a;
-    log_quadratic -= c.transpose() * c;
+    log_quadratic -= y_b.transpose() * y_b;
 
     const double rank = static_cast<double>(sc.y.size());
     const double log_dimension = rank * log(2 * M_PI);
