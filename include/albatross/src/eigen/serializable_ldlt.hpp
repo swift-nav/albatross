@@ -15,6 +15,7 @@
 
 namespace Eigen {
 
+// See LDLT.h in Eigen for a detailed description of the decomposition
 class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
   SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
@@ -52,20 +53,66 @@ public:
 
   bool is_initialized() const { return this->m_isInitialized; }
 
-  template <class Rhs>
-  Eigen::MatrixXd sqrt_solve(const MatrixBase<Rhs> &rhs) const {
-    Eigen::MatrixXd output = this->transpositionsP() * rhs;
-    output = this->matrixL().solve(output);
-    const auto sqrt_diag = this->vectorD().array().sqrt().matrix().asDiagonal();
-    return this->transpositionsP().transpose() * (sqrt_diag.inverse() * output);
+  /*
+   * Computes the inverse of the square root of the diagonal, D^{-1/2}
+   */
+  Eigen::DiagonalMatrix<double, Eigen::Dynamic> diagonal_sqrt_inverse() const {
+    Eigen::VectorXd thresholded_diag_sqrt_inverse(this->vectorD());
+    for (Eigen::Index i = 0; i < thresholded_diag_sqrt_inverse.size(); ++i) {
+      if (thresholded_diag_sqrt_inverse[i] > 0.) {
+        thresholded_diag_sqrt_inverse[i] =
+            1. / std::sqrt(thresholded_diag_sqrt_inverse[i]);
+      } else {
+        thresholded_diag_sqrt_inverse[i] = 0.;
+      }
+    }
+    return thresholded_diag_sqrt_inverse.asDiagonal();
   }
 
+  /*
+   * Computes the square root of the diagonal, D^{1/2}
+   */
+  Eigen::DiagonalMatrix<double, Eigen::Dynamic> diagonal_sqrt() const {
+    Eigen::VectorXd thresholded_diag = this->vectorD();
+    for (Eigen::Index i = 0; i < thresholded_diag.size(); ++i) {
+      if (thresholded_diag[i] > 0.) {
+        thresholded_diag[i] = std::sqrt(thresholded_diag[i]);
+      } else {
+        thresholded_diag[i] = 0.;
+      }
+    }
+    return thresholded_diag.asDiagonal();
+  }
+
+  /*
+   * Computes the product of the square root of A with rhs,
+   *   P^T L D^{1/2} rhs
+   */
+  template <class Rhs>
+  Eigen::MatrixXd sqrt_product(const MatrixBase<Rhs> &rhs) const {
+    return this->transpositionsP().transpose() *
+           (this->matrixL() * (diagonal_sqrt() * rhs));
+  }
+
+  /*
+   * Computes the product of the square root of A with rhs,
+   *   D^{-1/2} L^-1 P rhs
+   */
+  template <class Rhs>
+  Eigen::MatrixXd sqrt_solve(const MatrixBase<Rhs> &rhs) const {
+    return diagonal_sqrt_inverse() *
+           this->matrixL().solve(this->transpositionsP() * rhs);
+  }
+
+  /*
+   * Computes the product of the square root of A with rhs,
+   *   P^T L^-T D^{-1/2} rhs
+   */
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   sqrt_transpose_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-    const auto sqrt_diag = this->vectorD().array().sqrt().matrix().asDiagonal();
     return this->transpositionsP().transpose() *
-           (this->matrixL().transpose().solve(sqrt_diag.inverse() * rhs));
+           (this->matrixL().transpose().solve(diagonal_sqrt_inverse() * rhs));
   }
 
   double log_determinant() const {
@@ -79,7 +126,6 @@ public:
 
   std::vector<Eigen::MatrixXd>
   inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
-
     /*
      * The LDLT decomposition is stored such that,
      *
@@ -103,10 +149,7 @@ public:
     this->matrixL().solveInPlace(inverse_cholesky);
 
     // D^-1/2 L^-1 P
-    const auto sqrt_diag =
-        this->vectorD().array().sqrt().inverse().matrix().asDiagonal();
-
-    inverse_cholesky = sqrt_diag * inverse_cholesky;
+    inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
 
     assert(!inverse_cholesky.hasNaN());
 
