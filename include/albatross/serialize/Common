@@ -13,6 +13,8 @@
 #ifndef ALBATROSS_SERIALIZE_COMMON_H
 #define ALBATROSS_SERIALIZE_COMMON_H
 
+#include <albatross/Common>
+
 #include <cereal/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>

@@ -15,6 +15,8 @@
 
 #include "Common"
 
+#include <albatross/Core>
+
 #include "../src/cereal/dataset.hpp"
 #include "../src/cereal/distribution.hpp"
 #include "../src/cereal/fit_model.hpp"

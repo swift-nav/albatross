@@ -14,6 +14,7 @@
 #define ALBATROSS_SPARSE_GP_H
 
 #include "GP"
+#include "utils/LinalgUtils"
 
 #include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/utils/eigen_utils.hpp>

@@ -16,6 +16,7 @@
 using albatross::Fit;
 using albatross::GaussianProcessBase;
 using albatross::GPFit;
+using albatross::SparseGPFit;
 
 #ifndef GP_SERIALIZATION_VERSION
 #define GP_SERIALIZATION_VERSION 1
@@ -31,6 +32,16 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_ldlt", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
+}
+
+template <typename Archive, typename FeatureType>
+inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("information", fit.information));
+  archive(cereal::make_nvp("train_covariance", fit.train_covariance));
+  archive(cereal::make_nvp("train_features", fit.train_features));
+  archive(cereal::make_nvp("sigma_R", fit.sigma_R));
+  archive(cereal::make_nvp("permutation_indices", fit.permutation_indices));
 }
 
 template <typename Archive, typename CovFunc, typename MeanFunc,
