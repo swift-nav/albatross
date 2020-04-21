@@ -38,7 +38,7 @@ Where :math:`K_{ff}` is the covariance function evaluated at all the training lo
 
 Where :math:`Q_{ff} = K_{fu} K_{uu}^{-1} K_{uf}` represents the variance in :math:`f` that is explained by :math:`u`.
 
-For FITC (Fully Independent Training Contitional) the assumption is that :math:`K_{ff} - Q_{ff}` is diagonal, for PITC (Partially Independent Training Conditional) that it is block diagonal.  These assumptions lead to an efficient way of inferring the posterior distribution for some new location :math:`f^*`,
+For FITC (Fully Independent Training Conditional) the assumption is that :math:`K_{ff} - Q_{ff}` is diagonal, for PITC (Partially Independent Training Conditional) that it is block diagonal.  These assumptions lead to an efficient way of inferring the posterior distribution for some new location :math:`f^*`,
 
 .. math::
 
@@ -92,7 +92,7 @@ Where :math:`v = \left(B^T B\right) B^T \Lambda^{-1/2} y` is the information vec
 	
 	    \left\lVert B v - \begin{bmatrix}\Lambda^{-1/2} y \\ 0 \end{bmatrix} \right\rVert
 
-Instead we can then compute the QR decomposition of :math:`B` which, when using a column pivoting scheme gives :math:`B = QRP^T`.  In its full form the QR decomposition of :math:`B \in \mathbb{R}^{k, m}` consists of the orthonormal matrix :math:`Q \in \mathbb{R}^{k, m}`, the upper triangular matrix :math:`R \in \mathbb{R}^{m, m}` and a permutation matrix :math:`P \in \mathbb{R}^{m, m}` which, by recognizing that the lower portion of the right hand side in our least squares problem is zero, can be broken into parts and used to solve for :math:`v`,
+We can then compute the QR decomposition of :math:`B` which, when using a column pivoting scheme gives :math:`B = QRP^T`.  In its full form the QR decomposition of :math:`B \in \mathbb{R}^{k, m}` consists of the orthonormal matrix :math:`Q \in \mathbb{R}^{k, m}`, the upper triangular matrix :math:`R \in \mathbb{R}^{m, m}` and a permutation matrix :math:`P \in \mathbb{R}^{m, m}` which, by recognizing that the lower portion of the right hand side in our least squares problem is zero, can be broken into parts and used to solve for :math:`v`,
 
 .. math::
 	
@@ -181,4 +181,6 @@ The first implementation of the Sparse Gaussiance process in albatross used an a
   - https://github.com/SheffieldML/GPy/blob/devel/GPy/inference/latent_function_inference/fitc.py
 
 However, we found that while the posterior mean predictions were numerically stable, the posterior covariance term could not be broken into inner products which resulted in asymmetric covariance matrices which subsequently led to severe instability downstream.
+
+You should be able to find this implementation and details using git history.
 
