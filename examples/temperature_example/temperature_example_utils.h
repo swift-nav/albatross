@@ -97,14 +97,14 @@ read_temperature_csv_input(const std::string &file_path, int thin = 5) {
   bool more_to_parse = true;
   int count = 0;
   while (more_to_parse) {
-    double temperature;
+    std::string temperature;
     Station station;
     more_to_parse = file_in.read_row(
         station.id, station.lat, station.lon, station.height, station.ecef[0],
         station.ecef[1], station.ecef[2], temperature);
     if (more_to_parse && count % thin == 0) {
       features.push_back(station);
-      targets.push_back(temperature);
+      targets.push_back(atof(temperature.c_str()));
     }
     count++;
   }
