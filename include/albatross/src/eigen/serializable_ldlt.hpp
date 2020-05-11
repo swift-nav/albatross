@@ -20,26 +20,16 @@ class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
   SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
 
-  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()) {
-    assert_valid();
-  };
+  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()){};
 
   SerializableLDLT(const LDLT<MatrixXd, Lower> &ldlt)
       // Can we get around copying here?
-      : LDLT<MatrixXd, Lower>(ldlt) {
-    assert_valid();
-  };
+      : LDLT<MatrixXd, Lower>(ldlt){};
 
   SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
-      : LDLT<MatrixXd, Lower>(std::move(ldlt)) {
-    assert_valid();
-  };
+      : LDLT<MatrixXd, Lower>(std::move(ldlt)){};
 
-  void assert_valid() const {
-    if (this->vectorD().minCoeff() <= 0.) {
-      assert(false && "Attempt to compute LDLT of a non PSD matrix");
-    }
-  }
+  void is_valid() const { return this->vectorD().minCoeff() > 0.; }
 
   LDLT<MatrixXd, Lower>::TranspositionType &mutable_transpositions() {
     return this->m_transpositions;
