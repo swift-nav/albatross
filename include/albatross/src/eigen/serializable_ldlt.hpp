@@ -29,8 +29,6 @@ public:
   SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
       : LDLT<MatrixXd, Lower>(std::move(ldlt)){};
 
-  void is_valid() const { return this->vectorD().minCoeff() > 0.; }
-
   LDLT<MatrixXd, Lower>::TranspositionType &mutable_transpositions() {
     return this->m_transpositions;
   }
