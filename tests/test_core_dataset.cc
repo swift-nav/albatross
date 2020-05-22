@@ -30,6 +30,19 @@ TEST(test_dataset, test_construct_and_subset) {
   EXPECT_EQ(subset_dataset.size(), indices.size());
 }
 
+TEST(test_dataset, test_deduplicate) {
+  std::vector<int> features = {0, 1, 1, 2};
+  Eigen::VectorXd targets = Eigen::VectorXd::Random(features.size());
+  RegressionDataset<int> dataset(features, targets);
+
+  const auto dedupped = deduplicate(dataset);
+
+  const std::vector<std::size_t> expected_inds = {0, 1, 3};
+
+  EXPECT_EQ(dedupped, albatross::subset(dataset, expected_inds));
+  EXPECT_EQ(dedupped, deduplicate(dedupped));
+}
+
 void expect_split_recombine(const RegressionDataset<int> &dataset) {
   std::vector<std::size_t> first_indices = {0, 1};
   const auto first = subset(dataset, first_indices);
