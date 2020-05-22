@@ -37,7 +37,7 @@ TEST(test_dataset, test_deduplicate) {
 
   const auto dedupped = deduplicate(dataset);
 
-  const std::vector<std::size_t> expected_inds = {0, 1, 3};
+  const std::vector<std::size_t> expected_inds = {0, 2, 3};
 
   EXPECT_EQ(dedupped, albatross::subset(dataset, expected_inds));
   EXPECT_EQ(dedupped, deduplicate(dedupped));

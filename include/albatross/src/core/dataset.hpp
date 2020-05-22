@@ -76,18 +76,18 @@ subset(const RegressionDataset<FeatureType> &dataset,
 template <typename FeatureType>
 RegressionDataset<FeatureType>
 deduplicate(const RegressionDataset<FeatureType> &dataset) {
-  auto is_unique = [&](std::size_t index) -> bool {
+  auto appears_later = [&](std::size_t index) -> bool {
     for (std::size_t j = index + 1; j < dataset.features.size(); ++j) {
       if (dataset.features[index] == dataset.features[j]) {
-        return false;
+        return true;
       }
     }
-    return true;
+    return false;
   };
 
   std::vector<std::size_t> unique_inds;
   for (std::size_t i = 0; i < dataset.size(); ++i) {
-    if (is_unique(i)) {
+    if (!appears_later(i)) {
       unique_inds.push_back(i);
     }
   }
