@@ -99,22 +99,14 @@ public:
   }
 
   // The key corresponding to the minimum value
-  KeyType min_key() const {
-    return min().first;
-  }
+  KeyType min_key() const { return min().first; }
 
   // The key corresponding to the maximum value
-  KeyType max_value() const {
-    return max().first;
-  }
+  KeyType max_key() const { return max().first; }
 
-  ValueType min_value() const {
-    return min().second;
-  }
+  ValueType min_value() const { return min().second; }
 
-  ValueType max_value() const {
-    return max().second;
-  }
+  ValueType max_value() const { return max().second; }
 
   /*
    * Filtering a Grouped object consists of deciding which of the

@@ -84,13 +84,15 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
     std::vector<std::size_t> sorted_idx(vector.size());
     std::iota(sorted_idx.begin(), sorted_idx.end(), 0);
     std::sort(sorted_idx.begin(), sorted_idx.end(),
-         [&vector](std::size_t ii, std::size_t jj) {return fabs(vector[ii]) > fabs(vector[jj]);});
+              [&vector](std::size_t ii, std::size_t jj) {
+                return fabs(vector[ii]) > fabs(vector[jj]);
+              });
 
-    for (Eigen::Index j = 0; j < sorted_idx.size(); ++j) {
+    for (std::size_t j = 0; j < sorted_idx.size(); ++j) {
       double coef = vector[sorted_idx[j]];
       if (fabs(coef) > print_if_above) {
-        (*stream) << "    " << std::setw(12) << coef << "   " << features[sorted_idx[j]]
-                  << std::endl;
+        (*stream) << "    " << std::setw(12) << coef << "   "
+                  << features[sorted_idx[j]] << std::endl;
       }
     }
   }
