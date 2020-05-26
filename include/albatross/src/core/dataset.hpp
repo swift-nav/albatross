@@ -73,6 +73,28 @@ subset(const RegressionDataset<FeatureType> &dataset,
                                         subset(dataset.targets, indices));
 }
 
+template <typename FeatureType>
+RegressionDataset<FeatureType>
+deduplicate(const RegressionDataset<FeatureType> &dataset) {
+  auto appears_later = [&](std::size_t index) -> bool {
+    for (std::size_t j = index + 1; j < dataset.features.size(); ++j) {
+      if (dataset.features[index] == dataset.features[j]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  std::vector<std::size_t> unique_inds;
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    if (!appears_later(i)) {
+      unique_inds.push_back(i);
+    }
+  }
+
+  return albatross::subset(dataset, unique_inds);
+}
+
 template <typename X>
 inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<X> &y) {

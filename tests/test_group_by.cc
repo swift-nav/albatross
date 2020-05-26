@@ -524,6 +524,20 @@ TEST(test_groupby, test_group_by_sum_mean) {
   EXPECT_EQ(expected_sum, means.sum());
 }
 
+TEST(test_groupby, test_group_by_min_max) {
+
+  Grouped<std::string, int> example;
+  example["one"] = 1;
+  example["two"] = 2;
+  example["negative"] = -5;
+  example["large"] = 7;
+
+  EXPECT_EQ(example.max_value(), 7);
+  EXPECT_EQ(example.max_key(), "large");
+  EXPECT_EQ(example.min_value(), -5);
+  EXPECT_EQ(example.min_key(), "negative");
+}
+
 TEST(test_groupby, test_group_by_any_all) {
 
   const auto fib = fibonacci(20);

@@ -82,19 +82,31 @@ public:
 
   ValueType first_value() const { return map_.begin()->first; }
 
-  auto min_value() const {
+  // The min entry based on the values
+  auto min() const {
     const auto value_compare = [](const auto &x, const auto &y) {
       return x.second < y.second;
     };
-    return std::min_element(begin(), end(), value_compare)->second;
+    return *std::min_element(begin(), end(), value_compare);
   }
 
-  auto max_value() const {
+  // The max entry based on the values
+  auto max() const {
     const auto value_compare = [](const auto &x, const auto &y) {
       return x.second < y.second;
     };
-    return std::max_element(begin(), end(), value_compare)->second;
+    return *std::max_element(begin(), end(), value_compare);
   }
+
+  // The key corresponding to the minimum value
+  KeyType min_key() const { return min().first; }
+
+  // The key corresponding to the maximum value
+  KeyType max_key() const { return max().first; }
+
+  ValueType min_value() const { return min().second; }
+
+  ValueType max_value() const { return max().second; }
 
   /*
    * Filtering a Grouped object consists of deciding which of the

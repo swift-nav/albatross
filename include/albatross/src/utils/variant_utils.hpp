@@ -85,6 +85,27 @@ extract_from_variants(const std::vector<variant<VariantTypes...>> &xs,
   return output;
 }
 
+template <
+    typename OutputType, typename... VariantTypes,
+    std::enable_if_t<is_in_variant<OutputType, variant<VariantTypes...>>::value,
+                     int> = 0>
+inline RegressionDataset<OutputType> extract_from_variants(
+    const RegressionDataset<variant<VariantTypes...>> &dataset,
+    details::ToVariantIdentity<OutputType> && = {}) {
+  std::vector<std::size_t> indices;
+  std::vector<OutputType> features;
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    dataset.features[i].match(
+        [&](const OutputType &f) {
+          indices.emplace_back(i);
+          features.emplace_back(f);
+        },
+        [](const auto &) {});
+  }
+  return RegressionDataset<OutputType>(features,
+                                       subset(dataset.targets, indices));
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_UTILS_VARIANT_UTILS_HPP_ */

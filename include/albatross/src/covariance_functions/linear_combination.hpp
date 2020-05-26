@@ -33,6 +33,10 @@ template <typename X> struct LinearCombination {
     assert(values_.size() == static_cast<std::size_t>(coefficients_.size()));
   };
 
+  bool operator==(const LinearCombination &other) const {
+    return values == other.values && coefficients == other.coefficients;
+  }
+
   std::vector<X> values;
   Eigen::VectorXd coefficients;
 };
