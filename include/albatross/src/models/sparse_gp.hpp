@@ -392,6 +392,7 @@ public:
     // Determine the set of inducing points, u.
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
+    assert(u.size() > 0 && "Empty inducing points!");
 
     const SparseGPComponents sc = sparse_components(features, u, targets);
 
