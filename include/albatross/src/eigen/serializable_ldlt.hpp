@@ -29,6 +29,8 @@ public:
   SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
       : LDLT<MatrixXd, Lower>(std::move(ldlt)){};
 
+  bool is_positive_definite() const { return this->vectorD().minCoeff() > 0.; }
+
   LDLT<MatrixXd, Lower>::TranspositionType &mutable_transpositions() {
     return this->m_transpositions;
   }
@@ -90,6 +92,12 @@ public:
   Eigen::MatrixXd sqrt_solve(const MatrixBase<Rhs> &rhs) const {
     return diagonal_sqrt_inverse() *
            this->matrixL().solve(this->transpositionsP() * rhs);
+  }
+
+  Eigen::MatrixXd sqrt_transpose() const {
+    return this->diagonal_sqrt() * (this->transpositionsP().transpose() *
+                                    this->matrixL().toDenseMatrix())
+                                       .transpose();
   }
 
   /*
