@@ -158,9 +158,17 @@ TEST(test_gp, test_update_model_trait) {
   const auto dataset = test_unobservable_dataset();
 
   auto model = test_unobservable_model();
+  auto fit_model = model.fit(dataset);
 
-  using FitModelType = typename fit_model_type<decltype(model), double>::type;
-  using UpdatedFitType = typename updated_fit_type<FitModelType, int>::type;
+  std::vector<int> int_features;
+  for (int i = 0; i < static_cast<int>(dataset.features.size()); ++i) {
+    int_features.push_back(i);
+  }
+  RegressionDataset<int> int_dataset(int_features, dataset.targets);
+
+  auto updated_fit = fit_model.update(int_dataset);
+
+  using UpdatedFitType = decltype(updated_fit);
   using ExpectedType =
       FitModel<decltype(model),
                Fit<GPFit<BlockSymmetric<Eigen::SerializableLDLT>,

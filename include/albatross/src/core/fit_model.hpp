@@ -58,6 +58,39 @@ public:
     return predict(measurements);
   }
 
+  template <
+      typename FeatureType,
+      typename std::enable_if<
+          has_valid_update<ModelType, Fit, FeatureType>::value, int>::type = 0>
+  auto update(const std::vector<FeatureType> &features,
+              const MarginalDistribution &targets) const {
+    auto updated_fit = model_._update_impl(fit_, features, targets);
+    return FitModel<ModelType, decltype(updated_fit)>(model_,
+                                                      std::move(updated_fit));
+  }
+
+  template <
+      typename FeatureType,
+      typename std::enable_if<
+          has_valid_update<ModelType, Fit, FeatureType>::value, int>::type = 0>
+  auto update(const RegressionDataset<FeatureType> &dataset) const {
+    return update(dataset.features, dataset.targets);
+  }
+
+  template <typename FeatureType,
+            typename std::enable_if<
+                can_update_in_place<ModelType, Fit, FeatureType>::value,
+                int>::type = 0>
+  void update_in_place(const std::vector<FeatureType> &features,
+                       const MarginalDistribution &targets) {
+    fit_ = model_._update_impl(fit_, features, targets);
+  }
+
+  template <typename FeatureType>
+  void update_in_place(const RegressionDataset<FeatureType> &dataset) {
+    update_in_place(dataset.features, dataset.targets);
+  }
+
   Fit get_fit() const { return fit_; }
 
   Fit &get_fit() { return fit_; }
@@ -74,5 +107,12 @@ private:
   ModelType model_;
   Fit fit_;
 };
+
+template <typename ModelType, typename FitType, typename FeatureType>
+auto update(const FitModel<ModelType, FitType> &fit_model,
+            const RegressionDataset<FeatureType> &dataset) {
+  return fit_model.update(dataset);
+}
+
 } // namespace albatross
 #endif

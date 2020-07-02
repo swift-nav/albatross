@@ -383,6 +383,38 @@ public:
           FeatureType,
           "CovFunc is not defined for FeatureType and FitFeatureType");
 
+  template <typename Solver, typename FeatureType, typename UpdateFeatureType>
+  auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit,
+                    const std::vector<UpdateFeatureType> &features,
+                    const MarginalDistribution &targets) const {
+
+    const auto new_features = concatenate(fit.train_features, features);
+
+    auto pred = this->_predict_impl(features, fit,
+                                    PredictTypeIdentity<JointDistribution>());
+
+    Eigen::VectorXd delta = targets.mean - pred.mean;
+    pred.covariance += targets.covariance;
+    const auto S_ldlt = pred.covariance.ldlt();
+
+    const Eigen::MatrixXd cross =
+        covariance_function_(fit.train_features, features);
+
+    const auto new_covariance =
+        build_block_symmetric(fit.train_covariance, cross, S_ldlt);
+
+    const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
+
+    Eigen::VectorXd new_information(new_covariance.rows());
+    new_information.topRows(fit.train_covariance.rows()) =
+        fit.information - new_covariance.Ai_B * Si_delta;
+    new_information.bottomRows(S_ldlt.rows()) = Si_delta;
+
+    using NewFeatureType = typename decltype(new_features)::value_type;
+    using NewFitType = Fit<GPFit<BlockSymmetric<Solver>, NewFeatureType>>;
+    return NewFitType(new_features, new_covariance, new_information);
+  }
+
   CovFunc get_covariance() const { return covariance_function_; }
 
   MeanFunc get_mean() const { return mean_function_; };
@@ -584,42 +616,6 @@ struct GaussianProcessNegativeLogLikelihood {
     return -model.log_likelihood(dataset);
   }
 };
-
-template <typename ModelType, typename Solver, typename FeatureType,
-          typename UpdateFeatureType>
-auto update(
-    const FitModel<ModelType, Fit<GPFit<Solver, FeatureType>>> &fit_model,
-    const RegressionDataset<UpdateFeatureType> &dataset) {
-
-  const auto fit = fit_model.get_fit();
-  const auto new_features = concatenate(fit.train_features, dataset.features);
-
-  auto pred = fit_model.predict(dataset.features).joint();
-
-  Eigen::VectorXd delta = dataset.targets.mean - pred.mean;
-  pred.covariance += dataset.targets.covariance;
-  const auto S_ldlt = pred.covariance.ldlt();
-
-  const auto model = fit_model.get_model();
-  const Eigen::MatrixXd cross =
-      model.get_covariance()(fit.train_features, dataset.features);
-
-  const auto new_covariance =
-      build_block_symmetric(fit.train_covariance, cross, S_ldlt);
-
-  const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
-
-  Eigen::VectorXd new_information(new_covariance.rows());
-  new_information.topRows(fit.train_covariance.rows()) =
-      fit.information - new_covariance.Ai_B * Si_delta;
-  new_information.bottomRows(S_ldlt.rows()) = Si_delta;
-
-  using NewFeatureType = typename decltype(new_features)::value_type;
-  using NewFitType = Fit<GPFit<BlockSymmetric<Solver>, NewFeatureType>>;
-
-  return FitModel<ModelType, NewFitType>(
-      model, NewFitType(new_features, new_covariance, new_information));
-}
 
 } // namespace albatross
 
