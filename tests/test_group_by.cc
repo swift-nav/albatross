@@ -440,11 +440,16 @@ TEST(test_groupby, test_group_by_first_group) {
 
   const auto fib = fibonacci(20);
 
-  const auto first_group = group_by(fib, number_of_digits).first_group();
+  const auto grouped = group_by(fib, number_of_digits);
+  const auto first_group = grouped.first_group();
 
   for (const auto &value : first_group.second) {
     EXPECT_EQ(number_of_digits(value), first_group.first);
   }
+
+  const auto groups = grouped.groups();
+  EXPECT_EQ(groups.first_group(), first_group);
+  EXPECT_EQ(groups.first_value(), first_group.second);
 }
 
 TEST(test_groupby, test_group_by_get_group) {

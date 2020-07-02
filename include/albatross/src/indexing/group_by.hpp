@@ -80,7 +80,7 @@ public:
 
   std::pair<KeyType, ValueType> first_group() const { return *map_.begin(); }
 
-  ValueType first_value() const { return map_.begin()->first; }
+  ValueType first_value() const { return map_.begin()->second; }
 
   // The min entry based on the values
   auto min() const {

@@ -337,4 +337,53 @@ TEST(test_traits_core, test_eigen_expressions) {
   EXPECT_FALSE(bool(is_eigen_xpr<LDLTType>::value));
 }
 
+class HasValidUpdateImpl : public ModelBase<HasValidUpdateImpl> {
+public:
+  Fit<HasValidUpdateImpl> _update_impl(const Fit<HasValidUpdateImpl> &,
+                                       const std::vector<X> &,
+                                       const MarginalDistribution &) const {
+    return {};
+  };
+};
+
+class HasInValidUpdateImpl : public ModelBase<HasValidUpdateImpl> {
+public:
+  double _update_impl(const Fit<HasValidUpdateImpl> &, const std::vector<X> &,
+                      const MarginalDistribution &) const {
+    return 0.;
+  };
+};
+
+class HasModifiedUpdateImpl : public ModelBase<HasValidUpdateImpl> {
+public:
+  Fit<X> _update_impl(const Fit<HasModifiedUpdateImpl> &,
+                      const std::vector<X> &,
+                      const MarginalDistribution &) const {
+    return {};
+  };
+};
+
+TEST(test_traits_core, update_traits) {
+  EXPECT_TRUE(
+      bool(fit_model_update_traits<HasValidUpdateImpl, Fit<HasValidUpdateImpl>,
+                                   X>::has_valid_update));
+  EXPECT_TRUE(
+      bool(fit_model_update_traits<HasValidUpdateImpl, Fit<HasValidUpdateImpl>,
+                                   X>::can_update_in_place));
+
+  EXPECT_FALSE(bool(
+      fit_model_update_traits<HasInValidUpdateImpl, Fit<HasValidUpdateImpl>,
+                              X>::has_valid_update));
+  EXPECT_FALSE(bool(
+      fit_model_update_traits<HasInValidUpdateImpl, Fit<HasValidUpdateImpl>,
+                              X>::can_update_in_place));
+
+  EXPECT_TRUE(bool(
+      fit_model_update_traits<HasModifiedUpdateImpl, Fit<HasModifiedUpdateImpl>,
+                              X>::has_valid_update));
+  EXPECT_FALSE(bool(
+      fit_model_update_traits<HasModifiedUpdateImpl, Fit<HasModifiedUpdateImpl>,
+                              X>::can_update_in_place));
+}
+
 } // namespace albatross
