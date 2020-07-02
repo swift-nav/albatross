@@ -170,7 +170,161 @@ A prediction can then be made by computing, :math:`V_a = K_{uu}^{-1/2} K_{u*}` a
 .. math::
 	
 	    [f^*|f=y] \sim \mathcal{N}(K_{*u} v, K_{**} - V_a^T V_a + V_b^T V_b)
+
+---------------------
+Adding a Group
+---------------------	
+
+Our implementation of the Sparse Gaussian Process can be efficiently updated with new groups in an online fasion. In otherwords this allows you to do:
+
+.. code-block:: c
+
+        auto fit_model = model.fit(dataset_a);
+        fit_model.update_in_place(dataset_b);
+
+Which will be equivalent to:
+
+.. code-block:: c
+
+        fit_model == model.fit(concatenate_datasets(dataset_a, dataset_b));
+
+There are some papers which describe methods for performing online updates to sparse gaussian processes.  The paper
+
+   [4] Streaming Sparse Gaussian Process Approximations
+   Thang  D  Bui,  Cuong  Nguyen,  and  Richard  E  Turner.
+   https://arxiv.org/abs/1705.07131
+
+describes a way of both adding online observations and updating the inducing points for the the Variational Free Energy (VFE) approach (which is closely related to FITC).
+
+   [4] Online sparse Gaussian process regression using FITC and PITCapproximations
+   Hildo Bijl, Jan-Willem van Wingerden, Thomas B. Sch ̈on, and Michel Ver-haegen.
+   https://hildobijl.com/Downloads/OnlineSparseGP.pdf
+
+describes an approach to performing online updates to FITC and PITC but focuses on rank one updates in which the entire covariance is stored.  Here we describe how to update FITC and PITC with new batches of data.  These batches may contain a single observation (FITC) or a new group (PITC) and are used to update the QR decomposition (rather than the full dense covariances) used in the direct fit.
+
+Consider the situation where we are first given a set of observation :math:`y_a`, fit the model, then want to update the model with new observations :math:`y_b`.  The existing model will consist of, :math:`v_a`, :math:`R_a`, :math:`P_a`, and :math:`L_{uu}` such that:
+
+.. math::
 	
+	    \Sigma_a^{-1} &= \left(K_{uu} + K_{ua} \Lambda_a^{-1} K_{au}\right) \\
+	    &= P_a R_a^T R_a P_a^T \\
+	    v_a &= \Sigma_a K_{ua} \Lambda_{a}^{-1} y_a \\
+	        &= P_a R_a^{-1} Q_a1^T \Lambda_a^{-1/2} y_a \\
+	    K_{uu} &= L_{uu} L_{uu}^T
+	
+
+
+We'll be given a new group in the form of raw observations:
+
+.. math::
+	
+	    y_b \sim \mathcal{N}\left(y_b, \Lambda_b + K_{bu} K_{uu}^{-1} K_{ub}\right)
+
+
+And we wish to produce a new :math:`\hat{v}`, :math:`\hat{R}` and :math:`\hat{P}` which produce the same predictions as we would have gotten if we'd fit to :math:`\hat{y} = \begin{bmatrix} y_a \\ y_b \end{bmatrix}` directly.
+
+To do so we start by explicitly writing out the components we would get with all groups available.  We'll use a hat, :math:`\hat{a}` to indicate quantities which correspond to a full fit.  Starting with :math:`\hat{\Sigma}`,
+
+.. math::
+	
+	    \hat{\Sigma} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} \\
+	    &=\left(K_{uu} +
+	         \begin{bmatrix} K_{ua} & K_{ub} \end{bmatrix}
+	         \begin{bmatrix} \Lambda_a & 0 \\ 0 & \Lambda_b \end{bmatrix}^{-1} \begin{bmatrix} K_{au} \\ K_{bu} \end{bmatrix}
+	       \right)^{-1} \\
+	    &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
+	       \right)^{-1}
+	
+
+
+We can then find a :math:`\hat{B}` such that :math:`\hat{\Sigma} = \left(\hat{B}^T \hat{B}\right)^{-1}` using the same approach as Equation~\ref{eq:B_qr}.  In particular we can see that by setting,
+
+.. math::
+	
+	    \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix}
+	
+
+
+We can then represent :math:`\hat{\Sigma}` by,
+
+.. math::
+	
+	\hat{\Sigma} &= \left(\hat{B}^T \hat{B}\right)^{-1} \\
+	    &=  \left(P_a R_a^T R_a P_a^T + K_{ub} \Lambda_b^{-1} K_{bu}
+	       \right)^{-1}\\
+	    &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
+	       \right)^{-1}
+	
+
+
+We then need to update the existing QR decomposition to get :math:`\hat{P}` and :math:`\hat{R}`,
+
+.. math::
+	
+	    \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix} \\
+	    &= \hat{Q} \hat{R} \hat{P}^T
+	
+
+
+Now we need to figure out how to update the information vector :math:`\hat{v}`.  If we had fit the model all at once the information vector would take the form,
+
+.. math::
+	
+	    \hat{v} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} K_{uf} \hat{\Lambda}^{-1} \hat{y} \\
+	    &= \hat{\Sigma} \begin{bmatrix} K_{ua} \Lambda_a^{-1} & K_{ub} \Lambda_b^{-1} \end{bmatrix} \begin{bmatrix} y_a \\ y_b \end{bmatrix}
+	
+
+
+We'll already have the QR decomposition of :math:`\hat{B}` so we can try to find the :math:`z` such that :math:`\hat{v}` is the solution to the least squares problem, :math:`\left\lVert \hat{B} \hat{v} - z\right\rVert`.  Solving this system gives us,
+
+.. math::
+	
+	    \hat{v} &= \left(\hat{B}^T \hat{B}\right)^{-1} \hat{B}^T z \\
+	    &= \hat{\Sigma} \begin{bmatrix} P_a R_a^T & K_{ub} \Lambda_b^{-1/2} \end{bmatrix} \begin{bmatrix} z_a \\ z_b \end{bmatrix} \\
+	
+
+
+From which we can see that if we set,
+
+.. math::
+	
+	    P_a R_a^T z_a &= K_{ua} \Lambda_a^{-1} y_a \\
+	    &= \Sigma_a^{-1} v_a \\
+	    z_a &= R_a^{-T} P_a^T \Sigma_a^{-1} v_a \\
+	    &= R_a^{-T} P_a^T P_a R_a^T R_a P_a^T v_a \\
+	    &= R_a P_a^T v_a
+	
+
+
+and
+
+.. math::
+	
+	    z_b = \Lambda_b^{-1/2} y_b 
+
+Then the following QR solution will effectively update the information vector,
+
+.. math::
+	
+	    \hat{v} &= \hat{P} \hat{R}^{-1} \hat{Q}^T \begin{bmatrix}R_a P_a^T v_a \\  \Lambda_b^{-1/2} y_b \end{bmatrix}
+	
+
+After an update the only term which changes in the posterior covariance in Equation~\ref{eq:posterior} is the computation of the explained covariance,
+
+.. math::
+	
+	    E_{**} = Q_{**} - K_{*u} \hat{\Sigma} K_{u*}
+
+And since we've already computed :math:`\hat{\Sigma} = \left(\hat{B}^T \hat{B}\right)^{-1}` we don't need to do any further work.
+
+In summary, updating an existing sparse Gaussian process (where any added observations are considered independent of existing ones) can be done by,
+
+- Computing :math:`\Lambda_b^{-1/2}`.
+- Computing (or updating) the QR decomposition, :math:`\hat{Q} \hat{R} \hat{P}^T = \begin{bmatrix}R_a P_a^T \\ \Lambda_b^{-1/2} K_{bu} \end{bmatrix}`.
+- Setting :math:`\hat{v} = \hat{P} \hat{R}^{-1}\hat{Q}^T \begin{bmatrix} R_a P_a^T v_a \\ \Lambda_b^{-1/2} y_b \end{bmatrix}`
+
+Note: As long as the new datasets you add consist of different groups you can continuously update the sparse Gaussian process retaining the same model you'd get if you had fit everything at once.  For FITC (each observation is treated independently) this is always the case, for PITC care needs to be taken that you don't update with a dataset containing groups which overlap with previous updates, the result would be over-confident predictions.
+
 ---------------------
 Alternative Approach
 ---------------------
