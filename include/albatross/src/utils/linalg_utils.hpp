@@ -25,6 +25,9 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
       .template triangularView<Eigen::Upper>();
 }
 
+/*
+ * Computes R^-T P^T rhs given R and P from a ColPivHouseholderQR decomposition.
+ */
 template <typename MatrixType>
 inline Eigen::MatrixXd sqrt_solve(const Eigen::MatrixXd &R,
                                   const Eigen::VectorXi &permutation_indices,
