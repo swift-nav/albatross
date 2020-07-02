@@ -121,24 +121,6 @@ public:
   typedef decltype(test<T>(0)) type;
 };
 
-/*
- * Determines the type of updated_fit in a call along the lines of :
- *
- *   auto fit = model.fit(dataset);
- *   auto updated_fit = update(fit, other_dataset);
- */
-template <typename T, typename FeatureType> class updated_fit_type {
-  template <typename C,
-            typename UpdatedFitType = decltype(
-                update(std::declval<const C>(),
-                       std::declval<const RegressionDataset<FeatureType> &>()))>
-  static UpdatedFitType test(C *);
-  template <typename> static void test(...);
-
-public:
-  typedef decltype(test<T>(0)) type;
-};
-
 DEFINE_CLASS_METHOD_TRAITS(_predict_impl);
 
 template <typename T, typename FeatureType, typename FitType,
@@ -228,6 +210,41 @@ template <typename T> class has_joint {
 
 public:
   static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+// Update traits
+
+template <typename T, typename ExistingFitType, typename FeatureType>
+class fit_model_update_traits {
+
+  template <typename C,
+            typename FitType = decltype(std::declval<const C>()._update_impl(
+                std::declval<const ExistingFitType &>(),
+                std::declval<const std::vector<FeatureType> &>(),
+                std::declval<const MarginalDistribution &>()))>
+  static FitType test(C *);
+  template <typename> static void test(...);
+
+public:
+  using UpdateFitType = decltype(test<T>(0));
+  static constexpr bool has_valid_update =
+      is_valid_fit_type<UpdateFitType>::value;
+  static constexpr bool can_update_in_place =
+      std::is_same<UpdateFitType, ExistingFitType>::value;
+};
+
+template <typename T, typename ExistingFitType, typename FeatureType>
+struct has_valid_update {
+  static constexpr bool value =
+      fit_model_update_traits<T, ExistingFitType,
+                              FeatureType>::has_valid_update;
+};
+
+template <typename T, typename ExistingFitType, typename FeatureType>
+struct can_update_in_place {
+  static constexpr bool value =
+      fit_model_update_traits<T, ExistingFitType,
+                              FeatureType>::can_update_in_place;
 };
 
 } // namespace albatross
