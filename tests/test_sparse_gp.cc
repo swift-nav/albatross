@@ -254,19 +254,16 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
   sparse.set_param(details::measurement_nugget_name(), 1e-12);
 
   auto groups = dataset.group_by(grouper).groups();
-  const std::size_t original_size = groups.size();
+  const std::size_t num_groups = groups.size();
 
   const auto held_out_pair = groups.first_group();
   groups.erase(held_out_pair.first);
 
-  ASSERT_LT(groups.size(), original_size);
+  ASSERT_EQ(groups.size(), num_groups - 1);
 
   const auto partial_dataset = groups.combine();
 
-  const auto full_dataset =
-      albatross::concatenate_datasets(partial_dataset, held_out_pair.second);
-
-  auto full_fit = sparse.fit(full_dataset);
+  auto full_fit = sparse.fit(dataset);
   auto partial_fit = sparse.fit(partial_dataset);
 
   // Copy the fit so we can update it in place
