@@ -148,6 +148,61 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
  *
  *     Stable and Efficient Gaussian Process Calculations
  *     http://www.jmlr.org/papers/volume10/foster09a/foster09a.pdf
+ *
+ * A more detailed (but more likely to be out of date) description of
+ * the details can be found on the albatross documentation.  A short
+ * description follows.  It starts by setting up the Sparse Gaussian process
+ * covariances
+ *
+ *   [f|u] ~ N(K_fu K_uu^-1 u, K_ff - Q_ff)
+ *
+ * We then set,
+ *
+ *   A = K_ff - Q_ff
+ *     = K_ff - K_fu K_uu^-1 K_uf
+ *
+ * which can be thought of as the covariance in the training data which
+ * is not be explained by the inducing points.  The fundamental
+ * assumption in these sparse Gaussian processes is that A is sparse, in
+ * this case block diagonal.
+ *
+ * We then build a matrix B and use its QR decomposition (with pivoting P)
+ *
+ *   B = |A^-1/2 K_fu| = |Q_1| R P^T
+ *       |K_uu^{T/2} |   |Q_2|
+ *
+ * After which we can get the information vector (see _fit_impl)
+ *
+ *   v = (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1 y
+ *     = (B^T B) B^T A^-1/2 y
+ *     = P R^-1 Q_1^T A^-1/2 y
+ *
+ * and can make predictions for new locations (see _predict_impl),
+ *
+ *   [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
+ *            ~ N(m, C)
+ *
+ *  where we have
+ *
+ *    m = K_*u S K_uf A^-1 y
+ *      = K_*u v
+ *
+ *  and
+ *
+ *    C = K_** - Q_** + K_*u S K_u*
+ *
+ *  using
+ *
+ *    Q_** = K_*u K_uu^-1 K_u*
+ *         = (K_uu^{-1/2}  K_u*)^T (K_uu^{-1/2}  K_u*)
+ *         = Q_sqrt^T Q_sqrt
+ *  and
+ *
+ *    K_*u S K_u* = K_*u (K_uu + K_uf A^-1 K_fu)^-1   K_u*
+ *                = K_*u (B^T B)^-1 K_u*
+ *                = K_*u (P R R^T P^T)^-1 K_u*
+ *                = (P R^-T K_u*)^T (P R^-T K_u*)
+ *                = S_sqrt^T S_sqrt
  */
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
@@ -230,157 +285,78 @@ public:
     }
   }
 
-  struct SparseGPComponents {
-    Eigen::SerializableLDLT K_uu_ldlt;
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> B_qr;
+  template <typename FeatureType, typename InducingPointFeatureType>
+  auto _update_impl(const Fit<SparseGPFit<InducingPointFeatureType>> &old_fit,
+                    const std::vector<FeatureType> &features,
+                    const MarginalDistribution &targets) const {
+
     BlockDiagonalLDLT A_ldlt;
+    Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-  };
+    compute_internal_components(old_fit.train_features, features, targets,
+                                &A_ldlt, &K_uu_ldlt, &K_fu, &y);
 
-  template <typename FeatureType, typename InducingFeatureType>
-  SparseGPComponents
-  sparse_components(const std::vector<FeatureType> &out_of_order_features,
-                    const std::vector<InducingFeatureType> &inducing_features,
-                    const MarginalDistribution &out_of_order_targets) const {
+    const Eigen::Index n_old = old_fit.sigma_R.rows();
+    const Eigen::Index n_new = A_ldlt.rows();
+    const Eigen::Index k = old_fit.sigma_R.cols();
+    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(n_old + n_new, k);
 
-    // Here we do the majority of the pre-computations required to fit the
-    // model, or evaluate the likelihood.
-    //
-    // It starts by setting up the Sparse Gaussian process covariances
-    //
-    //   [f|u] ~ N(K_fu K_uu^-1 u, K_ff - Q_ff)
-    //
-    // We then set,
-    //
-    //   A = K_ff - Q_ff
-    //     = K_ff - K_fu K_uu^-1 K_uf
-    //
-    // which can be thought of as the covariance in the training data which
-    // is cannot be explained by the inducing points.  The fundamental
-    // assumption in these sparse Gaussian processes is that A is sparse, in
-    // this case block diagonal.
-    //
-    // We then build a matrix B and use its QR decomposition (with pivoting P)
-    //
-    //   B = |A^-1/2 K_fu| = |Q_1| R P^T
-    //       |K_uu^{T/2} |   |Q_2|
-    //
-    // After which we can get the information vector (see _fit_impl)
-    //
-    //   v = (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1 y
-    //     = (B^T B) B^T A^-1/2 y
-    //     = P R^-1 Q_1^T A^-1/2 y
-    //
-    // and can make predictions for new locations (see _predict_impl),
-    //
-    //   [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
-    //            ~ N(m, C)
-    //
-    //  where we have
-    //
-    //    m = K_*u S K_uf A^-1 y
-    //      = K_*u v
-    //
-    //  and
-    //
-    //    C = K_** - Q_** + K_*u S K_u*
-    //
-    //  using
-    //
-    //    Q_** = K_*u K_uu^-1 K_u*
-    //         = (K_uu^{-1/2}  K_u*)^T (K_uu^{-1/2}  K_u*)
-    //         = Q_sqrt^T Q_sqrt
-    //  and
-    //
-    //    K_*u S K_u* = K_*u (K_uu + K_uf A^-1 K_fu)^-1   K_u*
-    //                = K_*u (B^T B)^-1 K_u*
-    //                = K_*u (P R R^T P^T)^-1 K_u*
-    //                = (P R^-T K_u*)^T (P R^-T K_u*)
-    //                = S_sqrt^T S_sqrt
-    const auto indexer =
-        group_by(out_of_order_features, independent_group_function_).indexers();
+    assert(n_old == k);
 
-    const auto out_of_order_measurement_features =
-        as_measurements(out_of_order_features);
-
-    std::vector<std::size_t> reordered_inds;
-    BlockDiagonal K_ff;
-    for (const auto &pair : indexer) {
-      reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
-                            pair.second.end());
-      auto subset_features =
-          subset(out_of_order_measurement_features, pair.second);
-      K_ff.blocks.emplace_back(this->covariance_function_(subset_features));
-      K_ff.blocks.back().diagonal() +=
-          subset(out_of_order_targets.covariance.diagonal(), pair.second);
+    // Form:
+    //   B = |R_old P_old^T| = |Q_1| R P^T
+    //       |A^{-1/2} K_fu|   |Q_2|
+    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
+      const Eigen::Index &pi = old_fit.permutation_indices.coeff(i);
+      B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
     }
+    B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
+    const auto B_qr = B.colPivHouseholderQr();
 
-    const auto features =
-        subset(out_of_order_measurement_features, reordered_inds);
-    auto targets = subset(out_of_order_targets, reordered_inds);
-
-    this->mean_function_.remove_from(
-        subset(out_of_order_features, reordered_inds), &targets.mean);
-
-    const Eigen::MatrixXd K_fu =
-        this->covariance_function_(features, inducing_features);
-    Eigen::MatrixXd K_uu = this->covariance_function_(inducing_features);
-
-    K_uu.diagonal() +=
-        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
-
-    const Eigen::SerializableLDLT K_uu_ldlt = K_uu.ldlt();
-    // P is such that:
-    //     Q_ff = K_fu K_uu^-1 K_uf
-    //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
-    //          = P^T P
-    const Eigen::MatrixXd P = K_uu_ldlt.sqrt_solve(K_fu.transpose());
-
-    // We only need the diagonal blocks of Q_ff to get A
-    BlockDiagonal Q_ff_diag;
-    Eigen::Index i = 0;
-    for (const auto &pair : indexer) {
-      Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
-      auto P_cols = P.block(0, i, P.rows(), cols);
-      Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
-      i += cols;
+    // Form:
+    //   y_aug = |R_old P_old^T v_old|
+    //           |A^{-1/2} y         |
+    assert(old_fit.information.size() == n_old);
+    Eigen::VectorXd y_augmented(n_old + n_new);
+    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
+      y_augmented[i] =
+          old_fit.information[old_fit.permutation_indices.coeff(i)];
     }
-    auto A = K_ff - Q_ff_diag;
+    y_augmented.topRows(n_old) =
+        old_fit.sigma_R.template triangularView<Eigen::Upper>() *
+        y_augmented.topRows(n_old);
 
-    // It's possible that the inducing points will perfectly describe
-    // some of the data, in which case we need to add a bit of extra
-    // noise to make sure lambda is invertible.
-    for (auto &b : A.blocks) {
-      b.diagonal() +=
-          measurement_nugget_.value * Eigen::VectorXd::Ones(b.rows());
+    if (Base::use_async_) {
+      y_augmented.bottomRows(n_new) = A_ldlt.async_sqrt_solve(y);
+    } else {
+      y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y);
     }
+    const Eigen::VectorXd v = B_qr.solve(y_augmented);
 
-    const auto A_ldlt = A.ldlt();
-
-    Eigen::MatrixXd B(A.rows() + K_uu.rows(), K_uu.rows());
-    B.topRows(A.rows()) = A_ldlt.sqrt_solve(K_fu);
-
-    Eigen::VectorXd diag = K_uu_ldlt.vectorD();
-    for (Eigen::Index i = 0; i < diag.size(); ++i) {
-      if (diag[i] > 0) {
-        diag[i] = std::sqrt(diag[i]);
-      } else {
-        diag[i] = 0.;
-      }
-    }
-
-    B.bottomRows(K_uu.rows()) =
-        diag.asDiagonal() * (K_uu_ldlt.transpositionsP().transpose() *
-                             K_uu_ldlt.matrixL().toDenseMatrix())
-                                .transpose();
-
-    SparseGPComponents components = {
-        K_uu_ldlt, B.colPivHouseholderQr(), A_ldlt, K_fu, targets.mean,
-    };
-
-    return components;
+    using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
+    return FitType(old_fit.train_features, old_fit.train_covariance,
+                   get_R(B_qr), B_qr.colsPermutation().indices(), v);
   }
+
+  // Here we create the QR decomposition of:
+  //
+  //   B = |A^-1/2 K_fu| = |Q_1| R P^T
+  //       |K_uu^{T/2} |   |Q_2|
+  //
+  // which corresponds to the inverse square root of Sigma
+  //
+  //   Sigma = (B^T B)^-1
+  //
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
+  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
+                   const BlockDiagonalLDLT &A_ldlt,
+                   const Eigen::MatrixXd &K_fu) const {
+    Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
+    B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
+    B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
+    return B.colPivHouseholderQr();
+  };
 
   template <
       typename FeatureType,
@@ -394,22 +370,27 @@ public:
         inducing_point_strategy_(this->covariance_function_, features);
     assert(u.size() > 0 && "Empty inducing points!");
 
-    const SparseGPComponents sc = sparse_components(features, u, targets);
+    BlockDiagonalLDLT A_ldlt;
+    Eigen::SerializableLDLT K_uu_ldlt;
+    Eigen::MatrixXd K_fu;
+    Eigen::VectorXd y;
+    compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
+                                &K_fu, &y);
+    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
-    Eigen::VectorXd y_augmented =
-        Eigen::VectorXd::Zero(sc.B_qr.matrixR().rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
     if (Base::use_async_) {
-      y_augmented.topRows(sc.y.size()) = sc.A_ldlt.async_sqrt_solve(sc.y);
+      y_augmented.topRows(y.size()) = A_ldlt.async_sqrt_solve(y);
     } else {
-      y_augmented.topRows(sc.y.size()) = sc.A_ldlt.sqrt_solve(sc.y);
+      y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y);
     }
-    const Eigen::VectorXd v = sc.B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr.solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    const FitType fit(u, sc.K_uu_ldlt, get_R(sc.B_qr),
-                      sc.B_qr.colsPermutation().indices(), v);
+    const FitType fit(u, K_uu_ldlt, get_R(B_qr),
+                      B_qr.colsPermutation().indices(), v);
 
     return fit;
   }
@@ -489,8 +470,13 @@ public:
     const auto u =
         inducing_point_strategy_(this->covariance_function_, dataset.features);
 
-    const SparseGPComponents sc =
-        sparse_components(dataset.features, u, dataset.targets);
+    BlockDiagonalLDLT A_ldlt;
+    Eigen::SerializableLDLT K_uu_ldlt;
+    Eigen::MatrixXd K_fu;
+    Eigen::VectorXd y;
+    compute_internal_components(u, dataset.features, dataset.targets, &A_ldlt,
+                                &K_uu_ldlt, &K_fu, &y);
+    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
     // The log likelihood for y ~ N(0, K) is:
     //
     //   L = 1/2 (n log(2 pi) + log(|K|) + y^T K^-1 y)
@@ -515,11 +501,11 @@ public:
     //
     //   log(|K|) = 2 log(|R|) + log(|A|) - log(|K_uu|)
     //
-    const double log_det_a = sc.A_ldlt.log_determinant();
+    const double log_det_a = A_ldlt.log_determinant();
 
     const double log_det_r =
-        sc.B_qr.matrixR().diagonal().array().cwiseAbs().log().sum();
-    const double log_det_K_uu = sc.K_uu_ldlt.log_determinant();
+        B_qr.matrixR().diagonal().array().cwiseAbs().log().sum();
+    const double log_det_K_uu = K_uu_ldlt.log_determinant();
     const double log_det = log_det_a + 2 * log_det_r - log_det_K_uu;
 
     // q = y^T K^-1 y
@@ -531,15 +517,15 @@ public:
     //   = y^T y_a - y_b^T y_b
     //
     // with y_b = R^-T K_uf y_a
-    const Eigen::VectorXd y_a = sc.A_ldlt.solve(sc.y);
+    const Eigen::VectorXd y_a = A_ldlt.solve(y);
 
-    Eigen::VectorXd y_b = sc.K_fu.transpose() * y_a;
-    y_b = sqrt_solve(sc.B_qr, y_b);
+    Eigen::VectorXd y_b = K_fu.transpose() * y_a;
+    y_b = sqrt_solve(B_qr, y_b);
 
-    double log_quadratic = sc.y.transpose() * y_a;
+    double log_quadratic = y.transpose() * y_a;
     log_quadratic -= y_b.transpose() * y_b;
 
-    const double rank = static_cast<double>(sc.y.size());
+    const double rank = static_cast<double>(y.size());
     const double log_dimension = rank * log(2 * M_PI);
 
     return -0.5 * (log_det + log_quadratic + log_dimension) +
@@ -547,6 +533,87 @@ public:
   }
 
 private:
+  // This method takes care of a lot of the common book keeping required to
+  // setup the Sparse Gaussian Process problem.  Namely, we want to get from
+  // possibly unordered features to a structured representation
+  // in the form K_ff = A_ff + Q_ff where Q_ff = K_fu K_uu^-1 K_uf and
+  // A_ff is block diagonal and is formed by subtracting Q_ff from K_ff.
+  //
+  template <typename InducingFeatureType, typename FeatureType>
+  void compute_internal_components(
+      const std::vector<InducingFeatureType> &inducing_features,
+      const std::vector<FeatureType> &out_of_order_features,
+      const MarginalDistribution &out_of_order_targets,
+      BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
+      Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
+
+    assert(A_ldlt != nullptr);
+    assert(K_uu_ldlt != nullptr);
+    assert(K_fu != nullptr);
+    assert(y != nullptr);
+
+    const auto indexer =
+        group_by(out_of_order_features, independent_group_function_).indexers();
+
+    const auto out_of_order_measurement_features =
+        as_measurements(out_of_order_features);
+
+    std::vector<std::size_t> reordered_inds;
+    BlockDiagonal K_ff;
+    for (const auto &pair : indexer) {
+      reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
+                            pair.second.end());
+      auto subset_features =
+          subset(out_of_order_measurement_features, pair.second);
+      K_ff.blocks.emplace_back(this->covariance_function_(subset_features));
+      K_ff.blocks.back().diagonal() +=
+          subset(out_of_order_targets.covariance.diagonal(), pair.second);
+    }
+
+    const auto features =
+        subset(out_of_order_measurement_features, reordered_inds);
+    auto targets = subset(out_of_order_targets, reordered_inds);
+    *y = targets.mean;
+
+    this->mean_function_.remove_from(
+        subset(out_of_order_features, reordered_inds), &targets.mean);
+
+    *K_fu = this->covariance_function_(features, inducing_features);
+
+    auto K_uu = this->covariance_function_(inducing_features);
+
+    K_uu.diagonal() +=
+        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
+
+    *K_uu_ldlt = K_uu.ldlt();
+    // P is such that:
+    //     Q_ff = K_fu K_uu^-1 K_uf
+    //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
+    //          = P^T P
+    const Eigen::MatrixXd P = K_uu_ldlt->sqrt_solve(K_fu->transpose());
+
+    // We only need the diagonal blocks of Q_ff to get A
+    BlockDiagonal Q_ff_diag;
+    Eigen::Index i = 0;
+    for (const auto &pair : indexer) {
+      Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
+      auto P_cols = P.block(0, i, P.rows(), cols);
+      Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
+      i += cols;
+    }
+    auto A = K_ff - Q_ff_diag;
+
+    // It's possible that the inducing points will perfectly describe
+    // some of the data, in which case we need to add a bit of extra
+    // noise to make sure lambda is invertible.
+    for (auto &b : A.blocks) {
+      b.diagonal() +=
+          measurement_nugget_.value * Eigen::VectorXd::Ones(b.rows());
+    }
+
+    *A_ldlt = A.ldlt();
+  }
+
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
   InducingPointStrategy inducing_point_strategy_;

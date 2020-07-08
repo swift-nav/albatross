@@ -204,4 +204,105 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
   EXPECT_NEAR(expected, actual, 1e-2);
 }
 
+struct FixedInducingPoints {
+
+  FixedInducingPoints(double min, double max, std::size_t num_points = 10)
+      : min_(min), max_(max), num_points_(num_points) {}
+
+  template <typename CovarianceFunction>
+  std::vector<double> operator()(const CovarianceFunction &cov,
+                                 const std::vector<double> &features) const {
+    return linspace(min_, max_, num_points_);
+  }
+
+  double min_;
+  double max_;
+  std::size_t num_points_;
+};
+
+TEST(test_sparse_gp, test_update_exists) {
+
+  using CovFunc = SquaredExponential<EuclideanDistance>;
+  using MeanFunc = ZeroMean;
+  using GrouperFunction = LeaveOneIntervalOut;
+  using InducingPointStrategy = UniformlySpacedInducingPoints;
+
+  using SparseGPR =
+      SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
+                                      InducingPointStrategy>;
+
+  using FitType = Fit<SparseGPFit<double>>;
+
+  EXPECT_TRUE(bool(has_valid_update<SparseGPR, FitType, double>::value));
+  EXPECT_TRUE(bool(can_update_in_place<SparseGPR, FitType, double>::value));
+}
+
+TYPED_TEST(SparseGaussianProcessTest, test_update) {
+  auto grouper = this->grouper;
+  auto covariance = make_simple_covariance_function();
+  auto dataset = make_toy_linear_data();
+
+  const double min =
+      *std::min_element(dataset.features.begin(), dataset.features.end());
+  const double max =
+      *std::max_element(dataset.features.begin(), dataset.features.end());
+
+  FixedInducingPoints strategy(min, max, 8);
+  auto sparse =
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+  sparse.set_param(details::inducing_nugget_name(), 1e-3);
+  sparse.set_param(details::measurement_nugget_name(), 1e-12);
+
+  auto groups = dataset.group_by(grouper).groups();
+  const std::size_t num_groups = groups.size();
+
+  const auto held_out_pair = groups.first_group();
+  groups.erase(held_out_pair.first);
+
+  ASSERT_EQ(groups.size(), num_groups - 1);
+
+  const auto partial_dataset = groups.combine();
+
+  auto full_fit = sparse.fit(dataset);
+  auto partial_fit = sparse.fit(partial_dataset);
+
+  // Copy the fit so we can update it in place
+  decltype(partial_fit) updated_fit(partial_fit);
+  updated_fit.update_in_place(held_out_pair.second);
+
+  auto test_features = linspace(0.01, 9.9, 11);
+
+  auto full_pred =
+      full_fit.predict_with_measurement_noise(test_features).joint();
+  auto partial_pred =
+      partial_fit.predict_with_measurement_noise(test_features).joint();
+  auto updated_pred =
+      updated_fit.predict_with_measurement_noise(test_features).joint();
+
+  double partial_cov_diff =
+      (partial_pred.covariance - full_pred.covariance).norm();
+  double updated_cov_diff =
+      (updated_pred.covariance - full_pred.covariance).norm();
+
+  auto compute_sigma = [](const auto &fit_model) -> Eigen::MatrixXd {
+    const Eigen::Index n = fit_model.get_fit().sigma_R.cols();
+    Eigen::MatrixXd sigma = sqrt_solve(fit_model.get_fit().sigma_R,
+                                       fit_model.get_fit().permutation_indices,
+                                       Eigen::MatrixXd::Identity(n, n));
+    return sigma.transpose() * sigma;
+  };
+
+  const Eigen::MatrixXd full_sigma = compute_sigma(full_fit);
+  const Eigen::MatrixXd partial_sigma = compute_sigma(partial_fit);
+  const Eigen::MatrixXd updated_sigma = compute_sigma(updated_fit);
+
+  EXPECT_GT((partial_pred.mean - full_pred.mean).norm(), 1e-2);
+  EXPECT_GT((partial_sigma - full_sigma).norm(), 1.);
+  EXPECT_GT(partial_cov_diff, 1e-1);
+
+  EXPECT_LT((updated_pred.mean - full_pred.mean).norm(), 1e-6);
+  EXPECT_LT((updated_sigma - full_sigma).norm(), 1e-6);
+  EXPECT_LT(updated_cov_diff, 1e-6);
+}
+
 } // namespace albatross
