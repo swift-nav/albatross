@@ -620,6 +620,45 @@ private:
   GrouperFunction independent_group_function_;
 };
 
+// rebase_inducing_points takes a Sparse GP which was fit using some set of
+// inducing points and creates a new fit relative to new inducing points.
+// Note that this will NOT be the equivalent to having fit the model with
+// the new inducing points since some information may have been lost in
+// the process.
+template <typename ModelType, typename FeatureType, typename NewFeatureType>
+auto rebase_inducing_points(
+    const FitModel<ModelType, Fit<SparseGPFit<FeatureType>>> &fit_model,
+    const std::vector<NewFeatureType> &new_inducing_points) {
+
+  FitModel<ModelType, Fit<SparseGPFit<NewFeatureType>>> output(
+      fit_model.get_model(), Fit<SparseGPFit<NewFeatureType>>());
+  Fit<SparseGPFit<NewFeatureType>> &new_fit = output.get_fit();
+
+  new_fit.train_features = new_inducing_points;
+
+  const Eigen::MatrixXd K_zz =
+      fit_model.get_model().get_covariance()(new_inducing_points);
+  new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
+
+  const JointDistribution new_prediction =
+      fit_model.predict(new_inducing_points).joint();
+  new_fit.information = new_fit.train_covariance.solve(new_prediction.mean);
+
+  const Eigen::SerializableLDLT P_ldlt(new_prediction.covariance);
+
+  Eigen::MatrixXd sigma_inv = P_ldlt.sqrt_solve(K_zz);
+  sigma_inv = sigma_inv.transpose() * sigma_inv;
+
+  const Eigen::SerializableLDLT sigma_inv_ldlt(sigma_inv);
+
+  new_fit.permutation_indices = sigma_inv_ldlt.transpositionsP().indices();
+
+  new_fit.sigma_R = sigma_inv_ldlt.matrixL().transpose();
+  new_fit.sigma_R = sigma_inv_ldlt.diagonal_sqrt_inverse() * new_fit.sigma_R;
+
+  return output;
+}
+
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
