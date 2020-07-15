@@ -237,7 +237,7 @@ TEST(test_sparse_gp, test_update_exists) {
   EXPECT_TRUE(bool(can_update_in_place<SparseGPR, FitType, double>::value));
 }
 
- TYPED_TEST(SparseGaussianProcessTest, test_update) {
+TYPED_TEST(SparseGaussianProcessTest, test_update) {
   auto grouper = this->grouper;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
@@ -346,6 +346,39 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
       low_high_res_fit.predict_with_measurement_noise(test_features).joint();
   // Decreasing then increasing the inducing points should lose info
   EXPECT_GT((low_high_res_pred.mean - full_pred.mean).norm(), 10.);
+}
+
+TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
+  auto grouper = this->grouper;
+  auto covariance = make_simple_covariance_function();
+  auto dataset = make_toy_linear_data();
+
+  const double min =
+      *std::min_element(dataset.features.begin(), dataset.features.end());
+  const double max =
+      *std::max_element(dataset.features.begin(), dataset.features.end());
+
+  FixedInducingPoints strategy(min, max, 8);
+  auto sparse =
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+  sparse.set_param(details::inducing_nugget_name(), 1e-3);
+  sparse.set_param(details::measurement_nugget_name(), 1e-12);
+
+  const auto full_fit = sparse.fit(dataset);
+  const auto test_features = linspace(0.01, 9.9, 11);
+  const auto full_pred =
+      full_fit.predict_with_measurement_noise(test_features).joint();
+
+  auto shifted_fit = full_fit;
+  Eigen::Index n = shifted_fit.get_fit().information.size();
+  shifted_fit.get_fit().shift_mean(Eigen::VectorXd::Ones(n));
+
+  const auto shifted_pred =
+      shifted_fit.predict_with_measurement_noise(test_features).joint();
+
+  const auto test_shift = Eigen::VectorXd::Ones(shifted_pred.mean.size());
+  EXPECT_LT((shifted_pred.mean - test_shift - full_pred.mean).norm(), 1e-4);
+  EXPECT_LT((shifted_pred.covariance - full_pred.covariance).norm(), 1e-8);
 }
 
 } // namespace albatross

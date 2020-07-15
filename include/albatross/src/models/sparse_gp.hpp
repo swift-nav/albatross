@@ -89,6 +89,11 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
         sigma_R(sigma_R_), permutation_indices(permutation_indices_),
         information(information_) {}
 
+  void shift_mean(const Eigen::VectorXd &mean_shift) {
+    assert(mean_shift.size() == information.size());
+    information += train_covariance.solve(mean_shift);
+  }
+
   bool operator==(const Fit<SparseGPFit<FeatureType>> &other) const {
     return (train_features == other.train_features &&
             train_covariance == other.train_covariance &&
