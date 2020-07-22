@@ -654,14 +654,14 @@ auto rebase_inducing_points(
   // to predict the new inducing points then we see that the predictive
   // covariance (see documentation above) would be,:
   //
-  //    C = K_zz - Q_zz + K_zz Sigma K_*zz
+  //    C = K_zz - Q_zz + K_zz Sigma K_zz
   //
   // We can use this, knowing that at the inducing points K_zz = Q_zz, to
   // derive our updated Sigma,
   //
-  //    C = K_zz - K_zz + K_zz Sigma K_**
-  //    C  = K_zz Sigma K_**
-  //    Sigma = K_zz^-1 C K_zz
+  //    C = K_zz - K_zz + K_zz Sigma K_zz
+  //    C  = K_zz Sigma K_zz
+  //    Sigma = K_zz^-1 C K_zz^-1
   //
   // And since we need to store Sigma in sqrt form we get,
   //
