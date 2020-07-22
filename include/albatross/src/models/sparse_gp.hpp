@@ -649,9 +649,46 @@ auto rebase_inducing_points(
       fit_model.predict(new_inducing_points).joint();
   new_fit.information = new_fit.train_covariance.solve(new_prediction.mean);
 
-  const Eigen::SerializableLDLT P_ldlt(new_prediction.covariance);
+  // Here P is the posterior covariance at the new inducing points.  If
+  // we consider the case where we rebase and then use the resulting fit
+  // to predict the new inducing points then we see that the predictive
+  // covariance (see documentation above) would be,:
+  //
+  //    C = K_zz - Q_zz + K_zz Sigma K_*zz
+  //
+  // We can use this, knowing that at the inducing points K_zz = Q_zz, to
+  // derive our updated Sigma,
+  //
+  //    C = K_zz - K_zz + K_zz Sigma K_**
+  //    C  = K_zz Sigma K_**
+  //    Sigma = K_zz^-1 C K_zz
+  //
+  // And since we need to store Sigma in sqrt form we get,
+  //
+  //    Sigma = (B_z^T B_z)^-1
+  //          = K_zz^-1 C K_zz^-1
+  //
+  //    B_z^T B_z = Sigma^-1
+  //              = K_zz C^-1 K_zz
+  //              = P_z R_z^T R_z P_z^T
+  //
+  // Where the last line above is a reminder that we only need to store
+  // the permutation matrix P_z and upper triangular matrix R_z which
+  // we can then find by forming Sigma^-1 and computing the LDLT
+  // decomposition,
+  //
+  //    Sigma^-1 = K_zz C^-1 K_zz
+  //             = T^T L D L^T T
+  //
+  // After which we see that we can use the transposition matrix T and
+  // lower triangular L and diagonal D to get,
+  //
+  //    P_z = T^T
+  //    R_z = D^{1/2} L^T
+  //
+  const Eigen::SerializableLDLT C_ldlt(new_prediction.covariance);
 
-  Eigen::MatrixXd sigma_inv = P_ldlt.sqrt_solve(K_zz);
+  Eigen::MatrixXd sigma_inv = C_ldlt.sqrt_solve(K_zz);
   sigma_inv = sigma_inv.transpose() * sigma_inv;
 
   const Eigen::SerializableLDLT sigma_inv_ldlt(sigma_inv);
