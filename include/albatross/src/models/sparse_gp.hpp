@@ -89,6 +89,11 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
         sigma_R(sigma_R_), permutation_indices(permutation_indices_),
         information(information_) {}
 
+  void shift_mean(const Eigen::VectorXd &mean_shift) {
+    assert(mean_shift.size() == information.size());
+    information += train_covariance.solve(mean_shift);
+  }
+
   bool operator==(const Fit<SparseGPFit<FeatureType>> &other) const {
     return (train_features == other.train_features &&
             train_covariance == other.train_covariance &&
@@ -619,6 +624,82 @@ private:
   InducingPointStrategy inducing_point_strategy_;
   GrouperFunction independent_group_function_;
 };
+
+// rebase_inducing_points takes a Sparse GP which was fit using some set of
+// inducing points and creates a new fit relative to new inducing points.
+// Note that this will NOT be the equivalent to having fit the model with
+// the new inducing points since some information may have been lost in
+// the process.
+template <typename ModelType, typename FeatureType, typename NewFeatureType>
+auto rebase_inducing_points(
+    const FitModel<ModelType, Fit<SparseGPFit<FeatureType>>> &fit_model,
+    const std::vector<NewFeatureType> &new_inducing_points) {
+
+  FitModel<ModelType, Fit<SparseGPFit<NewFeatureType>>> output(
+      fit_model.get_model(), Fit<SparseGPFit<NewFeatureType>>());
+  Fit<SparseGPFit<NewFeatureType>> &new_fit = output.get_fit();
+
+  new_fit.train_features = new_inducing_points;
+
+  const Eigen::MatrixXd K_zz =
+      fit_model.get_model().get_covariance()(new_inducing_points);
+  new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
+
+  const JointDistribution new_prediction =
+      fit_model.predict(new_inducing_points).joint();
+  new_fit.information = new_fit.train_covariance.solve(new_prediction.mean);
+
+  // Here P is the posterior covariance at the new inducing points.  If
+  // we consider the case where we rebase and then use the resulting fit
+  // to predict the new inducing points then we see that the predictive
+  // covariance (see documentation above) would be,:
+  //
+  //    C = K_zz - Q_zz + K_zz Sigma K_zz
+  //
+  // We can use this, knowing that at the inducing points K_zz = Q_zz, to
+  // derive our updated Sigma,
+  //
+  //    C = K_zz - K_zz + K_zz Sigma K_zz
+  //    C  = K_zz Sigma K_zz
+  //    Sigma = K_zz^-1 C K_zz^-1
+  //
+  // And since we need to store Sigma in sqrt form we get,
+  //
+  //    Sigma = (B_z^T B_z)^-1
+  //          = K_zz^-1 C K_zz^-1
+  //
+  //    B_z^T B_z = Sigma^-1
+  //              = K_zz C^-1 K_zz
+  //              = P_z R_z^T R_z P_z^T
+  //
+  // Where the last line above is a reminder that we only need to store
+  // the permutation matrix P_z and upper triangular matrix R_z which
+  // we can then find by forming Sigma^-1 and computing the LDLT
+  // decomposition,
+  //
+  //    Sigma^-1 = K_zz C^-1 K_zz
+  //             = T^T L D L^T T
+  //
+  // After which we see that we can use the transposition matrix T and
+  // lower triangular L and diagonal D to get,
+  //
+  //    P_z = T^T
+  //    R_z = D^{1/2} L^T
+  //
+  const Eigen::SerializableLDLT C_ldlt(new_prediction.covariance);
+
+  Eigen::MatrixXd sigma_inv = C_ldlt.sqrt_solve(K_zz);
+  sigma_inv = sigma_inv.transpose() * sigma_inv;
+
+  const Eigen::SerializableLDLT sigma_inv_ldlt(sigma_inv);
+
+  new_fit.permutation_indices = sigma_inv_ldlt.transpositionsP().indices();
+
+  new_fit.sigma_R = sigma_inv_ldlt.matrixL().transpose();
+  new_fit.sigma_R = sigma_inv_ldlt.diagonal_sqrt_inverse() * new_fit.sigma_R;
+
+  return output;
+}
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
