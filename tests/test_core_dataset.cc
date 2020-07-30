@@ -43,6 +43,64 @@ TEST(test_dataset, test_deduplicate) {
   EXPECT_EQ(dedupped, deduplicate(dedupped));
 }
 
+TEST(test_dataset, test_align_datasets_a_in_b) {
+  std::vector<int> features_a = {0, 1, 2};
+  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
+  RegressionDataset<int> dataset_a(features_a, targets_a);
+
+  std::vector<int> features_b = {2, 3, 0, 1};
+  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
+  RegressionDataset<int> dataset_b(features_b, targets_b);
+
+  EXPECT_NE(dataset_a.features, dataset_b.features);
+  align_datasets(&dataset_a, &dataset_b);
+  EXPECT_EQ(dataset_a.size(), 3);
+  EXPECT_EQ(dataset_a.features, dataset_b.features);
+}
+
+TEST(test_dataset, test_align_datasets_a_in_b_unordered) {
+  std::vector<int> features_a = {0, 2, 1};
+  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
+  RegressionDataset<int> dataset_a(features_a, targets_a);
+
+  std::vector<int> features_b = {2, 3, 0, 1};
+  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
+  RegressionDataset<int> dataset_b(features_b, targets_b);
+
+  EXPECT_NE(dataset_a.features, dataset_b.features);
+  align_datasets(&dataset_a, &dataset_b);
+  EXPECT_EQ(dataset_a.size(), 3);
+  EXPECT_EQ(dataset_a.features, dataset_b.features);
+}
+
+TEST(test_dataset, test_align_datasets_a_not_in_b) {
+  std::vector<int> features_a = {0, 1, 2, 3};
+  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
+  RegressionDataset<int> dataset_a(features_a, targets_a);
+
+  std::vector<int> features_b = {2, 4, 0};
+  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
+  RegressionDataset<int> dataset_b(features_b, targets_b);
+
+  EXPECT_NE(dataset_a.features, dataset_b.features);
+  align_datasets(&dataset_a, &dataset_b);
+  EXPECT_EQ(dataset_a.size(), 2);
+  EXPECT_EQ(dataset_a.features, dataset_b.features);
+}
+
+TEST(test_dataset, test_align_datasets_no_intersect) {
+  std::vector<int> features_a = {0, 1, 2};
+  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
+  RegressionDataset<int> dataset_a(features_a, targets_a);
+
+  std::vector<int> features_b = {3, 4, 5};
+  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
+  RegressionDataset<int> dataset_b(features_b, targets_b);
+
+  align_datasets(&dataset_a, &dataset_b);
+  EXPECT_EQ(dataset_a.size(), 0);
+}
+
 void expect_split_recombine(const RegressionDataset<int> &dataset) {
   std::vector<std::size_t> first_indices = {0, 1};
   const auto first = subset(dataset, first_indices);

@@ -96,6 +96,32 @@ deduplicate(const RegressionDataset<FeatureType> &dataset) {
 }
 
 template <typename X>
+inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y) {
+
+  std::vector<std::size_t> x_inds;
+  std::vector<std::size_t> y_inds;
+  for (std::size_t i = 0; i < x->size(); ++i) {
+    for (std::size_t j = 0; j < y->size(); ++j) {
+      if (x->features[i] == y->features[j]) {
+        x_inds.push_back(i);
+        y_inds.push_back(j);
+        continue;
+      }
+    }
+  }
+
+  assert(x_inds.size() == y_inds.size());
+
+  if (x_inds.size() == 0) {
+    *x = RegressionDataset<X>();
+    *y = RegressionDataset<X>();
+  } else {
+    *x = subset(*x, x_inds);
+    *y = subset(*y, y_inds);
+  }
+}
+
+template <typename X>
 inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                  const RegressionDataset<X> &y) {
   const auto targets = concatenate_marginals(x.targets, y.targets);

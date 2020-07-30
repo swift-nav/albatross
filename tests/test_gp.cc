@@ -257,8 +257,8 @@ TEST(test_gp, test_update_model_different_types) {
       new_perturbed_model.predict(dataset.features).marginal();
 
   // Make sure constraining to a different value changes the results.
-  EXPECT_GE((perturbed_inducing_pred.mean - new_pred.mean).norm(), 1.);
-  EXPECT_GE((perturbed_train_pred.mean - train_pred.mean).norm(), 1.);
+  EXPECT_GE((perturbed_inducing_pred.mean - new_pred.mean).norm(), 0.5);
+  EXPECT_GE((perturbed_train_pred.mean - train_pred.mean).norm(), 0.5);
 }
 
 TEST(test_gp, test_model_from_different_datasets) {
