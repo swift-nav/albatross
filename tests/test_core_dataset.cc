@@ -102,4 +102,25 @@ TEST(test_dataset, test_concatenate_different_type) {
   }
 }
 
+TEST(test_dataset, test_streamable_features) {
+  std::vector<int> features = {3, 7, 1};
+  Eigen::VectorXd targets = Eigen::VectorXd::Random(3);
+  RegressionDataset<int> dataset(features, targets);
+
+  std::ostringstream oss;
+  oss << dataset << std::endl;
+}
+
+struct NotStreamable {};
+
+TEST(test_dataset, test_not_streamable_features) {
+  std::vector<NotStreamable> features = {NotStreamable(), NotStreamable(),
+                                         NotStreamable()};
+  Eigen::VectorXd targets = Eigen::VectorXd::Random(3);
+  RegressionDataset<NotStreamable> dataset(features, targets);
+
+  std::ostringstream oss;
+  oss << dataset << std::endl;
+}
+
 } // namespace albatross

@@ -129,4 +129,26 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
 
 } // namespace albatross
 
+template <typename X, typename std::enable_if_t<
+                          albatross::is_streamable<X>::value, int> = 0>
+std::ostream &operator<<(std::ostream &os,
+                         const albatross::RegressionDataset<X> &dataset) {
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    os << dataset.features[i] << "    " << dataset.targets.mean[i] << "   +/- "
+       << std::sqrt(dataset.targets.get_diagonal(i)) << std::endl;
+  }
+  return os;
+}
+
+template <typename X, typename std::enable_if_t<
+                          !albatross::is_streamable<X>::value, int> = 0>
+std::ostream &operator<<(std::ostream &os,
+                         const albatross::RegressionDataset<X> &dataset) {
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    os << i << "    " << dataset.targets.mean[i] << "   +/- "
+       << std::sqrt(dataset.targets.get_diagonal(i)) << std::endl;
+  }
+  return os;
+}
+
 #endif
