@@ -247,6 +247,24 @@ struct can_update_in_place {
                               FeatureType>::can_update_in_place;
 };
 
+/*
+ * Determines the type of updated_fit in a call along the lines of :
+ *
+ *   auto fit_model = model.fit(dataset);
+ *   auto updated_fit_model = fit_model.update(other_dataset);
+ */
+template <typename T, typename FeatureType> class updated_fit_model_type {
+
+  using ModelType = typename T::model_type;
+  using FitType = typename T::fit_type;
+  using UpdatedFitType =
+      typename fit_model_update_traits<ModelType, FitType,
+                                       FeatureType>::UpdateFitType;
+
+public:
+  typedef FitModel<ModelType, UpdatedFitType> type;
+};
+
 } // namespace albatross
 
 #endif
