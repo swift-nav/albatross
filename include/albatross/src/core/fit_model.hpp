@@ -23,6 +23,9 @@ public:
       std::is_move_constructible<Fit>::value,
       "Fit type must be move constructible to avoid unexpected copying.");
 
+  typedef ModelType model_type;
+  typedef Fit fit_type;
+
   FitModel(){};
 
   FitModel(const ModelType &model, const Fit &fit) = delete;
