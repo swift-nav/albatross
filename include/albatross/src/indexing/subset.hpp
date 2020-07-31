@@ -23,6 +23,8 @@ inline std::vector<X> subset(const std::vector<X> &v,
                              const std::vector<SizeType> &indices) {
   std::vector<X> out(indices.size());
   for (std::size_t i = 0; i < static_cast<std::size_t>(indices.size()); i++) {
+    assert(indices[i] >= 0 && "Invalid indices provided to subset");
+    assert(indices[i] < v.size() && "Invalid indices provided to subset");
     out[i] = v[static_cast<std::size_t>(indices[i])];
   }
   return out;
@@ -36,8 +38,10 @@ inline Eigen::VectorXd subset(const Eigen::VectorXd &v,
                               const std::vector<SizeType> &indices) {
   Eigen::VectorXd out(static_cast<Eigen::Index>(indices.size()));
   for (std::size_t i = 0; i < indices.size(); i++) {
-    out[static_cast<Eigen::Index>(i)] =
-        v[static_cast<Eigen::Index>(indices[i])];
+    const Eigen::Index ind_i = static_cast<Eigen::Index>(indices[i]);
+    assert(ind_i >= 0 && "Invalid indices provided to subset");
+    assert(ind_i < v.size() && "Invalid indices provided to subset");
+    out[static_cast<Eigen::Index>(i)] = v[ind_i];
   }
   return out;
 }
@@ -52,6 +56,8 @@ inline Eigen::MatrixXd subset_cols(const Eigen::MatrixXd &v,
   for (std::size_t i = 0; i < col_indices.size(); i++) {
     auto ii = static_cast<Eigen::Index>(i);
     auto col_index = static_cast<Eigen::Index>(col_indices[i]);
+    assert(col_index >= 0 && "Invalid indices provided to subset");
+    assert(col_index < v.cols() && "Invalid indices provided to subset");
     out.col(ii) = v.col(col_index);
   }
   return out;
@@ -67,6 +73,8 @@ inline Eigen::MatrixXd subset_rows(const Eigen::MatrixXd &v,
   for (std::size_t i = 0; i < row_indices.size(); i++) {
     auto ii = static_cast<Eigen::Index>(i);
     auto row_index = static_cast<Eigen::Index>(row_indices[i]);
+    assert(row_index >= 0 && "Invalid indices provided to subset");
+    assert(row_index < v.rows() && "Invalid indices provided to subset");
     out.row(ii) = v.row(row_index);
   }
   return out;
@@ -87,6 +95,10 @@ inline Eigen::MatrixXd subset(const Eigen::MatrixXd &v,
       auto jj = static_cast<Eigen::Index>(j);
       auto row_index = static_cast<Eigen::Index>(row_indices[i]);
       auto col_index = static_cast<Eigen::Index>(col_indices[j]);
+      assert(row_index >= 0 && "Invalid indices provided to subset");
+      assert(row_index < v.rows() && "Invalid indices provided to subset");
+      assert(col_index >= 0 && "Invalid indices provided to subset");
+      assert(col_index < v.cols() && "Invalid indices provided to subset");
       out(ii, jj) = v(row_index, col_index);
     }
   }
@@ -126,8 +138,10 @@ inline void set_subset(const Eigen::VectorXd &from,
                        Eigen::VectorXd *to) {
   assert(static_cast<Eigen::Index>(indices.size()) == from.size());
   for (std::size_t i = 0; i < indices.size(); ++i) {
-    (*to)[static_cast<Eigen::Index>(indices[i])] =
-        from[static_cast<Eigen::Index>(i)];
+    const Eigen::Index ind_i = static_cast<Eigen::Index>(indices[i]);
+    assert(ind_i >= 0 && "Invalid indices provided to subset");
+    assert(ind_i < to->size() && "Invalid indices provided to subset");
+    (*to)[ind_i] = from[static_cast<Eigen::Index>(i)];
   }
 }
 
@@ -143,8 +157,10 @@ inline void set_subset(const Eigen::DiagonalMatrix<Scalar, Size> &from,
                        Eigen::DiagonalMatrix<Scalar, Size> *to) {
   assert(static_cast<Eigen::Index>(indices.size()) == from.diagonal().size());
   for (std::size_t i = 0; i < indices.size(); i++) {
-    to->diagonal()[static_cast<Eigen::Index>(indices[i])] =
-        from.diagonal()[static_cast<Eigen::Index>(i)];
+    const Eigen::Index ind_i = static_cast<Eigen::Index>(indices[i]);
+    assert(ind_i >= 0 && "Invalid indices provided to subset");
+    assert(ind_i < to->size() && "Invalid indices provided to subset");
+    to->diagonal()[ind_i] = from.diagonal()[static_cast<Eigen::Index>(i)];
   }
 }
 

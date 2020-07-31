@@ -72,6 +72,22 @@ template <typename T>
 struct is_measurement : public is_templated_type<Measurement, T> {};
 
 /*
+ * is_streamable
+ */
+
+template <typename T> class is_streamable {
+  template <typename C>
+  static auto test(int)
+      -> decltype(std::declval<std::ostream &>() << std::declval<C>(),
+                  std::true_type());
+
+  template <typename> static std::false_type test(...);
+
+public:
+  static const bool value = decltype(test<T>(0))::value;
+};
+
+/*
  * is_in_variant
  */
 
