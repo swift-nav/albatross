@@ -99,6 +99,7 @@ TEST(test_dataset, test_align_datasets_no_intersect) {
 
   align_datasets(&dataset_a, &dataset_b);
   EXPECT_EQ(dataset_a.size(), 0);
+  EXPECT_EQ(dataset_b.size(), 0);
 }
 
 void expect_split_recombine(const RegressionDataset<int> &dataset) {
