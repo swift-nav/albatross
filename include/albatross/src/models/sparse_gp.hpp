@@ -431,16 +431,17 @@ public:
     Eigen::VectorXd marginal_variance(
         static_cast<Eigen::Index>(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
-      marginal_variance[i] = covariance_function_(features[i], features[i]);
+      marginal_variance[i] =
+          this->covariance_function_(features[i], features[i]);
     }
 
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
-    marginal_variance -= Q_sqrt.cwiseProduct(cross_cov).array().colwise().sum();
+    marginal_variance -= Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
 
     const Eigen::MatrixXd S_sqrt = sqrt_solve(
         sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
-    marginal_variance += S_sqrt.cwiseProduct(cross_cov).array().colwise().sum();
+    marginal_variance += S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
 
     return MarginalDistribution(mean, marginal_variance);
   }
