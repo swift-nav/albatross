@@ -274,4 +274,23 @@ concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
 
 } // namespace albatross
 
+inline std::ostream &
+operator<<(std::ostream &os, const albatross::MarginalDistribution &marginal) {
+  for (std::size_t i = 0; i < marginal.size(); ++i) {
+    os << i << "    " << marginal.mean[i] << "   +/- "
+       << std::sqrt(marginal.get_diagonal(i)) << std::endl;
+  }
+  return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const albatross::JointDistribution &joint) {
+  Eigen::MatrixXd combined(joint.covariance.rows(),
+                           joint.covariance.cols() + 1);
+  combined.rightCols(joint.covariance.cols()) = joint.covariance;
+  combined.col(0) = joint.mean;
+  std::cout << combined;
+  return os;
+}
+
 #endif

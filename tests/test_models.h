@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/GP>
 #include <albatross/LeastSquares>
 #include <albatross/NullModel>
 #include <albatross/Ransac>
+#include <albatross/SparseGP>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
@@ -33,6 +33,21 @@ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     return gp_from_covariance(covariance);
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(); }
+};
+
+class MakeSparseGaussianProcess {
+public:
+  MakeSparseGaussianProcess(){};
+
+  auto get_model() const {
+    LeaveOneOutGrouper loo;
+    UniformlySpacedInducingPoints strategy(25);
+
+    auto covariance = make_simple_covariance_function();
+    return sparse_gp_from_covariance(covariance, loo, strategy, "example");
   }
 
   auto get_dataset() const { return make_toy_linear_data(); }
@@ -269,7 +284,7 @@ public:
 };
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
-                         MakeGaussianProcessWithMean,
+                         MakeGaussianProcessWithMean, MakeSparseGaussianProcess,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
                          MakeRansacChiSquaredGaussianProcess,
                          MakeRansacChiSquaredGaussianProcessWithMean,

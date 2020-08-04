@@ -348,6 +348,46 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   EXPECT_GT((low_high_res_pred.mean - full_pred.mean).norm(), 10.);
 }
 
+TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
+
+  auto grouper = this->grouper;
+  auto covariance = make_simple_covariance_function();
+  auto dataset = make_toy_linear_data();
+
+  UniformlySpacedInducingPoints strategy(10);
+  auto model =
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+  const auto inducing_points = strategy(covariance, dataset.features);
+  auto test_features = linspace(0.1, 9.9, 5);
+
+  const auto grouped = dataset.group_by(grouper).groups();
+  auto iteratively_fit_model = model.fit(grouped.first_value());
+
+  // The first fit is going to space the inducing points only over the
+  // first group, here we set the inducing points to what they
+  // would be if we'd fit to everything
+  iteratively_fit_model =
+      rebase_inducing_points(iteratively_fit_model, inducing_points);
+
+  // Then iteratively update with the rest of the groups
+  bool first = true;
+  for (const auto &pair : grouped) {
+    if (!first) {
+      iteratively_fit_model.update_in_place(pair.second);
+    } else {
+      first = false;
+    }
+  }
+
+  const auto direct_fit_model = model.fit(dataset);
+
+  const auto iter_pred = iteratively_fit_model.predict(test_features).joint();
+  const auto direct_pred = direct_fit_model.predict(test_features).joint();
+
+  EXPECT_LT((direct_pred.mean - iter_pred.mean).norm(), 1e-5);
+  EXPECT_LT((direct_pred.covariance - iter_pred.covariance).norm(), 1e-5);
+}
+
 TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
   auto grouper = this->grouper;
   auto covariance = make_simple_covariance_function();
