@@ -437,11 +437,15 @@ public:
 
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
-    marginal_variance -= Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
+    const Eigen::VectorXd Q_diag =
+        Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
+    marginal_variance -= Q_diag;
 
     const Eigen::MatrixXd S_sqrt = sqrt_solve(
         sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
-    marginal_variance += S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
+    const Eigen::VectorXd S_diag =
+        S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
+    marginal_variance += S_diag;
 
     return MarginalDistribution(mean, marginal_variance);
   }
