@@ -646,8 +646,13 @@ auto rebase_inducing_points(
       fit_model.get_model().get_covariance()(new_inducing_points);
   new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
 
-  const JointDistribution new_prediction =
+  JointDistribution new_prediction =
       fit_model.predict(new_inducing_points).joint();
+  // We're going to need to take the sqrt of the new covariance which
+  // could be extremely small, so here we add a small nugget to avoid
+  // numerical instability
+  new_prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
+      new_prediction.size(), 1, details::DEFAULT_NUGGET);
   new_fit.information = new_fit.train_covariance.solve(new_prediction.mean);
 
   // Here P is the posterior covariance at the new inducing points.  If
@@ -669,35 +674,18 @@ auto rebase_inducing_points(
   //    Sigma = (B_z^T B_z)^-1
   //          = K_zz^-1 C K_zz^-1
   //
-  //    B_z^T B_z = Sigma^-1
-  //              = K_zz C^-1 K_zz
-  //              = P_z R_z^T R_z P_z^T
+  // So by setting:
   //
-  // Where the last line above is a reminder that we only need to store
-  // the permutation matrix P_z and upper triangular matrix R_z which
-  // we can then find by forming Sigma^-1 and computing the LDLT
-  // decomposition,
+  //    B_z = C^{-1/2} K_z
   //
-  //    Sigma^-1 = K_zz C^-1 K_zz
-  //             = T^T L D L^T T
-  //
-  // After which we see that we can use the transposition matrix T and
-  // lower triangular L and diagonal D to get,
-  //
-  //    P_z = T^T
-  //    R_z = D^{1/2} L^T
-  //
+  // We can then compute and store the QR decomposition of B
+  // as we do in a normal fit.
   const Eigen::SerializableLDLT C_ldlt(new_prediction.covariance);
+  const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
+  const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
 
-  Eigen::MatrixXd sigma_inv = C_ldlt.sqrt_solve(K_zz);
-  sigma_inv = sigma_inv.transpose() * sigma_inv;
-
-  const Eigen::SerializableLDLT sigma_inv_ldlt(sigma_inv);
-
-  new_fit.permutation_indices = sigma_inv_ldlt.transpositionsP().indices();
-
-  new_fit.sigma_R = sigma_inv_ldlt.matrixL().transpose();
-  new_fit.sigma_R = sigma_inv_ldlt.diagonal_sqrt_inverse() * new_fit.sigma_R;
+  new_fit.permutation_indices = B_qr.colsPermutation().indices();
+  new_fit.sigma_R = get_R(B_qr);
 
   return output;
 }
