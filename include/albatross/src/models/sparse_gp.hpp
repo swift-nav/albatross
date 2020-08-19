@@ -400,8 +400,65 @@ public:
     return fit;
   }
 
+  template <typename FeatureType>
+  auto fit_from_prediction(const std::vector<FeatureType> &new_inducing_points,
+                           const JointDistribution &prediction_) const {
+
+    FitModel<SparseGaussianProcessRegression, Fit<SparseGPFit<FeatureType>>>
+        output(*this, Fit<SparseGPFit<FeatureType>>());
+    Fit<SparseGPFit<FeatureType>> &new_fit = output.get_fit();
+
+    new_fit.train_features = new_inducing_points;
+
+    const Eigen::MatrixXd K_zz =
+        this->covariance_function_(new_inducing_points);
+    new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
+
+    // We're going to need to take the sqrt of the new covariance which
+    // could be extremely small, so here we add a small nugget to avoid
+    // numerical instability
+    JointDistribution prediction(prediction_);
+    prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
+        prediction.size(), 1, details::DEFAULT_NUGGET);
+    new_fit.information = new_fit.train_covariance.solve(prediction.mean);
+
+    // Here P is the posterior covariance at the new inducing points.  If
+    // we consider the case where we rebase and then use the resulting fit
+    // to predict the new inducing points then we see that the predictive
+    // covariance (see documentation above) would be,:
+    //
+    //    C = K_zz - Q_zz + K_zz Sigma K_zz
+    //
+    // We can use this, knowing that at the inducing points K_zz = Q_zz, to
+    // derive our updated Sigma,
+    //
+    //    C = K_zz - K_zz + K_zz Sigma K_zz
+    //    C  = K_zz Sigma K_zz
+    //    Sigma = K_zz^-1 C K_zz^-1
+    //
+    // And since we need to store Sigma in sqrt form we get,
+    //
+    //    Sigma = (B_z^T B_z)^-1
+    //          = K_zz^-1 C K_zz^-1
+    //
+    // So by setting:
+    //
+    //    B_z = C^{-1/2} K_z
+    //
+    // We can then compute and store the QR decomposition of B
+    // as we do in a normal fit.
+    const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
+    const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
+    const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
+
+    new_fit.permutation_indices = B_qr.colsPermutation().indices();
+    new_fit.sigma_R = get_R(B_qr);
+
+    return output;
+  }
+
   // This is included to allow the SparseGP to be compatible with fits
-  // generated using a standard GP (ie things like fit_from_prediction)
+  // generated using a standard GP.
   using Base::_predict_impl;
 
   template <typename FeatureType, typename FitFeaturetype>
@@ -639,59 +696,8 @@ template <typename ModelType, typename FeatureType, typename NewFeatureType>
 auto rebase_inducing_points(
     const FitModel<ModelType, Fit<SparseGPFit<FeatureType>>> &fit_model,
     const std::vector<NewFeatureType> &new_inducing_points) {
-
-  FitModel<ModelType, Fit<SparseGPFit<NewFeatureType>>> output(
-      fit_model.get_model(), Fit<SparseGPFit<NewFeatureType>>());
-  Fit<SparseGPFit<NewFeatureType>> &new_fit = output.get_fit();
-
-  new_fit.train_features = new_inducing_points;
-
-  const Eigen::MatrixXd K_zz =
-      fit_model.get_model().get_covariance()(new_inducing_points);
-  new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
-
-  JointDistribution new_prediction =
-      fit_model.predict(new_inducing_points).joint();
-  // We're going to need to take the sqrt of the new covariance which
-  // could be extremely small, so here we add a small nugget to avoid
-  // numerical instability
-  new_prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
-      new_prediction.size(), 1, details::DEFAULT_NUGGET);
-  new_fit.information = new_fit.train_covariance.solve(new_prediction.mean);
-
-  // Here P is the posterior covariance at the new inducing points.  If
-  // we consider the case where we rebase and then use the resulting fit
-  // to predict the new inducing points then we see that the predictive
-  // covariance (see documentation above) would be,:
-  //
-  //    C = K_zz - Q_zz + K_zz Sigma K_zz
-  //
-  // We can use this, knowing that at the inducing points K_zz = Q_zz, to
-  // derive our updated Sigma,
-  //
-  //    C = K_zz - K_zz + K_zz Sigma K_zz
-  //    C  = K_zz Sigma K_zz
-  //    Sigma = K_zz^-1 C K_zz^-1
-  //
-  // And since we need to store Sigma in sqrt form we get,
-  //
-  //    Sigma = (B_z^T B_z)^-1
-  //          = K_zz^-1 C K_zz^-1
-  //
-  // So by setting:
-  //
-  //    B_z = C^{-1/2} K_z
-  //
-  // We can then compute and store the QR decomposition of B
-  // as we do in a normal fit.
-  const Eigen::SerializableLDLT C_ldlt(new_prediction.covariance);
-  const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
-  const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
-
-  new_fit.permutation_indices = B_qr.colsPermutation().indices();
-  new_fit.sigma_R = get_R(B_qr);
-
-  return output;
+  return fit_model.get_model().fit_from_prediction(
+      new_inducing_points, fit_model.predict(new_inducing_points).joint());
 }
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
