@@ -522,8 +522,9 @@ public:
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
 
-    Eigen::MatrixXd covariance = prior_cov - Q_sqrt.transpose() * Q_sqrt;
-    covariance += S_sqrt.transpose() * S_sqrt;
+    const Eigen::MatrixXd max_explained = Q_sqrt.transpose() * Q_sqrt;
+    const Eigen::MatrixXd unexplained = S_sqrt.transpose() * S_sqrt;
+    const Eigen::MatrixXd covariance = prior_cov - max_explained + unexplained;
 
     JointDistribution pred(cross_cov.transpose() * sparse_gp_fit.information,
                            covariance);
