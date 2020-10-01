@@ -170,9 +170,14 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
   std::size_t i = 0;
   std::size_t failed_candidates = 0;
   while (i < max_iterations) {
+    std::cout << "iteration " << i << std::endl;
     // Sample a random subset of the data and fit a model.
     auto candidate_groups =
         random_without_replacement(groups, random_sample_size, gen);
+    std::cout<< "  Candidates: ";
+    for(const auto &c : candidate_groups){
+      std::cout << c << " ";
+    }std::cout << std::endl;
 
     // Sometimes it's hard to design an inlier metric which is
     // reliable if the candidate groups are tainted with outliers.
@@ -203,8 +208,10 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
         double metric_value =
             ransac_functions.inlier_metric(possible_inlier, fit);
         if (metric_value < inlier_threshold) {
+          std::cout << "    Inlier | " << possible_inlier << " " << metric_value << std::endl;
           candidate_consensus.emplace_back(possible_inlier);
         } else {
+          std::cout << "        Outlier | " << possible_inlier << " " << metric_value << std::endl;
           outliers.emplace_back(possible_inlier);
         }
       }
@@ -215,6 +222,7 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
     if (candidate_consensus.size() >= min_consensus_size) {
       double consensus_metric_value =
           ransac_functions.consensus_metric(candidate_consensus);
+      std::cout << "  Consensus: " <<  consensus_metric_value << std::endl;
       if (consensus_metric_value < output.consensus_metric) {
         output.inliers = candidate_consensus;
         output.consensus_metric = consensus_metric_value;

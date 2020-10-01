@@ -135,6 +135,9 @@ struct ChiSquaredIsValidCandidateMetric {
     // representative prior.
     const double probability_prior_exceeded =
         chi_squared_cdf(prior, train_dataset.targets);
+
+    //std::cout << "Target Mean:" << std::endl << dataset.targets.mean << std::endl;
+    //std::cout << "  Ransac chi candidate .999: " << probability_prior_exceeded << ", N: " << train_cov.rows() << std::endl;
     const double skip_every_1000th_candidate = 0.999;
     return (probability_prior_exceeded < skip_every_1000th_candidate);
   };
