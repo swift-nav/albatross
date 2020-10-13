@@ -11,6 +11,7 @@
  */
 #include <gtest/gtest.h>
 
+#include "../include/albatross/src/utils/covariance_utils.hpp"
 #include <albatross/Core>
 #include <albatross/CovarianceFunctions>
 
@@ -248,6 +249,75 @@ TEST(test_covariance_functions, test_state_space_representation) {
   auto xs_and_ys = with_both.state_space_representation(features);
   EXPECT_TRUE(bool(
       std::is_same<decltype(xs_and_ys), std::vector<variant<X, Y>>>::value));
+}
+
+template <typename Child, typename Parent>
+bool can_get_child(const Parent &parent) {
+  auto child = get_child_covariance_function<Child>(parent);
+  return std::is_same<Child, decltype(child)>::value;
+}
+
+TEST(test_covariance_function, test_get_child_covariance_function) {
+
+  DummyCovariance dummy;
+  const auto dummy_copy = get_child_covariance_function<DummyCovariance>(dummy);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(dummy_copy));
+
+  IndependentNoise<double> noise;
+  noise.sigma_independent_noise = M_2_PI;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(noise));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(noise)
+                .sigma_independent_noise,
+            M_2_PI);
+
+  Polynomial<2> poly;
+  EXPECT_TRUE(can_get_child<Polynomial<2>>(poly));
+
+  const auto sum = noise + dummy;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(sum));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(sum)
+                .sigma_independent_noise,
+            M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(sum));
+
+  const auto double_sum = sum + poly;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(double_sum));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(double_sum)
+                .sigma_independent_noise,
+            M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(double_sum));
+  EXPECT_TRUE(can_get_child<Polynomial<2>>(double_sum));
+
+  const auto prod = noise * dummy;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(prod));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(prod)
+                .sigma_independent_noise,
+            M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(prod));
+
+  const auto double_prod = prod * poly;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(double_prod));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(double_prod)
+                .sigma_independent_noise,
+            M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(double_prod));
+  EXPECT_TRUE(can_get_child<Polynomial<2>>(double_prod));
+
+  const auto prod_sum = prod * sum;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(prod_sum));
+  EXPECT_EQ(get_child_covariance_function<IndependentNoise<double>>(prod_sum)
+                .sigma_independent_noise,
+            M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(prod_sum));
+
+  const auto double_prod_sum = double_prod * sum;
+  EXPECT_TRUE(can_get_child<IndependentNoise<double>>(double_prod_sum));
+  EXPECT_EQ(
+      get_child_covariance_function<IndependentNoise<double>>(double_prod_sum)
+          .sigma_independent_noise,
+      M_2_PI);
+  EXPECT_TRUE(can_get_child<DummyCovariance>(double_prod_sum));
+  EXPECT_TRUE(can_get_child<Polynomial<2>>(double_prod_sum));
 }
 
 } // namespace albatross
