@@ -305,6 +305,10 @@ public:
     return this->rhs_.state_space_representation(xs);
   }
 
+  LHS get_lhs() const { return lhs_; }
+
+  RHS get_rhs() const { return rhs_; }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -402,6 +406,10 @@ public:
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->rhs_.state_space_representation(xs);
   }
+
+  LHS get_lhs() const { return lhs_; }
+
+  RHS get_rhs() const { return rhs_; }
 
 protected:
   LHS lhs_;
