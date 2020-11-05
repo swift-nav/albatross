@@ -28,6 +28,11 @@ TEST(test_dataset, test_construct_and_subset) {
   std::vector<std::size_t> indices = {0, 2};
   const auto subset_dataset = subset(dataset, indices);
   EXPECT_EQ(subset_dataset.size(), indices.size());
+
+  auto is_3_or_1 = [](const int &x) { return x == 3 || x == 1; };
+
+  const auto filtered_dataset = filter(dataset, is_3_or_1);
+  EXPECT_EQ(subset_dataset, filtered_dataset);
 }
 
 TEST(test_dataset, test_deduplicate) {
