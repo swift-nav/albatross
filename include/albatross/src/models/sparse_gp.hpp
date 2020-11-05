@@ -600,6 +600,10 @@ public:
            this->prior_log_likelihood();
   }
 
+  InducingPointStrategy get_inducing_point_strategy() const {
+    return inducing_point_strategy_;
+  }
+
 private:
   // This method takes care of a lot of the common book keeping required to
   // setup the Sparse Gaussian Process problem.  Namely, we want to get from
