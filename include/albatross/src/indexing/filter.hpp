@@ -78,6 +78,24 @@ inline auto filter(const Grouped<KeyType, ValueType> &map, ToKeepFunction &&f) {
   return filter_map(map, std::forward<ToKeepFunction>(f));
 }
 
+// Dataset
+
+template <typename ToKeepFunction, typename FeatureType,
+          typename std::enable_if<details::is_valid_value_only_filter_function<
+                                      ToKeepFunction, FeatureType>::value,
+                                  int>::type = 0>
+inline RegressionDataset<FeatureType>
+filter(const RegressionDataset<FeatureType> &dataset,
+       ToKeepFunction &&to_keep) {
+  std::vector<std::size_t> inds_to_keep;
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    if (to_keep(dataset.features[i])) {
+      inds_to_keep.emplace_back(i);
+    }
+  }
+  return subset(dataset, inds_to_keep);
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_FILTER_HPP_ */
