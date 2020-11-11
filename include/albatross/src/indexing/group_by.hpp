@@ -22,6 +22,34 @@
 
 namespace albatross {
 
+// This macro can save the verbosity of creating a lambda which
+// is just accessing a member variable.  For example instead of:
+//
+//   auto get_foo = [](const auto &x) { return x.foo; };
+//   dataset.group_by(get_foo);
+//
+// you can do
+//
+//   dataset.group_by(GET(foo));
+//
+#define GET(pattern) [](const auto &x) { return x.pattern; }
+
+// Sometimes there are multiple overloads for functions and
+// templating can't determine which should be used.  For example,
+// if we have:
+//
+//   Foo get_foo(const X &x);
+//
+//   Foo get_foo(const Y &y);
+//
+// then,
+//
+//   dataset.group_by(get_foo)
+//
+// will fail. Instead you can select the one you want by calling,
+//
+//   dataset.group_by(select_overload<X>(get_foo));
+//
 template <typename Arg, typename ReturnType>
 auto select_overload(ReturnType (*fptr)(const Arg &)) {
   return fptr;
