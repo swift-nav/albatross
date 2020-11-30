@@ -77,17 +77,19 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Eigen::MatrixXd sigma_R;
   Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
   Eigen::VectorXd information;
+  Eigen::Index rank;
 
-  Fit(){};
+  Fit() : rank(0) {};
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
-      const Eigen::MatrixXd sigma_R_,
-      const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
-      const Eigen::VectorXd &information_)
+      const Eigen::MatrixXd &sigma_R_,
+      const Eigen::Matrix<int, Eigen::Dynamic, 1> &permutation_indices_,
+      const Eigen::VectorXd &information_,
+      const Eigen::Index rank_)
       : train_features(features_), train_covariance(train_covariance_),
         sigma_R(sigma_R_), permutation_indices(permutation_indices_),
-        information(information_) {}
+        information(information_), rank(rank_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
     assert(mean_shift.size() == information.size());
@@ -99,7 +101,8 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
             train_covariance == other.train_covariance &&
             sigma_R == other.sigma_R &&
             permutation_indices == other.permutation_indices &&
-            information == other.information);
+            information == other.information,
+            rank == other.rank);
   }
 };
 
@@ -341,7 +344,8 @@ public:
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), B_qr.colsPermutation().indices(), v);
+                   get_R(B_qr), B_qr.colsPermutation().indices(), v,
+                   B_qr.rank());
   }
 
   // Here we create the QR decomposition of:
@@ -395,7 +399,8 @@ public:
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     const FitType fit(u, K_uu_ldlt, get_R(B_qr),
-                      B_qr.colsPermutation().indices(), v);
+                      B_qr.colsPermutation().indices(), v,
+                      B_qr.rank());
 
     return fit;
   }
@@ -453,6 +458,7 @@ public:
 
     new_fit.permutation_indices = B_qr.colsPermutation().indices();
     new_fit.sigma_R = get_R(B_qr);
+    new_fit.rank = B_qr.rank();
 
     return output;
   }
