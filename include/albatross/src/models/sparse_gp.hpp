@@ -23,14 +23,13 @@ inline std::string measurement_nugget_name() { return "measurement_nugget"; }
 
 inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
-} // namespace details
+}  // namespace details
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 class SparseGaussianProcessRegression;
 
 struct UniformlySpacedInducingPoints {
-
   UniformlySpacedInducingPoints(std::size_t num_points_ = 10)
       : num_points(num_points_) {}
 
@@ -46,7 +45,6 @@ struct UniformlySpacedInducingPoints {
 };
 
 struct StateSpaceInducingPointStrategy {
-
   template <typename CovarianceFunction, typename FeatureType,
             std::enable_if_t<has_valid_state_space_representation<
                                  CovarianceFunction, FeatureType>::value,
@@ -68,15 +66,17 @@ struct StateSpaceInducingPointStrategy {
           "be sure _ssr_impl has been defined for the types concerned");
 };
 
-template <typename FeatureType> struct SparseGPFit {};
+template <typename FeatureType>
+struct SparseGPFit {};
 
-template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
-
+template <typename FeatureType>
+struct Fit<SparseGPFit<FeatureType>> {
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_covariance;
   Eigen::MatrixXd sigma_R;
   Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
   Eigen::VectorXd information;
+  Eigen::VectorXd targets;
 
   Fit(){};
 
@@ -84,10 +84,13 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
       const Eigen::SerializableLDLT &train_covariance_,
       const Eigen::MatrixXd sigma_R_,
       const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
-      const Eigen::VectorXd &information_)
-      : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(sigma_R_), permutation_indices(permutation_indices_),
-        information(information_) {}
+      const Eigen::VectorXd &information_, const Eigen::VectorXd &targets_)
+      : train_features(features_),
+        train_covariance(train_covariance_),
+        sigma_R(sigma_R_),
+        permutation_indices(permutation_indices_),
+        information(information_),
+        targets(targets_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
     assert(mean_shift.size() == information.size());
@@ -216,8 +219,7 @@ class SparseGaussianProcessRegression
           CovFunc, MeanFunc,
           SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
                                           InducingPointStrategy>> {
-
-public:
+ public:
   using Base = GaussianProcessBase<
       CovFunc, MeanFunc,
       SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
@@ -294,7 +296,6 @@ public:
   auto _update_impl(const Fit<SparseGPFit<InducingPointFeatureType>> &old_fit,
                     const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
-
     BlockDiagonalLDLT A_ldlt;
     Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
@@ -353,10 +354,9 @@ public:
   //
   //   Sigma = (B^T B)^-1
   //
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
-  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
-                   const BlockDiagonalLDLT &A_ldlt,
-                   const Eigen::MatrixXd &K_fu) const {
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> compute_sigma_qr(
+      const Eigen::SerializableLDLT &K_uu_ldlt, const BlockDiagonalLDLT &A_ldlt,
+      const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
@@ -369,7 +369,6 @@ public:
           has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
-
     // Determine the set of inducing points, u.
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
@@ -403,7 +402,6 @@ public:
   template <typename FeatureType>
   auto fit_from_prediction(const std::vector<FeatureType> &new_inducing_points,
                            const JointDistribution &prediction_) const {
-
     FitModel<SparseGaussianProcessRegression, Fit<SparseGPFit<FeatureType>>>
         output(*this, Fit<SparseGPFit<FeatureType>>());
     Fit<SparseGPFit<FeatureType>> &new_fit = output.get_fit();
@@ -421,6 +419,7 @@ public:
     prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
         prediction.size(), 1, details::DEFAULT_NUGGET);
     new_fit.information = new_fit.train_covariance.solve(prediction.mean);
+    new_fit.targets = prediction.mean;
 
     // Here P is the posterior covariance at the new inducing points.  If
     // we consider the case where we rebase and then use the resulting fit
@@ -462,10 +461,10 @@ public:
   using Base::_predict_impl;
 
   template <typename FeatureType, typename FitFeaturetype>
-  Eigen::VectorXd
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<Eigen::VectorXd> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -475,10 +474,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  MarginalDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -508,10 +507,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  JointDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
@@ -604,7 +603,7 @@ public:
     return inducing_point_strategy_;
   }
 
-private:
+ private:
   // This method takes care of a lot of the common book keeping required to
   // setup the Sparse Gaussian Process problem.  Namely, we want to get from
   // possibly unordered features to a structured representation
@@ -618,7 +617,6 @@ private:
       const MarginalDistribution &out_of_order_targets,
       BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
-
     assert(A_ldlt != nullptr);
     assert(K_uu_ldlt != nullptr);
     assert(K_fu != nullptr);
@@ -756,6 +754,6 @@ auto sparse_gp_from_covariance(CovFunc covariance_function,
       StateSpaceInducingPointStrategy(), model_name);
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_ */

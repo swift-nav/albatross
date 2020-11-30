@@ -41,7 +41,6 @@ struct GPFit {};
  */
 template <typename CovarianceRepresentation, typename FeatureType>
 struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
-
   static_assert(has_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
                 "CovarianceRepresentation must have a solve method");
 
@@ -50,25 +49,28 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
   std::vector<FeatureType> train_features;
   CovarianceRepresentation train_covariance;
   Eigen::VectorXd information;
+  Eigen::VectorXd targets;
 
   Fit(){};
 
   Fit(const std::vector<FeatureType> &features_,
       const CovarianceRepresentation &train_covariance_,
-      const Eigen::VectorXd &information_)
-      : train_features(features_), train_covariance(train_covariance_),
-        information(information_) {}
+      const Eigen::VectorXd &information_, const Eigen::VectorXd &targets_)
+      : train_features(features_),
+        train_covariance(train_covariance_),
+        information(information_),
+        targets(targets_) {}
 
   Fit(const std::vector<FeatureType> &features,
-      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets) {
-
+      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets_) {
     train_features = features;
     Eigen::MatrixXd cov(train_cov);
-    cov += targets.covariance;
+    cov += targets_.covariance;
     assert(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
     // Precompute the information vector
-    information = train_covariance.solve(targets.mean);
+    information = train_covariance.solve(targets_.mean);
+    targets = targets_.mean;
   }
 
   bool operator==(
@@ -88,11 +90,10 @@ inline Eigen::VectorXd gp_mean_prediction(const Eigen::MatrixXd &cross_cov,
 }
 
 template <typename CovarianceRepresentation>
-inline MarginalDistribution
-gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
-                       const Eigen::VectorXd &prior_variance,
-                       const Eigen::VectorXd &information,
-                       const CovarianceRepresentation &train_covariance) {
+inline MarginalDistribution gp_marginal_prediction(
+    const Eigen::MatrixXd &cross_cov, const Eigen::VectorXd &prior_variance,
+    const Eigen::VectorXd &information,
+    const CovarianceRepresentation &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   // Here we efficiently only compute the diagonal of the posterior
   // covariance matrix.
@@ -104,11 +105,10 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
 }
 
 template <typename CovarianceRepresentation>
-inline JointDistribution
-gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
-                    const Eigen::MatrixXd &prior_cov,
-                    const Eigen::VectorXd &information,
-                    const CovarianceRepresentation &train_covariance) {
+inline JointDistribution gp_joint_prediction(
+    const Eigen::MatrixXd &cross_cov, const Eigen::MatrixXd &prior_cov,
+    const Eigen::VectorXd &information,
+    const CovarianceRepresentation &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   Eigen::MatrixXd explained_cov =
       cross_cov.transpose() * train_covariance.solve(cross_cov);
@@ -140,15 +140,15 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
  * GP which recovers the prediction.
  */
 template <typename FeatureType>
-inline Fit<GPFit<ExplainedCovariance, FeatureType>>
-gp_fit_from_prediction(const std::vector<FeatureType> &features,
-                       const Eigen::MatrixXd &prior,
-                       const JointDistribution &prediction) {
+inline Fit<GPFit<ExplainedCovariance, FeatureType>> gp_fit_from_prediction(
+    const std::vector<FeatureType> &features, const Eigen::MatrixXd &prior,
+    const JointDistribution &prediction) {
   Fit<GPFit<ExplainedCovariance, FeatureType>> fit;
   fit.train_features = features;
   fit.train_covariance =
       ExplainedCovariance(prior, prior - prediction.covariance);
   fit.information = prior.ldlt().solve(prediction.mean);
+  fit.targets = prediction.mean;
   return fit;
 }
 
@@ -169,28 +169,31 @@ std::string default_model_name(const CovFunc &cov_func,
  */
 template <typename CovFunc, typename MeanFunc, typename ImplType>
 class GaussianProcessBase : public ModelBase<ImplType> {
-
-protected:
+ protected:
   template <typename CovarianceRepresentation, typename FitFeatureType>
   using GPFitType = Fit<GPFit<CovarianceRepresentation, FitFeatureType>>;
 
   template <typename FitFeatureType>
   using CholeskyFit = GPFitType<Eigen::SerializableLDLT, FitFeatureType>;
 
-public:
+ public:
   GaussianProcessBase(const GaussianProcessBase &other)
       : covariance_function_(other.covariance_function_),
-        mean_function_(other.mean_function_), model_name_(other.model_name_){};
+        mean_function_(other.mean_function_),
+        model_name_(other.model_name_){};
 
   GaussianProcessBase()
-      : covariance_function_(), mean_function_(),
+      : covariance_function_(),
+        mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
 
   GaussianProcessBase(const CovFunc &covariance_function)
-      : covariance_function_(covariance_function), mean_function_(),
+      : covariance_function_(covariance_function),
+        mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
   GaussianProcessBase(CovFunc &&covariance_function)
-      : covariance_function_(std::move(covariance_function)), mean_function_(),
+      : covariance_function_(std::move(covariance_function)),
+        mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
 
   GaussianProcessBase(const CovFunc &covariance_function,
@@ -209,10 +212,12 @@ public:
    */
   GaussianProcessBase(const CovFunc &covariance_function,
                       const std::string &model_name)
-      : covariance_function_(covariance_function), mean_function_(),
+      : covariance_function_(covariance_function),
+        mean_function_(),
         model_name_(model_name){};
   GaussianProcessBase(CovFunc &&covariance_function, std::string &model_name)
-      : covariance_function_(std::move(covariance_function)), mean_function_(),
+      : covariance_function_(std::move(covariance_function)),
+        mean_function_(),
         model_name_(model_name){};
 
   GaussianProcessBase(const std::string &model_name)
@@ -222,11 +227,13 @@ public:
                       const MeanFunc &mean_function,
                       const std::string &model_name)
       : covariance_function_(covariance_function),
-        mean_function_(mean_function), model_name_(model_name){};
+        mean_function_(mean_function),
+        model_name_(model_name){};
   GaussianProcessBase(CovFunc &&covariance_function, MeanFunc &&mean_function,
                       const std::string &model_name)
       : covariance_function_(std::move(covariance_function)),
-        mean_function_(std::move(mean_function)), model_name_(model_name){};
+        mean_function_(std::move(mean_function)),
+        model_name_(model_name){};
 
   ~GaussianProcessBase(){};
 
@@ -263,7 +270,6 @@ public:
 
   void unchecked_set_param(const std::string &name,
                            const Parameter &param) override {
-
     if (map_contains(covariance_function_.get_params(), name)) {
       covariance_function_.set_param(name, param);
     } else if (map_contains(mean_function_.get_params(), name)) {
@@ -288,9 +294,9 @@ public:
       typename FeatureType,
       std::enable_if_t<
           has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
-  CholeskyFit<FeatureType>
-  _fit_impl(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const {
+  CholeskyFit<FeatureType> _fit_impl(
+      const std::vector<FeatureType> &features,
+      const MarginalDistribution &targets) const {
     const auto measurement_features = as_measurements(features);
     Eigen::MatrixXd cov = covariance_function_(measurement_features);
     MarginalDistribution zero_mean_targets(targets);
@@ -387,7 +393,6 @@ public:
   auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit,
                     const std::vector<UpdateFeatureType> &features,
                     const MarginalDistribution &targets) const {
-
     const auto new_features = concatenate(fit.train_features, features);
 
     auto pred = this->_predict_impl(features, fit,
@@ -412,7 +417,8 @@ public:
 
     using NewFeatureType = typename decltype(new_features)::value_type;
     using NewFitType = Fit<GPFit<BlockSymmetric<Solver>, NewFeatureType>>;
-    return NewFitType(new_features, new_covariance, new_information);
+    return NewFitType(new_features, new_covariance, new_information,
+                      targets.mean);
   }
 
   CovFunc get_covariance() const { return covariance_function_; }
@@ -420,8 +426,8 @@ public:
   MeanFunc get_mean() const { return mean_function_; };
 
   template <typename FeatureType>
-  Eigen::MatrixXd
-  compute_covariance(const std::vector<FeatureType> &features) const {
+  Eigen::MatrixXd compute_covariance(
+      const std::vector<FeatureType> &features) const {
     return covariance_function_(features);
   }
 
@@ -429,8 +435,8 @@ public:
             std::enable_if_t<has_valid_state_space_representation<
                                  CovFunc, FeatureType>::value,
                              int> = 0>
-  auto
-  state_space_representation(const std::vector<FeatureType> &features) const {
+  auto state_space_representation(
+      const std::vector<FeatureType> &features) const {
     return covariance_function_.state_space_representation(features);
   }
 
@@ -445,7 +451,7 @@ public:
     return ll;
   }
 
-protected:
+ protected:
   /*
    * CRTP Helpers
    */
@@ -458,12 +464,10 @@ protected:
 };
 
 template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, JointDistribution>
-gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                               const GroupIndexer<GroupKey> &group_indexer,
-                               const GPType &model,
-                               PredictTypeIdentity<JointDistribution>) {
-
+std::map<GroupKey, JointDistribution> gp_cross_validated_predictions(
+    const RegressionDataset<FeatureType> &dataset,
+    const GroupIndexer<GroupKey> &group_indexer, const GPType &model,
+    PredictTypeIdentity<JointDistribution>) {
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
 
@@ -489,12 +493,10 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
 }
 
 template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, MarginalDistribution>
-gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                               const GroupIndexer<GroupKey> &group_indexer,
-                               const GPType &model,
-                               PredictTypeIdentity<MarginalDistribution>) {
-
+std::map<GroupKey, MarginalDistribution> gp_cross_validated_predictions(
+    const RegressionDataset<FeatureType> &dataset,
+    const GroupIndexer<GroupKey> &group_indexer, const GPType &model,
+    PredictTypeIdentity<MarginalDistribution>) {
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
 
@@ -521,11 +523,10 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
 }
 
 template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, Eigen::VectorXd>
-gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                               const GroupIndexer<GroupKey> &group_indexer,
-                               const GPType &model,
-                               PredictTypeIdentity<Eigen::VectorXd>) {
+std::map<GroupKey, Eigen::VectorXd> gp_cross_validated_predictions(
+    const RegressionDataset<FeatureType> &dataset,
+    const GroupIndexer<GroupKey> &group_indexer, const GPType &model,
+    PredictTypeIdentity<Eigen::VectorXd>) {
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
   const std::vector<GroupIndices> indices = map_values(group_indexer);
@@ -555,17 +556,17 @@ template <typename CovFunc, typename MeanFunc>
 class GaussianProcessRegression
     : public GaussianProcessBase<CovFunc, MeanFunc,
                                  GaussianProcessRegression<CovFunc, MeanFunc>> {
-public:
+ public:
   using Base =
       GaussianProcessBase<CovFunc, MeanFunc,
                           GaussianProcessRegression<CovFunc, MeanFunc>>;
   using Base::Base;
 
   template <typename FeatureType, typename PredictType, typename GroupKey>
-  std::map<GroupKey, PredictType>
-  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const GroupIndexer<GroupKey> &group_indexer,
-                              PredictTypeIdentity<PredictType> identity) const {
+  std::map<GroupKey, PredictType> cross_validated_predictions(
+      const RegressionDataset<FeatureType> &dataset,
+      const GroupIndexer<GroupKey> &group_indexer,
+      PredictTypeIdentity<PredictType> identity) const {
     return gp_cross_validated_predictions(dataset, group_indexer, *this,
                                           identity);
   }
@@ -607,7 +608,6 @@ auto gp_from_covariance_and_mean(CovFunc &&covariance_function,
  * Model Metric
  */
 struct GaussianProcessNegativeLogLikelihood {
-
   template <typename FeatureType, typename CovFunc, typename MeanFunc,
             typename GPImplType>
   double operator()(
@@ -617,6 +617,6 @@ struct GaussianProcessNegativeLogLikelihood {
   }
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif
