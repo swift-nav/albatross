@@ -342,7 +342,8 @@ class SparseGaussianProcessRegression
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), B_qr.colsPermutation().indices(), v);
+                   get_R(B_qr), B_qr.colsPermutation().indices(), v,
+                   targets.mean);
   }
 
   // Here we create the QR decomposition of:
@@ -394,7 +395,7 @@ class SparseGaussianProcessRegression
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     const FitType fit(u, K_uu_ldlt, get_R(B_qr),
-                      B_qr.colsPermutation().indices(), v);
+                      B_qr.colsPermutation().indices(), v, targets.mean);
 
     return fit;
   }
