@@ -32,6 +32,7 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_ldlt", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
+  archive(cereal::make_nvp("targets", fit.targets));
 }
 
 template <typename Archive, typename FeatureType>
@@ -42,6 +43,7 @@ inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
   archive(cereal::make_nvp("train_features", fit.train_features));
   archive(cereal::make_nvp("sigma_R", fit.sigma_R));
   archive(cereal::make_nvp("permutation_indices", fit.permutation_indices));
+  archive(cereal::make_nvp("targets", fit.targets));
 }
 
 template <typename Archive, typename CovFunc, typename MeanFunc,
@@ -70,6 +72,6 @@ void load(Archive &archive,
   archive(cereal::make_nvp("insights", gp.insights));
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_GP_HPP_ */
