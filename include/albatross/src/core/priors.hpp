@@ -15,6 +15,7 @@
 
 namespace albatross {
 
+constexpr double LOG_2_ = 0.6931471805599453;
 constexpr double LOG_2PI_ = 1.8378770664093453;
 constexpr double LARGE_VAL = HUGE_VAL;
 
@@ -140,6 +141,32 @@ public:
   double sigma_;
 };
 
+class PositiveGaussianPrior : public Prior {
+public:
+  PositiveGaussianPrior(double mu = 0., double sigma = 1.)
+      : mu_(mu), sigma_(sigma) {}
+
+  bool operator==(const PositiveGaussianPrior &other) const {
+    return other.mu_ == mu_ && other.sigma_ == sigma_;
+  }
+
+  double lower_bound() const override { return 0.; }
+
+  std::string get_name() const override {
+    std::ostringstream oss;
+    oss << "positive_gaussian[" << mu_ << "," << sigma_ << "]";
+    return oss.str();
+  }
+
+  double log_pdf(double x) const override {
+    double deviation = (x - mu_) / sigma_;
+    return -0.5 * (LOG_2PI_ * 2 * log(sigma_) + deviation * deviation) + LOG_2_;
+  }
+
+  double mu_;
+  double sigma_;
+};
+
 class LogNormalPrior : public Prior {
 public:
   LogNormalPrior(double mu = 0., double sigma = 1.) : mu_(mu), sigma_(sigma) {}
@@ -166,7 +193,8 @@ public:
 // NOTE: Order here is very important for backward compatible seraialization.
 using PossiblePriors =
     variant<UninformativePrior, FixedPrior, NonNegativePrior, PositivePrior,
-            UniformPrior, LogScaleUniformPrior, GaussianPrior, LogNormalPrior>;
+            UniformPrior, LogScaleUniformPrior, GaussianPrior, LogNormalPrior,
+            PositiveGaussianPrior>;
 
 class PriorContainer : public Prior {
 public:

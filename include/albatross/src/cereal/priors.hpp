@@ -34,6 +34,13 @@ inline void serialize(Archive &archive, albatross::GaussianPrior &prior,
 }
 
 template <typename Archive>
+inline void serialize(Archive &archive, albatross::PositiveGaussianPrior &prior,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("mu", prior.mu_),
+          cereal::make_nvp("sigma", prior.sigma_));
+}
+
+template <typename Archive>
 inline void serialize(Archive &archive, albatross::LogNormalPrior &prior,
                       const std::uint32_t) {
   archive(cereal::make_nvp("mu", prior.mu_),
