@@ -75,13 +75,22 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
               return comp(std::get<0>(a), std::get<0>(b));
             });
 
+  std::ios_base::fmtflags f(stream->flags());
+
+  (*stream) << std::scientific;
+
   (*stream) << "MIN: " << values.minCoeff() << std::endl;
   (*stream) << "MAX: " << values.maxCoeff() << std::endl;
+
+  stream->flags(f);
 
   for (std::size_t i = 0; i < count; ++i) {
     const double value = std::get<0>(values_and_vectors[i]);
     const auto vector = std::get<1>(values_and_vectors[i]);
+
+    (*stream) << std::scientific;
     (*stream) << "eigen value: " << value << std::endl;
+    stream->flags(f);
 
     // Sort the indices from largest to smallest coef
     std::vector<std::size_t> sorted_idx(vector.size());
