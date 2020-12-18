@@ -225,4 +225,25 @@ TEST(test_apply, test_vector_apply_any) {
   EXPECT_EQ(actual, expected);
 }
 
+TEST(test_apply, test_filter) {
+
+  const auto xs = linspace(0., 10., 11);
+  auto is_odd = [](const double &x) { return fmod(x, 2.) == 1.; };
+
+  const auto odds = filter(xs, is_odd);
+  const std::vector<double> expected = {1, 3, 5, 7, 9};
+  EXPECT_EQ(expected, odds);
+
+  auto keep_none = [](const double &) { return false; };
+
+  EXPECT_EQ(filter(xs, keep_none).size(), 0);
+
+  auto keep_all = [](const double &) { return true; };
+
+  EXPECT_EQ(xs, filter(xs, keep_all));
+
+  std::set<double> set_xs(xs.begin(), xs.end());
+  EXPECT_EQ(filter(set_xs, is_odd).size(), expected.size());
+}
+
 } // namespace albatross

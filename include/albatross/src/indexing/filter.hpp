@@ -32,6 +32,23 @@ inline std::vector<ValueType> filter(const std::vector<ValueType> &values,
   return output;
 }
 
+// Set
+
+template <typename ToKeepFunction, typename ValueType,
+          typename std::enable_if<details::is_valid_value_only_filter_function<
+                                      ToKeepFunction, ValueType>::value,
+                                  int>::type = 0>
+inline std::set<ValueType> filter(const std::set<ValueType> &values,
+                                  ToKeepFunction &&to_keep) {
+  std::set<ValueType> output;
+  for (const auto &v : values) {
+    if (to_keep(v)) {
+      output.emplace(v);
+    }
+  }
+  return output;
+}
+
 // Map
 
 template <template <typename...> class Map, typename KeyType,
