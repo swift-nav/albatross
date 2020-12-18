@@ -436,6 +436,21 @@ TEST(test_groupby, test_group_by_nested_filter) {
   }
 }
 
+TEST(test_groupby, test_group_by_combine_eigen) {
+
+  albatross::Grouped<Eigen::Index, Eigen::VectorXd> grouped;
+  grouped[3] = Eigen::VectorXd::Constant(3, 1, 3.);
+  grouped[1] = Eigen::VectorXd::Constant(1, 1, 1.);
+  grouped[0] = Eigen::VectorXd();
+  grouped[5] = Eigen::VectorXd::Constant(5, 1, 5.);
+
+  Eigen::VectorXd expected(9);
+  expected << 1., 3., 3., 3., 5., 5., 5., 5., 5.;
+
+  Eigen::VectorXd actual = grouped.combine();
+  EXPECT_EQ(expected, actual);
+}
+
 TEST(test_groupby, test_group_by_first_group) {
 
   const auto fib = fibonacci(20);

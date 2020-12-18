@@ -280,6 +280,24 @@ Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
   return output;
 }
 
+template <template <typename...> class Map, typename KeyType>
+Eigen::VectorXd combine(const Map<KeyType, Eigen::VectorXd> &groups) {
+
+  auto get_size = [](const auto &x) { return x.size(); };
+  Eigen::Index n = albatross::apply_map(groups, get_size).sum();
+
+  Eigen::VectorXd output(n, 1);
+  Eigen::Index i = 0;
+  for (const auto &x : map_values(groups)) {
+    if (x.size() > 0) {
+      output.block(i, 0, x.size(), 1) = x;
+      i += x.size();
+    }
+  }
+  assert(i == output.size());
+  return output;
+}
+
 /*
  * Combinable grouped objects support operations in which you can
  * collapse a `map<Key, Value>` into a single `Value`
@@ -304,6 +322,13 @@ template <typename KeyType, typename FeatureType>
 class Grouped<KeyType, std::vector<FeatureType>>
     : public CombinableBase<KeyType, std::vector<FeatureType>> {
   using Base = CombinableBase<KeyType, std::vector<FeatureType>>;
+  using Base::Base;
+};
+
+template <typename KeyType>
+class Grouped<KeyType, Eigen::VectorXd>
+    : public CombinableBase<KeyType, Eigen::VectorXd> {
+  using Base = CombinableBase<KeyType, Eigen::VectorXd>;
   using Base::Base;
 };
 
