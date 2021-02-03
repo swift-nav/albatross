@@ -16,6 +16,7 @@
 using albatross::Fit;
 using albatross::GaussianProcessBase;
 using albatross::GPFit;
+using albatross::LinearCombination;
 using albatross::SparseGPFit;
 
 #ifndef GP_SERIALIZATION_VERSION
@@ -68,6 +69,13 @@ void load(Archive &archive,
   archive(cereal::make_nvp("params", params));
   gp.set_params(params);
   archive(cereal::make_nvp("insights", gp.insights));
+}
+
+template <typename Archive, typename FeatureType>
+inline void serialize(Archive &archive, LinearCombination<FeatureType> &combo,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("values", combo.values));
+  archive(cereal::make_nvp("coefficients", combo.coefficients));
 }
 
 } // namespace cereal
