@@ -266,6 +266,15 @@ struct BlockSymmetricMatrix
   }
 };
 
+struct LinearCombo : public SerializableType<LinearCombination<double>> {
+  LinearCombination<double> create() const override {
+    std::vector<double> values = {1., 2., 5.};
+    Eigen::VectorXd coefs(3);
+    coefs << 10., 20., 50.;
+    return LinearCombination<double>(values, coefs);
+  }
+};
+
 REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
                            test_roundtrip_serialize_binary);
 
@@ -275,7 +284,7 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          FullJointDistribution, FullMarginalDistribution,
                          ParameterStoreType, Dataset, DatasetWithMetadata,
                          SerializableType<MockModel>, VariantAsInt,
-                         VariantAsDouble, BlockSymmetricMatrix>
+                         VariantAsDouble, BlockSymmetricMatrix, LinearCombo>
     ToTest;
 
 INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
