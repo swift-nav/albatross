@@ -50,19 +50,21 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
   std::vector<FeatureType> train_features;
   CovarianceRepresentation train_covariance;
   Eigen::VectorXd information;
+  MarginalDistribution targets;
 
   Fit(){};
 
   Fit(const std::vector<FeatureType> &features_,
       const CovarianceRepresentation &train_covariance_,
-      const Eigen::VectorXd &information_)
+      const Eigen::VectorXd &information_, const MarginalDistribution &targets_)
       : train_features(features_), train_covariance(train_covariance_),
-        information(information_) {}
+        information(information_), targets(targets_) {}
 
   Fit(const std::vector<FeatureType> &features,
-      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets) {
+      const Eigen::MatrixXd &train_cov, const MarginalDistribution &targets_) {
 
     train_features = features;
+    targets = targets_;
     Eigen::MatrixXd cov(train_cov);
     cov += targets.covariance;
     assert(!cov.hasNaN());
@@ -75,7 +77,7 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
       const Fit<GPFit<CovarianceRepresentation, FeatureType>> &other) const {
     return (train_features == other.train_features &&
             train_covariance == other.train_covariance &&
-            information == other.information);
+            information == other.information && targets = other.targets);
   }
 };
 
@@ -149,6 +151,7 @@ gp_fit_from_prediction(const std::vector<FeatureType> &features,
   fit.train_covariance =
       ExplainedCovariance(prior, prior - prediction.covariance);
   fit.information = prior.ldlt().solve(prediction.mean);
+  fit.targets = MarginalDistribution(prediction.mean,prediction.covariance.diagonal());
   return fit;
 }
 

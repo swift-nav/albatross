@@ -33,6 +33,7 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_ldlt", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
+  archive(cereal::make_nvp("targets", fit.targets));
 }
 
 template <typename Archive, typename FeatureType>
