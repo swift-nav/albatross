@@ -102,11 +102,13 @@ struct GenericTuner {
   ParameterStore initial_params;
   nlopt::opt optimizer;
   std::ostream &output_stream;
+  std::size_t n_proc;
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
       : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_) {
+        output_stream(output_stream_),
+        n_proc(1) {
     optimizer = default_optimizer(initial_params);
   };
 
@@ -127,7 +129,8 @@ struct GenericTuner {
 
     auto param_wrapped_objective = [&](const std::vector<double> &x,
                                        std::vector<double> &grad) {
-      ParameterStore params = set_tunable_params_values(initial_params, x);
+
+      const ParameterStore params = set_tunable_params_values(initial_params, x);
 
       if (!params_are_valid(params)) {
         this->output_stream << "Invalid Parameters:" << std::endl;
@@ -137,9 +140,22 @@ struct GenericTuner {
 
       double metric = objective(params);
 
+      if (grad.size() > 0) {
+
+        const auto tunable = get_tunable_parameters(initial_params);
+
+        const auto grad_eval = compute_gradient(objective, params, metric, n_proc);
+        this->output_stream << "gradient" << std::endl;
+        for (std::size_t i = 0; i < grad_eval.size(); ++i) {
+          this->output_stream << "  " << tunable.names[i] << " : " << grad_eval[i] << std::endl;
+          grad[i] = grad_eval[i];
+        }
+      }
+
       if (std::isnan(metric)) {
         metric = INFINITY;
       }
+
       this->output_stream << "-------------------" << std::endl;
       this->output_stream << pretty_params(params) << std::endl;
       this->output_stream << "objective: " << metric << std::endl;
@@ -165,10 +181,17 @@ struct GenericTuner {
 
     auto grad_free_objective = [&](const std::vector<double> &x,
                                    std::vector<double> &grad) {
-      assert(grad.size() == 0 &&
-             "Gradient based algorithm used with a gradient free objective");
 
       double metric = objective(x);
+
+      if (grad.size() > 0) {
+        const auto grad_eval = compute_gradient(objective, x, metric, n_proc);
+        this->output_stream << "gradient" << std::endl;
+        for (std::size_t i = 0; i < grad_eval.size(); ++i) {
+          this->output_stream << "  " << i << " : " << grad_eval[i] << std::endl;
+          grad[i] = grad_eval[i];
+        }
+      }
 
       if (std::isnan(metric)) {
         metric = INFINITY;

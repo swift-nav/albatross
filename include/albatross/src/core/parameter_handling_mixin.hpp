@@ -20,6 +20,7 @@ constexpr double PARAMETER_EPSILON =
 constexpr double PARAMETER_MAX = std::numeric_limits<ParameterValue>::max();
 
 struct TunableParameters {
+  std::vector<std::string> names;
   std::vector<double> values;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
@@ -68,6 +69,8 @@ struct Parameter {
  */
 inline std::string pretty_params(const ParameterStore &params) {
   std::ostringstream ss;
+  ss << std::setprecision(12);
+  ss << std::scientific;
   ss << "{" << std::endl;
   for (const auto &pair : params) {
     ss << "    {\"" << pair.first << "\", " << pair.second.value << "},"
@@ -141,6 +144,7 @@ inline TunableParameters get_tunable_parameters(const ParameterStore &params) {
         v = log(v);
       }
 
+      output.names.push_back(pair.first);
       output.values.push_back(v);
       output.lower_bounds.push_back(lb);
       output.upper_bounds.push_back(ub);

@@ -32,7 +32,7 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
+inline void async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
     futures.emplace_back(async_safe(func, x));
@@ -49,7 +49,7 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
+inline auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
   std::vector<std::future<ApplyType>> futures;
   for (const auto &x : xs) {
     futures.emplace_back(async_safe(func, x));
@@ -59,6 +59,73 @@ auto async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func) {
   for (auto &f : futures) {
     output.emplace_back(f.get());
   }
+  return output;
+}
+
+template <typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline void
+async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func,
+                 std::size_t n_proc) {
+
+  assert(n_proc > 1);
+
+  std::vector<std::size_t> inds(xs.size());
+  std::iota(std::begin(inds), std::end(inds), 0);
+
+  auto get_group = [&](std::size_t i) {
+    return i % n_proc;
+  };
+
+  auto process_group = [&](const std::vector<std::size_t> &group_inds) {
+    for (const auto &ind : group_inds) {
+      func(xs[ind]);
+    }
+  };
+
+  group_by(inds, get_group).async_apply(process_group);
+}
+
+template <typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline auto
+async_apply(const std::vector<ValueType> &xs, const ApplyFunction &func,
+                 std::size_t n_proc) {
+
+  assert(n_proc > 1);
+
+  std::vector<std::size_t> inds(xs.size());
+  std::iota(std::begin(inds), std::end(inds), 0);
+
+  auto get_group = [&](std::size_t i) {
+    return i % n_proc;
+  };
+
+  std::mutex output_mutex;
+  std::vector<ApplyType> output;
+
+  auto process_group = [&](const std::vector<std::size_t> &group_inds) {
+    for (const auto &i : group_inds) {
+      const ApplyType output_i = func(xs[i]);
+      {
+        const std::lock_guard<std::mutex> lock(output_mutex);
+        output[i] = output_i;
+      }
+    }
+  };
+
+  group_by(inds, get_group).async_apply(process_group);
+
   return output;
 }
 

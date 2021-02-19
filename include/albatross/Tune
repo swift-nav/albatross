@@ -20,5 +20,6 @@
 
 #include <albatross/src/tune/tuning_metrics.hpp>
 #include <albatross/src/tune/tune.hpp>
+#include <albatross/src/tune/finite_difference.hpp>
 
 #endif
