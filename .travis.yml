@@ -29,7 +29,6 @@ matrix:
           - clang-6.0
           - clang-format-6.0
           - clang-tidy-6.0
-          - libnlopt-dev
     env:
       - C_COMPILER=gcc-6 CXX_COMPILER=g++-6
   - compiler: clang-6.0
@@ -46,7 +45,6 @@ matrix:
           - clang-6.0
           - clang-format-6.0
           - clang-tidy-6.0
-          - libnlopt-dev
     env:
       - C_COMPILER=clang-6.0 CXX_COMPILER=clang++-6.0
   - compiler: sphinx

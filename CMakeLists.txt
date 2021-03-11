@@ -26,6 +26,7 @@ find_package(Eigen REQUIRED)
 find_package(FastCSV REQUIRED)
 find_package(Gzip-Hpp REQUIRED)
 find_package(Variant REQUIRED)
+find_package(Nlopt REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
