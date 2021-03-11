@@ -69,6 +69,8 @@ struct Parameter {
  */
 inline std::string pretty_params(const ParameterStore &params) {
   std::ostringstream ss;
+  ss << std::setprecision(12);
+  ss << std::scientific;
   ss << "{" << std::endl;
   for (const auto &pair : params) {
     ss << "    {\"" << pair.first << "\", " << pair.second.value << "},"
