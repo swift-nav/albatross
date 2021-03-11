@@ -13,6 +13,7 @@
 #include "test_models.h"
 #include <albatross/Tune>
 #include <gtest/gtest.h>
+#include <nlopt.hpp>
 
 namespace albatross {
 
