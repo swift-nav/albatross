@@ -159,24 +159,90 @@ TEST(test_tune, test_generic) {
   for (auto &d : initial_x) {
     d = 0.;
   }
-  GenericTuner tuner(initial_x, output_stream);
 
-  // Make sure the generic tuner can use any of the different objective function
-  // signatures.
-  const auto eigen_result = tuner.tune(mahalanobis_distance_eigen);
-  EXPECT_LT((eigen_result - truth).norm(), 1e-4);
+  auto test_tuner = [&](GenericTuner &tuner) {
+    // Make sure the generic tuner can use any of the different objective
+    // function signatures.
+    const auto eigen_result = tuner.tune(mahalanobis_distance_eigen);
+    EXPECT_LT((eigen_result - truth).array().abs().maxCoeff(), 1e-3);
 
-  auto vector_result = tuner.tune(mahalanobis_distance_vector);
-  const Eigen::Map<Eigen::VectorXd> eigen_vector_output(
-      &vector_result[0], static_cast<Eigen::Index>(vector_result.size()));
-  EXPECT_LT((eigen_vector_output - truth).norm(), 1e-4);
+    auto vector_result = tuner.tune(mahalanobis_distance_vector);
+    const Eigen::Map<Eigen::VectorXd> eigen_vector_output(
+        &vector_result[0], static_cast<Eigen::Index>(vector_result.size()));
+    EXPECT_LT((eigen_vector_output - truth).array().abs().maxCoeff(), 1e-3);
 
-  const auto params_result = tuner.tune(mahalanobis_distance_params);
-  auto param_vector = get_tunable_parameters(params_result).values;
-  const Eigen::Map<Eigen::VectorXd> eigen_param_output(
-      &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+    const auto params_result = tuner.tune(mahalanobis_distance_params);
+    auto param_vector = get_tunable_parameters(params_result).values;
+    const Eigen::Map<Eigen::VectorXd> eigen_param_output(
+        &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
 
-  EXPECT_LT((eigen_param_output - truth).norm(), 1e-4);
+    EXPECT_LT((eigen_param_output - truth).array().abs().maxCoeff(), 1e-3);
+  };
+
+  GenericTuner default_tuner(initial_x, output_stream);
+  test_tuner(default_tuner);
+
+  const auto params = uninformative_params(initial_x);
+
+  GenericTuner gradient_tuner(initial_x, output_stream);
+  gradient_tuner.optimizer = default_gradient_optimizer(params);
+  test_tuner(gradient_tuner);
+
+  GenericTuner async_gradient_tuner(initial_x, output_stream);
+  async_gradient_tuner.optimizer = default_gradient_optimizer(params);
+  async_gradient_tuner.use_async = true;
+  test_tuner(async_gradient_tuner);
+}
+
+TEST(test_tune, test_compute_gradient) {
+
+  std::default_random_engine gen(2012);
+  Eigen::Index k = 3;
+  const Eigen::MatrixXd cov = random_covariance_matrix(k, gen);
+  const auto cov_ldlt = cov.ldlt();
+  const Eigen::VectorXd truth = Eigen::VectorXd::Ones(k);
+  const Eigen::VectorXd mean = cov_ldlt.solve(truth);
+
+  auto mahalanobis_distance_eigen = [&](const Eigen::VectorXd &eigen_x) {
+    const Eigen::VectorXd delta = cov_ldlt.solve(eigen_x) - mean;
+    return delta.dot(delta);
+  };
+
+  auto mahalanobis_distance_vector = [&](const std::vector<double> &vector_x) {
+    std::vector<double> x(vector_x);
+    const Eigen::Map<Eigen::VectorXd> eigen_x(
+        &x[0], static_cast<Eigen::Index>(x.size()));
+    return mahalanobis_distance_eigen(eigen_x);
+  };
+
+  auto mahalanobis_distance_params = [&](const ParameterStore &params) {
+    return mahalanobis_distance_vector(get_tunable_parameters(params).values);
+  };
+
+  ParameterStore params;
+  params["0"] = {0., albatross::UninformativePrior()};
+  params["1"] = {1., albatross::PositiveGaussianPrior()};
+  params["2"] = {2., albatross::UniformPrior(-10, 10)};
+
+  std::vector<double> x = albatross::get_tunable_parameters(params).values;
+
+  const Eigen::Map<Eigen::VectorXd> eigen_x(
+      &x[0], static_cast<Eigen::Index>(x.size()));
+
+  const double f_val = mahalanobis_distance_vector(x);
+  const auto vector_grad =
+      compute_gradient(mahalanobis_distance_vector, x, f_val);
+  const auto param_grad =
+      compute_gradient(mahalanobis_distance_params, params, f_val);
+
+  const Eigen::MatrixXd cov_inv = cov.inverse();
+  const Eigen::VectorXd expected_grad =
+      2 * (cov_inv.transpose() * cov_inv * eigen_x) -
+      2 * cov_inv.transpose() * mean;
+  for (std::size_t i = 0; i < vector_grad.size(); ++i) {
+    EXPECT_NEAR(vector_grad[i], expected_grad[i], 1e-4);
+    EXPECT_NEAR(param_grad[i], expected_grad[i], 1e-4);
+  }
 }
 
 } // namespace albatross
