@@ -51,8 +51,6 @@ inline void set_objective_function(nlopt::opt &optimizer,
 inline nlopt::opt
 default_optimizer(const ParameterStore &params,
                   const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
-  // The various algorithms in nlopt are coded by the first two characters.
-  // In this case LN stands for local, gradient free.
   const auto tunable_params = get_tunable_parameters(params);
 
   nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
@@ -65,6 +63,20 @@ default_optimizer(const ParameterStore &params,
   // terminate based on xtol if the change is super small.
   optimizer.set_xtol_abs(1e-18);
   optimizer.set_xtol_rel(1e-18);
+  return optimizer;
+}
+
+inline nlopt::opt default_gradient_optimizer(
+    const ParameterStore &params,
+    const nlopt::algorithm &algorithm = nlopt::LD_SLSQP) {
+  const auto tunable_params = get_tunable_parameters(params);
+  nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
+  optimizer.set_ftol_abs(1e-4);
+  optimizer.set_ftol_rel(1e-4);
+  optimizer.set_lower_bounds(tunable_params.lower_bounds);
+  optimizer.set_upper_bounds(tunable_params.upper_bounds);
+  optimizer.set_xtol_abs(1e-6);
+  optimizer.set_xtol_rel(1e-6);
   return optimizer;
 }
 
@@ -102,11 +114,12 @@ struct GenericTuner {
   ParameterStore initial_params;
   nlopt::opt optimizer;
   std::ostream &output_stream;
+  bool use_async;
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
       : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_) {
+        output_stream(output_stream_), use_async(false) {
     optimizer = default_optimizer(initial_params);
   };
 
@@ -127,7 +140,8 @@ struct GenericTuner {
 
     auto param_wrapped_objective = [&](const std::vector<double> &x,
                                        std::vector<double> &grad) {
-      ParameterStore params = set_tunable_params_values(initial_params, x);
+      const ParameterStore params =
+          set_tunable_params_values(initial_params, x);
 
       if (!params_are_valid(params)) {
         this->output_stream << "Invalid Parameters:" << std::endl;
@@ -136,6 +150,20 @@ struct GenericTuner {
       }
 
       double metric = objective(params);
+
+      if (grad.size() > 0) {
+
+        const auto tunable = get_tunable_parameters(initial_params);
+
+        const auto grad_eval =
+            compute_gradient(objective, params, metric, use_async);
+        this->output_stream << "gradient" << std::endl;
+        for (std::size_t i = 0; i < grad_eval.size(); ++i) {
+          this->output_stream << "  " << tunable.names[i] << " : "
+                              << grad_eval[i] << std::endl;
+          grad[i] = grad_eval[i];
+        }
+      }
 
       if (std::isnan(metric)) {
         metric = INFINITY;
@@ -165,10 +193,18 @@ struct GenericTuner {
 
     auto grad_free_objective = [&](const std::vector<double> &x,
                                    std::vector<double> &grad) {
-      assert(grad.size() == 0 &&
-             "Gradient based algorithm used with a gradient free objective");
-
       double metric = objective(x);
+
+      if (grad.size() > 0) {
+        const auto grad_eval =
+            compute_gradient(objective, x, metric, use_async);
+        this->output_stream << "gradient" << std::endl;
+        for (std::size_t i = 0; i < grad_eval.size(); ++i) {
+          this->output_stream << "  " << i << " : " << grad_eval[i]
+                              << std::endl;
+          grad[i] = grad_eval[i];
+        }
+      }
 
       if (std::isnan(metric)) {
         metric = INFINITY;
