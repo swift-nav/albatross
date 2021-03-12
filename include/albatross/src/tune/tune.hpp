@@ -51,8 +51,6 @@ inline void set_objective_function(nlopt::opt &optimizer,
 inline nlopt::opt
 default_optimizer(const ParameterStore &params,
                   const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
-  // The various algorithms in nlopt are coded by the first two characters.
-  // In this case LN stands for local, gradient free.
   const auto tunable_params = get_tunable_parameters(params);
 
   nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
@@ -65,6 +63,20 @@ default_optimizer(const ParameterStore &params,
   // terminate based on xtol if the change is super small.
   optimizer.set_xtol_abs(1e-18);
   optimizer.set_xtol_rel(1e-18);
+  return optimizer;
+}
+
+inline nlopt::opt default_gradient_optimizer(
+    const ParameterStore &params,
+    const nlopt::algorithm &algorithm = nlopt::LD_SLSQP) {
+  const auto tunable_params = get_tunable_parameters(params);
+  nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
+  optimizer.set_ftol_abs(1e-4);
+  optimizer.set_ftol_rel(1e-4);
+  optimizer.set_lower_bounds(tunable_params.lower_bounds);
+  optimizer.set_upper_bounds(tunable_params.upper_bounds);
+  optimizer.set_xtol_abs(1e-6);
+  optimizer.set_xtol_rel(1e-6);
   return optimizer;
 }
 
