@@ -102,11 +102,12 @@ struct GenericTuner {
   ParameterStore initial_params;
   nlopt::opt optimizer;
   std::ostream &output_stream;
+  bool use_async;
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
       : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_) {
+        output_stream(output_stream_), use_async(false) {
     optimizer = default_optimizer(initial_params);
   };
 
@@ -127,7 +128,8 @@ struct GenericTuner {
 
     auto param_wrapped_objective = [&](const std::vector<double> &x,
                                        std::vector<double> &grad) {
-      ParameterStore params = set_tunable_params_values(initial_params, x);
+      const ParameterStore params =
+          set_tunable_params_values(initial_params, x);
 
       if (!params_are_valid(params)) {
         this->output_stream << "Invalid Parameters:" << std::endl;
