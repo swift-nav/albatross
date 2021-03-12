@@ -90,6 +90,72 @@ compute_gradient(Function f, const ParameterStore &params, double f_val,
   }
 }
 
+struct FiniteDifferenceComputation {
+  double epsilon;
+  double value;
+};
+
+template <typename Function>
+inline FiniteDifferenceComputation
+finite_difference_evaluation(Function f, const ParameterStore &params,
+                             std::size_t i) {
+  const auto tunable_params = get_tunable_parameters(params);
+
+  if (i >= tunable_params.values.size()) {
+    return {0., f(params)};
+  }
+
+  auto get_perturbed = [&](std::size_t i, double epsilon) {
+    std::vector<double> perturbed(tunable_params.values);
+    perturbed[i] = tunable_params.values[i] + epsilon;
+    return set_tunable_params_values(params, perturbed);
+  };
+
+  double epsilon = 1e-6;
+  const double range =
+      tunable_params.upper_bounds[i] - tunable_params.lower_bounds[i];
+  if (std::isfinite(range)) {
+    epsilon = 1e-8 * range;
+  }
+  auto perturbed_params = get_perturbed(i, epsilon);
+
+  if (!params_are_valid(perturbed_params)) {
+    epsilon *= -1;
+    perturbed_params = get_perturbed(i, epsilon);
+  }
+
+  return {epsilon, f(perturbed_params)};
+}
+
+template <typename Function>
+inline std::pair<double, std::vector<double>>
+compute_value_and_gradient(Function f, const ParameterStore &params) {
+
+  TunableParameters tunable_params = get_tunable_parameters(params);
+
+  const std::size_t n = tunable_params.values.size();
+  std::vector<std::size_t> inds(n);
+  std::iota(std::begin(inds), std::end(inds), 0);
+
+  inds.push_back(n);
+
+  auto evaluate_function = [&](std::size_t i) {
+    return finite_difference_evaluation(f, params, i);
+  };
+
+  const auto evaluations = albatross::async_apply(inds, evaluate_function);
+
+  assert(evaluations[n].epsilon == 0.);
+  const double f_val = evaluations[n].value;
+
+  std::vector<double> grad(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    grad[i] = (evaluations[i].value - f_val) / evaluations[i].epsilon;
+  }
+
+  return std::make_pair(f_val, grad);
+}
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_TUNE_FINITE_DIFFERENCE_HPP_ */

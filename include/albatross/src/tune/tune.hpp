@@ -287,17 +287,17 @@ template <typename ObjectiveFunction> struct LBFGSFunction {
       assert(false);
     }
 
-    double metric = objective(params);
+    const auto f_and_g = compute_value_and_gradient(objective, params);
+
+    double metric = f_and_g.first;
 
     const auto tunable = get_tunable_parameters(initial_params);
-
-    const auto grad_eval =
-        compute_gradient(objective, params, metric, use_async);
+    assert(grad.size() == static_cast<Eigen::Index>(f_and_g.second.size()));
     this->output_stream << "gradient" << std::endl;
-    for (std::size_t i = 0; i < grad_eval.size(); ++i) {
-      this->output_stream << "  " << tunable.names[i] << " : " << grad_eval[i]
+    for (Eigen::Index i = 0; i < grad.size(); ++i) {
+      grad[i] = f_and_g.second[i];
+      this->output_stream << "  " << tunable.names[i] << " : " << grad[i]
                           << std::endl;
-      grad[i] = grad_eval[i];
     }
 
     if (std::isnan(metric)) {
