@@ -225,6 +225,11 @@ TEST_F(TestTuneQuadratic, test_generic) {
   async_gradient_tuner.optimizer = default_gradient_optimizer(params);
   async_gradient_tuner.use_async = true;
   test_tuner(async_gradient_tuner);
+
+  LBFGSTuner lbfgs_tuner(params, output_stream);
+  const auto lbfgs_params = lbfgs_tuner.tune(mahalanobis_distance_params);
+
+  std::cout << albatross::pretty_params(lbfgs_params) << std::endl;
 }
 
 TEST_F(TestTuneQuadratic, test_compute_gradient) {

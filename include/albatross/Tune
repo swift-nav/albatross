@@ -14,6 +14,7 @@
 #define ALBATROSS_TUNE_INCLUDE_H
 
 #include <nlopt.hpp>
+#include <LBFGSB.h>
 
 #include "Core"
 #include "Evaluation"

@@ -32,6 +32,7 @@ add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_SOURCE_DIR}/tests"
+  "${PROJECT_SOURCE_DIR}/third_party/LBFGSpp/include/"
   )
 target_link_libraries(albatross
     INTERFACE

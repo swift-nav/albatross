@@ -259,6 +259,111 @@ struct GenericTuner {
                      "Unsupported function signature for ObjectiveFunction");
 };
 
+template <typename ObjectiveFunction> struct LBFGSFunction {
+  ObjectiveFunction objective;
+  ParameterStore initial_params;
+  bool use_async;
+  std::ostream &output_stream;
+
+  LBFGSFunction(ObjectiveFunction objective_,
+                const ParameterStore &initial_params_, bool use_async_,
+                std::ostream &output_stream_ = std::cout)
+      : objective(objective_), initial_params(initial_params_),
+        use_async(use_async_), output_stream(output_stream_){};
+
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
+
+    std::vector<double> vect_x(x.size());
+    for (std::size_t i = 0; i < vect_x.size(); ++i) {
+      vect_x[i] = x[i];
+    }
+
+    const ParameterStore params =
+        set_tunable_params_values(initial_params, vect_x);
+
+    if (!params_are_valid(params)) {
+      this->output_stream << "Invalid Parameters:" << std::endl;
+      this->output_stream << pretty_param_details(params) << std::endl;
+      assert(false);
+    }
+
+    double metric = objective(params);
+
+    const auto tunable = get_tunable_parameters(initial_params);
+
+    const auto grad_eval =
+        compute_gradient(objective, params, metric, use_async);
+    this->output_stream << "gradient" << std::endl;
+    for (std::size_t i = 0; i < grad_eval.size(); ++i) {
+      this->output_stream << "  " << tunable.names[i] << " : " << grad_eval[i]
+                          << std::endl;
+      grad[i] = grad_eval[i];
+    }
+
+    if (std::isnan(metric)) {
+      metric = INFINITY;
+    }
+    this->output_stream << "-------------------" << std::endl;
+    this->output_stream << pretty_params(params) << std::endl;
+    this->output_stream << "objective: " << metric << std::endl;
+    this->output_stream << "-------------------" << std::endl;
+    return metric;
+  };
+};
+
+struct LBFGSTuner {
+  ParameterStore initial_params;
+  std::ostream &output_stream;
+  bool use_async;
+
+  LBFGSTuner(const ParameterStore &initial_params_,
+             std::ostream &output_stream_ = std::cout)
+      : initial_params(initial_params_), output_stream(output_stream_),
+        use_async(false){};
+
+  template <
+      typename ObjectiveFunction,
+      std::enable_if_t<is_invocable<ObjectiveFunction, ParameterStore>::value,
+                       int> = 0>
+  ParameterStore tune(ObjectiveFunction &objective) {
+
+    // Set up parameters
+    LBFGSpp::LBFGSBParam<double> param; // New parameter class
+    param.epsilon = 1e-6;
+    param.max_iterations = 100;
+
+    // Create solver and function object
+    LBFGSpp::LBFGSBSolver<double> solver(param); // New solver class
+    LBFGSFunction<ObjectiveFunction> fun(objective, initial_params, use_async,
+                                         output_stream);
+
+    const auto tunable = albatross::get_tunable_parameters(initial_params);
+
+    // Bounds
+    std::size_t n = tunable.values.size();
+    Eigen::VectorXd lb(n);
+    Eigen::VectorXd ub(n);
+    Eigen::VectorXd x(n);
+    for (std::size_t i = 0; i < n; ++i) {
+      lb[i] = tunable.lower_bounds[i];
+      ub[i] = tunable.upper_bounds[i];
+      x[i] = tunable.values[i];
+    }
+
+    // x will be overwritten to be the best point found
+    double fx;
+    int niter = solver.minimize(fun, x, fx, lb, ub);
+
+    std::cout << "# iterations  " << niter << std::endl;
+    std::vector<double> x_opt(n);
+    for (std::size_t i = 0; i < n; ++i) {
+      x_opt[i] = x[i];
+    }
+
+    return set_tunable_params_values(initial_params, x_opt);
+  }
+};
+
 template <typename ModelType, typename MetricType, class FeatureType>
 struct ModelTuner {
   ModelType model;
