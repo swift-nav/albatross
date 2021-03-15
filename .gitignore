@@ -39,6 +39,7 @@
 .DS_Store
 .deps
 build*/
+cmake-build*/
 .project
 .cproject
 .pydevproject
