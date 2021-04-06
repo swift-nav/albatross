@@ -130,6 +130,8 @@ template <typename GroupKey> struct RansacOutput {
     return (return_code == other.return_code && best == best &&
             iterations == other.iterations);
   }
+
+  bool operator!=(const RansacOutput &other) const { return !(*this == other); }
 };
 
 struct RansacConfig {
@@ -177,7 +179,8 @@ RansacOutput<GroupKey>
 ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
        const std::vector<GroupKey> &groups, double inlier_threshold,
        std::size_t random_sample_size, std::size_t min_consensus_size,
-       std::size_t max_iterations, std::size_t max_failed_candidates) {
+       std::size_t max_iterations, std::size_t max_failed_candidates,
+       std::default_random_engine gen = std::default_random_engine()) {
 
   RansacOutput<GroupKey> output;
   output.return_code = RANSAC_RETURN_CODE_FAILURE;
@@ -189,8 +192,6 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
     output.return_code = RANSAC_RETURN_CODE_INVALID_ARGUMENTS;
     return output;
   }
-
-  std::default_random_engine gen;
 
   std::size_t i = 0;
   std::size_t failed_candidates = 0;

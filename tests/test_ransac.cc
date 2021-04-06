@@ -56,6 +56,41 @@ TEST(test_outlier, test_ransac_direct) {
   }
 }
 
+TEST(test_outlier, test_ransac_repeatability) {
+
+  const MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto model = test_case.get_model();
+
+  const auto indexer = dataset.group_by(LeaveOneOutGrouper()).indexers();
+  NegativeLogLikelihood<JointDistribution> nll;
+  LeaveOneOutLikelihood<> loo_nll;
+
+  auto ransac_functions =
+      get_generic_ransac_functions(model, dataset, indexer, nll, loo_nll);
+
+  double inlier_threshold = 1.;
+  std::size_t sample_size = 3;
+  std::size_t min_consensus_size = 3;
+  std::size_t max_iterations = 20;
+
+  const auto result =
+      ransac(ransac_functions, indexer.keys(), inlier_threshold, sample_size,
+             min_consensus_size, max_iterations, max_iterations);
+
+  const auto repeated =
+      ransac(ransac_functions, indexer.keys(), inlier_threshold, sample_size,
+             min_consensus_size, max_iterations, max_iterations);
+
+  std::default_random_engine gen(2);
+  const auto altered =
+      ransac(ransac_functions, indexer.keys(), inlier_threshold, sample_size,
+             min_consensus_size, max_iterations, max_iterations, gen);
+
+  EXPECT_EQ(result, repeated);
+  EXPECT_NE(result, altered);
+}
+
 TEST(test_outlier, test_ransac_model) {
   const MakeGaussianProcess test_case;
   auto dataset = test_case.get_dataset();
