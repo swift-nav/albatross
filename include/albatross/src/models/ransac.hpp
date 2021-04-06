@@ -91,29 +91,52 @@ inline bool ransac_success(const ransac_return_code_t &rc) {
   return rc == RANSAC_RETURN_CODE_SUCCESS;
 }
 
+template <typename GroupKey> struct RansacIteration {
+  std::vector<GroupKey> candidates;
+  std::map<GroupKey, double> inliers;
+  std::map<GroupKey, double> outliers;
+  double consensus_metric;
+
+  RansacIteration() : consensus_metric(NAN){};
+
+  std::vector<GroupKey> consensus() const {
+    std::vector<GroupKey> output(candidates);
+    for (const auto &pair : inliers) {
+      output.emplace_back(pair.first);
+    }
+    return output;
+  }
+
+  bool operator==(const RansacIteration &other) const {
+    const bool is_same_consensus_metric =
+        ((std::isnan(consensus_metric) && std::isnan(other.consensus_metric)) ||
+         consensus_metric == other.consensus_metric);
+    return (candidates == other.candidates && inliers == other.inliers &&
+            outliers == other.outliers && is_same_consensus_metric);
+  }
+};
+
 template <typename GroupKey> struct RansacOutput {
 
-  RansacOutput()
-      : return_code(RANSAC_RETURN_CODE_INVALID), inliers(), outliers(),
-        consensus_metric(HUGE_VAL){};
+  RansacOutput() : return_code(RANSAC_RETURN_CODE_INVALID){};
 
   using key_type = GroupKey;
 
   ransac_return_code_t return_code;
-  std::vector<GroupKey> inliers;
-  std::vector<GroupKey> outliers;
-  double consensus_metric;
+  RansacIteration<GroupKey> best;
+  std::vector<RansacIteration<GroupKey>> iterations;
 
   bool operator==(const RansacOutput &other) const {
-    return (return_code == other.return_code && inliers == other.inliers &&
-            outliers == other.outliers &&
-            consensus_metric == other.consensus_metric);
+    return (return_code == other.return_code && best == best &&
+            iterations == other.iterations);
   }
 };
 
 struct RansacConfig {
 
-  RansacConfig(){};
+  RansacConfig()
+      : inlier_threshold(NAN), random_sample_size(0), min_consensus_size(0),
+        max_iterations(0), max_failed_candidates(0){};
 
   RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
                std::size_t min_consensus_size_, std::size_t max_iterations_,
@@ -130,20 +153,6 @@ struct RansacConfig {
   std::size_t max_iterations;
   std::size_t max_failed_candidates;
 };
-
-template <typename GroupKey,
-          std::enable_if_t<is_streamable<GroupKey>::value, int> = 0>
-void print_group_or_index(const GroupKey &key, const std::vector<GroupKey> &) {
-  std::cout << key;
-}
-
-template <typename GroupKey,
-          std::enable_if_t<!is_streamable<GroupKey>::value, int> = 0>
-void print_group_or_index(const GroupKey &key,
-                          const std::vector<GroupKey> &groups) {
-  const auto iter = std::find(groups.begin(), groups.end(), key);
-  std::cout << static_cast<int>(iter - groups.begin());
-}
 
 /*
  * This RANdom SAmple Consensus (RANSAC) algorithm works as follows.
@@ -186,20 +195,13 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
   std::size_t i = 0;
   std::size_t failed_candidates = 0;
   while (i < max_iterations) {
-    // Sample a random subset of the data and fit a model.
-    auto candidate_groups =
-        random_without_replacement(groups, random_sample_size, gen);
 
-    if (DEBUG_RANSAC) {
-      std::cout << "=============================================== " << i
-                << std::endl;
-      std::cout << "Candidates:" << std::endl;
-      for (const auto &candidate : candidate_groups) {
-        std::cout << "  - ";
-        print_group_or_index(candidate, groups);
-        std::cout << std::endl;
-      }
-    }
+    output.iterations.emplace_back(RansacIteration<GroupKey>());
+    RansacIteration<GroupKey> &iteration = output.iterations.back();
+
+    // Sample a random subset of the data and fit a model.
+    iteration.candidates =
+        random_without_replacement(groups, random_sample_size, gen);
 
     // Sometimes it's hard to design an inlier metric which is
     // reliable if the candidate groups are tainted with outliers.
@@ -208,11 +210,8 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
     // possible the model will then reasonably predict inliers
     // AND outliers resulting in a large consensus set.  This
     // is_valid_candidate step allows you to filter those cases out.
-    if (!ransac_functions.is_valid_candidate(candidate_groups)) {
+    if (!ransac_functions.is_valid_candidate(iteration.candidates)) {
       ++failed_candidates;
-      if (DEBUG_RANSAC) {
-        std::cout << "Invalid Candidate" << std::endl;
-      }
       if (failed_candidates >= max_failed_candidates) {
         output.return_code = RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES;
         return output;
@@ -220,57 +219,42 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
       continue;
     }
 
-    const auto fit = ransac_functions.fitter(candidate_groups);
+    const auto fit = ransac_functions.fitter(iteration.candidates);
 
     // Any group that's part of the candidate set is automatically an inlier.
-    std::vector<GroupKey> candidate_consensus = candidate_groups;
-    std::vector<GroupKey> outliers;
-
-    if (DEBUG_RANSAC) {
-      std::cout << "Inliers:" << std::endl;
-    }
+    std::vector<GroupKey> candidate_consensus = iteration.candidates;
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
     for (const auto &possible_inlier : groups) {
-      if (!contains_group(candidate_groups, possible_inlier)) {
+      if (!contains_group(iteration.candidates, possible_inlier)) {
         double metric_value =
             ransac_functions.inlier_metric(possible_inlier, fit);
         const bool accepted = metric_value < inlier_threshold;
         if (accepted) {
-          candidate_consensus.emplace_back(possible_inlier);
+          iteration.inliers[possible_inlier] = metric_value;
         } else {
-          outliers.emplace_back(possible_inlier);
-        }
-        if (DEBUG_RANSAC) {
-          std::cout << "  - ";
-          print_group_or_index(possible_inlier, groups);
-          std::cout << "  " << metric_value << "  ACCEPTED: " << accepted;
-          std::cout << std::endl;
+          iteration.outliers[possible_inlier] = metric_value;
         }
       }
     }
 
     // If there is enough agreement, consider this random set of inliers
     // as a candidate model.
-    if (candidate_consensus.size() >= min_consensus_size) {
-      double consensus_metric_value =
-          ransac_functions.consensus_metric(candidate_consensus);
-      const bool best_so_far = consensus_metric_value < output.consensus_metric;
-      if (DEBUG_RANSAC) {
-        std::cout << "CONSENSUS METRIC: " << consensus_metric_value;
-        std::cout << "  BEST SO FAR: " << best_so_far << std::endl;
-      }
+    const auto consensus = iteration.consensus();
+    if (consensus.size() >= min_consensus_size) {
+      iteration.consensus_metric = ransac_functions.consensus_metric(consensus);
+      const bool best_so_far =
+          std::isnan(output.best.consensus_metric) ||
+          iteration.consensus_metric < output.best.consensus_metric;
       if (best_so_far) {
-        output.inliers = candidate_consensus;
-        output.consensus_metric = consensus_metric_value;
-        output.outliers = outliers;
+        output.best = RansacIteration<GroupKey>(iteration);
       }
     }
 
     ++i;
   }
 
-  if (output.inliers.size()) {
+  if (output.best.consensus().size()) {
     output.return_code = RANSAC_RETURN_CODE_SUCCESS;
   } else {
     output.return_code = RANSAC_RETURN_CODE_NO_CONSENSUS;
@@ -502,7 +486,7 @@ public:
 
     if (ransac_success(ransac_output.return_code)) {
       const auto good_inds =
-          indices_from_groups(indexer, ransac_output.inliers);
+          indices_from_groups(indexer, ransac_output.best.consensus());
       const auto consensus_set = subset(dataset, good_inds);
       return Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>>(
           sub_model_.fit(consensus_set), ransac_output);
@@ -549,5 +533,46 @@ ModelBase<ModelType>::ransac(const StrategyType &strategy,
 }
 
 } // namespace albatross
+
+template <typename X, typename std::enable_if_t<
+                          albatross::is_streamable<X>::value, int> = 0>
+inline std::ostream &
+operator<<(std::ostream &os, const albatross::RansacIteration<X> &iteration) {
+
+  os << "CANDIDATES: ";
+  for (const auto &k : iteration.candidates) {
+    os << k << ", ";
+  }
+  os << std::endl;
+
+  os << "INLIERS: " << std::endl;
+  for (const auto &pair : iteration.inliers) {
+    os << "    " << pair.first << " : " << pair.second << std::endl;
+  }
+
+  os << "OUTLIERS: " << std::endl;
+  for (const auto &pair : iteration.outliers) {
+    os << "    " << pair.first << " : " << pair.second << std::endl;
+  }
+
+  os << "CONSENSUS_METRIC: " << iteration.consensus_metric;
+  return os;
+}
+
+template <typename X, typename std::enable_if_t<
+                          albatross::is_streamable<X>::value, int> = 0>
+inline std::ostream &operator<<(std::ostream &os,
+                                const albatross::RansacOutput<X> &output) {
+
+  for (std::size_t i = 0; i < output.iterations.size(); ++i) {
+    os << "==== Iteration " << i << "====" << std::endl;
+    os << output.iterations[i] << std::endl;
+  }
+  os << "==== Best ====" << std::endl;
+  os << output.best << std::endl;
+  os << "RETURN CODE: " << to_string(output.return_code) << std::endl;
+
+  return os;
+}
 
 #endif

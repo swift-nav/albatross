@@ -18,17 +18,28 @@ using albatross::GaussianProcessRansacStrategy;
 using albatross::GenericRansacStrategy;
 using albatross::Ransac;
 using albatross::RansacFit;
+using albatross::RansacIteration;
 using albatross::RansacOutput;
 
 namespace cereal {
 
 template <typename Archive, typename GroupKey>
+inline void serialize(Archive &archive,
+                      RansacIteration<GroupKey> &ransac_iteration,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("candidates", ransac_iteration.candidates));
+  archive(cereal::make_nvp("inliers", ransac_iteration.inliers));
+  archive(cereal::make_nvp("outliers", ransac_iteration.outliers));
+  archive(
+      cereal::make_nvp("consensus_metric", ransac_iteration.consensus_metric));
+}
+
+template <typename Archive, typename GroupKey>
 inline void serialize(Archive &archive, RansacOutput<GroupKey> &ransac_output,
                       const std::uint32_t) {
   archive(cereal::make_nvp("return_code", ransac_output.return_code));
-  archive(cereal::make_nvp("inliers", ransac_output.inliers));
-  archive(cereal::make_nvp("outliers", ransac_output.outliers));
-  archive(cereal::make_nvp("consensus_metric", ransac_output.consensus_metric));
+  archive(cereal::make_nvp("best", ransac_output.best));
+  archive(cereal::make_nvp("iterations", ransac_output.iterations));
 }
 
 template <typename Archive, typename ModelType, typename StrategyType,
