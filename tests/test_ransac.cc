@@ -43,16 +43,16 @@ TEST(test_outlier, test_ransac_direct) {
   const auto result = ransac(ransac_functions, indexer, inlier_threshold,
                              sample_size, min_consensus_size, max_iterations);
 
-  EXPECT_EQ(result.inliers.size(), dataset.features.size() - bad_inds.size());
+  const auto consensus = result.best.consensus();
+  EXPECT_EQ(consensus.size(), dataset.features.size() - bad_inds.size());
   EXPECT_TRUE(ransac_success(result.return_code));
-  EXPECT_FALSE(std::isnan(result.consensus_metric));
+  EXPECT_FALSE(std::isnan(result.best.consensus_metric_value));
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
-    EXPECT_EQ(std::find(result.inliers.begin(), result.inliers.end(), i),
-              result.inliers.end());
-    EXPECT_NE(std::find(result.outliers.begin(), result.outliers.end(), i),
-              result.outliers.end());
+    EXPECT_EQ(std::find(consensus.begin(), consensus.end(), i),
+              consensus.end());
+    EXPECT_TRUE(map_contains(result.best.outliers, i));
   }
 }
 
@@ -85,11 +85,12 @@ TEST(test_outlier, test_ransac_model) {
   const auto indexer = ransac_strategy.get_indexer(dataset);
   const auto result = ransac(ransac_functions, indexer, inlier_threshold,
                              sample_size, min_consensus_size, max_iterations);
-  const auto inlier_keys = result.inliers;
-  const auto inlier_inds = indices_from_groups(indexer, inlier_keys);
-  const auto inlier_dataset = subset(dataset, inlier_inds);
+  const auto consensus_keys = result.best.consensus();
+  const auto consensus_inds = indices_from_groups(indexer, consensus_keys);
+  const auto consensus_dataset = subset(dataset, consensus_inds);
 
-  const auto direct_pred = model.fit(inlier_dataset).predict(dataset.features);
+  const auto direct_pred =
+      model.fit(consensus_dataset).predict(dataset.features);
   expect_predict_variants_consistent(direct_pred);
 
   EXPECT_EQ(pred.mean(), direct_pred.mean());
@@ -131,7 +132,7 @@ TEST(test_outlier, test_ransac_groups) {
 
   const auto result = ransac(ransac_functions, indexer, 0., 1, 1, 20);
   EXPECT_TRUE(ransac_success(result.return_code));
-  EXPECT_LE(result.inliers.size(), indexer.size());
+  EXPECT_LE(result.best.consensus().size(), indexer.size());
 }
 
 inline bool never_accept_candidates(const std::vector<std::string> &) {
