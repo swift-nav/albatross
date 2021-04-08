@@ -15,8 +15,6 @@
 
 namespace albatross {
 
-const bool DEBUG_RANSAC = false;
-
 template <typename GroupKey>
 inline bool accept_all_candidates(const std::vector<GroupKey> &) {
   return true;
@@ -95,9 +93,9 @@ template <typename GroupKey> struct RansacIteration {
   std::vector<GroupKey> candidates;
   std::map<GroupKey, double> inliers;
   std::map<GroupKey, double> outliers;
-  double consensus_metric;
+  double consensus_metric_value;
 
-  RansacIteration() : consensus_metric(NAN){};
+  RansacIteration() : consensus_metric_value(NAN){};
 
   std::vector<GroupKey> consensus() const {
     std::vector<GroupKey> output(candidates);
@@ -109,8 +107,9 @@ template <typename GroupKey> struct RansacIteration {
 
   bool operator==(const RansacIteration &other) const {
     const bool is_same_consensus_metric =
-        ((std::isnan(consensus_metric) && std::isnan(other.consensus_metric)) ||
-         consensus_metric == other.consensus_metric);
+        ((std::isnan(consensus_metric_value) &&
+          std::isnan(other.consensus_metric_value)) ||
+         consensus_metric_value == other.consensus_metric_value);
     return (candidates == other.candidates && inliers == other.inliers &&
             outliers == other.outliers && is_same_consensus_metric);
   }
@@ -221,8 +220,6 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
 
     const auto fit = ransac_functions.fitter(iteration.candidates);
 
-    // Any group that's part of the candidate set is automatically an inlier.
-    std::vector<GroupKey> candidate_consensus = iteration.candidates;
     // Find which of the other groups agree with the reference model
     // which gives us a consensus (set of inliers).
     for (const auto &possible_inlier : groups) {
@@ -231,9 +228,9 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
             ransac_functions.inlier_metric(possible_inlier, fit);
         const bool accepted = metric_value < inlier_threshold;
         if (accepted) {
-          iteration.inliers[possible_inlier] = metric_value;
+          iteration.inliers.insert({possible_inlier, metric_value});
         } else {
-          iteration.outliers[possible_inlier] = metric_value;
+          iteration.outliers.insert({possible_inlier, metric_value});
         }
       }
     }
@@ -242,10 +239,11 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
     // as a candidate model.
     const auto consensus = iteration.consensus();
     if (consensus.size() >= min_consensus_size) {
-      iteration.consensus_metric = ransac_functions.consensus_metric(consensus);
+      iteration.consensus_metric_value =
+          ransac_functions.consensus_metric(consensus);
       const bool best_so_far =
-          std::isnan(output.best.consensus_metric) ||
-          iteration.consensus_metric < output.best.consensus_metric;
+          std::isnan(output.best.consensus_metric_value) ||
+          iteration.consensus_metric_value < output.best.consensus_metric_value;
       if (best_so_far) {
         output.best = RansacIteration<GroupKey>(iteration);
       }
@@ -555,7 +553,7 @@ operator<<(std::ostream &os, const albatross::RansacIteration<X> &iteration) {
     os << "    " << pair.first << " : " << pair.second << std::endl;
   }
 
-  os << "CONSENSUS_METRIC: " << iteration.consensus_metric;
+  os << "CONSENSUS_METRIC: " << iteration.consensus_metric_value;
   return os;
 }
 

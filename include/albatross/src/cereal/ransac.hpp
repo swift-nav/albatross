@@ -30,8 +30,8 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("candidates", ransac_iteration.candidates));
   archive(cereal::make_nvp("inliers", ransac_iteration.inliers));
   archive(cereal::make_nvp("outliers", ransac_iteration.outliers));
-  archive(
-      cereal::make_nvp("consensus_metric", ransac_iteration.consensus_metric));
+  archive(cereal::make_nvp("consensus_metric_value",
+                           ransac_iteration.consensus_metric_value));
 }
 
 template <typename Archive, typename GroupKey>

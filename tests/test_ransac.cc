@@ -46,7 +46,7 @@ TEST(test_outlier, test_ransac_direct) {
   const auto consensus = result.best.consensus();
   EXPECT_EQ(consensus.size(), dataset.features.size() - bad_inds.size());
   EXPECT_TRUE(ransac_success(result.return_code));
-  EXPECT_FALSE(std::isnan(result.best.consensus_metric));
+  EXPECT_FALSE(std::isnan(result.best.consensus_metric_value));
 
   for (const auto &i : bad_inds) {
     // Make sure we threw out the correct features.
