@@ -15,8 +15,6 @@
 
 namespace albatross {
 
-const bool DEBUG_RANSAC = false;
-
 template <typename GroupKey>
 inline bool accept_all_candidates(const std::vector<GroupKey> &) {
   return true;
