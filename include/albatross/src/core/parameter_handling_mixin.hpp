@@ -220,7 +220,7 @@ public:
     if (!map_contains(current_params, key)) {
       std::cerr << "Error: Key `" << key << "` not found in parameters: "
                 << pretty_params(current_params);
-      exit(EXIT_FAILURE);
+      assert(false);
     }
   }
 
