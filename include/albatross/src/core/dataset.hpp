@@ -51,6 +51,9 @@ template <typename FeatureType> struct RegressionDataset {
 
   std::size_t size() const { return features.size(); }
 
+  template <typename SizeType>
+  RegressionDataset subset(const std::vector<SizeType> &indices) const;
+
   template <typename GrouperFunc>
   GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
   group_by(GrouperFunc grouper) const;
@@ -71,6 +74,13 @@ subset(const RegressionDataset<FeatureType> &dataset,
        const std::vector<SizeType> &indices) {
   return RegressionDataset<FeatureType>(subset(dataset.features, indices),
                                         subset(dataset.targets, indices));
+}
+
+template <typename FeatureType>
+template <typename SizeType>
+RegressionDataset<FeatureType> RegressionDataset<FeatureType>::subset(
+    const std::vector<SizeType> &indices) const {
+  return albatross::subset(*this, indices);
 }
 
 template <typename FeatureType>

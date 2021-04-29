@@ -26,7 +26,7 @@ TEST(test_dataset, test_construct_and_subset) {
   EXPECT_EQ(dataset.size(), static_cast<std::size_t>(targets.size()));
 
   std::vector<std::size_t> indices = {0, 2};
-  const auto subset_dataset = subset(dataset, indices);
+  const auto subset_dataset = dataset.subset(indices);
   EXPECT_EQ(subset_dataset.size(), indices.size());
 
   auto is_3_or_1 = [](const int &x) { return x == 3 || x == 1; };
@@ -44,7 +44,7 @@ TEST(test_dataset, test_deduplicate) {
 
   const std::vector<std::size_t> expected_inds = {0, 2, 3};
 
-  EXPECT_EQ(dedupped, albatross::subset(dataset, expected_inds));
+  EXPECT_EQ(dedupped, dataset.subset(expected_inds));
   EXPECT_EQ(dedupped, deduplicate(dedupped));
 }
 
