@@ -141,9 +141,7 @@ public:
       typename std::enable_if<!can_predict_mean<MeanPredictor, ModelType,
                                                 DummyType, FitType>::value,
                               int>::type = 0>
-  void mean() const
-      ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
-                                "mean with FitType and FeatureType.");
+  Eigen::VectorXd mean() const = delete; // No valid predict method found.
 
   // Marginal
   template <
@@ -162,9 +160,8 @@ public:
                 !can_predict_marginal<MarginalPredictor, ModelType, DummyType,
                                       FitType>::value,
                 int>::type = 0>
-  void marginal() const
-      ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
-                                "marginal with FitType and FeatureType.");
+  MarginalDistribution
+  marginal() const = delete; // No valid predict method found.
 
   // Joint
   template <
@@ -183,9 +180,7 @@ public:
       typename std::enable_if<!can_predict_joint<JointPredictor, ModelType,
                                                  DummyType, FitType>::value,
                               int>::type = 0>
-  void joint() const
-      ALBATROSS_FAIL(DummyType, "No valid predict method in ModelType for the "
-                                "joint with FitType and FeatureType.");
+  JointDistribution joint() const = delete; // No valid predict method found.
 
   template <typename PredictType>
   PredictType get(PredictTypeIdentity<PredictType> =
