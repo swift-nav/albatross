@@ -61,12 +61,13 @@ public:
   MakeGaussianProcessWithMean(){};
 
   auto get_model() const {
-    IndependentNoise<double> meas_noise(0.1);
+
+    const auto covariance = make_simple_covariance_function();
 
     LinearMean linear_mean;
     linear_mean.offset.value = a;
     linear_mean.slope.value = b;
-    return gp_from_covariance_and_mean(meas_noise, linear_mean);
+    return gp_from_covariance_and_mean(covariance, linear_mean);
   }
 
   auto get_dataset() const { return make_toy_linear_data(a, b); }
