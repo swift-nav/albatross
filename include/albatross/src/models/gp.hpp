@@ -67,7 +67,6 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     cov += targets.covariance;
     assert(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
-    // Precompute the information vector
     information = train_covariance.solve(targets.mean);
   }
 
@@ -418,6 +417,13 @@ public:
   CovFunc get_covariance() const { return covariance_function_; }
 
   MeanFunc get_mean() const { return mean_function_; };
+
+  template <typename FeatureType>
+  JointDistribution prior(const std::vector<FeatureType> &features) const {
+    const auto measurement_features = as_measurements(features);
+    return JointDistribution(mean_function_(measurement_features),
+                             covariance_function_(measurement_features));
+  }
 
   template <typename FeatureType>
   Eigen::MatrixXd
