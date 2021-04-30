@@ -436,4 +436,20 @@ TEST(test_gp, test_nonzero_mean) {
   EXPECT_GT((pred_without_mean.mean - actual.mean).norm(), 1.);
 }
 
+TEST(test_gp, test_get_prior) {
+
+  MakeGaussianProcessWithMean gp_with_mean_case;
+
+  const auto dataset = gp_with_mean_case.get_dataset();
+  const auto model = gp_with_mean_case.get_model();
+
+  const auto prior = model.prior(dataset.features);
+
+  const auto cov = model.get_covariance();
+  EXPECT_EQ(prior.covariance, cov(as_measurements(dataset.features)));
+
+  const auto mean = model.get_mean()(as_measurements(dataset.features));
+  EXPECT_EQ(prior.mean, mean);
+}
+
 } // namespace albatross
