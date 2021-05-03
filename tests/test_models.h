@@ -233,9 +233,10 @@ struct AdaptedRansacStrategy
     const auto indexer = get_indexer(converted);
     const FeatureCountConsensusMetric consensus_metric;
     const AlwaysAcceptCandidateMetric always_accept;
-    return get_gp_ransac_functions(model, converted, indexer,
-                                   this->inlier_metric_, consensus_metric,
-                                   always_accept);
+
+    return get_gp_ransac_functions(
+        model.prior(converted.features), converted.targets, indexer,
+        this->inlier_metric_, consensus_metric, always_accept);
   }
 };
 

@@ -13,7 +13,7 @@
 #ifndef ALBATROSS_RANSAC_H
 #define ALBATROSS_RANSAC_H
 
-#include "Core"
+#include "GP"
 #include "Evaluation"
 
 #include <albatross/src/utils/random_utils.hpp>
