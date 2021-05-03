@@ -71,9 +71,7 @@ get_gp_ransac_consensus_metric(const ConditionalGaussian &model,
 struct DifferentialEntropyConsensusMetric {
   double operator()(const JointDistribution &pred,
                     const MarginalDistribution &truth) const {
-    Eigen::MatrixXd cov = pred.covariance;
-    cov += truth.covariance;
-    return differential_entropy(cov);
+    return differential_entropy(pred.covariance);
   }
 };
 
