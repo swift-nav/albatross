@@ -25,7 +25,7 @@ TEST(test_random_utils, randint_without_replacement) {
 
   for (int i = 0; i < iterations; i++) {
     for (int n = 0; n <= k + 1; n++) {
-      std::cout << n << " " << i << " " << i+k << std::endl;
+      std::cout << n << " " << i << " " << i + k << std::endl;
       const auto inds = randint_without_replacement(n, i, i + k, gen);
       EXPECT_EQ(inds.size(), n);
       for (const auto &j : inds) {
