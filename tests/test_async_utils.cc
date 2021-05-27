@@ -19,6 +19,7 @@
 #include <chrono>
 #include <mutex>
 #include <numeric>
+#include <thread>
 
 namespace albatross {
 
