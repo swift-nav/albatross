@@ -21,9 +21,9 @@ constexpr bool DEFAULT_USE_ASYNC = false;
 
 template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
 
-  friend class JointPredictor;
-  friend class MarginalPredictor;
-  friend class MeanPredictor;
+  friend class detail::JointPredictor;
+  friend class detail::MarginalPredictor;
+  friend class detail::MeanPredictor;
 
   template <typename T, typename FeatureType> friend class fit_model_type;
 

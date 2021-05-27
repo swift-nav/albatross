@@ -47,6 +47,15 @@ template <typename RequiredPredictType> struct PredictionMetric {
   }
 
   template <typename ModelType, typename FeatureType, typename FitType>
+  double operator()(const ModelType &model, const FitType &fit,
+                    const std::vector<FeatureType> &features,
+                    const MarginalDistribution &truth) const {
+    return (*this)(make_prediction(model, fit, features,
+                                   PredictTypeIdentity<RequiredPredictType>()),
+                   truth);
+  }
+
+  template <typename ModelType, typename FeatureType, typename FitType>
   double
   operator()(const Prediction<ModelType, FeatureType, FitType> &prediction,
              const MarginalDistribution &truth) const {

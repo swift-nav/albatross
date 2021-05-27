@@ -19,6 +19,7 @@ namespace albatross {
 // which behave different conditional on the type of predictions desired.
 template <typename T> struct PredictTypeIdentity { typedef T type; };
 
+namespace detail {
 /*
  * MeanPredictor is responsible for determining if a valid form of
  * predicting exists for a given set of model, feature, fit.  The
@@ -33,8 +34,8 @@ public:
             typename std::enable_if<
                 has_valid_predict_mean<ModelType, FeatureType, FitType>::value,
                 int>::type = 0>
-  Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
-                        const std::vector<FeatureType> &features) const {
+  static Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
+                               const std::vector<FeatureType> &features) {
     return model.predict_(features, fit,
                           PredictTypeIdentity<Eigen::VectorXd>());
   }
@@ -46,8 +47,8 @@ public:
               has_valid_predict_marginal<ModelType, FeatureType,
                                          FitType>::value,
           int>::type = 0>
-  Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
-                        const std::vector<FeatureType> &features) const {
+  static Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
+                               const std::vector<FeatureType> &features) {
     return model
         .predict_(features, fit, PredictTypeIdentity<MarginalDistribution>())
         .mean;
@@ -61,8 +62,8 @@ public:
                                           FitType>::value &&
               has_valid_predict_joint<ModelType, FeatureType, FitType>::value,
           int>::type = 0>
-  Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
-                        const std::vector<FeatureType> &features) const {
+  static Eigen::VectorXd _mean(const ModelType &model, const FitType &fit,
+                               const std::vector<FeatureType> &features) {
     return model
         .predict_(features, fit, PredictTypeIdentity<JointDistribution>())
         .mean;
@@ -75,9 +76,9 @@ public:
             typename std::enable_if<has_valid_predict_marginal<
                                         ModelType, FeatureType, FitType>::value,
                                     int>::type = 0>
-  MarginalDistribution
+  static MarginalDistribution
   _marginal(const ModelType &model, const FitType &fit,
-            const std::vector<FeatureType> &features) const {
+            const std::vector<FeatureType> &features) {
     return model.predict_(features, fit,
                           PredictTypeIdentity<MarginalDistribution>());
   }
@@ -88,9 +89,9 @@ public:
           !has_valid_predict_marginal<ModelType, FeatureType, FitType>::value &&
               has_valid_predict_joint<ModelType, FeatureType, FitType>::value,
           int>::type = 0>
-  MarginalDistribution
+  static MarginalDistribution
   _marginal(const ModelType &model, const FitType &fit,
-            const std::vector<FeatureType> &features) const {
+            const std::vector<FeatureType> &features) {
     const auto joint_pred =
         model.predict_(features, fit, PredictTypeIdentity<JointDistribution>());
     return joint_pred.marginal();
@@ -103,12 +104,55 @@ public:
             typename std::enable_if<
                 has_valid_predict_joint<ModelType, FeatureType, FitType>::value,
                 int>::type = 0>
-  JointDistribution _joint(const ModelType &model, const FitType &fit,
-                           const std::vector<FeatureType> &features) const {
+  static JointDistribution _joint(const ModelType &model, const FitType &fit,
+                                  const std::vector<FeatureType> &features) {
     return model.predict_(features, fit,
                           PredictTypeIdentity<JointDistribution>());
   }
 };
+
+template <
+    typename ModelType, typename FeatureType, typename FitType,
+    typename std::enable_if<can_predict_joint<JointPredictor, ModelType,
+                                              FeatureType, FitType>::value,
+                            int>::type = 0>
+auto make_prediction(const ModelType &model, const FitType &fit,
+                     const std::vector<FeatureType> &features,
+                     PredictTypeIdentity<JointDistribution> &&) {
+  return JointPredictor::_joint(model, fit, features);
+}
+
+template <
+    typename ModelType, typename FeatureType, typename FitType,
+    typename std::enable_if<can_predict_marginal<MarginalPredictor, ModelType,
+                                                 FeatureType, FitType>::value,
+                            int>::type = 0>
+auto make_prediction(const ModelType &model, const FitType &fit,
+                     const std::vector<FeatureType> &features,
+                     PredictTypeIdentity<MarginalDistribution> &&) {
+  return MarginalPredictor::_marginal(model, fit, features);
+}
+
+template <typename ModelType, typename FeatureType, typename FitType,
+          typename std::enable_if<can_predict_mean<MeanPredictor, ModelType,
+                                                   FeatureType, FitType>::value,
+                                  int>::type = 0>
+auto make_prediction(const ModelType &model, const FitType &fit,
+                     const std::vector<FeatureType> &features,
+                     PredictTypeIdentity<Eigen::VectorXd> &&) {
+  return MeanPredictor::_mean(model, fit, features);
+}
+} // namespace detail
+
+template <typename PredictType, typename ModelType, typename FeatureType,
+          typename FitType>
+auto make_prediction(
+    const ModelType &model, const FitType &fit,
+    const std::vector<FeatureType> &features,
+    PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
+  return detail::make_prediction(model, fit, features,
+                                 PredictTypeIdentity<PredictType>());
+}
 
 template <typename ModelType, typename FeatureType, typename FitType>
 class Prediction {
@@ -126,61 +170,29 @@ public:
       : model_(std::move(model)), fit_(std::move(fit)), features_(features) {}
 
   // Mean
-  template <typename DummyType = FeatureType,
-            typename std::enable_if<can_predict_mean<MeanPredictor, ModelType,
-                                                     DummyType, FitType>::value,
-                                    int>::type = 0>
-  Eigen::VectorXd mean() const {
+  template <typename DummyType = FeatureType> Eigen::VectorXd mean() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
-    return MeanPredictor()._mean(model_, fit_, features_);
+    return make_prediction(model_, fit_, features_,
+                           PredictTypeIdentity<Eigen::VectorXd>());
   }
 
-  template <
-      typename DummyType = FeatureType,
-      typename std::enable_if<!can_predict_mean<MeanPredictor, ModelType,
-                                                DummyType, FitType>::value,
-                              int>::type = 0>
-  Eigen::VectorXd mean() const = delete; // No valid predict method found.
-
   // Marginal
-  template <
-      typename DummyType = FeatureType,
-      typename std::enable_if<can_predict_marginal<MarginalPredictor, ModelType,
-                                                   DummyType, FitType>::value,
-                              int>::type = 0>
+  template <typename DummyType = FeatureType>
   MarginalDistribution marginal() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
-    return MarginalPredictor()._marginal(model_, fit_, features_);
+    return make_prediction(model_, fit_, features_,
+                           PredictTypeIdentity<MarginalDistribution>());
   }
-
-  template <typename DummyType = FeatureType,
-            typename std::enable_if<
-                !can_predict_marginal<MarginalPredictor, ModelType, DummyType,
-                                      FitType>::value,
-                int>::type = 0>
-  MarginalDistribution
-  marginal() const = delete; // No valid predict method found.
 
   // Joint
-  template <
-      typename DummyType = FeatureType,
-      typename std::enable_if<can_predict_joint<JointPredictor, ModelType,
-                                                DummyType, FitType>::value,
-                              int>::type = 0>
-  JointDistribution joint() const {
+  template <typename DummyType = FeatureType> JointDistribution joint() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
-    return JointPredictor()._joint(model_, fit_, features_);
+    return make_prediction(model_, fit_, features_,
+                           PredictTypeIdentity<JointDistribution>());
   }
-
-  template <
-      typename DummyType = FeatureType,
-      typename std::enable_if<!can_predict_joint<JointPredictor, ModelType,
-                                                 DummyType, FitType>::value,
-                              int>::type = 0>
-  JointDistribution joint() const = delete; // No valid predict method found.
 
   template <typename PredictType>
   PredictType get(PredictTypeIdentity<PredictType> =

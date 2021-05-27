@@ -23,9 +23,17 @@ struct ConditionalFit {
 class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
 
 public:
+  ConditionalGaussian(JointDistribution &&prior,
+                      const MarginalDistribution &truth)
+      : prior_(std::move(prior)), truth_(truth) {
+    std::cout << "FROM RVALUE" << std::endl;
+  }
+
   ConditionalGaussian(const JointDistribution &prior,
                       const MarginalDistribution &truth)
-      : prior_(prior), truth_(truth) {}
+      : prior_(prior), truth_(truth) {
+    std::cout << "COPYING" << std::endl;
+  }
 
   ConditionalFit fit_from_indices(const GroupIndices &indices) const {
 
@@ -71,7 +79,7 @@ public:
         cross, predict_prior.covariance, fit.information, fit.cov_ldlt);
 
     conditional_pred.mean += predict_prior.mean;
-    return conditional_pred;
+    return std::move(conditional_pred);
   }
 
   MarginalDistribution
