@@ -218,5 +218,12 @@ auto get_prediction(const ModelType &model, const FitType &fit,
   return Prediction<ModelType, FeatureType, FitType>(model, fit, features);
 }
 
+template <typename ModelType, typename FeatureType, typename FitType>
+auto get_prediction_reference(const ModelType &model, const FitType &fit,
+                              const std::vector<FeatureType> &features) {
+  return PredictionReference<ModelType, FeatureType, FitType>(model, fit,
+                                                              features);
+}
+
 } // namespace albatross
 #endif

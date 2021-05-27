@@ -48,7 +48,7 @@ get_gp_ransac_inlier_metric(const ConditionalGaussian &model,
 
   return [&, indexer, model](const GroupKey &group, const ConditionalFit &fit) {
     const auto indices = indexer.at(group);
-    const auto pred = get_prediction(model, fit, indices);
+    const auto pred = get_prediction_reference(model, fit, indices);
     const auto truth = model.get_truth(indices);
     return metric(pred, truth);
   };
