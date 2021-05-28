@@ -168,6 +168,12 @@ struct GaussianProcessRansacStrategy {
     return dataset.group_by(grouper_function_).indexers();
   }
 
+  InlierMetric get_inlier_metric() const { return inlier_metric_; }
+
+  ConsensusMetric get_consensus_metric() const { consensus_metric_; }
+
+  IsValidCandidateMetric get_is_valid_candidate() const { is_valid_candidate_; }
+
 protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;

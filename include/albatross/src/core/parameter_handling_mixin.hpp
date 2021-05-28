@@ -354,6 +354,39 @@ protected:
   ParameterStore params_;
 };
 
+class SplitParameterHandlingMixin : public ParameterHandlingMixin {
+ public:
+  SplitParameterHandlingMixin(ParameterHandlingMixin &a, ParameterHandlingMixin &b) : a_(a), b_(b) {
+    ParameterStore a_params = a_.get_params();
+    for (const auto &param : b_.get_params()) {
+      assert(!map_contains(a_params, param.first)); // duplicated params not allowed
+    }
+  };
+
+  ParameterStore get_params() const override {
+    ParameterStore params = a_.get_params();
+    for (const auto &param : b_.get_params()) {
+      params[param.first] = param.second;
+    }
+    return params;
+  }
+
+  void unchecked_set_param(const ParameterKey &name,
+                                   const Parameter &param) override {
+    if (map_contains(a_.get_params(), name)) {
+      a_.unchecked_set_param(name, param);
+    } else {
+      b_.unchecked_set_param(name, param);
+    }
+
+    params_[name] = param;
+  }
+
+ private:
+  ParameterHandlingMixin &a_;
+  ParameterHandlingMixin &b_;
+};
+
 } // namespace albatross
 
 #endif

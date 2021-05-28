@@ -152,6 +152,8 @@ public:
 
   double lower_bound() const override { return 0.; }
 
+  double upper_bound() const override { return 6 * sigma_; }
+
   std::string get_name() const override {
     std::ostringstream oss;
     oss << "positive_gaussian[" << mu_ << "," << sigma_ << "]";
