@@ -23,6 +23,10 @@ struct ConditionalFit {
 class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
 
 public:
+  ConditionalGaussian(JointDistribution &&prior,
+                      const MarginalDistribution &truth)
+      : prior_(std::move(prior)), truth_(truth) {}
+
   ConditionalGaussian(const JointDistribution &prior,
                       const MarginalDistribution &truth)
       : prior_(prior), truth_(truth) {}

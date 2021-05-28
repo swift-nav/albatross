@@ -109,9 +109,10 @@ struct AlwaysAcceptCandidateMetric {
 };
 
 template <typename InlierMetric, typename ConsensusMetric,
-          typename IsValidCandidateMetric, typename GroupKey>
+          typename IsValidCandidateMetric, typename GroupKey,
+          typename PriorDistribution>
 inline RansacFunctions<ConditionalFit, GroupKey> get_gp_ransac_functions(
-    const JointDistribution &prior, const MarginalDistribution &truth,
+    PriorDistribution &&prior, const MarginalDistribution &truth,
     const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric,
     const IsValidCandidateMetric &is_valid_candidate_metric) {
@@ -119,7 +120,7 @@ inline RansacFunctions<ConditionalFit, GroupKey> get_gp_ransac_functions(
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
-  const ConditionalGaussian model(prior, truth);
+  const ConditionalGaussian model(std::forward<PriorDistribution>(prior), truth);
 
   const auto fitter = get_gp_ransac_fitter<GroupKey>(model, indexer);
 
