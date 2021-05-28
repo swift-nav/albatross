@@ -227,6 +227,41 @@ TEST_F(TestTuneQuadratic, test_generic) {
   test_tuner(async_gradient_tuner);
 }
 
+TEST_F(TestTuneQuadratic, test_greedy_tune) {
+
+  auto mahalanobis_distance_params = [&](const ParameterStore &params) {
+    return this->objective(params);
+  };
+
+  std::ostringstream output_stream;
+  std::vector<double> initial_x(b.size());
+  for (auto &d : initial_x) {
+    d = 0.;
+  }
+
+  auto test_tuner = [&]() {
+    const std::size_t n_threads = 8;
+    const bool use_async = false;
+    const std::size_t n_iterations = 1000;
+    ParameterStore params;
+    for (std::size_t i = 0; i < initial_x.size(); ++i) {
+      params[std::to_string(i)] = {initial_x[i],
+                                   albatross::UniformPrior(-2, 2)};
+    }
+    const auto params_result =
+        greedy_tune(mahalanobis_distance_params, params, n_threads,
+                    n_iterations, use_async, &output_stream);
+    auto param_vector = get_tunable_parameters(params_result).values;
+    const Eigen::Map<Eigen::VectorXd> eigen_param_output(
+        &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+
+    std::cout << output_stream.str() << std::endl;
+    EXPECT_LE((eigen_param_output - truth).array().abs().maxCoeff(), 0.1);
+  };
+
+  test_tuner();
+}
+
 TEST_F(TestTuneQuadratic, test_compute_gradient) {
 
   auto mahalanobis_distance_vector = [&](const std::vector<double> &vector_x) {
