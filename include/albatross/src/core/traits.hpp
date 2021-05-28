@@ -148,28 +148,30 @@ DEFINE_CLASS_METHOD_TRAITS(_mean);
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>
 struct can_predict_mean
-    : public has__mean<T, typename const_ref<ModelType>::type,
-                       typename const_ref<FitType>::type,
-                       typename const_ref<std::vector<FeatureType>>::type> {};
+    : public has__mean_with_return_type<
+          T, Eigen::VectorXd, typename const_ref<ModelType>::type,
+          typename const_ref<FitType>::type,
+          typename const_ref<std::vector<FeatureType>>::type> {};
 
 DEFINE_CLASS_METHOD_TRAITS(_marginal);
 
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>
 struct can_predict_marginal
-    : public has__marginal<T, typename const_ref<ModelType>::type,
-                           typename const_ref<FitType>::type,
-                           typename const_ref<std::vector<FeatureType>>::type> {
-};
+    : public has__marginal_with_return_type<
+          T, MarginalDistribution, typename const_ref<ModelType>::type,
+          typename const_ref<FitType>::type,
+          typename const_ref<std::vector<FeatureType>>::type> {};
 
 DEFINE_CLASS_METHOD_TRAITS(_joint);
 
 template <typename T, typename ModelType, typename FeatureType,
           typename FitType>
 struct can_predict_joint
-    : public has__joint<T, typename const_ref<ModelType>::type,
-                        typename const_ref<FitType>::type,
-                        typename const_ref<std::vector<FeatureType>>::type> {};
+    : public has__joint_with_return_type<
+          T, JointDistribution, typename const_ref<ModelType>::type,
+          typename const_ref<FitType>::type,
+          typename const_ref<std::vector<FeatureType>>::type> {};
 
 /*
  * Methods for inspecting `Prediction` types.
