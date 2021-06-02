@@ -144,6 +144,9 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
                                tunable.upper_bounds[i], n_queries);
       if (iter == 0 && i == 0) {
         // on the very first iteration we need to include the initial params
+        // because they may be optimal.  We could do this before starting
+        // tuning, but then we'd have to wait a full function evaluation
+        // before making any progress.
         values.push_back(tunable.values[i]);
       }
 
@@ -151,11 +154,11 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
         return details::set_tunable_param(best_params, i, v);
       };
 
-      const auto params = apply(values, get_params);
+      const auto proposed_params = apply(values, get_params);
 
       if (os) {
         (*os) << "NEXT ATTEMPTS: " << tunable.names[i] << " : ";
-        for (const auto &p : params) {
+        for (const auto &p : proposed_params) {
           (*os) << p.at(tunable.names[i]).value << ",";
         }
         (*os) << std::endl;
@@ -163,9 +166,9 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
 
       auto evaluate = [&]() {
         if (use_async) {
-          return async_apply(params, evaluate_function);
+          return async_apply(proposed_params, evaluate_function);
         } else {
-          return apply(params, evaluate_function);
+          return apply(proposed_params, evaluate_function);
         }
       };
 
@@ -174,14 +177,14 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
       if (os) {
         (*os) << "EVALUATIONS: " << std::endl;
       }
-      for (std::size_t j = 0; j < params.size(); ++j) {
+      for (std::size_t j = 0; j < proposed_params.size(); ++j) {
         if (os) {
           (*os) << "    " << tunable.names[i] << " = "
-                << params[j].at(tunable.names[i]).value << "   :   "
+                << proposed_params[j].at(tunable.names[i]).value << "   :   "
                 << evaluations[j];
         }
         if (evaluations[j] < best_value) {
-          best_params = params[j];
+          best_params = proposed_params[j];
           best_value = evaluations[j];
           if (os) {
             (*os) << "   BEST SO FAR";

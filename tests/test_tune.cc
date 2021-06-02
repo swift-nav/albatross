@@ -251,12 +251,16 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
     const auto params_result =
         greedy_tune(mahalanobis_distance_params, params, n_threads,
                     n_iterations, use_async, &output_stream);
-    auto param_vector = get_tunable_parameters(params_result).values;
-    const Eigen::Map<Eigen::VectorXd> eigen_param_output(
-        &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
 
-    std::cout << output_stream.str() << std::endl;
-    EXPECT_LE((eigen_param_output - truth).array().abs().maxCoeff(), 0.1);
+    auto to_eigen = [](const auto &p) {
+      auto param_vector = get_tunable_parameters(p).values;
+      const Eigen::VectorXd output = Eigen::Map<Eigen::VectorXd>(
+          &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+      return output;
+    };
+
+    EXPECT_GT((to_eigen(params) - truth).array().abs().maxCoeff(), 0.1);
+    EXPECT_LE((to_eigen(params_result) - truth).array().abs().maxCoeff(), 0.1);
   };
 
   test_tuner();
