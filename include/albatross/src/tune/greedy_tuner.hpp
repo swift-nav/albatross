@@ -102,15 +102,13 @@ inline ParameterStore set_tunable_param(const ParameterStore &params,
 template <typename Function>
 inline ParameterStore
 greedy_tune(Function evaluate_function, const ParameterStore &params,
-            std::size_t n_threads = 8, std::size_t n_iterations = 10,
-            bool use_async = true, std::ostream *os = &std::cout) {
+            std::size_t n_queries_each_direction = 4,
+            std::size_t n_iterations = 10, bool use_async = true,
+            std::ostream *os = &std::cout) {
 
   static_assert(
       has_call_operator<Function, ParameterStore>::value,
       "evaluate_function must have a single ParameterStore argument.");
-
-  assert(n_threads % 2 == 0); // n_threads must be even;
-  const std::size_t n_queries = n_threads / 2;
 
   albatross::TunableParameters tunable = get_tunable_parameters(params);
 
@@ -118,9 +116,9 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
     (*os) << "Will be tuning the following:" << std::endl;
     for (std::size_t i = 0; i < tunable.names.size(); ++i) {
       (*os) << "    " << tunable.names[i] << "    [ ";
-      const auto queries =
-          details::get_queries(tunable.values[i], tunable.lower_bounds[i],
-                               tunable.upper_bounds[i], n_queries);
+      const auto queries = details::get_queries(
+          tunable.values[i], tunable.lower_bounds[i], tunable.upper_bounds[i],
+          n_queries_each_direction);
       for (const auto &v : queries) {
         (*os)
             << details::set_tunable_param(params, i, v)[tunable.names[i]].value
@@ -139,9 +137,9 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
     for (std::size_t i = 0; i < tunable.names.size(); ++i) {
 
       tunable = get_tunable_parameters(best_params);
-      auto values =
-          details::get_queries(tunable.values[i], tunable.lower_bounds[i],
-                               tunable.upper_bounds[i], n_queries);
+      auto values = details::get_queries(
+          tunable.values[i], tunable.lower_bounds[i], tunable.upper_bounds[i],
+          n_queries_each_direction);
       if (iter == 0 && i == 0) {
         // on the very first iteration we need to include the initial params
         // because they may be optimal.  We could do this before starting
