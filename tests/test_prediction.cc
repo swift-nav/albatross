@@ -42,6 +42,9 @@ TEST(test_prediction, test_mean_only) {
   const auto prediction = fit_model.predict(xs);
   auto mean = prediction.mean();
   EXPECT_TRUE(bool(std::is_same<Eigen::VectorXd, decltype(mean)>::value));
+
+  std::vector<X> empty = {};
+  EXPECT_EQ(fit_model.predict(empty).mean().size(), 0);
 }
 
 class MarginalOnlyModel : public ModelBase<MarginalOnlyModel> {
@@ -75,6 +78,9 @@ TEST(test_prediction, test_marginal_only) {
   auto marginal = prediction.marginal();
   EXPECT_TRUE(
       bool(std::is_same<MarginalDistribution, decltype(marginal)>::value));
+
+  std::vector<X> empty = {};
+  EXPECT_EQ(fit_model.predict(empty).marginal().size(), 0);
 }
 
 class JointOnlyModel : public ModelBase<JointOnlyModel> {
@@ -113,6 +119,9 @@ TEST(test_prediction, test_joint_only) {
 
   auto joint = prediction.joint();
   EXPECT_TRUE(bool(std::is_same<JointDistribution, decltype(joint)>::value));
+
+  std::vector<X> empty = {};
+  EXPECT_EQ(fit_model.predict(empty).joint().size(), 0);
 }
 
 } // namespace albatross
