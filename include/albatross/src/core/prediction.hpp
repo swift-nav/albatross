@@ -133,6 +133,9 @@ public:
   Eigen::VectorXd mean() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
+    if (features_.size() == 0) {
+      return Eigen::VectorXd(0);
+    }
     return MeanPredictor()._mean(model_, fit_, features_);
   }
 
@@ -152,6 +155,9 @@ public:
   MarginalDistribution marginal() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
+    if (features_.size() == 0) {
+      return MarginalDistribution();
+    }
     return MarginalPredictor()._marginal(model_, fit_, features_);
   }
 
@@ -172,6 +178,9 @@ public:
   JointDistribution joint() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
+    if (features_.size() == 0) {
+      return JointDistribution();
+    }
     return JointPredictor()._joint(model_, fit_, features_);
   }
 
