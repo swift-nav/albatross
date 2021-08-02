@@ -65,7 +65,7 @@ inline double chi_squared_cdf(const Eigen::VectorXd &deviation,
                               const Eigen::MatrixXd &covariance) {
   const double distance_squared =
       covariance.llt().matrixL().solve(deviation).squaredNorm();
-  std::size_t n = static_cast<std::size_t>(deviation.size());
+  const std::size_t n = static_cast<std::size_t>(deviation.size());
   return chi_squared_cdf(distance_squared, n);
 }
 
