@@ -15,6 +15,8 @@
 
 namespace albatross {
 
+constexpr double DEFAULT_CHI_SQUARED_THRESHOLD = 0.999;
+
 template <typename GroupKey>
 inline typename RansacFunctions<ConditionalFit, GroupKey>::FitterFunc
 get_gp_ransac_fitter(const ConditionalGaussian &model,
@@ -92,7 +94,8 @@ struct ChiSquaredConsensusMetric {
 
 struct ChiSquaredIsValidCandidateMetric {
 
-  ChiSquaredIsValidCandidateMetric(double chi_squared_treshold = 0.999)
+  ChiSquaredIsValidCandidateMetric(
+      double chi_squared_treshold = DEFAULT_CHI_SQUARED_THRESHOLD)
       : chi_squared_threshold_(chi_squared_treshold) {}
 
   bool operator()(const JointDistribution &pred,
