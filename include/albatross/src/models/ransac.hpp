@@ -226,7 +226,7 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
       if (!contains_group(iteration.candidates, possible_inlier)) {
         double metric_value =
             ransac_functions.inlier_metric(possible_inlier, fit);
-        const bool accepted = metric_value < inlier_threshold;
+        const bool accepted = metric_value <= inlier_threshold;
         if (accepted) {
           iteration.inliers.insert({possible_inlier, metric_value});
         } else {
