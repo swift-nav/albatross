@@ -91,14 +91,20 @@ struct ChiSquaredConsensusMetric {
 };
 
 struct ChiSquaredIsValidCandidateMetric {
+
+  ChiSquaredIsValidCandidateMetric(double chi_squared_treshold = 0.999)
+      : chi_squared_threshold_(chi_squared_treshold) {}
+
   bool operator()(const JointDistribution &pred,
                   const MarginalDistribution &truth) const {
     // These thresholds are under the assumption of a perfectly
     // representative prior.
     const double probability_prior_exceeded = chi_squared_cdf(pred, truth);
-    const double skip_every_1000th_candidate = 0.999;
-    return (probability_prior_exceeded < skip_every_1000th_candidate);
+    return (probability_prior_exceeded <= chi_squared_threshold_);
   };
+
+private:
+  double chi_squared_threshold_;
 };
 
 struct AlwaysAcceptCandidateMetric {
