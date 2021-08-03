@@ -263,26 +263,32 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 
   const auto partial_dataset = groups.combine();
 
-  auto full_fit = sparse.fit(dataset);
-  auto partial_fit = sparse.fit(partial_dataset);
+  const auto full_fit = sparse.fit(dataset);
+  const auto partial_fit = sparse.fit(partial_dataset);
+  const auto updated_fit = partial_fit.update(held_out_pair.second);
 
-  // Copy the fit so we can update it in place
-  decltype(partial_fit) updated_fit(partial_fit);
-  updated_fit.update_in_place(held_out_pair.second);
+  using FitType = typename std::decay<decltype(partial_fit)>::type;
+  FitType updated_in_place_fit(partial_fit);
+  updated_in_place_fit.update_in_place(held_out_pair.second);
 
-  auto test_features = linspace(0.01, 9.9, 11);
+  const auto test_features = linspace(0.01, 9.9, 11);
 
-  auto full_pred =
+  const auto full_pred =
       full_fit.predict_with_measurement_noise(test_features).joint();
-  auto partial_pred =
+  const auto partial_pred =
       partial_fit.predict_with_measurement_noise(test_features).joint();
-  auto updated_pred =
+  const auto updated_pred =
       updated_fit.predict_with_measurement_noise(test_features).joint();
+  const auto updated_in_place_pred =
+      updated_in_place_fit.predict_with_measurement_noise(test_features)
+          .joint();
 
-  double partial_cov_diff =
+  const double partial_cov_diff =
       (partial_pred.covariance - full_pred.covariance).norm();
-  double updated_cov_diff =
+  const double updated_cov_diff =
       (updated_pred.covariance - full_pred.covariance).norm();
+  const double updated_in_place_cov_diff =
+      (updated_in_place_pred.covariance - full_pred.covariance).norm();
 
   auto compute_sigma = [](const auto &fit_model) -> Eigen::MatrixXd {
     const Eigen::Index n = fit_model.get_fit().sigma_R.cols();
@@ -295,6 +301,8 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
   const Eigen::MatrixXd full_sigma = compute_sigma(full_fit);
   const Eigen::MatrixXd partial_sigma = compute_sigma(partial_fit);
   const Eigen::MatrixXd updated_sigma = compute_sigma(updated_fit);
+  const Eigen::MatrixXd updated_in_place_sigma =
+      compute_sigma(updated_in_place_fit);
 
   EXPECT_GT((partial_pred.mean - full_pred.mean).norm(), 1e-2);
   EXPECT_GT((partial_sigma - full_sigma).norm(), 1.);
@@ -303,6 +311,10 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
   EXPECT_LT((updated_pred.mean - full_pred.mean).norm(), 1e-6);
   EXPECT_LT((updated_sigma - full_sigma).norm(), 1e-6);
   EXPECT_LT(updated_cov_diff, 1e-6);
+
+  EXPECT_LT((updated_in_place_pred.mean - full_pred.mean).norm(), 1e-6);
+  EXPECT_LT((updated_in_place_sigma - full_sigma).norm(), 1e-6);
+  EXPECT_LT(updated_in_place_cov_diff, 1e-6);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
