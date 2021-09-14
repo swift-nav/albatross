@@ -21,6 +21,7 @@ add_executable(albatross_unit_tests
   test_indexing.cc
   test_linalg_utils.cc
   test_map_utils.cc
+  test_minimum_spanning_tree.cc
   test_model_adapter.cc
   test_model_metrics.cc  
   test_models.cc
