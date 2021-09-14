@@ -39,6 +39,8 @@ template <typename VertexType> struct Edge {
   VertexType a;
   VertexType b;
   double cost;
+  // This can be used to keep track of a mapping between a real world problem
+  // and the equivalent graph theory problem
   std::size_t id;
 };
 
@@ -110,11 +112,28 @@ adjacency_map(const Graph<VertexType> &graph) {
   return output;
 }
 
+/*
+ * This implementation of Prim's algorithm was based largely off the following
+ * references:
+ *
+ *   https://en.wikipedia.org/wiki/Prim%27s_algorithm
+ *   https://algs4.cs.princeton.edu/43mst/
+ *   https://www.algotree.org/algorithms/minimum_spanning_tree/prims_c++/
+ *
+ * The general idea is that we start with an arbitrary vertex.  Here we've
+ * picked a vertex from the edge with maximum cost which we set as the current
+ * vertex.  The algorithm then proceeds by:
+ *
+ * 1) Finding all adjacent vertices which are not part of the output
+ * 2) Placing all the corresponding edges into the priority queue.
+ * 3) By popping from the priority queue we end up with the highest remaining
+ * edge. 4) If the highest edge leads to a vertex which isn't in the output:
+ *     - Move to the new vertex, add all it's adjacent unused edges to the
+ * queue. Else:
+ *     - Repeat starting at 3.
+ */
 template <typename VertexType>
 Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
-  // https://en.wikipedia.org/wiki/Prim%27s_algorithm
-  // https://algs4.cs.princeton.edu/43mst/
-  // https://www.algotree.org/algorithms/minimum_spanning_tree/prims_c++/
   Graph<VertexType> output;
 
   const auto adjacency = adjacency_map(graph);
@@ -134,15 +153,14 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
     }
   }
 
-  double total_cost = 0;
-  while (!queue.empty()) {
+  const auto maximum_required_edges = graph.vertices.size() - 1;
+  while (!queue.empty() && output.edges.size() < maximum_required_edges) {
     const Edge<VertexType> next_edge = queue.top();
     queue.pop();
 
     const VertexType &next_vertex = next_edge.b;
 
     if (!contains_vertex(output, next_vertex)) {
-      total_cost += next_edge.cost;
       add_edge(next_edge, &output);
 
       for (const auto &edge : adjacency.at(next_vertex)) {
@@ -155,6 +173,10 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
   return output;
 }
 
+/*
+ * The maximum_spanning_tree with negative costs is equivalent to the
+ * minimum_spanning_tree.
+ */
 template <typename VertexType>
 Graph<VertexType> minimum_spanning_tree(const Graph<VertexType> &graph) {
   Graph<VertexType> inverse_cost_graph(graph);
