@@ -20,11 +20,7 @@ namespace albatross {
  */
 static inline double negative_log_likelihood(double deviation,
                                              double variance) {
-  double nll = deviation;
-  nll *= nll;
-  nll /= (2 * variance);
-  nll += 0.5 * log(2 * M_PI * variance);
-  return nll;
+  return -albatross::gaussian::log_pdf(deviation, variance);
 }
 
 static inline double log_sum(const Eigen::VectorXd &x) {

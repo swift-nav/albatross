@@ -20,6 +20,33 @@
 
 namespace albatross {
 
+TEST(test_stats, test_gaussian_pdf) {
+
+  // These examples were generated in python using scipy.stats.norm.pdf
+  std::vector<double> test_xs = {
+      -1.49529605, -0.35674996, -1.19464126, 0.7431096,   0.94945083,
+      -0.06465424, -0.36805315, -1.38905131, -1.56751365, 1.8271551};
+  std::vector<double> test_variances = {
+      3.39311978, 0.55516885, 0.72540077, 0.05034394, 0.16184329,
+      2.31795834, 0.00988035, 0.11177149, 0.77043322, 2.84884525};
+  std::vector<double> expected = {
+      1.55783121e-01, 4.77438315e-01, 1.75146437e-01, 7.38065599e-03,
+      6.12161951e-02, 2.61797595e-01, 4.23016986e-03, 2.12923882e-04,
+      9.22586650e-02, 1.31554532e-01};
+
+  for (std::size_t i = 0; i < test_xs.size(); ++i) {
+    EXPECT_NEAR(gaussian::pdf(test_xs[i], test_variances[i]), expected[i],
+                1e-6);
+    EXPECT_NEAR(gaussian::log_pdf(test_xs[i], test_variances[i]),
+                std::log(expected[i]), 1e-6);
+  }
+
+  EXPECT_LT(gaussian::pdf(-100., 1.), 1e-12);
+  EXPECT_LT(gaussian::pdf(100., 1.), 1e-12);
+  EXPECT_LT(gaussian::pdf(1., 1e-6), 1e-12);
+  EXPECT_LT(gaussian::pdf(1e12, 1e8), 1e-12);
+}
+
 TEST(test_stats, test_chi_squared) {
 
   EXPECT_LT(fabs(chi_squared_cdf(3.84, 1) - 0.95), 1e-4);
