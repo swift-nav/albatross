@@ -15,6 +15,21 @@
 namespace albatross {
 
 template <typename Function>
+inline Eigen::VectorXd
+compute_gradient(Function f, const Eigen::VectorXd &params, double f_val) {
+
+  const double epsilon = 1e-6;
+
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(params.size(), 1);
+  for (Eigen::Index i = 0; i < params.size(); ++i) {
+    Eigen::VectorXd perturbed(params);
+    perturbed[i] += epsilon;
+    grad[i] = (f(perturbed) - f_val) / epsilon;
+  }
+  return grad;
+}
+
+template <typename Function>
 inline std::vector<double>
 compute_gradient(Function f, const std::vector<double> &params, double f_val,
                  bool use_async = false) {
