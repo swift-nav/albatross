@@ -190,26 +190,26 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
 template <typename VertexType> class KruskalAlgoRunner {
 public:
   KruskalAlgoRunner(const Graph<VertexType> &input_graph)
-          : sorted_graph_(input_graph), vertices_() {
-      std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
-      size_t tree_id = 0;
-      for (const auto &v : sorted_graph_.vertices) {
-          vertices_.emplace_back(v, tree_id);
-          tree_id++;
-      }
+      : sorted_graph_(input_graph), vertices_() {
+    std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
+    size_t tree_id = 0;
+    for (const auto &v : sorted_graph_.vertices) {
+      vertices_.emplace_back(v, tree_id);
+      tree_id++;
+    }
   };
 
   Graph<VertexType> run() {
-      Graph<VertexType> output;
-      for (const auto &e : sorted_graph_.edges) {
-          const auto vertex_and_tree_a = find_vertex_or_assert(e.a);
-          const auto vertex_and_tree_b = find_vertex_or_assert(e.b);
-          if (vertex_and_tree_a.tree != vertex_and_tree_b.tree) {
-              merge_trees(vertex_and_tree_a.tree, vertex_and_tree_b.tree);
-              add_edge(e, &output);
-          }
+    Graph<VertexType> output;
+    for (const auto &e : sorted_graph_.edges) {
+      const auto vertex_and_tree_a = find_vertex_or_assert(e.a);
+      const auto vertex_and_tree_b = find_vertex_or_assert(e.b);
+      if (vertex_and_tree_a.tree != vertex_and_tree_b.tree) {
+        merge_trees(vertex_and_tree_a.tree, vertex_and_tree_b.tree);
+        add_edge(e, &output);
       }
-      return output;
+    }
+    return output;
   }
 
 private:
@@ -221,18 +221,18 @@ private:
   };
 
   VertexWithTreeID &find_vertex_or_assert(const VertexType &x) {
-      auto is_x = [&x](const auto &p) { return p.v == x; };
-      const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
-      assert(iter != vertices_.end());
-      return *iter;
+    auto is_x = [&x](const auto &p) { return p.v == x; };
+    const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
+    assert(iter != vertices_.end());
+    return *iter;
   }
 
   void merge_trees(const size_t old_tree, const size_t new_tree) {
-      for (size_t i = 0; i < vertices_.size(); ++i) {
-          if (vertices_[i].tree == old_tree) {
-              vertices_[i].tree = new_tree;
-          }
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      if (vertices_[i].tree == old_tree) {
+        vertices_[i].tree = new_tree;
       }
+    }
   }
 
   Graph<VertexType> sorted_graph_;
@@ -242,7 +242,7 @@ private:
 template <typename VertexType>
 Graph<VertexType> minimum_spanning_forest(const Graph<VertexType> &graph) {
   if (graph.edges.size() == 0) {
-      return Graph<VertexType>();
+    return Graph<VertexType>();
   }
 
   KruskalAlgoRunner<VertexType> algo_runner(graph);
