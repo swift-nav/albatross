@@ -187,67 +187,66 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
  * proposed edge already has both nodes in the same tree, a closed loop would be
  * formed, and the edge can be rejected.
  */
-template <typename VertexType>
-class KruskalAlgoRunner {
+template <typename VertexType> class KruskalAlgoRunner {
 public:
-    KruskalAlgoRunner(const Graph<VertexType> &input_graph)
-            : sorted_graph_(input_graph), vertices_() {
-        std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
-        size_t tree_id = 0;
-        for (const auto &v : sorted_graph_.vertices) {
-            vertices_.emplace_back(v, tree_id);
-            tree_id++;
-        }
-    };
+  KruskalAlgoRunner(const Graph<VertexType> &input_graph)
+          : sorted_graph_(input_graph), vertices_() {
+      std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
+      size_t tree_id = 0;
+      for (const auto &v : sorted_graph_.vertices) {
+          vertices_.emplace_back(v, tree_id);
+          tree_id++;
+      }
+  };
 
-    Graph<VertexType> run() {
-        Graph<VertexType> output;
-        for (const auto &e : sorted_graph_.edges) {
-            const auto vertex_and_tree_a = find_vertex_or_assert(e.a);
-            const auto vertex_and_tree_b = find_vertex_or_assert(e.b);
-            if (vertex_and_tree_a.tree != vertex_and_tree_b.tree) {
-                merge_trees(vertex_and_tree_a.tree, vertex_and_tree_b.tree);
-                add_edge(e, &output);
-            }
-        }
-        return output;
-    }
+  Graph<VertexType> run() {
+      Graph<VertexType> output;
+      for (const auto &e : sorted_graph_.edges) {
+          const auto vertex_and_tree_a = find_vertex_or_assert(e.a);
+          const auto vertex_and_tree_b = find_vertex_or_assert(e.b);
+          if (vertex_and_tree_a.tree != vertex_and_tree_b.tree) {
+              merge_trees(vertex_and_tree_a.tree, vertex_and_tree_b.tree);
+              add_edge(e, &output);
+          }
+      }
+      return output;
+  }
 
 private:
-    struct VertexWithTreeID {
-        VertexWithTreeID(const VertexType &v_, const size_t &tree_)
-                : v(v_), tree(tree_){};
-        VertexType v;
-        size_t tree;
-    };
+  struct VertexWithTreeID {
+    VertexWithTreeID(const VertexType &v_, const size_t &tree_)
+        : v(v_), tree(tree_){};
+    VertexType v;
+    size_t tree;
+  };
 
-    VertexWithTreeID &find_vertex_or_assert(const VertexType &x) {
-        auto is_x = [&x](const auto &p) { return p.v == x; };
-        const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
-        assert(iter != vertices_.end());
-        return *iter;
-    }
+  VertexWithTreeID &find_vertex_or_assert(const VertexType &x) {
+      auto is_x = [&x](const auto &p) { return p.v == x; };
+      const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
+      assert(iter != vertices_.end());
+      return *iter;
+  }
 
-    void merge_trees(const size_t old_tree, const size_t new_tree) {
-        for (size_t i = 0; i < vertices_.size(); ++i) {
-            if (vertices_[i].tree == old_tree) {
-                vertices_[i].tree = new_tree;
-            }
-        }
-    }
+  void merge_trees(const size_t old_tree, const size_t new_tree) {
+      for (size_t i = 0; i < vertices_.size(); ++i) {
+          if (vertices_[i].tree == old_tree) {
+              vertices_[i].tree = new_tree;
+          }
+      }
+  }
 
-    Graph<VertexType> sorted_graph_;
-    std::vector<VertexWithTreeID> vertices_;
+  Graph<VertexType> sorted_graph_;
+  std::vector<VertexWithTreeID> vertices_;
 };
 
 template <typename VertexType>
 Graph<VertexType> minimum_spanning_forest(const Graph<VertexType> &graph) {
-    if (graph.edges.size() == 0) {
-        return Graph<VertexType>();
-    }
+  if (graph.edges.size() == 0) {
+      return Graph<VertexType>();
+  }
 
-    KruskalAlgoRunner<VertexType> algo_runner(graph);
-    return algo_runner.run();
+  KruskalAlgoRunner<VertexType> algo_runner(graph);
+  return algo_runner.run();
 }
 
 /*
