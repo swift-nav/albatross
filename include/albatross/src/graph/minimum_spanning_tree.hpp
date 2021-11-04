@@ -174,6 +174,82 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
 }
 
 /*
+ * This implementation of Kruskal's algorithm was based largely off the
+ * following reference:
+ *
+ *   https://en.wikipedia.org/wiki/Kruskal%27s_algorithm
+ *
+ * The general idea is that we add edges with the minimum weight until each edge
+ * is included, skipping addition of edges that would form a closed loop. To
+ * track closed loops and disjoint trees, the class associates each node with a
+ * tree, initialized to each node in a unique tree. When a new edge is added,
+ * the trees associated with the edge's nodes are merged into one tree. If a
+ * proposed edge already has both nodes in the same tree, a closed loop would be
+ * formed, and the edge can be rejected.
+ */
+template <typename VertexType> class KruskalAlgoRunner {
+public:
+  KruskalAlgoRunner(const Graph<VertexType> &input_graph)
+      : sorted_graph_(input_graph), vertices_() {
+    std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
+    size_t tree_id = 0;
+    for (const auto &v : sorted_graph_.vertices) {
+      vertices_.emplace_back(v, tree_id);
+      tree_id++;
+    }
+  };
+
+  Graph<VertexType> run() {
+    Graph<VertexType> output;
+    for (const auto &e : sorted_graph_.edges) {
+      const auto vertex_and_tree_a = find_vertex_or_assert(e.a);
+      const auto vertex_and_tree_b = find_vertex_or_assert(e.b);
+      if (vertex_and_tree_a.tree != vertex_and_tree_b.tree) {
+        merge_trees(vertex_and_tree_a.tree, vertex_and_tree_b.tree);
+        add_edge(e, &output);
+      }
+    }
+    return output;
+  }
+
+private:
+  struct VertexWithTreeID {
+    VertexWithTreeID(const VertexType &v_, const size_t &tree_)
+        : v(v_), tree(tree_){};
+    VertexType v;
+    size_t tree;
+  };
+
+  VertexWithTreeID &find_vertex_or_assert(const VertexType &x) {
+    auto is_x = [&x](const auto &p) { return p.v == x; };
+    const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
+    assert(iter != vertices_.end());
+    return *iter;
+  }
+
+  void merge_trees(const size_t old_tree, const size_t new_tree) {
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      if (vertices_[i].tree == old_tree) {
+        vertices_[i].tree = new_tree;
+      }
+    }
+  }
+
+  Graph<VertexType> sorted_graph_;
+  std::vector<VertexWithTreeID> vertices_;
+};
+
+template <typename VertexType>
+Graph<VertexType> minimum_spanning_forest(const Graph<VertexType> &graph) {
+  if (graph.edges.size() == 0) {
+    return Graph<VertexType>();
+  }
+
+  KruskalAlgoRunner<VertexType> algo_runner(graph);
+  return algo_runner.run();
+}
+
+/*
  * The maximum_spanning_tree with negative costs is equivalent to the
  * minimum_spanning_tree.
  */
@@ -185,6 +261,20 @@ Graph<VertexType> minimum_spanning_tree(const Graph<VertexType> &graph) {
   }
 
   auto output = maximum_spanning_tree(inverse_cost_graph);
+  for (auto &edge : output.edges) {
+    edge.cost *= -1;
+  }
+  return output;
+}
+
+template <typename VertexType>
+Graph<VertexType> maximum_spanning_forest(const Graph<VertexType> &graph) {
+  Graph<VertexType> inverse_cost_graph(graph);
+  for (auto &edge : inverse_cost_graph.edges) {
+    edge.cost *= -1;
+  }
+
+  auto output = minimum_spanning_forest(inverse_cost_graph);
   for (auto &edge : output.edges) {
     edge.cost *= -1;
   }

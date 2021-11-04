@@ -57,6 +57,28 @@ TEST(test_minimum_spanning_tree, test_small_example) {
   EXPECT_EQ(expected_edges, tree.edges);
 }
 
+TEST(test_minimum_spanning_tree, test_disjoint_example) {
+  std::vector<Edge<std::size_t>> edges;
+  edges.emplace_back(0, 1, 0.);
+  edges.emplace_back(0, 2, 0.);
+  edges.emplace_back(1, 2, 1.);
+  edges.emplace_back(3, 4, 1.);
+  edges.emplace_back(3, 5, 2.);
+  edges.emplace_back(6, 7, 2.);
+
+  const auto graph = create_graph(edges);
+  const auto forest = minimum_spanning_forest(graph);
+
+  std::vector<Edge<std::size_t>> expected_edges;
+  expected_edges.emplace_back(0, 1, 0.);
+  expected_edges.emplace_back(0, 2, 0.);
+  expected_edges.emplace_back(3, 4, 1.);
+  expected_edges.emplace_back(3, 5, 2.);
+  expected_edges.emplace_back(6, 7, 2.);
+
+  EXPECT_EQ(expected_edges, forest.edges);
+}
+
 /*
  * The Following tests were taken from:
  *
@@ -87,13 +109,22 @@ TEST(test_minimum_spanning_tree, test_princeton_tiny) {
   edges.emplace_back(6, 0, 0.58);
   edges.emplace_back(6, 4, 0.93);
 
-  const auto tree = minimum_spanning_tree(create_graph(edges));
+  const auto graph = create_graph(edges);
+  const auto tree = minimum_spanning_tree(graph);
+  const auto forest = minimum_spanning_forest(graph);
 
   double cost = 0.;
   for (const auto &edge : tree.edges) {
     cost += edge.cost;
   }
+
+  double cost_forest = 0;
+  for (const auto &edge : tree.edges) {
+    cost_forest += edge.cost;
+  }
+
   EXPECT_EQ(cost, 1.81);
+  EXPECT_EQ(cost_forest, 1.81);
 }
 
 TEST(test_minimum_spanning_tree, test_princeton_medium) {
@@ -1373,14 +1404,24 @@ TEST(test_minimum_spanning_tree, test_princeton_medium) {
   edges.emplace_back(0, 222, 0.07573);
   edges.emplace_back(0, 225, 0.02383);
 
-  const auto tree = minimum_spanning_tree(create_graph(edges));
+  const auto graph = create_graph(edges);
+  const auto tree = minimum_spanning_tree(graph);
+  const auto forest = minimum_spanning_forest(graph);
 
   double cost = 0.;
   for (const auto &edge : tree.edges) {
     cost += edge.cost;
   }
 
+  double cost_forest = 0;
+  for (const auto &edge : tree.edges) {
+    cost_forest += edge.cost;
+  }
+
   EXPECT_LT(cost, 10.46352);
+  EXPECT_LT(cost_forest, 10.46352);
+  EXPECT_GT(cost, 10.46350);
+  EXPECT_GT(cost_forest, 10.46350);
 }
 
 } // namespace albatross
