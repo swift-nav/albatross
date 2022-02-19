@@ -466,6 +466,36 @@ public:
     return output;
   }
 
+  template <typename SubsetableType,
+            typename std::enable_if<
+                details::is_subsetable<SubsetableType>::value, int>::type = 0>
+  Grouped<KeyType, std::pair<ValueType, SubsetableType>>
+  with(const SubsetableType &other) const {
+    assert(parent_.size() == other.size());
+    Grouped<KeyType, std::pair<ValueType, SubsetableType>> output;
+    for (const auto &key_indexer_pair : indexers()) {
+      output.emplace(
+          key_indexer_pair.first,
+          std::make_pair(albatross::subset(parent_, key_indexer_pair.second),
+                         albatross::subset(other, key_indexer_pair.second)));
+    }
+    return output;
+  }
+
+  template <template <typename...> class Map, typename AlreadyGroupedType>
+  Grouped<KeyType, std::pair<ValueType, AlreadyGroupedType>>
+  with(const Map<KeyType, AlreadyGroupedType> &other) const {
+    assert(other.size() == indexers().size());
+    Grouped<KeyType, std::pair<ValueType, AlreadyGroupedType>> output;
+    for (const auto &key_indexer_pair : indexers()) {
+      output.emplace(
+          key_indexer_pair.first,
+          std::make_pair(albatross::subset(parent_, key_indexer_pair.second),
+                         other.at(key_indexer_pair.first)));
+    }
+    return output;
+  }
+
   std::vector<KeyType> keys() const { return map_keys(indexers()); }
 
   std::size_t size() const { return indexers().size(); }

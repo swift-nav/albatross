@@ -332,4 +332,10 @@ TEST(test_indexing, test_matrix_symmetric_subset) {
   EXPECT_EQ(symmetric_subset(x, idx), expected);
 }
 
+TEST(test_indexing, test_is_subsetable) {
+  EXPECT_TRUE(bool(details::is_subsetable<std::vector<int>>::value));
+  EXPECT_TRUE(bool(details::is_subsetable<RegressionDataset<int>>::value));
+  EXPECT_FALSE(bool(details::is_subsetable<std::map<int, int>>::value));
+}
+
 } // namespace albatross

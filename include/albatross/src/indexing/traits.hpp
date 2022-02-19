@@ -191,6 +191,20 @@ struct group_by_traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
   using GrouperType = GrouperFunction;
 };
 
+template <typename T> class is_subsetable {
+  template <typename C,
+            typename std::enable_if<
+                std::is_same<C, decltype(subset(std::declval<C>(),
+                                                std::declval<std::vector<
+                                                    std::size_t>>()))>::value,
+                int>::type = 0>
+  static std::true_type test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
 } // namespace details
 
 } // namespace albatross

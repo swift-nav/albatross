@@ -12,6 +12,7 @@
 
 #include <albatross/Indexing>
 #include <gtest/gtest.h>
+#include <string.h>
 
 namespace albatross {
 
@@ -587,6 +588,54 @@ TEST(test_groupby, test_group_by_any_all) {
 
   EXPECT_FALSE(grouped.apply(greater_than_max_count).all());
   EXPECT_FALSE(grouped.apply(greater_than_max_count).any());
+}
+
+TEST(test_groupby, test_group_by_with_vector) {
+
+  const auto fib = fibonacci(20);
+
+  std::vector<std::string> strings;
+  for (const auto &x : fib) {
+    strings.push_back(std::to_string(x));
+  }
+
+  const auto grouped_with_strings =
+      group_by(fib, number_of_digits).with(strings);
+  EXPECT_GT(grouped_with_strings.size(), 0);
+  for (const auto &group : grouped_with_strings) {
+    const std::vector<double> &vector_of_doubles = group.second.first;
+    const std::vector<std::string> &vector_of_strings = group.second.second;
+    for (std::size_t i = 0; i < vector_of_doubles.size(); ++i) {
+      EXPECT_EQ(std::to_string(vector_of_doubles[i]), vector_of_strings[i]);
+    }
+  }
+}
+
+TEST(test_groupby, test_group_by_with_map) {
+
+  const auto fib = fibonacci(20);
+
+  auto to_strings = [](const std::vector<double> &xs) {
+    std::vector<std::string> strings;
+    for (const auto &x : xs) {
+      strings.push_back(std::to_string(x));
+    }
+    return strings;
+  };
+
+  const auto grouped = group_by(fib, number_of_digits);
+
+  const auto as_strings = grouped.apply(to_strings);
+  const auto with_strings = group_by(fib, number_of_digits).with(as_strings);
+
+  EXPECT_GT(with_strings.size(), 0);
+  for (const auto &group : with_strings) {
+    const std::vector<double> &vector_of_doubles = group.second.first;
+    const std::vector<std::string> &vector_of_strings = group.second.second;
+    for (std::size_t i = 0; i < vector_of_doubles.size(); ++i) {
+      EXPECT_EQ(std::to_string(vector_of_doubles[i]), vector_of_strings[i]);
+    }
+  }
 }
 
 } // namespace albatross
