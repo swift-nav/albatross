@@ -85,6 +85,9 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
   stream->flags(f);
 
   for (std::size_t i = 0; i < count; ++i) {
+    if (i >= values_and_vectors.size()) {
+      break;
+    }
     const double value = std::get<0>(values_and_vectors[i]);
     const auto vector = std::get<1>(values_and_vectors[i]);
 
