@@ -614,18 +614,17 @@ TEST(test_groupby, test_group_by_with_vector) {
 TEST(test_groupby, test_group_by_with_map) {
 
   const auto fib = fibonacci(20);
+  const auto grouped = group_by(fib, number_of_digits);
 
-  auto to_strings = [](const std::vector<double> &xs) {
+  auto doubles_to_strings = [](const std::vector<double> &xs) {
     std::vector<std::string> strings;
     for (const auto &x : xs) {
       strings.push_back(std::to_string(x));
     }
     return strings;
   };
+  const auto as_strings = grouped.apply(doubles_to_strings);
 
-  const auto grouped = group_by(fib, number_of_digits);
-
-  const auto as_strings = grouped.apply(to_strings);
   const auto with_strings = grouped.with(as_strings);
 
   EXPECT_GT(with_strings.size(), 0);
