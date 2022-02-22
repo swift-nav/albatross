@@ -626,7 +626,7 @@ TEST(test_groupby, test_group_by_with_map) {
   const auto grouped = group_by(fib, number_of_digits);
 
   const auto as_strings = grouped.apply(to_strings);
-  const auto with_strings = group_by(fib, number_of_digits).with(as_strings);
+  const auto with_strings = grouped.with(as_strings);
 
   EXPECT_GT(with_strings.size(), 0);
   for (const auto &group : with_strings) {
