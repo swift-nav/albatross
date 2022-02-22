@@ -20,6 +20,7 @@
 #include <albatross/src/evaluation/likelihood.hpp>
 #include <albatross/src/evaluation/differential_entropy.hpp>
 #include <albatross/src/covariance_functions/traits.hpp>
+#include <albatross/src/eigen/serializable_ldlt.hpp>
 #include <albatross/src/evaluation/traits.hpp>
 #include <albatross/src/evaluation/folds.hpp>
 #include <albatross/src/evaluation/prediction_metrics.hpp>

@@ -131,6 +131,17 @@ cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
   return cross_validated_scores(metric, folds, predictions.apply(get_mean));
 }
 
+inline Eigen::VectorXd
+leave_one_out_conditional_variance(const Eigen::MatrixXd &covariance) {
+  // The leave one out variance will be the inverse of the diagonal of the
+  // inverse of covariance (that's a mouthful!) For details see Equation 5.12 of
+  // Gaussian Processes for Machine Learning
+  return Eigen::SerializableLDLT(covariance)
+      .inverse_diagonal()
+      .array()
+      .inverse();
+}
+
 } // namespace albatross
 
 #endif
