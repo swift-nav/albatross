@@ -153,6 +153,27 @@ TEST(test_crossvalidation, test_heteroscedastic) {
   EXPECT_LE(scores.mean(), scores_without_variance.mean());
 }
 
+TEST(test_crossvalidation, test_leave_one_out_conditional_variance) {
+  const auto dataset = make_toy_linear_data();
+
+  auto model = MakeGaussianProcess().get_model();
+
+  LeaveOneOutGrouper loo;
+  const auto loo_marginal =
+      model.cross_validate().predict(dataset, loo).marginal();
+
+  const auto meas = as_measurements(dataset.features);
+  Eigen::MatrixXd cov = model.get_covariance()(meas, meas);
+  cov.diagonal() = cov.diagonal() + dataset.targets.covariance.diagonal();
+  const Eigen::VectorXd loo_variance = leave_one_out_conditional_variance(cov);
+
+  const Eigen::SerializableLDLT ldlt(cov);
+  const Eigen::Index n = cov.rows();
+  const Eigen::MatrixXd inv = ldlt.solve(Eigen::MatrixXd::Identity(n, n));
+
+  EXPECT_LE((loo_marginal.covariance.diagonal() - loo_variance).norm(), 1e-8);
+}
+
 class MakeLargeGaussianProcess {
 public:
   auto get_model() const {
