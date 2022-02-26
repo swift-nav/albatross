@@ -244,7 +244,7 @@ TEST(test_gp, test_update_model_different_types) {
 
   MarginalDistribution perturbed_inducing_targets(inducing_prediction);
   perturbed_inducing_targets.mean +=
-      Eigen::VectorXd::Random(perturbed_inducing_targets.mean.size());
+      Eigen::VectorXd::Ones(perturbed_inducing_targets.mean.size());
 
   RegressionDataset<InducingFeature> perturbed_dataset(
       inducing_points, perturbed_inducing_targets);

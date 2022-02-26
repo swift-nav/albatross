@@ -85,7 +85,9 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
   double state_space_error = (state_space_pred.mean - direct_pred.mean).norm();
   EXPECT_LT(sparse_error, sparse_error_threshold);
   EXPECT_LT(really_sparse_error, really_sparse_error_threshold);
-  EXPECT_GT(really_sparse_error, sparse_error);
+  // The sparse and really sparse errors are both really small for some
+  // problems so we can add a buffer here.
+  EXPECT_GT(really_sparse_error, sparse_error - 1e-4);
   EXPECT_GE(really_sparse_error, state_space_error);
 
   double sparse_cov_diff =
