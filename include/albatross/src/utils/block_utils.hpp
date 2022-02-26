@@ -498,7 +498,7 @@ inline Eigen::VectorXd BlockDiagonal::diagonal() const {
   Eigen::VectorXd output(rows());
 
   Eigen::Index i = 0;
-  for (const auto b : blocks) {
+  for (const auto &b : blocks) {
     output.block(i, 0, b.rows(), 1) = b.diagonal();
     i += b.rows();
   }
