@@ -35,6 +35,7 @@ jobs:
           GCCVER: "6"
         run: |
           bash ./ci/run_tests.sh
+          bash ./ci/ensure_formated.sh
           bash ./ci/ensure_copyright.sh
 
   ubuntu-clang6:
@@ -60,6 +61,29 @@ jobs:
           CC: clang-6.0
           CXX: clang++-6.0
           TESTENV: clang6
+        run: |
+          bash ./ci/run_tests.sh
+          bash ./ci/ensure_formated.sh
+          bash ./ci/ensure_copyright.sh
+
+  osx-clang:
+    runs-on: macOS-latest
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.SSH_KEY }}
+
+      - name: check clang
+        run: |
+          clang --version
+      - name: Run build
+        env:
+          CC: clang
+          CXX: clang++
+          TESTENV: clang
         run: |
           bash ./ci/run_tests.sh
 

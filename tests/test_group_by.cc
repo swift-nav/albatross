@@ -396,7 +396,7 @@ direct_remove_less_than_mean(const std::vector<double> &xs) {
   }
 
   std::vector<double> output;
-  for (const auto group_pair : grouped) {
+  for (const auto &group_pair : grouped) {
     const double group_mean = mean(group_pair.second);
     for (const auto &v : group_pair.second) {
       if (v > group_mean) {

@@ -134,9 +134,10 @@ Eigen::VectorXd nlopt_solve(GenericTuner &tuner, ObjectiveFunction &objective) {
 class TestTuneQuadratic : public ::testing::Test {
 public:
   TestTuneQuadratic() {
-    std::default_random_engine gen(2012);
     Eigen::Index k = 3;
-    A = random_covariance_matrix(k, gen).inverse();
+    A.resize(k, k);
+    A << 4.5244, 1.43904, 2.24636, 1.43904, 2.26512, 0.985532, 2.24636,
+        0.985532, 2.18973;
     truth = Eigen::VectorXd::Ones(k);
     b = A * truth;
   };
@@ -307,10 +308,10 @@ TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
   params["1"] = {1., albatross::PositiveGaussianPrior()};
   params["2"] = {2., albatross::UniformPrior(2, 10)};
 
+  srand(2012);
   std::ostringstream output_stream;
   GenericTuner async_gradient_tuner(params, output_stream);
   async_gradient_tuner.optimizer = default_gradient_optimizer(params);
-  async_gradient_tuner.use_async = true;
 
   const auto params_result =
       async_gradient_tuner.tune(mahalanobis_distance_params);
