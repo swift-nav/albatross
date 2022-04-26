@@ -128,6 +128,8 @@ inline RansacFunctions<ConditionalFit, GroupKey> get_gp_ransac_functions(
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
+  assert(prior.size() == truth.size());
+
   const ConditionalGaussian model(prior, truth);
 
   const auto fitter = get_gp_ransac_fitter<GroupKey>(model, indexer);

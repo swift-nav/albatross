@@ -131,15 +131,38 @@ cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
   return cross_validated_scores(metric, folds, predictions.apply(get_mean));
 }
 
-inline Eigen::VectorXd
-leave_one_out_conditional_variance(const Eigen::MatrixXd &covariance) {
+inline Eigen::VectorXd leave_one_out_conditional_variance(
+    const Eigen::SerializableLDLT &covariance_ldlt) {
   // The leave one out variance will be the inverse of the diagonal of the
   // inverse of covariance (that's a mouthful!) For details see Equation 5.12 of
   // Gaussian Processes for Machine Learning
-  return Eigen::SerializableLDLT(covariance)
-      .inverse_diagonal()
-      .array()
-      .inverse();
+  return covariance_ldlt.inverse_diagonal().array().inverse();
+}
+
+inline Eigen::VectorXd
+leave_one_out_conditional_variance(const Eigen::MatrixXd &covariance) {
+  return leave_one_out_conditional_variance(
+      Eigen::SerializableLDLT(covariance));
+}
+
+inline MarginalDistribution
+leave_one_out_conditional(const JointDistribution &prior,
+                          const MarginalDistribution &truth) {
+  // Computes the conditional distribution of each variable conditional on
+  // all others.
+  //
+  // For details see Equation 5.12 of Gaussian Processes for Machine Learning
+
+  Eigen::MatrixXd covariance = prior.covariance;
+  covariance += truth.covariance;
+
+  Eigen::SerializableLDLT ldlt(covariance);
+  const Eigen::VectorXd loo_variance = leave_one_out_conditional_variance(ldlt);
+  const Eigen::VectorXd deviation = truth.mean - prior.mean;
+  Eigen::VectorXd loo_mean = ldlt.solve(deviation);
+  loo_mean.array() *= loo_variance.array();
+  loo_mean = truth.mean - loo_mean;
+  return MarginalDistribution(loo_mean, loo_variance);
 }
 
 } // namespace albatross
