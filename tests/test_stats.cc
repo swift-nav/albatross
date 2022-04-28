@@ -135,7 +135,23 @@ TEST(test_stats, test_chi_squared_cdf_monotonic) {
   for (std::size_t i = 0; i < iterations; ++i) {
     double scale = i / 5.;
     double cdf = chi_squared_cdf(scale * sample, covariance);
-    EXPECT_LT(previous, cdf);
+    EXPECT_LE(previous, cdf);
+    previous = cdf;
+  }
+}
+
+TEST(test_stats, test_chi_squared_cdf_monotonic_1d) {
+  std::size_t iterations = 500;
+  double previous = -std::numeric_limits<double>::epsilon();
+  // Evaluate the cdf with one dimension iteratively increasing to a
+  // value equivalent to 50 standard deviations from the mean. We
+  // explicitly test that high because of known instabilities in the
+  // tails of the incomplete gamma function.
+  for (std::size_t i = 0; i < iterations; ++i) {
+    double x = i / 50.;
+    double cdf = chi_squared_cdf(x * x, 1);
+    EXPECT_LE(previous, cdf);
+    previous = cdf;
   }
 }
 
