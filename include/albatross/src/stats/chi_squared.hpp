@@ -26,7 +26,7 @@ namespace albatross {
 
 namespace details {
 
-inline double chi_squared_cdf_unsafe(double x, std::size_t degrees_of_freedom) {
+inline double chi_squared_cdf_unsafe(double x, double degrees_of_freedom) {
   return incomplete_gamma(0.5 * degrees_of_freedom, 0.5 * x);
 }
 
