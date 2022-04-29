@@ -12,8 +12,6 @@
 #ifndef INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_
 #define INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_
 
-#include <albatross/ForwardDeclarations>
-
 namespace albatross {
 
 constexpr double PARAMETER_EPSILON =
