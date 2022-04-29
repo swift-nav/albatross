@@ -152,8 +152,10 @@ leave_one_out_conditional(const JointDistribution &prior,
   // all others.
   //
   // For details see Equation 5.12 of Gaussian Processes for Machine Learning
-  Eigen::SerializableLDLT ldlt(prior.covariance +
-                               Eigen::MatrixXd(truth.covariance));
+
+  Eigen::MatrixXd covariance = prior.covariance;
+  covariance += truth.covariance;
+  Eigen::SerializableLDLT ldlt(covariance.ldlt());
   const Eigen::VectorXd loo_variance = leave_one_out_conditional_variance(ldlt);
   const Eigen::VectorXd deviation = truth.mean - prior.mean;
   Eigen::VectorXd loo_mean = ldlt.solve(deviation);
