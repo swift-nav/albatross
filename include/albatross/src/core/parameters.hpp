@@ -328,6 +328,14 @@ inline void set_param_values_if_exists(
   }
 }
 
+inline double parameter_prior_log_likelihood(const ParameterStore &params) {
+  double sum = 0.;
+  for (const auto &pair : params) {
+    sum += pair.second.prior_log_likelihood();
+  }
+  return sum;
+}
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_ */

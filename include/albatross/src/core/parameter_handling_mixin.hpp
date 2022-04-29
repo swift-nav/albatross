@@ -15,9 +15,123 @@
 
 namespace albatross {
 
+namespace details {
+
+DEFINE_CLASS_METHOD_TRAITS(get_param_pointer);
+DEFINE_CLASS_METHOD_TRAITS(on_parameter_change);
+
+template <typename ParameterHandler>
+
+/*
+ * Valid Parameter Handler need to have a method which lets the
+ * user lookup a pointer to a parameter by key (get_param_pointer)
+ * and needs to have a way to signal that parameters have changed
+ * (on_parameter_change)
+ */
+class is_param_handler {
+  template <typename C, typename std::enable_if_t<
+                            has_get_param_pointer<C, ParameterKey>::value &&
+                                has_on_parameter_change<C>::value,
+                            int> = 0>
+  static std::true_type test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<ParameterHandler>(0))::value;
+  ;
+};
+
+} // namespace details
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline std::function<Parameter *(const ParameterKey &)>
+param_lookup_function(ParameterHandler *parameter_handler) {
+  return [parameter_handler](const auto &k) {
+    return parameter_handler->get_param_pointer(k);
+  };
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              !details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void param_lookup_function(ParameterHandler *parameter_handler) {
+  ALBATROSS_FAIL(ParameterHandler, "Not a valid parameter handler")
+}
+
+template <typename ParameterHandler>
+inline void set_param(const ParameterKey &name, const Parameter &param,
+                      ParameterHandler *param_handler) {
+  set_param(name, param, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_param_value(const ParameterKey &name,
+                            const ParameterValue &value,
+                            ParameterHandler *param_handler) {
+  set_param_value(name, value, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_param_prior(const ParameterKey &name,
+                            const ParameterPrior &prior,
+                            ParameterHandler *param_handler) {
+  set_param_prior(name, prior, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_param_value_if_exists(const ParameterKey &name,
+                                      const ParameterValue &value,
+                                      ParameterHandler *param_handler) {
+  set_param_value_if_exists(name, value, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_param_if_exists(const ParameterKey &name,
+                                const ParameterValue &value,
+                                ParameterHandler *param_handler) {
+  set_param_if_exists(name, value, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_params(const ParameterStore &params,
+                       ParameterHandler *param_handler) {
+  set_params(params, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void set_params_if_exists(const ParameterStore &params,
+                                 ParameterHandler *param_handler) {
+  set_params_if_exists(params, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void
+set_param_values(const std::map<ParameterKey, ParameterValue> &params,
+                 ParameterHandler *param_handler) {
+  set_param_values(params, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
+template <typename ParameterHandler>
+inline void
+set_param_values_if_exists(const std::map<ParameterKey, ParameterValue> &params,
+                           ParameterHandler *param_handler) {
+  set_param_values_if_exists(params, param_lookup_function(param_handler));
+  param_handler->on_parameter_change();
+}
+
 /*
  * This mixin class is intended to be included an any class which
- * depends on some set of parameters which we want to programatically
+ * depends on some set of parameters which we want to programmatically
  * change for things such as optimization routines / serialization.
  */
 class ParameterHandlingMixin {
@@ -31,34 +145,28 @@ public:
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
-    albatross::set_params(params, param_lookup_function());
-    on_parameter_change();
+    return albatross::set_params(params, this);
   }
 
   void set_params_if_exists(const ParameterStore &params) {
-    albatross::set_params_if_exists(params, param_lookup_function());
-    on_parameter_change();
+    albatross::set_params_if_exists(params, this);
   }
 
   void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
-    albatross::set_param_values(values, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param_values(values, this);
   }
 
   void set_param_values_if_exists(
       const std::map<ParameterKey, ParameterValue> &values) {
-    albatross::set_param_values_if_exists(values, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param_values_if_exists(values, this);
   }
 
   void set_param_value(const ParameterKey &key, const ParameterValue &value) {
-    albatross::set_param_value(key, value, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param_value(key, value, this);
   }
 
   void set_param(const ParameterKey &key, const Parameter &param) {
-    albatross::set_param(key, param, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param(key, param, this);
   }
 
   // This just avoids the situation where a user would call `set_param`
@@ -66,13 +174,11 @@ public:
   // initialization argument for a `Parameter` which would then
   // inadvertently overwrite the prior.
   void set_param(const ParameterKey &key, const ParameterValue &value) {
-    albatross::set_param_value(key, value, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param_value(key, value, this);
   }
 
   void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
-    albatross::set_param_prior(key, prior, param_lookup_function());
-    on_parameter_change();
+    albatross::set_param_prior(key, prior, this);
   }
 
   bool params_are_valid() const {
@@ -80,11 +186,7 @@ public:
   }
 
   double prior_log_likelihood() const {
-    double sum = 0.;
-    for (const auto &pair : get_params()) {
-      sum += pair.second.prior_log_likelihood();
-    }
-    return sum;
+    return albatross::parameter_prior_log_likelihood(get_params());
   }
 
   /*
@@ -126,11 +228,16 @@ public:
     return param_lookup(name, &params_);
   }
 
-  virtual void on_parameter_change(){};
-
-  std::function<Parameter *(const ParameterKey &)> param_lookup_function() {
-    return [this](const auto &k) { return this->get_param_pointer(k); };
-  }
+  /*
+   * Sometimes the parameters held in a model need to get converted
+   * to an internal representation.  For example, if a parameter
+   * represented a grid spacing you might want to update a precomputed
+   * grid if the grid spacing were to change.  This callback provides
+   * a way to make sure that happens when the parameters change.
+   */
+  virtual void on_parameter_change() {
+    albatross::params_are_valid(get_params());
+  };
 
 protected:
   ParameterStore params_;
