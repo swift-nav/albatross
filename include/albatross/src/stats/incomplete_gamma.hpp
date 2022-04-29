@@ -31,6 +31,7 @@ namespace albatross {
 namespace details {
 
 constexpr std::size_t INCOMPLETE_GAMMA_RECURSSION_LIMIT = 54;
+constexpr double INCOMPLETE_GAMMA_EQUALITY_TRESHOLD = 1e-12;
 
 inline double incomplete_gamma_quadrature_inp_vals(double lb, double ub,
                                                    std::size_t counter) {
@@ -136,8 +137,7 @@ inline double incomplete_gamma_continuous_fraction(double a, double z) {
   // When `a` get's really really large the numerator (and in turn the
   // denominator) can hit zero which would turn into a NAN but we want
   // to treat it as evaluating at infinity which should yield 1.
-  if (std::numeric_limits<double>::epsilon() > numerator &&
-      std::numeric_limits<double>::epsilon() > denominator) {
+  if (denominator - numerator < INCOMPLETE_GAMMA_EQUALITY_TRESHOLD) {
     return 1.;
   }
   return numerator / denominator;
