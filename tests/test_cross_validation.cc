@@ -180,6 +180,7 @@ TEST(test_crossvalidation, test_leave_one_out_conditional) {
 
   const auto meas = as_measurements(dataset.features);
   Eigen::MatrixXd cov = model.get_covariance()(meas, meas);
+
   JointDistribution prior(Eigen::VectorXd::Zero(cov.rows()), cov);
   const auto actual = leave_one_out_conditional(prior, dataset.targets);
 
@@ -187,6 +188,16 @@ TEST(test_crossvalidation, test_leave_one_out_conditional) {
   EXPECT_LE((loo_marginal.covariance.diagonal() - actual.covariance.diagonal())
                 .norm(),
             1e-6);
+
+  // With a new dataset with a perturbed observation, the leave one out
+  // prediction of that perturbed element should not have changed, while all the
+  // other predictions will have changed.
+  RegressionDataset<double> perturbed_dataset(dataset);
+  perturbed_dataset.targets.mean[0] += 10;
+  const auto perturbed_conditional =
+      leave_one_out_conditional(prior, perturbed_dataset.targets);
+  EXPECT_NEAR(perturbed_conditional.mean[0], actual.mean[0], 1e-6);
+  EXPECT_GT((perturbed_conditional.mean - actual.mean).norm(), 1.);
 }
 
 class MakeLargeGaussianProcess {
