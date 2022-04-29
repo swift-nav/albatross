@@ -254,7 +254,7 @@ public:
    * The Gaussian Process Regression model derives its parameters from
    * the covariance functions.
    */
-  ParameterStore get_params() const override {
+  virtual ParameterStore get_params() const override {
     return map_join(impl().params_,
                     map_join(mean_function_.get_params(),
                              covariance_function_.get_params()));
@@ -268,18 +268,6 @@ public:
     }
     return param_lookup(name, &impl().params_);
   }
-
-  //  void unchecked_set_param(const std::string &name,
-  //                           const Parameter &param) override {
-  //
-  //    if (map_contains(covariance_function_.get_params(), name)) {
-  //      covariance_function_.set_param(name, param);
-  //    } else if (map_contains(mean_function_.get_params(), name)) {
-  //      mean_function_.set_param(name, param);
-  //    } else {
-  //      impl().params_[name] = param;
-  //    }
-  //  }
 
   std::string pretty_string() const {
     std::ostringstream ss;

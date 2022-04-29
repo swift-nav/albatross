@@ -126,11 +126,6 @@ public:
     return param_lookup(name, &params_);
   }
 
-  //  virtual void unchecked_set_param(const ParameterKey &name,
-  //                                   const Parameter &param) {
-  //    params_[name] = param;
-  //  }
-
   std::function<Parameter *(const ParameterKey &)> param_lookup_function() {
     return [this](const auto &k) { return this->get_param_pointer(k); };
   }

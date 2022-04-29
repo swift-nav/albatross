@@ -63,20 +63,19 @@
 /*
  * These macros build up a function that when called with,
  *
- *   DEFINE_SET_PARAMS_UNCHECKED(1, 2, ...)
+ *   DEFINE_GET_PARAM_POINTER(1, 2, ...)
  *
  * builds a code block that looks like:
  *
- *   void unchecked_set_param (const std::string &key,
- *                             const ParameterValue &value) override {
+ *   Parameter *get_param_pointer(const ParameterKey &key) override {
  *     if (key == "$1") {
- *       $1 = value;
+ *       return &$1;
  *     } else if (key == "$2") {
- *       $2 = value;
+ *       return &$2;
  *     } else if {
  *     ...
  *     } else {
- *       assert(false);
+         return nullptr;
  *     }
  *   }
  */
@@ -138,7 +137,7 @@
 
 #define PARAM_POINTER_ACTION(x) return &x
 
-#define DEFINE_SET_PARAMS_UNCHECKED(...)                                       \
+#define DEFINE_GET_PARAM_POINTER(...)                                          \
   Parameter *get_param_pointer(const ParameterKey &key) override {             \
     BUILD_IF(PARAMS_CONDITION, PARAM_POINTER_ACTION, __VA_ARGS__);             \
   };
@@ -156,7 +155,7 @@
 
 #define ALBATROSS_DECLARE_PARAMS(...)                                          \
   DEFINE_GET_PARAMS(__VA_ARGS__);                                              \
-  DEFINE_SET_PARAMS_UNCHECKED(__VA_ARGS__);                                    \
+  DEFINE_GET_PARAM_POINTER(__VA_ARGS__);                                       \
   DECLARE_PARAMS(__VA_ARGS__);
 
 #endif
