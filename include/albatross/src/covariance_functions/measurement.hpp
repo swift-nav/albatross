@@ -77,9 +77,8 @@ public:
 
   ParameterStore get_params() const override { return sub_cov_.get_params(); }
 
-  void unchecked_set_param(const ParameterKey &name,
-                           const Parameter &param) override {
-    sub_cov_.set_param(name, param);
+  Parameter *get_param_pointer(const ParameterKey &name) override {
+    return sub_cov_.get_param_pointer(name);
   }
 
   template <

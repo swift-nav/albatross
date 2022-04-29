@@ -40,46 +40,28 @@ public:
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
-    for (const auto &pair : params) {
-      check_param_key(pair.first);
-      unchecked_set_param(pair.first, pair.second);
-    }
+    albatross::set_params(params, param_lookup_function());
   }
 
   void set_params_if_exists(const ParameterStore &params) {
-    const ParameterStore current_params = get_params();
-    for (const auto &pair : params) {
-      if (map_contains(current_params, pair.first)) {
-        unchecked_set_param(pair.first, pair.second);
-      }
-    }
+    albatross::set_params_if_exists(params, param_lookup_function());
   }
 
   void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
-    for (const auto &pair : values) {
-      check_param_key(pair.first);
-      unchecked_set_param(pair.first, pair.second);
-    }
+    albatross::set_param_values(values, param_lookup_function());
   }
 
   void set_param_values_if_exists(
       const std::map<ParameterKey, ParameterValue> &values) {
-    const ParameterStore current_params = get_params();
-    for (const auto &pair : values) {
-      if (map_contains(current_params, pair.first)) {
-        unchecked_set_param(pair.first, pair.second);
-      }
-    }
+    albatross::set_param_values_if_exists(values, param_lookup_function());
   }
 
   void set_param_value(const ParameterKey &key, const ParameterValue &value) {
-    check_param_key(key);
-    unchecked_set_param(key, value);
+    albatross::set_param_value(key, value, param_lookup_function());
   }
 
   void set_param(const ParameterKey &key, const Parameter &param) {
-    check_param_key(key);
-    unchecked_set_param(key, param);
+    albatross::set_param(key, param, param_lookup_function());
   }
 
   // This just avoids the situation where a user would call `set_param`
@@ -87,12 +69,11 @@ public:
   // initialization argument for a `Parameter` which would then
   // inadvertently overwrite the prior.
   void set_param(const ParameterKey &key, const ParameterValue &value) {
-    set_param_value(key, value);
+    albatross::set_param_value(key, value, param_lookup_function());
   }
 
   void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
-    check_param_key(key);
-    unchecked_set_prior(key, prior);
+    albatross::set_param_prior(key, prior, param_lookup_function());
   }
 
   bool params_are_valid() const {
@@ -120,29 +101,13 @@ public:
 
   void set_tunable_params_values(const std::vector<ParameterValue> &x,
                                  bool force_bounds = true) {
-
     const auto modified_params =
         albatross::set_tunable_params_values(get_params(), x, force_bounds);
-
-    for (const auto &pair : modified_params) {
-      unchecked_set_param(pair.first, pair.second);
-    }
+    this->set_params(modified_params);
   }
 
   ParameterValue get_param_value(const ParameterKey &name) const {
     return get_params().at(name).value;
-  }
-
-  void unchecked_set_param(const ParameterKey &name,
-                           const ParameterValue value) {
-    Parameter param = {value, get_params()[name].prior};
-    unchecked_set_param(name, param);
-  }
-
-  void unchecked_set_prior(const ParameterKey &name,
-                           const ParameterPrior &prior) {
-    Parameter param = {get_params()[name].value, prior};
-    unchecked_set_param(name, param);
   }
 
   /*
@@ -157,9 +122,17 @@ public:
 
   virtual ParameterStore get_params() const { return params_; }
 
-  virtual void unchecked_set_param(const ParameterKey &name,
-                                   const Parameter &param) {
-    params_[name] = param;
+  virtual Parameter *get_param_pointer(const ParameterKey &name) {
+    return param_lookup(name, &params_);
+  }
+
+  //  virtual void unchecked_set_param(const ParameterKey &name,
+  //                                   const Parameter &param) {
+  //    params_[name] = param;
+  //  }
+
+  std::function<Parameter *(const ParameterKey &)> param_lookup_function() {
+    return [this](const auto &k) { return this->get_param_pointer(k); };
   }
 
 protected:

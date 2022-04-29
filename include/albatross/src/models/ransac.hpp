@@ -461,9 +461,8 @@ public:
 
   ParameterStore get_params() const override { return sub_model_.get_params(); }
 
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
-    sub_model_.set_param(name, param);
+  Parameter *get_param_pointer(const ParameterKey &name) override {
+    return sub_model_.get_param_pointer(name);
   }
 
   template <typename FeatureType>

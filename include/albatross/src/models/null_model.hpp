@@ -32,17 +32,6 @@ public:
 
   std::string get_name() const { return "null_model"; };
 
-  /*
-   * The Gaussian Process Regression model derives its parameters from
-   * the covariance functions.
-   */
-  ParameterStore get_params() const override { return params_; }
-
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
-    params_[name] = param;
-  }
-
   // If the implementing class doesn't have a fit method for this
   // FeatureType but the CovarianceFunction does.
   template <typename FeatureType>

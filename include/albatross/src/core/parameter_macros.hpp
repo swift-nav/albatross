@@ -90,7 +90,7 @@
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else {                                                                     \
-    assert(false);                                                             \
+    return nullptr;                                                            \
   };
 #define _build_if_2(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \
@@ -134,14 +134,13 @@
                _build_if_2, _build_if_1, _build_if_0)                          \
   (cond, action, ##__VA_ARGS__)
 
-#define SET_PARAMS_CONDITION(x) key == #x
+#define PARAMS_CONDITION(x) key == #x
 
-#define SET_PARAMS_ACTION(x) x = value
+#define PARAM_POINTER_ACTION(x) return &x
 
 #define DEFINE_SET_PARAMS_UNCHECKED(...)                                       \
-  void unchecked_set_param(const ::albatross::ParameterKey &key,               \
-                           const ::albatross::Parameter &value) override {     \
-    BUILD_IF(SET_PARAMS_CONDITION, SET_PARAMS_ACTION, __VA_ARGS__);            \
+  Parameter *get_param_pointer(const ParameterKey &key) override {             \
+    BUILD_IF(PARAMS_CONDITION, PARAM_POINTER_ACTION, __VA_ARGS__);             \
   };
 
 /*

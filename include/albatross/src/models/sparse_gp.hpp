@@ -274,20 +274,17 @@ public:
     return params;
   }
 
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
-    if (map_contains(this->covariance_function_.get_params(), name)) {
-      this->covariance_function_.set_param(name, param);
-    } else if (map_contains(this->mean_function_.get_params(), name)) {
-      this->mean_function_.set_param(name, param);
+  Parameter *get_param_pointer(const ParameterKey &name) override {
+    Parameter *output;
+    if ((output = this->covariance_function_.get_param_pointer(name)) ||
+        (output = this->mean_function_.get_param_pointer(name))) {
+      return output;
     } else if (name == details::measurement_nugget_name()) {
-      measurement_nugget_ = param;
+      return &measurement_nugget_;
     } else if (name == details::inducing_nugget_name()) {
-      inducing_nugget_ = param;
-    } else {
-      std::cerr << "Unknown param: " << name << std::endl;
-      assert(false);
+      return &inducing_nugget_;
     }
+    return nullptr;
   }
 
   template <typename FeatureType, typename InducingPointFeatureType>

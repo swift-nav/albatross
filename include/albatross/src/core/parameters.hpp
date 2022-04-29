@@ -204,110 +204,132 @@ inline bool params_are_valid(const ParameterStore &params) {
   return true;
 }
 
-inline
-Parameter* param_lookup(const ParameterKey &name,
-    ParameterStore *params) {
-  auto it = std::find(params->begin(), params->end(), name);
-  if (it == params.end()) {
+inline Parameter *param_lookup(const ParameterKey &name,
+                               ParameterStore *params) {
+  auto it = params->find(name);
+  if (it == params->end()) {
     return nullptr;
   }
   return &it->second;
 }
 
-inline
-void modify_param(const ParameterKey &name,
-               const std::function<Parameter*(const ParameterKey &)> &get_param_ptr,
-               const std::function<void(Parameter*)> &operation) {
+inline void modify_param(
+    const ParameterKey &name,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+    const std::function<void(Parameter *)> &operation,
+    bool assert_exists = true) {
   auto param_ptr = get_param_ptr(name);
-  if (param_ptr == nullptr) {
+  if (param_ptr != nullptr) {
+    operation(param_ptr);
+    return;
+  }
+  if (assert_exists) {
     std::cerr << "Error: Parameter `" << name << "` not found";
     assert(false && "Attempt to modify a param which doesn't exist");
   }
-  operation(param_ptr);
 }
 
-inline
-void set_param(const ParameterKey &name,
-                     const Parameter &param,
-                     const std::function<Parameter*(const ParameterKey &)> &get_param_ptr) {
-  modify_param(name, get_param_ptr, [&](Parameter *p){(*p) = param;});
+inline void
+set_param(const ParameterKey &name, const Parameter &param,
+          const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+          bool assert_exists = true) {
+  modify_param(name, get_param_ptr, [&](Parameter *p) { (*p) = param; },
+               assert_exists);
 }
 
-inline
-void set_param_value(const ParameterKey &name,
-                     const ParameterValue &value,
-                     const std::function<Parameter*(const ParameterKey &)> &get_param_ptr) {
-  modify_param(name, get_param_ptr, [&](Parameter *p){p->value = value;});
+inline void set_param_value(
+    const ParameterKey &name, const ParameterValue &value,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+    bool assert_exists = true) {
+  modify_param(name, get_param_ptr, [&](Parameter *p) { p->value = value; },
+               assert_exists);
 }
 
-inline
-void set_param(const ParameterKey &name,
-               const Parameter &param,
-               ParameterStore *params) {
-  std::function<Parameter*(const ParameterKey &)> get_param_ptr = [&](const auto &k) {return param_lookup(name, params)};
-  set_param(name, get_param_ptr);
+inline void set_param_prior(
+    const ParameterKey &name, const ParameterPrior &prior,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+    bool assert_exists = true) {
+  modify_param(name, get_param_ptr, [&](Parameter *p) { p->prior = prior; },
+               assert_exists);
 }
 
-inline
-void set_param_value(const ParameterKey &name,
-                     const ParameterValue &value,
-                     ParameterStore *params) {
-  auto it = std::find(params.begin(), params.end(), name);
-  if (it != params.end()) {
-    it->second.value = value;
-  } else {
-    std::cerr << "Error: Parameter `" << name << "` not found in : "
-              << pretty_params(*params);
-    assert(false && "Attempt to set a param which doesn't exist");
+inline void set_param(const ParameterKey &name, const Parameter &param,
+                      ParameterStore *params) {
+  std::function<Parameter *(const ParameterKey &)> get_param_ptr =
+      [&](const auto &k) { return param_lookup(name, params); };
+  set_param(name, param, get_param_ptr);
+}
+
+inline void set_param_value(const ParameterKey &name,
+                            const ParameterValue &value,
+                            ParameterStore *params) {
+  std::function<Parameter *(const ParameterKey &)> get_param_ptr =
+      [&](const auto &k) { return param_lookup(name, params); };
+  set_param_value(name, value, get_param_ptr);
+}
+
+inline void set_param_value_if_exists(const ParameterKey &name,
+                                      const ParameterValue &value,
+                                      ParameterStore *params) {
+  std::function<Parameter *(const ParameterKey &)> get_param_ptr =
+      [&](const auto &k) { return param_lookup(name, params); };
+  set_param_value(name, value, get_param_ptr, false);
+}
+
+inline void set_param_if_exists(const ParameterKey &name,
+                                const Parameter &param,
+                                ParameterStore *params) {
+  std::function<Parameter *(const ParameterKey &)> get_param_ptr =
+      [&](const auto &k) { return param_lookup(name, params); };
+  set_param(name, param, get_param_ptr, false);
+}
+
+inline void set_params(
+    const ParameterStore &input_params,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+    bool assert_exists = true) {
+  for (const auto &pair : input_params) {
+    set_param(pair.first, pair.second, get_param_ptr, assert_exists);
   }
 }
 
-inline
-void set_param_values(const std::map<ParameterKey,
-                                     ParameterValue> &param_values,
-                     ParameterStore *params) {
+inline void set_params_if_exists(
+    const ParameterStore &input_params,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr) {
+  set_params(input_params, get_param_ptr, false);
+}
+
+inline void set_param_values(
+    const std::map<ParameterKey, ParameterValue> &param_values,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr,
+    bool assert_exists = true) {
+  for (const auto &pair : param_values) {
+    set_param_value(pair.first, pair.second, get_param_ptr, assert_exists);
+  }
+}
+
+inline void
+set_param_values(const std::map<ParameterKey, ParameterValue> &param_values,
+                 ParameterStore *params) {
   for (const auto &pair : param_values) {
     set_param_value(pair.first, pair.second, params);
   }
 }
 
-inline
-void set_param_value_if_exists(const ParameterKey &name,
-                               const ParameterValue &value,
-                     ParameterStore *params) {
-    auto it = std::find(params.begin(), params.end(), pair.first);
-    if (it != params.end()) {
-      it->second.value = pair.second;
-    }
+inline void set_param_values_if_exists(
+    const std::map<ParameterKey, ParameterValue> &param_values,
+    const std::function<Parameter *(const ParameterKey &)> &get_param_ptr) {
+  set_param_values(param_values, get_param_ptr, false);
 }
 
-inline
-void set_param_values_if_exists(const std::map<ParameterKey,
-                      ParameterValue> &param_values,
-                     ParameterStore *params) {
+inline void set_param_values_if_exists(
+    const std::map<ParameterKey, ParameterValue> &param_values,
+    ParameterStore *params) {
   for (const auto &pair : param_values) {
     set_param_value_if_exists(pair.first, pair.second, params);
   }
 }
 
-inline
-void set_param_if_exists(const ParameterKey &name,
-                          const Parameter &param,
-                     ParameterStore *params) {
-  auto it = std::find(params.begin(), params.end(), pair.first);
-  if (it != params.end()) {
-    it->second = pair.second;
-  }
-}
-
-inline
-void set_params_if_exists(const ParameterStore &input_params,
-                     ParameterStore *params) {
-  for (const auto &pair : input_params) {
-    set_param_if_exists(pair.first, pair.second, params);
-  }
-}
-
-}
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_ */
