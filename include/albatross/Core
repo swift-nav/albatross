@@ -19,6 +19,7 @@
 
 #include <albatross/src/core/traits.hpp>
 #include <albatross/src/core/priors.hpp>
+#include <albatross/src/core/parameters.hpp>
 #include <albatross/src/core/parameter_handling_mixin.hpp>
 #include <albatross/src/core/parameter_macros.hpp>
 #include <albatross/src/core/fit_model.hpp>
