@@ -266,6 +266,14 @@ inline void set_param_value(const ParameterKey &name,
   set_param_value(name, value, get_param_ptr);
 }
 
+inline void set_param_prior(const ParameterKey &name,
+                            const ParameterPrior &prior,
+                            ParameterStore *params) {
+  std::function<Parameter *(const ParameterKey &)> get_param_ptr =
+      [&](const auto &k) { return param_lookup(name, params); };
+  set_param_prior(name, prior, get_param_ptr);
+}
+
 inline void set_param_value_if_exists(const ParameterKey &name,
                                       const ParameterValue &value,
                                       ParameterStore *params) {

@@ -17,35 +17,12 @@ namespace albatross {
 
 namespace details {
 
-DEFINE_CLASS_METHOD_TRAITS(get_param_pointer);
+// DEFINE_CLASS_METHOD_TRAITS(get_param_pointer);
 DEFINE_CLASS_METHOD_TRAITS(on_parameter_change);
-
-template <typename ParameterHandler>
-
-/*
- * Valid Parameter Handler need to have a method which lets the
- * user lookup a pointer to a parameter by key (get_param_pointer)
- * and needs to have a way to signal that parameters have changed
- * (on_parameter_change)
- */
-class is_param_handler {
-  template <typename C, typename std::enable_if_t<
-                            has_get_param_pointer<C, ParameterKey>::value &&
-                                has_on_parameter_change<C>::value,
-                            int> = 0>
-  static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
-
-public:
-  static constexpr bool value = decltype(test<ParameterHandler>(0))::value;
-  ;
-};
 
 } // namespace details
 
-template <typename ParameterHandler,
-          typename std::enable_if_t<
-              details::is_param_handler<ParameterHandler>::value, int> = 0>
+template <typename ParameterHandler>
 inline std::function<Parameter *(const ParameterKey &)>
 param_lookup_function(ParameterHandler *parameter_handler) {
   return [parameter_handler](const auto &k) {
@@ -53,18 +30,25 @@ param_lookup_function(ParameterHandler *parameter_handler) {
   };
 }
 
-template <typename ParameterHandler,
-          typename std::enable_if_t<
-              !details::is_param_handler<ParameterHandler>::value, int> = 0>
-inline void param_lookup_function(ParameterHandler *parameter_handler) {
-  ALBATROSS_FAIL(ParameterHandler, "Not a valid parameter handler")
+template <
+    typename ParameterHandler,
+    typename std::enable_if_t<
+        details::has_on_parameter_change<ParameterHandler>::value, int> = 0>
+inline void call_on_parameter_change(ParameterHandler *param_handler) {
+  param_handler->on_parameter_change();
 }
+
+template <
+    typename ParameterHandler,
+    typename std::enable_if_t<
+        !details::has_on_parameter_change<ParameterHandler>::value, int> = 0>
+inline void call_on_parameter_change(ParameterHandler *param_handler) {}
 
 template <typename ParameterHandler>
 inline void set_param(const ParameterKey &name, const Parameter &param,
                       ParameterHandler *param_handler) {
   set_param(name, param, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -72,7 +56,7 @@ inline void set_param_value(const ParameterKey &name,
                             const ParameterValue &value,
                             ParameterHandler *param_handler) {
   set_param_value(name, value, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -80,7 +64,7 @@ inline void set_param_prior(const ParameterKey &name,
                             const ParameterPrior &prior,
                             ParameterHandler *param_handler) {
   set_param_prior(name, prior, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -88,7 +72,7 @@ inline void set_param_value_if_exists(const ParameterKey &name,
                                       const ParameterValue &value,
                                       ParameterHandler *param_handler) {
   set_param_value_if_exists(name, value, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -96,21 +80,21 @@ inline void set_param_if_exists(const ParameterKey &name,
                                 const ParameterValue &value,
                                 ParameterHandler *param_handler) {
   set_param_if_exists(name, value, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
 inline void set_params(const ParameterStore &params,
                        ParameterHandler *param_handler) {
   set_params(params, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
 inline void set_params_if_exists(const ParameterStore &params,
                                  ParameterHandler *param_handler) {
   set_params_if_exists(params, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -118,7 +102,7 @@ inline void
 set_param_values(const std::map<ParameterKey, ParameterValue> &params,
                  ParameterHandler *param_handler) {
   set_param_values(params, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 template <typename ParameterHandler>
@@ -126,7 +110,7 @@ inline void
 set_param_values_if_exists(const std::map<ParameterKey, ParameterValue> &params,
                            ParameterHandler *param_handler) {
   set_param_values_if_exists(params, param_lookup_function(param_handler));
-  param_handler->on_parameter_change();
+  call_on_parameter_change(param_handler);
 }
 
 /*
