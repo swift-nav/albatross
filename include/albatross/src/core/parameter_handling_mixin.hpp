@@ -27,41 +27,38 @@ public:
 
   virtual ~ParameterHandlingMixin(){};
 
-  void check_param_key(const ParameterKey &key) const {
-    const ParameterStore current_params = get_params();
-    if (!map_contains(current_params, key)) {
-      std::cerr << "Error: Key `" << key << "` not found in parameters: "
-                << pretty_params(current_params);
-      assert(false);
-    }
-  }
-
   /*
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
     albatross::set_params(params, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_params_if_exists(const ParameterStore &params) {
     albatross::set_params_if_exists(params, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
     albatross::set_param_values(values, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_param_values_if_exists(
       const std::map<ParameterKey, ParameterValue> &values) {
     albatross::set_param_values_if_exists(values, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_param_value(const ParameterKey &key, const ParameterValue &value) {
     albatross::set_param_value(key, value, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_param(const ParameterKey &key, const Parameter &param) {
     albatross::set_param(key, param, param_lookup_function());
+    on_parameter_change();
   }
 
   // This just avoids the situation where a user would call `set_param`
@@ -70,10 +67,12 @@ public:
   // inadvertently overwrite the prior.
   void set_param(const ParameterKey &key, const ParameterValue &value) {
     albatross::set_param_value(key, value, param_lookup_function());
+    on_parameter_change();
   }
 
   void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
     albatross::set_param_prior(key, prior, param_lookup_function());
+    on_parameter_change();
   }
 
   bool params_are_valid() const {
@@ -104,6 +103,7 @@ public:
     const auto modified_params =
         albatross::set_tunable_params_values(get_params(), x, force_bounds);
     this->set_params(modified_params);
+    on_parameter_change();
   }
 
   ParameterValue get_param_value(const ParameterKey &name) const {
@@ -116,8 +116,8 @@ public:
   std::string pretty_string() const { return pretty_params(get_params()); }
 
   /*
-   * The following methods are ones that may want to be overriden for
-   * clasess that contain nested params (for example).
+   * The following methods are ones that may want to be overridden for
+   * classes that contain nested params (for example).
    */
 
   virtual ParameterStore get_params() const { return params_; }
@@ -125,6 +125,8 @@ public:
   virtual Parameter *get_param_pointer(const ParameterKey &name) {
     return param_lookup(name, &params_);
   }
+
+  virtual void on_parameter_change(){};
 
   std::function<Parameter *(const ParameterKey &)> param_lookup_function() {
     return [this](const auto &k) { return this->get_param_pointer(k); };
