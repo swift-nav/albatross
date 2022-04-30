@@ -63,12 +63,12 @@
 /*
  * These macros build up a function that when called with,
  *
- *   DEFINE_SET_PARAMS_UNCHECKED(1, 2, ...)
+ *   DEFINE_SET_PARAM(1, 2, ...)
  *
  * builds a code block that looks like:
  *
- *   void unchecked_set_param (const std::string &key,
- *                             const ParameterValue &value) override {
+ *   void set_param(const ParameterKey &key,
+ *                  const Parameter &value) override {
  *     if (key == "$1") {
  *       $1 = value;
  *     } else if (key == "$2") {
@@ -134,14 +134,14 @@
                _build_if_2, _build_if_1, _build_if_0)                          \
   (cond, action, ##__VA_ARGS__)
 
-#define SET_PARAMS_CONDITION(x) key == #x
+#define SET_PARAM_CONDITION(x) key == #x
 
-#define SET_PARAMS_ACTION(x) x = value
+#define SET_PARAM_ACTION(x) x = value
 
-#define DEFINE_SET_PARAMS_UNCHECKED(...)                                       \
-  void unchecked_set_param(const ::albatross::ParameterKey &key,               \
-                           const ::albatross::Parameter &value) override {     \
-    BUILD_IF(SET_PARAMS_CONDITION, SET_PARAMS_ACTION, __VA_ARGS__);            \
+#define DEFINE_SET_PARAM(...)                                                  \
+  void set_param(const ::albatross::ParameterKey &key,                         \
+                 const ::albatross::Parameter &value) override {               \
+    BUILD_IF(SET_PARAM_CONDITION, SET_PARAM_ACTION, __VA_ARGS__);              \
   };
 
 /*
@@ -157,7 +157,7 @@
 
 #define ALBATROSS_DECLARE_PARAMS(...)                                          \
   DEFINE_GET_PARAMS(__VA_ARGS__);                                              \
-  DEFINE_SET_PARAMS_UNCHECKED(__VA_ARGS__);                                    \
+  DEFINE_SET_PARAM(__VA_ARGS__);                                               \
   DECLARE_PARAMS(__VA_ARGS__);
 
 #endif
