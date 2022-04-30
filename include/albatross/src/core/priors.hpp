@@ -192,7 +192,7 @@ public:
   double sigma_;
 };
 
-// NOTE: Order here is very important for backward compatible seraialization.
+// NOTE: Order here is very important for backward compatible serialization.
 using PossiblePriors =
     variant<UninformativePrior, FixedPrior, NonNegativePrior, PositivePrior,
             UniformPrior, LogScaleUniformPrior, GaussianPrior, LogNormalPrior,
