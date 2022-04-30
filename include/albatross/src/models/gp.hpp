@@ -260,16 +260,13 @@ public:
                              covariance_function_.get_params()));
   }
 
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
-
-    if (map_contains(covariance_function_.get_params(), name)) {
-      covariance_function_.set_param(name, param);
-    } else if (map_contains(mean_function_.get_params(), name)) {
-      mean_function_.set_param(name, param);
-    } else {
-      impl().params_[name] = param;
-    }
+  virtual void set_param(const std::string &name,
+                         const Parameter &param) override {
+    const bool success =
+        (set_param_if_exists(name, param, &impl().params_) ||
+         set_param_if_exists_in_any(name, param, &covariance_function_,
+                                    &mean_function_));
+    ALBATROSS_ASSERT(success);
   }
 
   std::string pretty_string() const {
