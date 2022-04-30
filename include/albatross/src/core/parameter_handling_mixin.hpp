@@ -158,6 +158,31 @@ inline bool set_param_values_if_exists(
   return all_exist;
 }
 
+namespace details {
+
+inline bool variadic_set_param_if_exists(const ParameterKey &key,
+                                         const Parameter &param) {
+  return false;
+}
+
+template <typename ParameterHandler, typename... Args,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline bool
+variadic_set_param_if_exists(const ParameterKey &key, const Parameter &param,
+                             ParameterHandler *param_handler, Args... args) {
+  return (set_param_if_exists(key, param, param_handler) ||
+          variadic_set_param_if_exists(key, param, args...));
+}
+
+} // namespace details
+
+template <typename... Args>
+inline bool set_param_if_exists_in_any(const ParameterKey &key,
+                                       const Parameter &param, Args... args) {
+  return details::variadic_set_param_if_exists(key, param, args...);
+}
+
 /*
  * This mixin class is intended to be included an any class which
  * depends on some set of parameters which we want to programmatically
