@@ -461,8 +461,7 @@ public:
 
   ParameterStore get_params() const override { return sub_model_.get_params(); }
 
-  void unchecked_set_param(const std::string &name,
-                           const Parameter &param) override {
+  void set_param(const std::string &name, const Parameter &param) override {
     sub_model_.set_param(name, param);
   }
 

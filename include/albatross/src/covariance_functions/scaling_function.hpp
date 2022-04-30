@@ -64,20 +64,11 @@ public:
 
   std::string get_name() const { return scaling_function_.get_name(); }
 
-  void set_params(const ParameterStore &params) {
-    scaling_function_.set_params(params);
-  }
-
-  void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
-    scaling_function_.set_param_values(values);
-  }
-
   ParameterStore get_params() const override {
     return scaling_function_.get_params();
   }
 
-  void unchecked_set_param(const ParameterKey &name,
-                           const Parameter &param) override {
+  void set_param(const ParameterKey &name, const Parameter &param) override {
     scaling_function_.set_param(name, param);
   }
 
@@ -144,12 +135,8 @@ public:
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
-    if (map_contains(lhs_.get_params(), name)) {
-      lhs_.set_param(name, param);
-    } else {
-      rhs_.set_param(name, param);
-    }
+  void set_param(const ParameterKey &name, const Parameter &param) override {
+    assert(set_param_if_exists_in_any(name, param, &lhs_, &rhs_));
   }
 
   /*
@@ -209,12 +196,8 @@ public:
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
-    if (map_contains(lhs_.get_params(), name)) {
-      lhs_.set_param(name, param);
-    } else {
-      rhs_.set_param(name, param);
-    }
+  void set_param(const ParameterKey &name, const Parameter &param) override {
+    assert(set_param_if_exists_in_any(name, param, &lhs_, &rhs_));
   }
 
   /*

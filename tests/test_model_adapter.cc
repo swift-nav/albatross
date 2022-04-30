@@ -33,6 +33,15 @@ public:
     this->params_["center"] = other.get_params()["center"];
   };
 
+  void set_param(const std::string &name, const Parameter &param) override {
+    if (name == "center") {
+      this->params_["center"] = param;
+      return;
+    }
+    assert(set_param_if_exists_in_any(name, param, &this->covariance_function_,
+                                      &this->mean_function_));
+  }
+
   std::vector<double>
   convert(const std::vector<AdaptedFeature> &features) const {
     std::vector<double> converted;

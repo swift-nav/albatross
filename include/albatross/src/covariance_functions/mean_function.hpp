@@ -155,16 +155,12 @@ public:
     return "(" + lhs_.get_name() + "+" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
-    if (map_contains(lhs_.get_params(), name)) {
-      lhs_.set_param(name, param);
-    } else {
-      rhs_.set_param(name, param);
-    }
+  void set_param(const ParameterKey &name, const Parameter &param) override {
+    assert(set_param_if_exists_in_any(name, param, &lhs_, &rhs_));
   }
 
   /*
@@ -223,16 +219,12 @@ public:
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
-  void unchecked_set_param(const ParameterKey &name, const Parameter &param) {
-    if (map_contains(lhs_.get_params(), name)) {
-      lhs_.set_param(name, param);
-    } else {
-      rhs_.set_param(name, param);
-    }
+  void set_param(const ParameterKey &name, const Parameter &param) override {
+    assert(set_param_if_exists_in_any(name, param, &lhs_, &rhs_));
   }
 
   /*
