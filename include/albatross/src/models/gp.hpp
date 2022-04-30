@@ -254,7 +254,7 @@ public:
    * The Gaussian Process Regression model derives its parameters from
    * the covariance functions.
    */
-  ParameterStore get_params() const override {
+  virtual ParameterStore get_params() const override {
     return map_join(impl().params_,
                     map_join(mean_function_.get_params(),
                              covariance_function_.get_params()));

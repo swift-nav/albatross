@@ -72,7 +72,7 @@ public:
     scaling_function_.set_param_values(values);
   }
 
-  virtual ParameterStore get_params() const override {
+  ParameterStore get_params() const override {
     return scaling_function_.get_params();
   }
 
@@ -140,7 +140,7 @@ public:
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
@@ -205,7 +205,7 @@ public:
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
