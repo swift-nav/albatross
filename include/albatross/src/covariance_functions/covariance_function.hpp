@@ -234,7 +234,7 @@ public:
     return "(" + lhs_.get_name() + "+" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
@@ -328,7 +328,7 @@ public:
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
   }
 
-  ParameterStore get_params() const {
+  ParameterStore get_params() const override {
     return map_join(lhs_.get_params(), rhs_.get_params());
   }
 
