@@ -24,7 +24,7 @@ inline auto split_indices(std::size_t n, std::size_t k) {
 inline std::size_t random_complement(std::size_t n, std::size_t i,
                                      std::default_random_engine &gen) {
   // Draws a random integer between 0 and n - 1 excluding i.
-  assert(n > 1);
+  ALBATROSS_ASSERT(n > 1);
   std::uniform_int_distribution<std::size_t> uniform_int(0, n - 1);
   std::size_t output;
   while (true) {
@@ -37,7 +37,7 @@ inline std::size_t random_complement(std::size_t n, std::size_t i,
 
 void assert_valid_states(const EnsembleSamplerState &ensembles) {
   for (std::size_t i = 0; i < ensembles.size(); ++i) {
-    assert(std::isfinite(ensembles[i].log_prob));
+    ALBATROSS_ASSERT(std::isfinite(ensembles[i].log_prob));
   }
 }
 

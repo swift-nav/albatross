@@ -47,12 +47,12 @@ initial_params_from_csv(std::istream &ss) {
   std::string line;
   double iteration = 0;
 
-  assert(std::getline(ss, line));
+  ALBATROSS_ASSERT(std::getline(ss, line));
   const std::vector<std::string> columns = split_string(line, ',');
 
-  assert(columns[0] == "iteration");
-  assert(columns[1] == "log_probability");
-  assert(columns[2] == "ensemble_index");
+  ALBATROSS_ASSERT(columns[0] == "iteration");
+  ALBATROSS_ASSERT(columns[1] == "log_probability");
+  ALBATROSS_ASSERT(columns[2] == "ensemble_index");
 
   while (std::getline(ss, line)) {
     const std::vector<double> values = parse_line(line);
@@ -64,7 +64,7 @@ initial_params_from_csv(std::istream &ss) {
     }
 
     std::map<std::string, double> param_values;
-    assert(values.size() == columns.size());
+    ALBATROSS_ASSERT(values.size() == columns.size());
     // Skip the first three columns which contain metadata
     for (std::size_t i = 3; i < columns.size(); ++i) {
       param_values[columns[i]] = values[i];
@@ -83,7 +83,7 @@ initial_params_from_csv(const ParameterStore &param_store, std::istream &ss) {
 
   std::vector<std::vector<double>> output;
   for (const auto &value_map : all_params) {
-    assert(value_map.size() == param_store.size());
+    ALBATROSS_ASSERT(value_map.size() == param_store.size());
     ParameterStore params(param_store);
     for (const auto &value_pair : value_map) {
       params[value_pair.first].value = ensure_value_within_bounds(
@@ -139,7 +139,8 @@ ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
       output.push_back(state);
     }
   }
-  assert(output.size() > 2 && "Need at least two finite initial states");
+  ALBATROSS_ASSERT(output.size() > 2 &&
+                   "Need at least two finite initial states");
 
   std::uniform_real_distribution<double> uniform_real(0.0, 1.0);
 

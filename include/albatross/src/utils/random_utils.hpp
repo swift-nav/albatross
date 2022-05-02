@@ -24,7 +24,7 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
   if (n > n_choices) {
     std::cout << "ERROR: n (" << n << ") is larger than n_choices ("
               << n_choices << ")" << std::endl;
-    assert(false);
+    ALBATROSS_ASSERT(false);
   }
 
   if (n == n_choices) {
@@ -127,8 +127,8 @@ random_multivariate_normal(const Eigen::VectorXd &mean,
                            const Eigen::MatrixXd &cov,
                            std::default_random_engine &gen) {
   std::normal_distribution<double> dist;
-  assert(mean.size() == cov.rows());
-  assert(cov.rows() == cov.cols());
+  ALBATROSS_ASSERT(mean.size() == cov.rows());
+  ALBATROSS_ASSERT(cov.rows() == cov.cols());
 
   Eigen::VectorXd sample(mean.size());
   gaussian_fill(sample, gen);

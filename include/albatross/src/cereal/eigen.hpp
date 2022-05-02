@@ -62,7 +62,7 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   const std::string decompressed =
       gzip::decompress(payload.data(), payload.size());
 
-  assert(size_in_bytes == decompressed.size());
+  ALBATROSS_ASSERT(size_in_bytes == decompressed.size());
 
   std::vector<_Scalar> decoded_data(size);
   std::memcpy(decoded_data.data(), decompressed.data(), size_in_bytes);
@@ -128,10 +128,10 @@ inline void load_lower_triangle(Archive &archive,
   double b = 1;
   double c = -2. * static_cast<double>(data.size());
   double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
-  assert(rows_as_double -
-                 static_cast<Eigen::Index>(std::lround(rows_as_double)) ==
-             0. &&
-         "inferred a non integer number of rows");
+  ALBATROSS_ASSERT(
+      rows_as_double - static_cast<Eigen::Index>(std::lround(rows_as_double)) ==
+          0. &&
+      "inferred a non integer number of rows");
   Eigen::Index rows = static_cast<Eigen::Index>(std::lround(rows_as_double));
 
   v.resize(rows, rows);

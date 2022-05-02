@@ -89,12 +89,12 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
   };
 
   void assert_valid() const {
-    assert(mean.size() == covariance.rows());
-    assert(mean.size() == covariance.cols());
+    ALBATROSS_ASSERT(mean.size() == covariance.rows());
+    ALBATROSS_ASSERT(mean.size() == covariance.cols());
   }
 
   double get_diagonal(Eigen::Index i) const {
-    assert(i >= 0 && i < covariance.rows());
+    ALBATROSS_ASSERT(i >= 0 && i < covariance.rows());
     return covariance.diagonal()[i];
   }
 
@@ -154,16 +154,16 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
   JointDistribution(const Eigen::VectorXd &mean_,
                     const Eigen::MatrixXd &covariance_)
       : Base(mean_), covariance(covariance_) {
-    assert(mean_.size() == covariance_.rows());
+    ALBATROSS_ASSERT(mean_.size() == covariance_.rows());
   };
 
   void assert_valid() const {
-    assert(mean.size() == covariance.rows());
-    assert(mean.size() == covariance.cols());
+    ALBATROSS_ASSERT(mean.size() == covariance.rows());
+    ALBATROSS_ASSERT(mean.size() == covariance.cols());
   }
 
   double get_diagonal(Eigen::Index i) const {
-    assert(i >= 0 && i < covariance.rows());
+    ALBATROSS_ASSERT(i >= 0 && i < covariance.rows());
     return covariance.diagonal()[i];
   }
 

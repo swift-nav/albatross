@@ -276,7 +276,7 @@ Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
     output[i] = x;
     ++i;
   }
-  assert(i == output.size());
+  ALBATROSS_ASSERT(i == output.size());
   return output;
 }
 
@@ -294,7 +294,7 @@ Eigen::VectorXd combine(const Map<KeyType, Eigen::VectorXd> &groups) {
       i += x.size();
     }
   }
-  assert(i == output.size());
+  ALBATROSS_ASSERT(i == output.size());
   return output;
 }
 
@@ -471,7 +471,7 @@ public:
                 details::is_subsetable<SubsetableType>::value, int>::type = 0>
   Grouped<KeyType, std::pair<ValueType, SubsetableType>>
   with(const SubsetableType &other) const {
-    assert(parent_.size() == other.size());
+    ALBATROSS_ASSERT(parent_.size() == other.size());
     Grouped<KeyType, std::pair<ValueType, SubsetableType>> output;
     for (const auto &key_indexer_pair : indexers()) {
       output.emplace(
@@ -485,7 +485,7 @@ public:
   template <template <typename...> class Map, typename AlreadyGroupedType>
   Grouped<KeyType, std::pair<ValueType, AlreadyGroupedType>>
   with(const Map<KeyType, AlreadyGroupedType> &other) const {
-    assert(other.size() == indexers().size());
+    ALBATROSS_ASSERT(other.size() == indexers().size());
     Grouped<KeyType, std::pair<ValueType, AlreadyGroupedType>> output;
     for (const auto &key_indexer_pair : indexers()) {
       output.emplace(

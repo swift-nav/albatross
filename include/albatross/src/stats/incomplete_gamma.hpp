@@ -35,13 +35,13 @@ constexpr double INCOMPLETE_GAMMA_EQUALITY_TRESHOLD = 1e-12;
 
 inline double incomplete_gamma_quadrature_inp_vals(double lb, double ub,
                                                    std::size_t counter) {
-  assert(counter < gauss_legendre_50_points.size());
+  ALBATROSS_ASSERT(counter < gauss_legendre_50_points.size());
   return (ub - lb) * 0.5 * gauss_legendre_50_points[counter] + 0.5 * (ub + lb);
 }
 
 inline double incomplete_gamma_quadrature_weight_vals(double lb, double ub,
                                                       std::size_t counter) {
-  assert(counter < gauss_legendre_50_weights.size());
+  ALBATROSS_ASSERT(counter < gauss_legendre_50_weights.size());
   return (ub - lb) * 0.5 * gauss_legendre_50_weights[counter];
 }
 

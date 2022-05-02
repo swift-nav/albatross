@@ -223,7 +223,7 @@ public:
       return ReturnType(*this, PatchworkFitType(fit_models));
     }
 
-    assert(boundary_features.size() > 0);
+    ALBATROSS_ASSERT(boundary_features.size() > 0);
 
     // The following variable names are meant to approximately match the
     // notation used in Equation 5 (and the following matrices).  The

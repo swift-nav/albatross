@@ -91,7 +91,7 @@ inline auto vertical_stack(
   const Eigen::Index cols = blocks[0].cols();
   for (const auto &block : blocks) {
     rows += block.rows();
-    assert(block.cols() == cols);
+    ALBATROSS_ASSERT(block.cols() == cols);
   }
 
   using MatrixType = Eigen::Matrix<_Scalar, Eigen::Dynamic, _Cols>;

@@ -90,7 +90,7 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
         information(information_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
-    assert(mean_shift.size() == information.size());
+    ALBATROSS_ASSERT(mean_shift.size() == information.size());
     information += train_covariance.solve(mean_shift);
   }
 
@@ -286,7 +286,7 @@ public:
       inducing_nugget_ = param;
     } else {
       std::cerr << "Unknown param: " << name << std::endl;
-      assert(false);
+      ALBATROSS_ASSERT(false);
     }
   }
 
@@ -307,7 +307,7 @@ public:
     const Eigen::Index k = old_fit.sigma_R.cols();
     Eigen::MatrixXd B = Eigen::MatrixXd::Zero(n_old + n_new, k);
 
-    assert(n_old == k);
+    ALBATROSS_ASSERT(n_old == k);
 
     // Form:
     //   B = |R_old P_old^T| = |Q_1| R P^T
@@ -322,7 +322,7 @@ public:
     // Form:
     //   y_aug = |R_old P_old^T v_old|
     //           |A^{-1/2} y         |
-    assert(old_fit.information.size() == n_old);
+    ALBATROSS_ASSERT(old_fit.information.size() == n_old);
     Eigen::VectorXd y_augmented(n_old + n_new);
     for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
       y_augmented[i] =
@@ -373,7 +373,7 @@ public:
     // Determine the set of inducing points, u.
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
-    assert(u.size() > 0 && "Empty inducing points!");
+    ALBATROSS_ASSERT(u.size() > 0 && "Empty inducing points!");
 
     BlockDiagonalLDLT A_ldlt;
     Eigen::SerializableLDLT K_uu_ldlt;
@@ -619,10 +619,10 @@ private:
       BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
 
-    assert(A_ldlt != nullptr);
-    assert(K_uu_ldlt != nullptr);
-    assert(K_fu != nullptr);
-    assert(y != nullptr);
+    ALBATROSS_ASSERT(A_ldlt != nullptr);
+    ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
+    ALBATROSS_ASSERT(K_fu != nullptr);
+    ALBATROSS_ASSERT(y != nullptr);
 
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();

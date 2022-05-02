@@ -53,8 +53,8 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
 static inline double
 negative_log_likelihood(const Eigen::VectorXd &deviation,
                         const Eigen::MatrixXd &covariance) {
-  assert(deviation.size() == covariance.rows());
-  assert(covariance.cols() == covariance.rows());
+  ALBATROSS_ASSERT(deviation.size() == covariance.rows());
+  ALBATROSS_ASSERT(covariance.cols() == covariance.rows());
   if (deviation.size() == 1) {
     // Looks like we have a univariate distribution, skipping
     // all the matrix decomposition steps should speed this up.
@@ -75,7 +75,7 @@ static inline double
 negative_log_likelihood(const Eigen::VectorXd &deviation,
                         const Eigen::DiagonalMatrix<_Scalar, SizeAtCompileTime>
                             &diagonal_covariance) {
-  assert(deviation.size() == diagonal_covariance.diagonal().size());
+  ALBATROSS_ASSERT(deviation.size() == diagonal_covariance.diagonal().size());
   const auto variances = diagonal_covariance.diagonal();
   double nll = 0.;
   for (Eigen::Index i = 0; i < deviation.size(); i++) {

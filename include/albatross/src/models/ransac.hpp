@@ -80,7 +80,7 @@ inline std::string to_string(const ransac_return_code_t &return_code) {
   case RANSAC_RETURN_CODE_FAILURE:
     return "failure";
   default:
-    assert(false);
+    ALBATROSS_ASSERT(false);
     return "unknown return code";
   }
 }
@@ -418,7 +418,7 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
   }
 
   const FitModelType &get_fit_model_or_assert() const {
-    assert(maybe_empty_fit_model.template is<FitModelType>());
+    ALBATROSS_ASSERT(maybe_empty_fit_model.template is<FitModelType>());
     return maybe_empty_fit_model.template get<FitModelType>();
   }
 
@@ -500,7 +500,7 @@ public:
                             PredictTypeIdentity<PredictType> &&) const {
     // If RANSAC failed it's up to the user to determine that from the output of
     // fit and deal with it appropriately.
-    assert(ransac_fit_.has_fit_model());
+    ALBATROSS_ASSERT(ransac_fit_.has_fit_model());
     return ransac_fit_.get_fit_model_or_assert()
         .predict(features)
         .template get<PredictType>();

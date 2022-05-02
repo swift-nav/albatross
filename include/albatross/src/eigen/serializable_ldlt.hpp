@@ -147,7 +147,7 @@ public:
     // D^-1/2 L^-1 P
     inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
 
-    assert(!inverse_cholesky.hasNaN());
+    ALBATROSS_ASSERT(!inverse_cholesky.hasNaN());
 
     std::vector<Eigen::MatrixXd> output;
     for (const auto &block_indices : blocks) {
@@ -176,8 +176,8 @@ public:
     Eigen::VectorXd inv_diag(n);
     const auto blocks = inverse_blocks(block_indices);
     for (std::size_t i = 0; i < size_n; i++) {
-      assert(blocks[i].rows() == 1);
-      assert(blocks[i].cols() == 1);
+      ALBATROSS_ASSERT(blocks[i].rows() == 1);
+      ALBATROSS_ASSERT(blocks[i].cols() == 1);
       inv_diag[i] = blocks[i](0, 0);
     }
 

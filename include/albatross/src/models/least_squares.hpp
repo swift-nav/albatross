@@ -55,7 +55,7 @@ public:
                     const MarginalDistribution &targets) const {
     // The way this is currently implemented we assume all targets have the same
     // variance (or zero variance).
-    assert(all_same_value(targets.covariance.diagonal()));
+    ALBATROSS_ASSERT(all_same_value(targets.covariance.diagonal()));
     // Build the design matrix
     int m = static_cast<int>(features.size());
     int n = static_cast<int>(features[0].size());

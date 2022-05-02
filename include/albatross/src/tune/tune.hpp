@@ -94,7 +94,8 @@ inline ParameterStore run_optimizer(const ParameterStore &params,
 
   auto x = get_tunable_parameters(params).values;
 
-  assert(static_cast<std::size_t>(optimizer.get_dimension()) == x.size());
+  ALBATROSS_ASSERT(static_cast<std::size_t>(optimizer.get_dimension()) ==
+                   x.size());
 
   double minf;
   nlopt::result result = optimizer.optimize(x, minf);
@@ -146,7 +147,7 @@ struct GenericTuner {
       if (!params_are_valid(params)) {
         this->output_stream << "Invalid Parameters:" << std::endl;
         this->output_stream << pretty_param_details(params) << std::endl;
-        assert(false);
+        ALBATROSS_ASSERT(false);
       }
 
       double metric = objective(params);

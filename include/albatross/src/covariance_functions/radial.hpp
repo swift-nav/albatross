@@ -24,7 +24,7 @@ inline double squared_exponential_covariance(double distance,
   if (length_scale <= 0.) {
     return 0.;
   }
-  assert(distance >= 0.);
+  ALBATROSS_ASSERT(distance >= 0.);
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
@@ -91,7 +91,7 @@ inline double exponential_covariance(double distance, double length_scale,
   if (length_scale <= 0.) {
     return 0.;
   }
-  assert(distance >= 0.);
+  ALBATROSS_ASSERT(distance >= 0.);
   return sigma * sigma * exp(-fabs(distance / length_scale));
 }
 

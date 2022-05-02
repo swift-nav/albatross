@@ -128,13 +128,13 @@ inline TunableParameters get_tunable_parameters(const ParameterStore &params) {
         std::cout << "INVALID PARAMETER: " << pair.first
                   << " expected to be greater than " << lb << " but is: " << v
                   << std::endl;
-        assert(false);
+        ALBATROSS_ASSERT(false);
       }
       if (v > ub) {
         std::cout << "INVALID PARAMETER: " << pair.first
                   << " expected to be less than " << ub << " but is: " << v
                   << std::endl;
-        assert(false);
+        ALBATROSS_ASSERT(false);
       }
 
       bool use_log_scale = pair.second.prior.is_log_scale();
@@ -190,7 +190,7 @@ set_tunable_params_values(const ParameterStore &params,
     }
   }
   // Make sure we used all the parameters that were passed in.
-  assert(x.size() == i);
+  ALBATROSS_ASSERT(x.size() == i);
   return output;
 }
 
@@ -220,7 +220,7 @@ public:
     if (!map_contains(current_params, key)) {
       std::cerr << "Error: Key `" << key << "` not found in parameters: "
                 << pretty_params(current_params);
-      assert(false);
+      ALBATROSS_ASSERT(false);
     }
   }
 

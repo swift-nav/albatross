@@ -30,7 +30,8 @@ template <typename X> struct LinearCombination {
   LinearCombination(const std::vector<X> &values_,
                     const Eigen::VectorXd &coefficients_)
       : values(values_), coefficients(coefficients_) {
-    assert(values_.size() == static_cast<std::size_t>(coefficients_.size()));
+    ALBATROSS_ASSERT(values_.size() ==
+                     static_cast<std::size_t>(coefficients_.size()));
   };
 
   bool operator==(const LinearCombination &other) const {

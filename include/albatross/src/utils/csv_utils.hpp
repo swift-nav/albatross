@@ -146,8 +146,8 @@ template <typename FeatureType, typename DistributionType>
 inline std::map<std::string, std::string>
 to_map(const RegressionDataset<FeatureType> &dataset,
        const DistributionBase<DistributionType> &predictions, std::size_t i) {
-  assert(dataset.targets.size() == predictions.size());
-  assert(i < dataset.features.size() && i >= 0);
+  ALBATROSS_ASSERT(dataset.targets.size() == predictions.size());
+  ALBATROSS_ASSERT(i < dataset.features.size() && i >= 0);
   const auto ei = static_cast<Eigen::Index>(i);
 
   double target_variance = dataset.targets.get_diagonal(ei);
@@ -248,7 +248,7 @@ write_to_csv(std::ostream &stream,
              const std::vector<DistributionType> &predictions) {
   const auto columns = get_column_names(datasets[0], predictions[0]);
   write_header(stream, columns);
-  assert(datasets.size() == predictions.size());
+  ALBATROSS_ASSERT(datasets.size() == predictions.size());
   for (std::size_t i = 0; i < datasets.size(); i++) {
     write_to_csv(stream, datasets[i], predictions[i], columns);
   }
