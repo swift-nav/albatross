@@ -13,6 +13,37 @@
 #ifndef INCLUDE_ALBATROSS_SRC_DETAILS_ERROR_HANDLING_HPP_
 #define INCLUDE_ALBATROSS_SRC_DETAILS_ERROR_HANDLING_HPP_
 
+/*
+ * The fact that assert() behaves differently in debug and release mode can
+ * cause a number of headaches.  For example, if you do something like:
+ *
+ *   assert(function_with_side_effects());
+ *
+ * that function call will have side effects during debug, but not release.
+ * Alternatively you may want to instead do:
+ *
+ *   const bool success = function_with_side_effects();
+ *   assert(success);
+ *
+ * but that will results in compiler complaints about unused variables.
+ *
+ * Here we use a workaround proposed here:
+ *
+ * https://web.archive.org/web/20201129200055/http://cnicholson.net/2009/02/stupid-c-tricks-adventures-in-assert/
+ *
+ * in which we define a separate macro which always evaluates (in even release
+ * mode) and avoids the unused variable problem if you want to go that route.
+ */
+#ifdef NDEBUG
+#define ALBATROSS_ASSERT(x)                                                    \
+  do {                                                                         \
+    (void)sizeof(x);                                                           \
+  } while (0)
+#else
+#include <assert.h>
+#define ALBATROSS_ASSERT(x) assert((x))
+#endif
+
 namespace albatross {
 
 #define ALBATROSS_FAIL(dummy, msg)                                             \
