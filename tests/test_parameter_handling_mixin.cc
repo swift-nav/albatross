@@ -44,8 +44,10 @@ TEST(test_parameter_handler, test_get_set) {
  * we'd want to make sure this property held.
  */
 TEST(test_parameter_handler, test_is_ordered) {
-  const ParameterStore ordered = {{"1", 1.}, {"2", 2.}, {"3", 3.}};
-  const ParameterStore unordered = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
+  const ParameterStore ordered = {
+      {"1", Parameter(1.)}, {"2", Parameter(2.)}, {"3", Parameter(3.)}};
+  const ParameterStore unordered = {
+      {"2", Parameter(2.)}, {"1", Parameter(1.)}, {"3", Parameter(3.)}};
 
   // march through each store one by one and make sure the keys are the same
   typedef ParameterStore::const_iterator iter_t;
@@ -63,10 +65,12 @@ TEST(test_parameter_handler, test_is_ordered) {
  * a vector of values.
  */
 TEST(test_parameter_handler, test_get_set_from_vector) {
-  const ParameterStore expected = {{"1", 4.}, {"2", 5.}, {"3", 6.}};
+  const ParameterStore expected = {
+      {"1", Parameter(4.)}, {"2", Parameter(5.)}, {"3", Parameter(6.)}};
   const std::vector<ParameterValue> expected_param_vector = {4., 5., 6.};
 
-  const ParameterStore original = {{"2", 2.}, {"1", 1.}, {"3", 3.}};
+  const ParameterStore original = {
+      {"2", Parameter(2.)}, {"1", Parameter(1.)}, {"3", Parameter(3.)}};
   const std::vector<ParameterValue> original_param_vector = {1., 2., 3.};
   MockParameterHandler original_handler(original);
 
@@ -86,15 +90,17 @@ TEST(test_parameter_handler, test_get_set_from_vector) {
  * a vector of values.
  */
 TEST(test_parameter_handler, test_get_set_from_vector_with_fixed) {
-  const ParameterStore expected = {
-      {"1", 4.}, {"2", 5.}, {"foo", {1., FixedPrior()}}, {"3", 6.}};
+  const ParameterStore expected = {{"1", Parameter(4.)},
+                                   {"2", Parameter(5.)},
+                                   {"foo", {1., FixedPrior()}},
+                                   {"3", Parameter(6.)}};
   const std::vector<ParameterValue> expected_param_vector = {4., 5., 6.};
 
   ParameterStore original(expected);
-  original["1"] = 1.;
-  original["2"] = 2.;
-  original["foo"] = {-2., FixedPrior()};
-  original["3"] = 3.;
+  original["1"].value = 1.;
+  original["2"].value = 2.;
+  original["foo"].value = -2.;
+  original["3"].value = 3.;
   const std::vector<ParameterValue> original_param_vector = {1., 2., 3.};
   MockParameterHandler original_handler(original);
 
@@ -191,8 +197,8 @@ public:
 TEST(test_parameter_handler, test_get_set_with_macros) {
   auto p = MacroParameterHandler();
 
-  p.set_param("foo", 3.14159);
-  p.set_param("bar", sqrt(2.));
+  p.set_param("foo", Parameter(3.14159));
+  p.set_param("bar", Parameter(sqrt(2.)));
 
   auto params = p.get_params();
   for (auto &pair : params) {

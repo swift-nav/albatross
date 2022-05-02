@@ -177,7 +177,7 @@ struct ParameterStoreType : public SerializableType<ParameterStore> {
                                {"6", {6., LogScaleUniformPrior()}},
                                {"7", {7., GaussianPrior()}},
                                {"8", {8., LogNormalPrior()}},
-                               {"9", 9.}};
+                               {"9", Parameter(9.)}};
     return original;
   }
 

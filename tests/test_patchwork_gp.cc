@@ -123,13 +123,13 @@ TEST(test_patchwork_gp, test_sanity) {
 
   auto covariance = make_simple_covariance_function();
 
-  covariance.set_param("squared_exponential_length_scale", 1000.);
+  covariance.set_param_value("squared_exponential_length_scale", 1000.);
   expect_patchwork_gp_performance(covariance, patchwork_functions, 0.1, 0.3);
 
-  covariance.set_param("squared_exponential_length_scale", 100.);
+  covariance.set_param_value("squared_exponential_length_scale", 100.);
   expect_patchwork_gp_performance(covariance, patchwork_functions, 1e-2, 0.3);
 
-  covariance.set_param("squared_exponential_length_scale", 10.);
+  covariance.set_param_value("squared_exponential_length_scale", 10.);
   expect_patchwork_gp_performance(covariance, patchwork_functions, 5e-2, 0.3);
 }
 

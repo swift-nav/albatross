@@ -98,8 +98,9 @@ TEST(test_tune, test_with_prior) {
   // without.  These parameters should be inconsistent with the
   // prior which should lead to a smaller likelihood.
   for (const auto &pair : params_no_prior) {
-    model_with_priors.set_param(pair.first, pair.second.value);
+    model_with_priors.set_param_value(pair.first, pair.second.value);
   }
+
   double ll_without_prior = model_with_priors.prior_log_likelihood();
 
   EXPECT_GT(ll_with_prior, ll_without_prior);

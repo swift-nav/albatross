@@ -30,7 +30,7 @@ struct Parameter {
   PriorContainer prior;
 
   Parameter() : value(), prior(){};
-  Parameter(ParameterValue value_) : value(value_), prior() {}
+  explicit Parameter(ParameterValue value_) : value(value_), prior() {}
 
   Parameter(ParameterValue value_, const PriorContainer &prior_)
       : value(value_), prior(prior_){};
