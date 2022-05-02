@@ -69,9 +69,14 @@ template <typename ModelType>
 void test_get_set(ModelType &model, const std::string &key) {
   // Make sure a key exists, then modify it and make sure it
   // takes on the new value.
-  const auto orig = model.get_param_value(key);
-  model.set_param(key, orig + 1.);
-  EXPECT_EQ(model.get_params().at(key), orig + 1.);
+  const auto orig = model.get_params().at(key);
+  model.set_param_value(key, orig.value + 1.);
+  EXPECT_EQ(model.get_params().at(key).value, orig.value + 1.);
+
+  Parameter plus_two(orig);
+  plus_two.value += 2;
+  model.set_param(key, plus_two);
+  EXPECT_EQ(model.get_params().at(key), plus_two);
 }
 
 TEST(test_model_adapter, test_get_set_params) {
