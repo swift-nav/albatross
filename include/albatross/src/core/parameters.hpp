@@ -202,6 +202,107 @@ inline bool params_are_valid(const ParameterStore &params) {
   return true;
 }
 
+inline bool modify_param(const ParameterKey &name,
+                         const std::function<void(Parameter *)> &operation,
+                         ParameterStore *params, bool assert_exists = true) {
+  const auto it = params->find(name);
+  if (it != params->end()) {
+    operation(&it->second);
+    return true;
+  }
+
+  if (assert_exists) {
+    std::cerr << "Error: Parameter `" << name << "` not found";
+    ALBATROSS_ASSERT(false && "Attempt to modify a param which doesn't exist");
+  }
+  return false;
+}
+
+inline void set_param(const ParameterKey &name, const Parameter &param,
+                      ParameterStore *params, bool assert_exists = true) {
+  modify_param(name, [&](Parameter *p) { (*p) = param; }, params,
+               assert_exists);
+}
+
+inline void set_param_value(const ParameterKey &name,
+                            const ParameterValue &value, ParameterStore *params,
+                            bool assert_exists = true) {
+  modify_param(name, [&](Parameter *p) { p->value = value; }, params,
+               assert_exists);
+}
+
+inline void set_param_prior(const ParameterKey &name,
+                            const ParameterPrior &prior, ParameterStore *params,
+                            bool assert_exists = true) {
+  modify_param(name, [&](Parameter *p) { p->prior = prior; }, params,
+               assert_exists);
+}
+
+inline void set_params(const ParameterStore &input_params,
+                       ParameterStore *params) {
+  for (const auto &pair : input_params) {
+    set_param(pair.first, pair.second, params);
+  }
+}
+
+inline void
+set_param_values(const std::map<ParameterKey, ParameterValue> &param_values,
+                 ParameterStore *params) {
+  for (const auto &pair : param_values) {
+    set_param_value(pair.first, pair.second, params);
+  }
+}
+
+// These set_*_if_exists methods return a bool indicating whether the
+// parameter was set or not.
+
+inline bool set_param_if_exists(const ParameterKey &name,
+                                const Parameter &param,
+                                ParameterStore *params) {
+  return modify_param(name, [&](Parameter *p) { (*p) = param; }, params, false);
+}
+
+inline bool set_param_value_if_exists(const ParameterKey &name,
+                                      const ParameterValue &value,
+                                      ParameterStore *params) {
+  return modify_param(name, [&](Parameter *p) { p->value = value; }, params,
+                      false);
+}
+
+inline bool set_param_prior_if_exists(const ParameterKey &name,
+                                      const ParameterPrior &prior,
+                                      ParameterStore *params) {
+  return modify_param(name, [&](Parameter *p) { p->prior = prior; }, params,
+                      false);
+}
+
+inline bool set_params_if_exists(const ParameterStore &input_params,
+                                 ParameterStore *params) {
+  bool all_set = input_params.size() > 0;
+  for (const auto &pair : input_params) {
+    all_set = set_param_if_exists(pair.first, pair.second, params);
+  }
+  return all_set;
+}
+
+inline bool set_param_values_if_exists(
+    const std::map<ParameterKey, ParameterValue> &param_values,
+    ParameterStore *params) {
+  bool all_set = param_values.size() > 0;
+  for (const auto &pair : param_values) {
+    all_set = set_param_value_if_exists(pair.first, pair.second, params);
+  }
+  return all_set;
+}
+
+inline double parameter_prior_log_likelihood(const ParameterStore &params) {
+  double sum = 0.;
+  for (const auto &pair : params) {
+    sum += pair.second.prior_log_likelihood();
+  }
+  return sum;
+}
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_ */
