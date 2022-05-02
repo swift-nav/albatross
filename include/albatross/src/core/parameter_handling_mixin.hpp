@@ -15,9 +15,152 @@
 
 namespace albatross {
 
+namespace details {
+
+DEFINE_CLASS_METHOD_TRAITS(get_params);
+DEFINE_CLASS_METHOD_TRAITS(set_param);
+
+template <typename T> class is_param_handler {
+  template <typename C,
+            typename std::enable_if<
+                has_get_params<C>::value &&
+                    has_set_param<C, ParameterKey, Parameter>::value,
+                int>::type = 0>
+  static std::true_type test(C *);
+  template <typename> static std::false_type test(...);
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+} // namespace details
+
+// These unchecked setting methods assume the parameter exists, if
+// the parameter does not exist we'll be relying on safety checks
+// within the ParameterHandler which may or may not exist.  Some
+// implementations may fail hard if a paramter doesn't exist, others
+// may perform a null operation.  To get more predictable behavior
+// stick to the set_param* methods.
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void unchecked_set_param(const ParameterKey &name,
+                                const Parameter &param,
+                                ParameterHandler *param_handler) {
+  param_handler->set_param(name, param);
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void unchecked_set_params(const ParameterStore &params,
+                                 ParameterHandler *param_handler) {
+  for (const auto &pair : params) {
+    unchecked_set_param(pair.first, pair.second, param_handler);
+  }
+}
+
+// These set_* methods first get all the available parameters.  This
+// makes them relatively inefficient but provides the ability to do
+// a level of safety checks to make sure parameters exist and deal
+// with them accordingly.
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void set_param_value(const ParameterKey &name,
+                            const ParameterValue &value,
+                            ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  set_param_value(name, value, &params);
+  unchecked_set_param(name, params.at(name), param_handler);
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void set_param_prior(const ParameterKey &name,
+                            const ParameterPrior &prior,
+                            ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  set_param_prior(name, prior, &params);
+  unchecked_set_param(name, params.at(name), param_handler);
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline void set_params(const ParameterStore &input_params,
+                       ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  set_params(input_params, &params);
+  unchecked_set_params(params, param_handler);
+}
+
+template <typename ParameterHandler>
+inline void
+set_param_values(const std::map<ParameterKey, ParameterValue> &input_params,
+                 ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  set_param_values(input_params, &params);
+  unchecked_set_params(params, param_handler);
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline bool set_param_if_exists(const ParameterKey &name,
+                                const Parameter &param,
+                                ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  if (!set_param_if_exists(name, param, &params)) {
+    return false;
+  }
+  unchecked_set_param(name, params.at(name), param_handler);
+  return true;
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline bool set_param_value_if_exists(const ParameterKey &name,
+                                      const ParameterValue &value,
+                                      ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  if (!set_param_value_if_exists(name, value, &params)) {
+    return false;
+  }
+  unchecked_set_param(name, params.at(name), param_handler);
+  return true;
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline bool set_params_if_exists(const ParameterStore &input_params,
+                                 ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  const bool all_exist = set_params_if_exists(input_params, &params);
+  unchecked_set_params(params, param_handler);
+  return all_exist;
+}
+
+template <typename ParameterHandler,
+          typename std::enable_if_t<
+              details::is_param_handler<ParameterHandler>::value, int> = 0>
+inline bool set_param_values_if_exists(
+    const std::map<ParameterKey, ParameterValue> &input_params,
+    ParameterHandler *param_handler) {
+  auto params = param_handler->get_params();
+  const bool all_exist = set_param_values_if_exists(input_params, &params);
+  unchecked_set_params(params, param_handler);
+  return all_exist;
+}
+
 /*
  * This mixin class is intended to be included an any class which
- * depends on some set of parameters which we want to programatically
+ * depends on some set of parameters which we want to programmatically
  * change for things such as optimization routines / serialization.
  */
 class ParameterHandlingMixin {
@@ -27,59 +170,28 @@ public:
 
   virtual ~ParameterHandlingMixin(){};
 
-  void check_param_key(const ParameterKey &key) const {
-    const ParameterStore current_params = get_params();
-    if (!map_contains(current_params, key)) {
-      std::cerr << "Error: Key `" << key << "` not found in parameters: "
-                << pretty_params(current_params);
-      ALBATROSS_ASSERT(false);
-    }
-  }
-
   /*
    * Provides a safe interface to the parameter values
    */
   void set_params(const ParameterStore &params) {
-    for (const auto &pair : params) {
-      check_param_key(pair.first);
-      unchecked_set_param(pair.first, pair.second);
-    }
+    return albatross::set_params(params, this);
   }
 
   void set_params_if_exists(const ParameterStore &params) {
-    const ParameterStore current_params = get_params();
-    for (const auto &pair : params) {
-      if (map_contains(current_params, pair.first)) {
-        unchecked_set_param(pair.first, pair.second);
-      }
-    }
+    albatross::set_params_if_exists(params, this);
   }
 
   void set_param_values(const std::map<ParameterKey, ParameterValue> &values) {
-    for (const auto &pair : values) {
-      check_param_key(pair.first);
-      unchecked_set_param(pair.first, pair.second);
-    }
+    albatross::set_param_values(values, this);
   }
 
   void set_param_values_if_exists(
       const std::map<ParameterKey, ParameterValue> &values) {
-    const ParameterStore current_params = get_params();
-    for (const auto &pair : values) {
-      if (map_contains(current_params, pair.first)) {
-        unchecked_set_param(pair.first, pair.second);
-      }
-    }
+    albatross::set_param_values_if_exists(values, this);
   }
 
   void set_param_value(const ParameterKey &key, const ParameterValue &value) {
-    check_param_key(key);
-    unchecked_set_param(key, value);
-  }
-
-  void set_param(const ParameterKey &key, const Parameter &param) {
-    check_param_key(key);
-    unchecked_set_param(key, param);
+    albatross::set_param_value(key, value, this);
   }
 
   // This just avoids the situation where a user would call `set_param`
@@ -87,12 +199,11 @@ public:
   // initialization argument for a `Parameter` which would then
   // inadvertently overwrite the prior.
   void set_param(const ParameterKey &key, const ParameterValue &value) {
-    set_param_value(key, value);
+    albatross::set_param_value(key, value, this);
   }
 
   void set_prior(const ParameterKey &key, const ParameterPrior &prior) {
-    check_param_key(key);
-    unchecked_set_prior(key, prior);
+    albatross::set_param_prior(key, prior, this);
   }
 
   bool params_are_valid() const {
@@ -100,11 +211,7 @@ public:
   }
 
   double prior_log_likelihood() const {
-    double sum = 0.;
-    for (const auto &pair : get_params()) {
-      sum += pair.second.prior_log_likelihood();
-    }
-    return sum;
+    return albatross::parameter_prior_log_likelihood(get_params());
   }
 
   /*
@@ -120,29 +227,13 @@ public:
 
   void set_tunable_params_values(const std::vector<ParameterValue> &x,
                                  bool force_bounds = true) {
-
     const auto modified_params =
         albatross::set_tunable_params_values(get_params(), x, force_bounds);
-
-    for (const auto &pair : modified_params) {
-      unchecked_set_param(pair.first, pair.second);
-    }
+    this->set_params(modified_params);
   }
 
   ParameterValue get_param_value(const ParameterKey &name) const {
     return get_params().at(name).value;
-  }
-
-  void unchecked_set_param(const ParameterKey &name,
-                           const ParameterValue value) {
-    Parameter param = {value, get_params()[name].prior};
-    unchecked_set_param(name, param);
-  }
-
-  void unchecked_set_prior(const ParameterKey &name,
-                           const ParameterPrior &prior) {
-    Parameter param = {get_params()[name].value, prior};
-    unchecked_set_param(name, param);
   }
 
   /*
@@ -151,15 +242,14 @@ public:
   std::string pretty_string() const { return pretty_params(get_params()); }
 
   /*
-   * The following methods are ones that may want to be overriden for
-   * clasess that contain nested params (for example).
+   * The following methods are ones that may want to be overridden for
+   * classes that contain nested params (for example).
    */
 
   virtual ParameterStore get_params() const { return params_; }
 
-  virtual void unchecked_set_param(const ParameterKey &name,
-                                   const Parameter &param) {
-    params_[name] = param;
+  virtual void set_param(const ParameterKey &name, const Parameter &param) {
+    albatross::set_param(name, param, &params_);
   }
 
 protected:
