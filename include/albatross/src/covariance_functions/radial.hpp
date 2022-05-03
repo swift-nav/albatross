@@ -143,5 +143,27 @@ public:
   DistanceMetricType distance_metric_;
 };
 
+inline double matern_32_covariance(double distance,
+                                   double length_scale,
+                                   double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
+  const double sqrt_3_d = std::sqrt(3.) * distance / length_scale;
+  return sigma * sigma * (1 + sqrt_3_d) * exp(-fabs(sqrt_3_d));
+}
+
+inline double matern_52_covariance(double distance,
+                                   double length_scale,
+                                   double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  assert(distance >= 0.);
+  const double sqrt_5_d = std::sqrt(5.) * distance / length_scale;
+  return sigma * sigma * (1 + sqrt_5_d + sqrt_5_d * sqrt_5_d / 3.) * exp(-fabs(sqrt_5_d));
+}
+
 } // namespace albatross
 #endif
