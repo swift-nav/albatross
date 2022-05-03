@@ -218,4 +218,31 @@ TEST(test_parameter_handler, test_get_set_with_macros) {
   p.expect_bar_equals(sqrt(2.) + 1.);
 };
 
+TEST(test_parameter_handler, test_set_params_if_exists_in_any) {
+
+  MacroParameterHandler x;
+  TestParameterHandler y;
+
+  const auto x_params = x.get_params();
+  const auto y_params = y.get_params();
+  const auto all_params = map_join(x_params, y_params);
+
+  const Parameter dummy(std::sqrt(2.));
+  EXPECT_FALSE(set_param_if_exists_in_any("dummy", dummy, &x, &y));
+  EXPECT_EQ(all_params, map_join(x.get_params(), y.get_params()));
+
+  const double to_add = 3.14159;
+  for (const auto &pair : all_params) {
+    const double before = pair.second.value;
+    Parameter new_param(pair.second);
+    new_param.value += to_add;
+    EXPECT_TRUE(set_param_if_exists_in_any(pair.first, new_param, &x, &y));
+
+    const Parameter modified =
+        map_join(x.get_params(), y.get_params()).at(pair.first);
+    EXPECT_TRUE(modified == new_param);
+    EXPECT_TRUE(before + to_add == modified.value);
+  }
+}
+
 } // namespace albatross
