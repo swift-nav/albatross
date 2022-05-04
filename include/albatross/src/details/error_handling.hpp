@@ -37,7 +37,7 @@
 #ifdef NDEBUG
 #define ALBATROSS_ASSERT(x)                                                    \
   do {                                                                         \
-    (void)sizeof(x);                                                           \
+    (void)(x);                                                                 \
   } while (0)
 #else
 #include <assert.h>
