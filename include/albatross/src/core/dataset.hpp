@@ -36,8 +36,8 @@ template <typename FeatureType> struct RegressionDataset {
       : features(features_), targets(targets_) {
     // If the two inputs aren't the same size they clearly aren't
     // consistent.
-    assert(static_cast<int>(features.size()) ==
-           static_cast<int>(targets.size()));
+    ALBATROSS_ASSERT(static_cast<int>(features.size()) ==
+                     static_cast<int>(targets.size()));
   }
 
   RegressionDataset(const std::vector<FeatureType> &features_,
@@ -120,7 +120,7 @@ inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y) {
     }
   }
 
-  assert(x_inds.size() == y_inds.size());
+  ALBATROSS_ASSERT(x_inds.size() == y_inds.size());
 
   if (x_inds.size() == 0) {
     *x = RegressionDataset<X>();

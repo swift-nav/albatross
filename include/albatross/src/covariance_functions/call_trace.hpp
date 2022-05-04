@@ -22,8 +22,8 @@ struct CallAndValue {
   std::string value;
 
   void add_operator(const char c) {
-    assert(call_name.size() >= 3);
-    assert(value.size() >= 3);
+    ALBATROSS_ASSERT(call_name.size() >= 3);
+    ALBATROSS_ASSERT(value.size() >= 3);
     call_name[2] = c;
     value[2] = c;
   }

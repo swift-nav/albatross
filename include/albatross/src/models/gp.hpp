@@ -65,7 +65,7 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     train_features = features;
     Eigen::MatrixXd cov(train_cov);
     cov += targets.covariance;
-    assert(!cov.hasNaN());
+    ALBATROSS_ASSERT(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
     information = train_covariance.solve(targets.mean);
   }

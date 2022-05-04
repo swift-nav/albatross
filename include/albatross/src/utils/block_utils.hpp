@@ -57,11 +57,11 @@ inline Eigen::MatrixXd block_accumulate(const Grouped<GroupKey, X> &lhs,
                    typename invoke_result<ApplyFunction, X, Y>::type>::value,
       "apply_function needs to return an Eigen::MatrixXd type");
 
-  assert(lhs.size() == rhs.size());
-  assert(lhs.size() > 0);
+  ALBATROSS_ASSERT(lhs.size() == rhs.size());
+  ALBATROSS_ASSERT(lhs.size() > 0);
 
   auto one_group = [&](const GroupKey &key) {
-    assert(map_contains(lhs, key) && map_contains(rhs, key));
+    ALBATROSS_ASSERT(map_contains(lhs, key) && map_contains(rhs, key));
     return apply_function(lhs.at(key), rhs.at(key));
   };
 
@@ -144,7 +144,7 @@ inline Grouped<GroupKey, Eigen::MatrixXd>
 block_subtract(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
                const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
 
-  assert(lhs.size() == rhs.size());
+  ALBATROSS_ASSERT(lhs.size() == rhs.size());
   auto matrix_subtract = [&](const auto &key_i, const auto &rhs_i) {
     return (lhs.at(key_i) - rhs_i).eval();
   };
@@ -287,7 +287,7 @@ template <typename Solver> struct BlockSymmetric {
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   for (const auto &b : blocks) {
@@ -301,7 +301,7 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   for (const auto &b : blocks) {
@@ -321,7 +321,7 @@ BlockDiagonalLDLT::block_to_row_map() const {
     block_to_row[i] = row;
     row += blocks[i].rows();
   }
-  assert(row == cols());
+  ALBATROSS_ASSERT(row == cols());
 
   return block_to_row;
 }
@@ -329,7 +329,7 @@ BlockDiagonalLDLT::block_to_row_map() const {
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
     const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
@@ -344,7 +344,7 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_sqrt_solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
 
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
@@ -389,7 +389,7 @@ template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols>
 BlockTriangularView<MatrixType, Mode>::solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   for (const auto &b : blocks) {
@@ -405,7 +405,7 @@ template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols>
     BlockTriangularView<MatrixType, Mode>::
     operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output =
       Eigen::Matrix<_Scalar, _Rows, _Cols>::Zero(rows(), rhs.cols());
@@ -456,7 +456,7 @@ inline Eigen::MatrixXd BlockTriangularView<MatrixType, Mode>::toDense() const {
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonal::
 operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  assert(cols() == rhs.rows());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output =
       Eigen::Matrix<_Scalar, _Rows, _Cols>::Zero(rows(), rhs.cols());
@@ -469,12 +469,12 @@ operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
 }
 
 inline BlockDiagonal BlockDiagonal::operator-(const BlockDiagonal &rhs) const {
-  assert(cols() == rhs.rows());
-  assert(blocks.size() == rhs.blocks.size());
+  ALBATROSS_ASSERT(cols() == rhs.rows());
+  ALBATROSS_ASSERT(blocks.size() == rhs.blocks.size());
 
   BlockDiagonal output;
   for (std::size_t i = 0; i < blocks.size(); ++i) {
-    assert(blocks[i].size() == rhs.blocks[i].size());
+    ALBATROSS_ASSERT(blocks[i].size() == rhs.blocks[i].size());
     output.blocks.emplace_back(blocks[i] - rhs.blocks[i]);
   }
   return output;
@@ -494,7 +494,7 @@ inline Eigen::MatrixXd BlockDiagonal::toDense() const {
 }
 
 inline Eigen::VectorXd BlockDiagonal::diagonal() const {
-  assert(rows() == cols());
+  ALBATROSS_ASSERT(rows() == cols());
   Eigen::VectorXd output(rows());
 
   Eigen::Index i = 0;
@@ -540,7 +540,7 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   // https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
   Eigen::Index n = A.rows() + S.rows();
-  assert(rhs.rows() == n);
+  ALBATROSS_ASSERT(rhs.rows() == n);
 
   const Eigen::MatrixXd rhs_a = rhs.topRows(A.rows());
   const Eigen::MatrixXd rhs_b = rhs.bottomRows(S.rows());

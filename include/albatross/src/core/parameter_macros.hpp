@@ -76,7 +76,7 @@
  *     } else if {
  *     ...
  *     } else {
- *       assert(false);
+ *       ALBATROSS_ASSERT(false);
  *     }
  *   }
  */
@@ -90,7 +90,7 @@
   if (_cond(x)) {                                                              \
     _action(x);                                                                \
   } else {                                                                     \
-    assert(false);                                                             \
+    ALBATROSS_ASSERT(false);                                                   \
   };
 #define _build_if_2(_cond, _action, x, ...)                                    \
   if (_cond(x)) {                                                              \

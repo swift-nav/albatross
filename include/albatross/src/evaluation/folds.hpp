@@ -47,9 +47,10 @@ create_fold(const GroupIndices &test_indices,
       subset(dataset.features, test_indices);
   MarginalDistribution test_targets = subset(dataset.targets, test_indices);
 
-  assert(train_features.size() == train_targets.size());
-  assert(test_features.size() == test_targets.size());
-  assert(test_targets.size() + train_targets.size() == dataset.size());
+  ALBATROSS_ASSERT(train_features.size() == train_targets.size());
+  ALBATROSS_ASSERT(test_features.size() == test_targets.size());
+  ALBATROSS_ASSERT(test_targets.size() + train_targets.size() ==
+                   dataset.size());
 
   const RegressionDataset<FeatureType> train_split(train_features,
                                                    train_targets);
@@ -84,7 +85,7 @@ inline GroupIndexer<GroupKey>
 group_indexer_from_folds(const std::map<GroupKey, FeatureType> &folds) {
   GroupIndexer<GroupKey> output;
   for (const auto &fold : folds) {
-    assert(!map_contains(output, fold.first));
+    ALBATROSS_ASSERT(!map_contains(output, fold.first));
     output[fold.first] = fold.second.test_indices;
   }
   return output;
@@ -126,17 +127,17 @@ dataset_size_from_indexer(const GroupIndexer<GroupKey> &indexer) {
   for (const auto &pair : indexer) {
     count += pair.second.size();
   };
-  assert(count == unique_inds.size());
+  ALBATROSS_ASSERT(count == unique_inds.size());
 
   // Make sure the minimum was zero
   std::size_t zero = *std::min_element(unique_inds.begin(), unique_inds.end());
   if (zero != 0) {
-    assert(false);
+    ALBATROSS_ASSERT(false);
   }
 
   // And the maximum agrees with the size;
   std::size_t n = *std::max_element(unique_inds.begin(), unique_inds.end());
-  assert(unique_inds.size() == n + 1);
+  ALBATROSS_ASSERT(unique_inds.size() == n + 1);
 
   return n + 1;
 }

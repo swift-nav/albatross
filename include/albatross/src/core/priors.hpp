@@ -77,7 +77,7 @@ class UniformPrior : public Prior {
 public:
   UniformPrior(double lower = 0., double upper = 1.)
       : lower_(lower), upper_(upper) {
-    assert(upper_ > lower_);
+    ALBATROSS_ASSERT(upper_ > lower_);
   };
 
   std::string get_name() const override {
@@ -105,8 +105,8 @@ class LogScaleUniformPrior : public UniformPrior {
 public:
   LogScaleUniformPrior(double lower = 1e-12, double upper = 1.e12)
       : UniformPrior(lower, upper) {
-    assert(upper_ > 0.);
-    assert(lower_ > 0.);
+    ALBATROSS_ASSERT(upper_ > 0.);
+    ALBATROSS_ASSERT(lower_ > 0.);
   };
 
   std::string get_name() const override {

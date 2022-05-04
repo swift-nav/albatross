@@ -223,7 +223,7 @@ private:
   VertexWithTreeID &find_vertex_or_assert(const VertexType &x) {
     auto is_x = [&x](const auto &p) { return p.v == x; };
     const auto iter = std::find_if(vertices_.begin(), vertices_.end(), is_x);
-    assert(iter != vertices_.end());
+    ALBATROSS_ASSERT(iter != vertices_.end());
     return *iter;
   }
 

@@ -16,7 +16,7 @@
 namespace albatross {
 
 inline std::size_t safe_cast_to_size_t(double x) {
-  assert(x < std::numeric_limits<std::size_t>::max());
+  ALBATROSS_ASSERT(x < std::numeric_limits<std::size_t>::max());
   return static_cast<std::size_t>(x);
 }
 

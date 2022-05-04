@@ -92,7 +92,7 @@ public:
       return;
     }
     const Eigen::VectorXd mean = this->operator()(features);
-    assert(mean.size() == target->size());
+    ALBATROSS_ASSERT(mean.size() == target->size());
     *target += mean;
   }
 
@@ -104,7 +104,7 @@ public:
       return;
     }
     const Eigen::VectorXd mean = this->operator()(features);
-    assert(mean.size() == target->size());
+    ALBATROSS_ASSERT(mean.size() == target->size());
     *target -= mean;
   }
 

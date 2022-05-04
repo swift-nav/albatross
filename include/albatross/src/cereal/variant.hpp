@@ -29,7 +29,7 @@ template <int N, class Variant, class... Args, class Archive,
           typename std::enable_if_t<
               N == albatross::variant_size<Variant>::value, int> = 0>
 void load_variant(Archive &, int, Variant &) {
-  assert(false); // load_variant received an out of bounds index.
+  ALBATROSS_ASSERT(false); // load_variant received an out of bounds index.
 }
 
 template <int N, class Variant, class H, class... T, class Archive,
@@ -84,7 +84,7 @@ inline void load(Archive &archive, variant<VariantTypes...> &v,
   if (version > 0) {
     std::string which_typeid;
     archive(cereal::make_nvp("which_typeid", which_typeid));
-    assert(which < static_cast<int>(sizeof...(VariantTypes)));
+    ALBATROSS_ASSERT(which < static_cast<int>(sizeof...(VariantTypes)));
   }
   mapbox_variant_detail::load_variant<0, variant<VariantTypes...>,
                                       VariantTypes...>(archive, which, v);

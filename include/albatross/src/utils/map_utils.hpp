@@ -83,7 +83,7 @@ Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
   for (const auto &pair : m) {
     if (join.find(pair.first) != join.end()) {
       // duplicate key found in map_join.
-      assert(false && "duplicate key found");
+      ALBATROSS_ASSERT(false && "duplicate key found");
     }
     join[pair.first] = pair.second;
   }
