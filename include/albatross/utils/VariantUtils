@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_UTILS_VARIANT_UTILS_H
 #define ALBATROSS_UTILS_VARIANT_UTILS_H
 
+#include "../Common"
 #include "../src/utils/variant_utils.hpp"
 
 #endif

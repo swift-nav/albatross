@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_UTILS_LINALG_UTILS_H
 #define ALBATROSS_UTILS_LINALG_UTILS_H
 
+#include "../Common"
 #include "../src/utils/linalg_utils.hpp"
 
 #endif
