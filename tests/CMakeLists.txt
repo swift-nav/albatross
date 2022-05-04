@@ -15,6 +15,7 @@ add_executable(albatross_unit_tests
   test_csv_utils.cc
   test_distance_metrics.cc
   test_eigen_utils.cc
+  test_error_handling.cc
   test_evaluate.cc
   test_gp.cc
   test_group_by.cc
