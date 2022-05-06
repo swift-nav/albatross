@@ -280,7 +280,7 @@ inline bool set_params_if_exists(const ParameterStore &input_params,
                                  ParameterStore *params) {
   bool all_set = input_params.size() > 0;
   for (const auto &pair : input_params) {
-    all_set = set_param_if_exists(pair.first, pair.second, params);
+    all_set &= set_param_if_exists(pair.first, pair.second, params);
   }
   return all_set;
 }
@@ -290,7 +290,7 @@ inline bool set_param_values_if_exists(
     ParameterStore *params) {
   bool all_set = param_values.size() > 0;
   for (const auto &pair : param_values) {
-    all_set = set_param_value_if_exists(pair.first, pair.second, params);
+    all_set &= set_param_value_if_exists(pair.first, pair.second, params);
   }
   return all_set;
 }
