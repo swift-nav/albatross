@@ -194,7 +194,7 @@ TYPED_TEST_CASE(TestDoubleCovarianceFunctions,
                 DoubleCompatibleCovarianceFunctions);
 
 TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
-  auto xs = points_on_a_line(5);
+  const auto xs = points_on_a_line(5);
   std::vector<double> features;
   const auto x_size = static_cast<Eigen::Index>(xs.size());
   for (Eigen::Index i = 0; i < x_size; ++i) {
@@ -212,7 +212,7 @@ TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {
 
   const ParameterStore params(this->covariance_function.get_params());
 
-  double to_add = 3.14159;
+  const double to_add = 3.14159;
   for (const auto &pair : params) {
     this->covariance_function.set_param_value(pair.first,
                                               pair.second.value + to_add);
