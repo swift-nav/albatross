@@ -63,6 +63,23 @@ TEST(test_dataset, test_align_datasets_a_in_b) {
   EXPECT_EQ(dataset_a.features, dataset_b.features);
 }
 
+TEST(test_dataset, test_align_datasets_a_in_b_custom_compare) {
+  std::vector<int> features_a = {0, 1, 2};
+  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
+  RegressionDataset<int> dataset_a(features_a, targets_a);
+
+  std::vector<int> features_b = {2, 3, 0, 1};
+  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
+  RegressionDataset<int> dataset_b(features_b, targets_b);
+
+  EXPECT_NE(dataset_a.features, dataset_b.features);
+  auto custom_compare = [](const auto &x, const auto &y) { return x == y; };
+
+  align_datasets(&dataset_a, &dataset_b, custom_compare);
+  EXPECT_EQ(dataset_a.size(), 3);
+  EXPECT_EQ(dataset_a.features, dataset_b.features);
+}
+
 TEST(test_dataset, test_align_datasets_a_in_b_unordered) {
   std::vector<int> features_a = {0, 2, 1};
   Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
