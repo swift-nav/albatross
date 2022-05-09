@@ -105,14 +105,15 @@ deduplicate(const RegressionDataset<FeatureType> &dataset) {
   return albatross::subset(dataset, unique_inds);
 }
 
-template <typename X>
-inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y) {
+template <typename X, typename EqualTo>
+inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y,
+                           EqualTo equal_to) {
 
   std::vector<std::size_t> x_inds;
   std::vector<std::size_t> y_inds;
   for (std::size_t i = 0; i < x->size(); ++i) {
     for (std::size_t j = 0; j < y->size(); ++j) {
-      if (x->features[i] == y->features[j]) {
+      if (equal_to(x->features[i], y->features[j])) {
         x_inds.push_back(i);
         y_inds.push_back(j);
         continue;
@@ -129,6 +130,11 @@ inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y) {
     *x = subset(*x, x_inds);
     *y = subset(*y, y_inds);
   }
+}
+
+template <typename X>
+inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y) {
+  return align_datasets(x, y, std::equal_to<X>());
 }
 
 template <typename X>
