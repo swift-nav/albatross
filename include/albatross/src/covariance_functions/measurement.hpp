@@ -26,6 +26,10 @@ template <typename X> struct Measurement {
 
   Measurement(const X &x) { value = x; }
 
+  bool operator==(const Measurement &other) const {
+    return value == other.value;
+  }
+
   X value;
 };
 
