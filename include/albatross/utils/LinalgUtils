@@ -15,5 +15,6 @@
 
 #include "../Common"
 #include "../src/utils/linalg_utils.hpp"
+#include "../src/utils/condition.hpp"
 
 #endif
