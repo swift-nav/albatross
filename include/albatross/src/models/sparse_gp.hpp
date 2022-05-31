@@ -315,6 +315,7 @@ public:
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
     const auto B_qr = B.colPivHouseholderQr();
+    ALBATROSS_ASSERT(B_qr.rank() == B_qr.cols());
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -379,8 +380,9 @@ public:
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    ALBATROSS_ASSERT(B_qr.rank() == B_qr.cols());
 
-    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.rows());
     if (Base::use_async_) {
       y_augmented.topRows(y.size()) = A_ldlt.async_sqrt_solve(y);
     } else {
