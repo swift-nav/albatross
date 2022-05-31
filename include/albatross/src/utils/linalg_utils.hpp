@@ -13,7 +13,28 @@
 #ifndef ALBATROSS_UTILS_LINALG_UTILS_HPP_
 #define ALBATROSS_UTILS_LINALG_UTILS_HPP_
 
+#include <Eigen/Sparse>
+#include <Eigen/SPQRSupport>
+
 namespace albatross {
+
+// https://gitlab.com/libeigen/eigen/-/issues/1706
+//
+// Unfortunately we inherit the default definition of `Eigen::Index`
+// from any code that calls this.
+using SparseMatrix = Eigen::SparseMatrix<double>;
+static_assert(sizeof(SparseMatrix::StorageIndex) <= sizeof(SparseMatrix::Index),
+              "The type `SparseMatrix::StorageIndex` has a bigger range than `SparseMatrix::Index`; this will cause `bad_alloc()` in sparse matrix storage operations!");
+
+using SparseQR = Eigen::SPQR<SparseMatrix>;
+static_assert(sizeof(SparseQR::StorageIndex) <= sizeof(SparseMatrix::Index),
+              "The type `SparseQR::StorageIndex` has a bigger range than `SparseMatrix::Index`; this will cause `bad_alloc()` in sparse matrix storage operations!");
+
+
+using SparsePermutationMatrix =
+  Eigen::Matrix<long int, Eigen::Dynamic, Eigen::Dynamic>;
+using DensePermutationMatrix =
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
 
 inline Eigen::MatrixXd
 get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
@@ -24,6 +45,43 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
       .topRows(qr.matrixR().cols())
       .template triangularView<Eigen::Upper>();
 }
+
+inline DensePermutationMatrix get_column_permutation_indices(
+    const SparseQR &qr) {
+  return SparsePermutationMatrix(qr.colsPermutation().indices()).cast<int>();
+}
+
+inline Eigen::MatrixXd get_R(const SparseQR &qr){
+  // TODO(MP): is this necessary?
+  //
+  // https://eigen.tuxfamily.org/dox/classEigen_1_1SparseQR.html#a7764a1f00c0d83f6423f81a4a40d5f8c
+  // const Eigen::SparseMatrix<double, Eigen::RowMajor> Rrow = qr.matrixR();
+  // const Eigen::SparseMatrix<double> R = Rrow;
+
+  auto R = qr.matrixR();
+  return Eigen::MatrixXd(R.topRows(R.cols()))
+      .template triangularView<Eigen::Upper>();
+}
+
+// This is the formula given in the SPQR user guide [1] for
+// calculation of the default pivot threshold.  The `scale_factor`
+// defaults to the SPQR value but provides a convenient knob for
+// adjusting the pivot policy in a scale-invariant and
+// condition-invariant way.
+//
+// [1] https://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/master/SPQR/Doc/spqr_user_guide.pdf
+inline double calc_pivot_threshold(const SparseMatrix &m,
+                                   double scale_factor = 20.0) {
+  double max2Norm = 0.0;
+  for (int j = 0; j < m.cols(); j++) {
+    max2Norm = std::max(max2Norm, m.col(j).norm());
+  }
+  if (max2Norm < Eigen::NumTraits<double>::epsilon()) {
+    max2Norm = 1;
+  }
+  return scale_factor * static_cast<double>(m.rows() + m.cols()) * max2Norm *
+         Eigen::NumTraits<double>::epsilon();
+};
 
 /*
  * Computes R^-T P^T rhs given R and P from a ColPivHouseholderQR decomposition.
