@@ -314,7 +314,11 @@ public:
       B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    const auto B_qr = B.colPivHouseholderQr();
+    SparseQR B_qr{};
+    B_qr.setSPQROrdering(SPQR_ORDERING_COLAMD);
+    B_qr.cholmodCommon()->SPQR_nthreads = 4;
+    B_qr.setPivotThreshold(calc_pivot_threshold(B.sparseView(), 0.1));
+    B_qr.compute(B.sparseView());
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -335,10 +339,11 @@ public:
       y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y);
     }
     const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    assert(B_qr.info() == Eigen::Success);
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), B_qr.colsPermutation().indices(), v);
+                   get_R(B_qr), get_column_permutation_indices(B_qr), v);
   }
 
   // Here we create the QR decomposition of:
@@ -360,6 +365,22 @@ public:
     return B.colPivHouseholderQr();
   };
 
+  std::unique_ptr<SparseQR> compute_sigma_qr_sparse(
+      const Eigen::SerializableLDLT &K_uu_ldlt, const BlockDiagonalLDLT &A_ldlt,
+      const Eigen::MatrixXd &K_fu) const {
+    Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
+    B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
+    B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
+    // TODO(MP): could be more efficient to assemble from triplets out
+    // of the above?
+    auto spqr = std::make_unique<SparseQR>();
+    spqr->setSPQROrdering(SPQR_ORDERING_COLAMD);
+    spqr->cholmodCommon()->SPQR_nthreads = 4;
+    spqr->setPivotThreshold(calc_pivot_threshold(B.sparseView(), 0.1));
+    spqr->compute(B.sparseView());
+    return spqr;
+  }
+
   template <
       typename FeatureType,
       std::enable_if_t<
@@ -378,21 +399,22 @@ public:
     Eigen::VectorXd y;
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
-    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    const auto B_qr = compute_sigma_qr_sparse(K_uu_ldlt, A_ldlt, K_fu);
 
-    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     if (Base::use_async_) {
       y_augmented.topRows(y.size()) = A_ldlt.async_sqrt_solve(y);
     } else {
       y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y);
     }
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
+    assert(B_qr->info() == Eigen::Success);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    const FitType fit(u, K_uu_ldlt, get_R(B_qr),
-                      B_qr.colsPermutation().indices(), v);
+    const FitType fit(u, K_uu_ldlt, get_R(*B_qr),
+                      get_column_permutation_indices(*B_qr), v);
 
     return fit;
   }

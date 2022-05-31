@@ -40,6 +40,8 @@ target_link_libraries(albatross
     fast-csv
     gzip-hpp
     variant
+    spqr
+    cholmod
     )
 
 set(albatross_COMPILE_OPTIONS
