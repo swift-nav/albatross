@@ -30,7 +30,6 @@ using SparseQR = Eigen::SPQR<SparseMatrix>;
 static_assert(sizeof(SparseQR::StorageIndex) <= sizeof(SparseMatrix::Index),
               "The type `SparseQR::StorageIndex` has a bigger range than `SparseMatrix::Index`; this will cause `bad_alloc()` in sparse matrix storage operations!");
 
-
 using SparsePermutationMatrix =
   Eigen::Matrix<long int, Eigen::Dynamic, Eigen::Dynamic>;
 using DensePermutationMatrix =
@@ -83,6 +82,17 @@ inline double calc_pivot_threshold(const SparseMatrix &m,
          Eigen::NumTraits<double>::epsilon();
 };
 
+inline std::unique_ptr<SparseQR> makeSparseQR(const Eigen::MatrixXd &A) {
+  auto spqr = std::make_unique<SparseQR>();
+  // Standard settings
+  spqr->setSPQROrdering(SPQR_ORDERING_COLAMD);
+  spqr->cholmodCommon()->SPQR_nthreads = 4;
+  spqr->setPivotThreshold(calc_pivot_threshold(A.sparseView(), 0.1));
+  spqr->compute(A.sparseView());
+  ALBATROSS_ASSERT(spqr);
+  return std::move(spqr);
+}
+  
 /*
  * Computes R^-T P^T rhs given R and P from a ColPivHouseholderQR decomposition.
  */

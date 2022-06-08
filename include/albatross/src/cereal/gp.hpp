@@ -41,8 +41,10 @@ inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_covariance", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
-  archive(cereal::make_nvp("sigma_R", fit.sigma_R));
-  archive(cereal::make_nvp("permutation_indices", fit.permutation_indices));
+  archive(cereal::make_nvp("sigma_R", albatross::get_R(*fit.solver)));
+  archive(
+      cereal::make_nvp("permutation_indices",
+                       albatross::get_column_permutation_indices(*fit.solver)));
 }
 
 template <typename Archive, typename CovFunc, typename MeanFunc,

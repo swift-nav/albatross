@@ -74,19 +74,24 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_covariance;
-  Eigen::MatrixXd sigma_R;
-  Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
+  // Eigen::MatrixXd sigma_R;
+  std::shared_ptr<SparseQR> solver;
+  // Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
   Eigen::VectorXd information;
 
-  Fit(){};
+  Fit() = default;  // : solver(nullptr) {};
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
-      const Eigen::MatrixXd sigma_R_,
-      const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
+      // const Eigen::MatrixXd sigma_R_,
+      std::unique_ptr<SparseQR> solver_,
+      // const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
       const Eigen::VectorXd &information_)
-      : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(sigma_R_), permutation_indices(permutation_indices_),
+      : train_features(features_),
+        train_covariance(train_covariance_),
+        // sigma_R(sigma_R_),
+        solver(std::move(solver_)),
+        // permutation_indices(permutation_indices_),
         information(information_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
@@ -97,8 +102,9 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   bool operator==(const Fit<SparseGPFit<FeatureType>> &other) const {
     return (train_features == other.train_features &&
             train_covariance == other.train_covariance &&
-            sigma_R == other.sigma_R &&
-            permutation_indices == other.permutation_indices &&
+            // sigma_R == other.sigma_R &&
+            solver == other.solver &&
+            // permutation_indices == other.permutation_indices &&
             information == other.information);
   }
 };
@@ -299,9 +305,12 @@ public:
     compute_internal_components(old_fit.train_features, features, targets,
                                 &A_ldlt, &K_uu_ldlt, &K_fu, &y);
 
-    const Eigen::Index n_old = old_fit.sigma_R.rows();
+    const Eigen::MatrixXd R_old = get_R(*old_fit.solver);
+    const auto permutation_old =
+      get_column_permutation_indices(*old_fit.solver);
+    const Eigen::Index n_old = R_old.rows();
     const Eigen::Index n_new = A_ldlt.rows();
-    const Eigen::Index k = old_fit.sigma_R.cols();
+    const Eigen::Index k = R_old.cols();
     Eigen::MatrixXd B = Eigen::MatrixXd::Zero(n_old + n_new, k);
 
     ALBATROSS_ASSERT(n_old == k);
@@ -309,41 +318,35 @@ public:
     // Form:
     //   B = |R_old P_old^T| = |Q_1| R P^T
     //       |A^{-1/2} K_fu|   |Q_2|
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
-      const Eigen::Index &pi = old_fit.permutation_indices.coeff(i);
-      B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
+    for (Eigen::Index i = 0; i < permutation_old.size(); ++i) {
+      const Eigen::Index &pi = permutation_old.coeff(i);
+      B.col(pi).topRows(i + 1) = R_old.col(i).topRows(i + 1);
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    SparseQR B_qr{};
-    B_qr.setSPQROrdering(SPQR_ORDERING_COLAMD);
-    B_qr.cholmodCommon()->SPQR_nthreads = 4;
-    B_qr.setPivotThreshold(calc_pivot_threshold(B.sparseView(), 0.1));
-    B_qr.compute(B.sparseView());
+    auto B_qr = makeSparseQR(B);
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
     //           |A^{-1/2} y         |
     ALBATROSS_ASSERT(old_fit.information.size() == n_old);
     Eigen::VectorXd y_augmented(n_old + n_new);
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
+    for (Eigen::Index i = 0; i < permutation_old.size(); ++i) {
       y_augmented[i] =
-          old_fit.information[old_fit.permutation_indices.coeff(i)];
+          old_fit.information[permutation_old.coeff(i)];
     }
-    y_augmented.topRows(n_old) =
-        old_fit.sigma_R.template triangularView<Eigen::Upper>() *
-        y_augmented.topRows(n_old);
+    y_augmented.topRows(n_old) = R_old * y_augmented.topRows(n_old);
 
     if (Base::use_async_) {
       y_augmented.bottomRows(n_new) = A_ldlt.async_sqrt_solve(y);
     } else {
       y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y);
     }
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
-    assert(B_qr.info() == Eigen::Success);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
+    assert(B_qr->info() == Eigen::Success);
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), get_column_permutation_indices(B_qr), v);
+                   std::move(B_qr), v);
   }
 
   // Here we create the QR decomposition of:
@@ -355,10 +358,9 @@ public:
   //
   //   Sigma = (B^T B)^-1
   //
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
-  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
-                   const BlockDiagonalLDLT &A_ldlt,
-                   const Eigen::MatrixXd &K_fu) const {
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> compute_sigma_qr(
+      const Eigen::SerializableLDLT &K_uu_ldlt, const BlockDiagonalLDLT &A_ldlt,
+      const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
@@ -373,12 +375,7 @@ public:
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
     // TODO(MP): could be more efficient to assemble from triplets out
     // of the above?
-    auto spqr = std::make_unique<SparseQR>();
-    spqr->setSPQROrdering(SPQR_ORDERING_COLAMD);
-    spqr->cholmodCommon()->SPQR_nthreads = 4;
-    spqr->setPivotThreshold(calc_pivot_threshold(B.sparseView(), 0.1));
-    spqr->compute(B.sparseView());
-    return spqr;
+    return makeSparseQR(B);
   }
 
   template <
@@ -399,7 +396,8 @@ public:
     Eigen::VectorXd y;
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
-    const auto B_qr = compute_sigma_qr_sparse(K_uu_ldlt, A_ldlt, K_fu);
+    auto B_qr = compute_sigma_qr_sparse(K_uu_ldlt, A_ldlt, K_fu);
+    ALBATROSS_ASSERT(B_qr);
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     if (Base::use_async_) {
@@ -413,10 +411,7 @@ public:
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    const FitType fit(u, K_uu_ldlt, get_R(*B_qr),
-                      get_column_permutation_indices(*B_qr), v);
-
-    return fit;
+    return FitType(u, K_uu_ldlt, std::move(B_qr), v);
   }
 
   template <typename FeatureType>
@@ -468,11 +463,11 @@ public:
     // as we do in a normal fit.
     const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
-    const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
+    auto B_qr = makeSparseQR(sigma_inv_sqrt);
 
-    new_fit.permutation_indices = B_qr.colsPermutation().indices();
-    new_fit.sigma_R = get_R(B_qr);
+    new_fit.solver = std::move(B_qr);
 
+    ALBATROSS_ASSERT(output.get_fit().solver);
     return output;
   }
 
@@ -517,8 +512,10 @@ public:
         Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
     marginal_variance -= Q_diag;
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+      sqrt_solve(get_R(*sparse_gp_fit.solver),
+                 get_column_permutation_indices(*sparse_gp_fit.solver),
+                 cross_cov);
     const Eigen::VectorXd S_diag =
         S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
     marginal_variance += S_diag;
@@ -535,8 +532,10 @@ public:
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+      sqrt_solve(get_R(*sparse_gp_fit.solver),
+                 get_column_permutation_indices(*sparse_gp_fit.solver),
+                 cross_cov);
 
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
