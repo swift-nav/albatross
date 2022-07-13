@@ -20,7 +20,7 @@ using albatross::LinearCombination;
 using albatross::SparseGPFit;
 
 #ifndef GP_SERIALIZATION_VERSION
-#define GP_SERIALIZATION_VERSION 1
+#define GP_SERIALIZATION_VERSION 2
 #endif
 
 namespace cereal {
@@ -37,13 +37,18 @@ inline void serialize(Archive &archive,
 
 template <typename Archive, typename FeatureType>
 inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
-                      const std::uint32_t) {
+                      const std::uint32_t version) {
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_covariance", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
   archive(cereal::make_nvp("sigma_R", fit.sigma_R));
   archive(cereal::make_nvp("permutation_indices", fit.permutation_indices));
-  archive(cereal::make_nvp("numerical_rank", fit.numerical_rank));
+  if (version > 1) {
+    archive(cereal::make_nvp("numerical_rank", fit.numerical_rank));
+  } else {
+    // Use a negative number to make it clear this is not a valid value.
+    fit.numerical_rank = -1;
+  }
 }
 
 template <typename Archive, typename CovFunc, typename MeanFunc,
