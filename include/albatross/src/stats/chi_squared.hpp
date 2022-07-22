@@ -61,6 +61,11 @@ inline double chi_squared_cdf(double x, double degrees_of_freedom) {
   return details::chi_squared_cdf_safe(x, degrees_of_freedom);
 }
 
+inline double chi_squared_cdf(double deviation, double variance,
+                              double degrees_of_freedom) {
+  return chi_squared_cdf(deviation * deviation / variance, degrees_of_freedom);
+}
+
 inline double chi_squared_cdf(const Eigen::VectorXd &deviation,
                               const Eigen::MatrixXd &covariance) {
   const Eigen::VectorXd normalized =
