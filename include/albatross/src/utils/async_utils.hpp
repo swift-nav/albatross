@@ -20,7 +20,7 @@ namespace albatross {
 //
 // https://eli.thegreenplace.net/2016/the-promises-and-challenges-of-stdasync-task-based-parallelism-in-c11/
 template <typename F, typename... Ts>
-inline auto async_safe(F &&f, Ts &&... params) {
+inline auto async_safe(F &&f, Ts &&...params) {
   return std::async(std::launch::async, std::forward<F>(f),
                     std::forward<Ts>(params)...);
 }
