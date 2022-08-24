@@ -218,13 +218,13 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
   Eigen::MatrixXd covariance;
 };
 
-inline JointDistribution MarginalDistribution::
-operator*(const Eigen::MatrixXd &mat) const {
+inline JointDistribution
+MarginalDistribution::operator*(const Eigen::MatrixXd &mat) const {
   return JointDistribution(mat * mean, mat * covariance * mat.transpose());
 }
 
-inline JointDistribution MarginalDistribution::
-operator*(const Eigen::VectorXd &vector) const {
+inline JointDistribution
+MarginalDistribution::operator*(const Eigen::VectorXd &vector) const {
   return JointDistribution(vector.dot(mean), vector.dot(covariance * vector));
 }
 

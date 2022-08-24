@@ -406,16 +406,16 @@ protected:
 template <typename Derived>
 template <typename Other>
 inline const SumOfCovarianceFunctions<Derived, Other>
-CovarianceFunction<Derived>::
-operator+(const CovarianceFunction<Other> &other) const {
+CovarianceFunction<Derived>::operator+(
+    const CovarianceFunction<Other> &other) const {
   return SumOfCovarianceFunctions<Derived, Other>(derived(), other.derived());
 };
 
 template <typename Derived>
 template <typename Other>
 inline const ProductOfCovarianceFunctions<Derived, Other>
-    CovarianceFunction<Derived>::
-    operator*(const CovarianceFunction<Other> &other) const {
+CovarianceFunction<Derived>::operator*(
+    const CovarianceFunction<Other> &other) const {
   return ProductOfCovarianceFunctions<Derived, Other>(derived(),
                                                       other.derived());
 };

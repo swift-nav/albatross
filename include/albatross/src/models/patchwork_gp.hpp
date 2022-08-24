@@ -213,8 +213,8 @@ public:
     const auto boundary_features =
         build_boundary_features(boundary_function, fit_models.keys());
 
-    using BoundaryFeatureType = typename std::decay<typename decltype(
-        boundary_features)::value_type>::type;
+    using BoundaryFeatureType = typename std::decay<
+        typename decltype(boundary_features)::value_type>::type;
     using PatchworkFitType =
         Fit<PatchworkGPFit<FitModelType, GroupKey, BoundaryFeatureType>>;
     using ReturnType = FitModel<PatchworkGaussianProcess, PatchworkFitType>;

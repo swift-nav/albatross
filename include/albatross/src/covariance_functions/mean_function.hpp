@@ -280,15 +280,15 @@ struct ZeroMean : public MeanFunction<ZeroMean> {
 
 template <typename Derived>
 template <typename Other>
-inline const SumOfMeanFunctions<Derived, Other> MeanFunction<Derived>::
-operator+(const MeanFunction<Other> &other) const {
+inline const SumOfMeanFunctions<Derived, Other>
+MeanFunction<Derived>::operator+(const MeanFunction<Other> &other) const {
   return SumOfMeanFunctions<Derived, Other>(derived(), other.derived());
 };
 
 template <typename Derived>
 template <typename Other>
-inline const ProductOfMeanFunctions<Derived, Other> MeanFunction<Derived>::
-operator*(const MeanFunction<Other> &other) const {
+inline const ProductOfMeanFunctions<Derived, Other>
+MeanFunction<Derived>::operator*(const MeanFunction<Other> &other) const {
   return ProductOfMeanFunctions<Derived, Other>(derived(), other.derived());
 };
 

@@ -210,7 +210,7 @@ struct is_reference_wrapper<std::reference_wrapper<U>> : std::true_type {};
 
 template <class T> struct invoke_impl {
   template <class F, class... Args>
-  static auto call(F &&f, Args &&... args)
+  static auto call(F &&f, Args &&...args)
       -> decltype(std::forward<F>(f)(std::forward<Args>(args)...));
 };
 
@@ -233,7 +233,7 @@ template <class B, class MT> struct invoke_impl<MT B::*> {
 
   template <class T, class... Args, class MT1,
             class = typename std::enable_if<std::is_function<MT1>::value>::type>
-  static auto call(MT1 B::*pmf, T &&t, Args &&... args)
+  static auto call(MT1 B::*pmf, T &&t, Args &&...args)
       -> decltype((invoke_impl::get(std::forward<T>(t)).*
                    pmf)(std::forward<Args>(args)...));
 
@@ -243,7 +243,7 @@ template <class B, class MT> struct invoke_impl<MT B::*> {
 };
 
 template <class F, class... Args, class Fd = typename std::decay<F>::type>
-auto INVOKE(F &&f, Args &&... args)
+auto INVOKE(F &&f, Args &&...args)
     -> decltype(invoke_impl<Fd>::call(std::forward<F>(f),
                                       std::forward<Args>(args)...));
 
