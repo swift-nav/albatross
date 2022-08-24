@@ -220,22 +220,22 @@ inline bool modify_param(const ParameterKey &name,
 
 inline void set_param(const ParameterKey &name, const Parameter &param,
                       ParameterStore *params, bool assert_exists = true) {
-  modify_param(name, [&](Parameter *p) { (*p) = param; }, params,
-               assert_exists);
+  modify_param(
+      name, [&](Parameter *p) { (*p) = param; }, params, assert_exists);
 }
 
 inline void set_param_value(const ParameterKey &name,
                             const ParameterValue &value, ParameterStore *params,
                             bool assert_exists = true) {
-  modify_param(name, [&](Parameter *p) { p->value = value; }, params,
-               assert_exists);
+  modify_param(
+      name, [&](Parameter *p) { p->value = value; }, params, assert_exists);
 }
 
 inline void set_param_prior(const ParameterKey &name,
                             const ParameterPrior &prior, ParameterStore *params,
                             bool assert_exists = true) {
-  modify_param(name, [&](Parameter *p) { p->prior = prior; }, params,
-               assert_exists);
+  modify_param(
+      name, [&](Parameter *p) { p->prior = prior; }, params, assert_exists);
 }
 
 inline void set_params(const ParameterStore &input_params,
@@ -259,21 +259,22 @@ set_param_values(const std::map<ParameterKey, ParameterValue> &param_values,
 inline bool set_param_if_exists(const ParameterKey &name,
                                 const Parameter &param,
                                 ParameterStore *params) {
-  return modify_param(name, [&](Parameter *p) { (*p) = param; }, params, false);
+  return modify_param(
+      name, [&](Parameter *p) { (*p) = param; }, params, false);
 }
 
 inline bool set_param_value_if_exists(const ParameterKey &name,
                                       const ParameterValue &value,
                                       ParameterStore *params) {
-  return modify_param(name, [&](Parameter *p) { p->value = value; }, params,
-                      false);
+  return modify_param(
+      name, [&](Parameter *p) { p->value = value; }, params, false);
 }
 
 inline bool set_param_prior_if_exists(const ParameterKey &name,
                                       const ParameterPrior &prior,
                                       ParameterStore *params) {
-  return modify_param(name, [&](Parameter *p) { p->prior = prior; }, params,
-                      false);
+  return modify_param(
+      name, [&](Parameter *p) { p->prior = prior; }, params, false);
 }
 
 inline bool set_params_if_exists(const ParameterStore &input_params,

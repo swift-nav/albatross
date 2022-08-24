@@ -403,8 +403,8 @@ BlockTriangularView<MatrixType, Mode>::solve(
 template <typename MatrixType, unsigned int Mode>
 template <class _Scalar, int _Rows, int _Cols>
 inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-    BlockTriangularView<MatrixType, Mode>::
-    operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+BlockTriangularView<MatrixType, Mode>::operator*(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output =
@@ -454,8 +454,8 @@ inline Eigen::MatrixXd BlockTriangularView<MatrixType, Mode>::toDense() const {
  */
 
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonal::
-operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonal::operator*(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output =
@@ -558,8 +558,8 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
 }
 
 template <typename Solver>
-inline bool BlockSymmetric<Solver>::
-operator==(const BlockSymmetric &rhs) const {
+inline bool
+BlockSymmetric<Solver>::operator==(const BlockSymmetric &rhs) const {
   return (A == rhs.A && Ai_B == rhs.Ai_B && S == rhs.S);
 }
 

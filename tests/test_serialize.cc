@@ -412,8 +412,8 @@ TEST(test_serialize, test_variant_version_0) {
 TEST(test_serialize, test_gp_serialize_version) {
   MakeGaussianProcess test_case;
 
-  EXPECT_TRUE(bool(cereal::detail::has_serialization_version<decltype(
-                       test_case.get_model())>::value));
+  EXPECT_TRUE(bool(cereal::detail::has_serialization_version<
+                   decltype(test_case.get_model())>::value));
 
   const std::uint32_t expected_version =
       test_case.get_model().serialization_version;

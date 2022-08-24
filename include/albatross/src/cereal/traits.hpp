@@ -71,8 +71,9 @@ namespace detail {
 template <typename X> class has_serialization_version {
   template <typename T>
   static std::enable_if_t<
-      std::is_same<std::uint32_t, typename std::decay<decltype(
-                                      T::serialization_version)>::type>::value,
+      std::is_same<
+          std::uint32_t,
+          typename std::decay<decltype(T::serialization_version)>::type>::value,
       std::true_type>
   test(int);
   template <typename T> static std::false_type test(...);
