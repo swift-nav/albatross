@@ -1,6 +1,6 @@
 name: albatross
 dependencies:
-- python=3.4
+- python>=3.8
 - numpy
 - scipy
 - matplotlib

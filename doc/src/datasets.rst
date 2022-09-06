@@ -8,7 +8,7 @@ Datasets
 Regression Datasets
 -------------------
 
-One of the core data types in ``albatross`` is the ``RegressionDataset``.  These objects are built to store a set of measurements which we use all over albatross.  There are a number of additional helper methods in the ``RegressionDataset``, but you can think of it as a simple struct:
+One of the core data types in ``albatross`` is the ``RegressionDataset``.  These objects are built to store a set of measurements (or predictions) and are used throughout albatross.  There are a number of additional helper methods in the ``RegressionDataset``, but you can think of it as a simple struct:
 
 .. code-block:: c
 
@@ -18,8 +18,15 @@ One of the core data types in ``albatross`` is the ``RegressionDataset``.  These
     MarginalDistribution targets;
   }
 
+In the majority of literature and Gaussian process tutorials online you'll see :math:`x` are points in time or space. As a result they're often refered to as locations. In spatio-temporal processes :math:`x` could be a single floating point value (like you'd see in temproal modelling) or a pair of values (like you'd see in spatial modelling), but albatross was designed with the hope that the same dataset structures could be used to train and test with arbitrary models so we use variable names which are more in line with machine learning community. Consider building a model :math:`m` which takes inputs :math:`x` and produces an output :math:`y`,
 
-Here we see that there is a vector of features.  Each feature is meant to be an object which fully describes a measurement and each measurement consists of the actual value and an optional variance.  These measurements are held in a ``MarginalDistribution`` which looks something like this:
+.. math::
+
+  y \leftarrow m(x)
+  
+In albatross the inputs, :math:`x`, are "features" which can be thought of as the characteristics of a measurement. They may contain pre-processed quantities which capture all information required to fit a model. Instead of "measurements" we call :math:`y` the  "target". The target is the output which corresponds to an input feature. During training the targets are usually measurements (and measurement noise), but during prediction they're the output of the model.  In regression problems the targets will be floating point values, but the term target generalizes well to classification as well.
+
+Each dataset consists of a set of features and corresponding targets. Each feature fully describes a target (measurement) and each target consists of the actual value and an optional variance.  These targets are held in a ``MarginalDistribution`` which looks something like this:
 
 .. code-block:: c
 
@@ -78,6 +85,13 @@ Finally, if you've written serialization routines for the types involved (see `c
 
   std::ofstream ofs("example.csv");
   write_to_csv(ofs, temperature_dataset);
+
+and if you've defined ``<<`` stream operators for ``Station`` you'd be able to dump it to ``std::cout`` for debug purposes,
+
+.. code-block:: c
+
+  std::cout << temperature_dataset << std::endl;
+
 
 .. _`cereal` : https://uscilab.github.io/cereal/
 
