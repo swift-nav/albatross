@@ -62,15 +62,15 @@ Notice that we dropped the mean, mostly just to make the rest of the equations e
 
 .. math::
 
-    [\mathbf{f^*}|\mathbf{f} = \mathbf{y}] \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff} K_{f*}\right)
+    [\mathbf{f^*}|\mathbf{f} = \mathbf{y}] \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff}^{-1} K_{f*}\right)
     
 for brevity we'll often drop the :math:`\mathbf{f} = \mathbf{y}` part and just write:
 
 .. math::
 
-    \mathbf{f^*}|\mathbf{y} \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff} K_{f*}\right)
+    \mathbf{f^*}|\mathbf{y} \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff}^{-1} K_{f*}\right)
 
-This would read, "the posterior distribution, :math:`\mathbf{f^*}`, at locations :math:`\mathbf{x^*}`  given :math:`\mathbf{y}` is multivariate normal with the given mean and covariance".
+This would read, "the posterior distribution, :math:`\mathbf{f^*}`, at locations :math:`\mathbf{x^*}`  given :math:`\mathbf{y}` is multivariate normal with the given mean and covariance". This is the `conditional distribution of a multivariate Gaussian distribution <https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Conditional_distributions>`_.
 
 ----------------------
 Model Fit
@@ -100,7 +100,7 @@ Once we've fit a model we can use it to make a prediction at arbitrary locations
 
 .. math::
 
-    \mathbf{f^*}|\mathbf{y} \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff} K_{f*}\right)
+    \mathbf{f^*}|\mathbf{y} \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff}^{-1} K_{f*}\right)
 
 We can take advantage of some of the precomputed quantities to make this prediction step more efficient.  In particular we would write this,
 
@@ -122,8 +122,8 @@ To compute the posterior ``MarginalDistribution`` we would then:
 * Compute :math:`Q_{f*} = D^{-1/2}L^{-1}P K_{*f}^T`  
 * Evaluate the prior variance :math:`\mbox{diag}(K_{**})`
 * Compute the posterior variance :math:`\mbox{diag}(K_{**}) - \mbox{diag}(Q_{f*}^T Q_{f*})`
-  
-and to compute the posterior ``JointDistribution`` we would instead compute:
+
+and to compute the posterior ``JointDistribution`` we would:
 
 * Evaluate the prior covariance :math:`K_{**}`
 * Compute the posterior covariance :math:`K_{**} - Q_{f*}^T Q_{f*}`
