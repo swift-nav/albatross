@@ -72,6 +72,14 @@ for brevity we'll often drop the :math:`\mathbf{f} = \mathbf{y}` part and just w
 
 This would read, "the posterior distribution, :math:`\mathbf{f^*}`, at locations :math:`\mathbf{x^*}`  given :math:`\mathbf{y}` is multivariate normal with the given mean and covariance". This is the `conditional distribution of a multivariate Gaussian distribution <https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Conditional_distributions>`_.
 
+You may also see
+
+.. math::
+
+    \mathbf{y^*}|\mathbf{y} \sim \mathcal{N}\left(K_{*f} K_{ff}^{-1} \mathbf{y}, K_{**} - K_{*f} K_{ff}^{-1} K_{f*}\right)
+
+Particularly if measurement noise is already a part of the process :math:`f`.  However, this is a bit of an abuse of notation because (in this case) :math:`\mathbf{y^*}` are not actual measurements, they're hypothetical measurements of :math:`\mathbf{f^*}|\mathbf{f} = \mathbf{y}`. The point here is that it can be important to distinguish between the process itself, :math:`\mathbf{f}` (random variable), measurements of the process :math:`\mathbf{y}` (typically a real valued vector, maybe with associated measurement noise) and the locations/information associated with the process or measurements, :math:`\mathbf{x}` (possibly a struct holding arbitrary information describing a measurement).
+
 ----------------------
 Model Fit
 ----------------------
@@ -89,8 +97,10 @@ we perform some of the intense computation up front. In this case we'd be buildi
 .. math::
     
     K_{ff} &= \begin{bmatrix}k(x_0, x_0) && \cdots && k(x_0, x_n) \\ \vdots && && \vdots \\ k(x_n, x_0) && \cdots && k(x_n, x_n)\end{bmatrix} \\
-    P^TLDLP &= K_{ff} \\
+    P^TLDL^TP &= K_{ff} \\
     \mathbf{v} &= K_{ff}^{-1} \mathbf{y}
+
+We've picked the Robust Cholesky decomposition (`the LDLT decomposition <https://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html>`_) which is known to have good numerical properties (due in large part to the pivoting which results in a permutation matrix :math:`P`).
 
 -----------------------
 Predictive Distribution
@@ -112,18 +122,56 @@ We can take advantage of some of the precomputed quantities to make this predict
     
 Where :math:`Q_{f*} = D^{-1/2}L^{-1}P K_{*f}^T`.
 
-So to put this into distinct steps to compute the posterior mean we would:
+To make a prediction in albatross you'd first fit the model (see above), then call,
+
+.. code-block:: c
+
+    const auto prediction = fit_model.predict(new_features);
+
+This is a lazy operation (nothing is actually done yet, only saving the ``new_features`` where predictions are desired). You then have some choices for the actual prediction type you'd like:
+
+^^^^^^^^^^^^^^^^^^^
+Mean Predictions
+^^^^^^^^^^^^^^^^^^^
+
+Calling:
+
+.. code-block:: c
+
+    const Eigen::VectorXd mean = prediction.mean();
+
+would:
 
 * Evaluate :math:`K_{*f}`
 * Compute the mean :math:`K_{*f} \mathbf{v}`
 
-To compute the posterior ``MarginalDistribution`` we would then:
+^^^^^^^^^^^^^^^^^^^^
+Marginal Predictions
+^^^^^^^^^^^^^^^^^^^^
+
+Calling:
+
+.. code-block:: c
+
+    const MarginalDistribution marginal = prediction.marginal();
+
+would:
 
 * Compute :math:`Q_{f*} = D^{-1/2}L^{-1}P K_{*f}^T`  
 * Evaluate the prior variance :math:`\mbox{diag}(K_{**})`
 * Compute the posterior variance :math:`\mbox{diag}(K_{**}) - \mbox{diag}(Q_{f*}^T Q_{f*})`
 
-and to compute the posterior ``JointDistribution`` we would:
+^^^^^^^^^^^^^^^^^^^
+Joint Predictions
+^^^^^^^^^^^^^^^^^^^
+
+Calling:
+
+.. code-block:: c
+
+    const JointDistribution marginal = prediction.joint();
+
+would:
 
 * Evaluate the prior covariance :math:`K_{**}`
 * Compute the posterior covariance :math:`K_{**} - Q_{f*}^T Q_{f*}`
