@@ -97,7 +97,9 @@ and plot the results (though this'll require a numerical python environment),
     crossvalidation
     tuning
     mcmc
+    gp-details
     sparse-gp-details
+    references
 
 
 #########
