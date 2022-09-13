@@ -105,6 +105,7 @@ public:
                 int>::type = 0>
   JointDistribution _joint(const ModelType &model, const FitType &fit,
                            const std::vector<FeatureType> &features) const {
+    std::cout << "_joint" << std::endl;
     return model.predict_(features, fit,
                           PredictTypeIdentity<JointDistribution>());
   }
@@ -178,7 +179,9 @@ public:
   JointDistribution joint() const {
     static_assert(std::is_same<DummyType, FeatureType>::value,
                   "never do prediction.mean<T>()");
+    std::cout << "joint" << std::endl;
     if (features_.size() == 0) {
+      std::cout << "features size == 0" << std::endl;
       return JointDistribution();
     }
     return JointPredictor()._joint(model_, fit_, features_);

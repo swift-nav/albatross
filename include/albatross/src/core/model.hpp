@@ -73,6 +73,7 @@ protected:
   PredictType predict_(const std::vector<PredictFeatureType> &features,
                        const FitType &fit_,
                        PredictTypeIdentity<PredictType> &&) const {
+    std::cout << "predict_" << std::endl;
     return derived()._predict_impl(features, fit_,
                                    PredictTypeIdentity<PredictType>());
   }
@@ -95,6 +96,7 @@ public:
    */
   ModelType &derived() { return *static_cast<ModelType *>(this); }
   const ModelType &derived() const {
+    std::cout << "derived()" << std::endl;
     return *static_cast<const ModelType *>(this);
   }
 

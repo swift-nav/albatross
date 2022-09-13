@@ -38,6 +38,7 @@ public:
   template <typename PredictFeatureType>
   const PredictionReference<ModelType, PredictFeatureType, Fit>
   predict(const std::vector<PredictFeatureType> &features) const & {
+    std::cout << "predict 30" << std::endl;
     return PredictionReference<ModelType, PredictFeatureType, Fit>(model_, fit_,
                                                                    features);
   }
