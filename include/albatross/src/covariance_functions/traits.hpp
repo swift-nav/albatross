@@ -34,11 +34,10 @@ class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 // inside things like sums and products where we may need to
 // leverage equivalencies like cov(X, Y) == cov(Y, X) but don't
 // want to worry about all the caller logic.
-template <typename U, typename X, typename Y>
-class has_usable_call_impl{
-public :
+template <typename U, typename X, typename Y> class has_usable_call_impl {
+public:
   static constexpr bool value = has_valid_call_impl<U, X, Y>::value ||
-    has_valid_call_impl<U, Y, X>::value;
+                                has_valid_call_impl<U, Y, X>::value;
 };
 
 /*

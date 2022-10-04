@@ -193,8 +193,8 @@ TEST(test_covariance_function, test_caller_ordering) {
 
 TEST(test_covariance_function, test_linear_combo_variants) {
   using ComboOfVariant = LinearCombination<variant<X, Y>>;
-  using ComplicatedFeature =
-      variant<X, Y, variant<X, Y>, LinearCombination<Y>, LinearCombination<variant<X, Y>>>;
+  using ComplicatedFeature = variant<X, Y, variant<X, Y>, LinearCombination<Y>,
+                                     LinearCombination<variant<X, Y>>>;
 
   const HasMultiple cov;
 
@@ -219,8 +219,7 @@ TEST(test_covariance_function, test_linear_combo_variants) {
 
   EXPECT_EQ(cov(vx, y), cov_x_y);
   EXPECT_EQ(cov(x, y_y), cov_x_yy);
-  EXPECT_EQ(cov(vy_vy, vy_vx),
-            cov_yy_xy);
+  EXPECT_EQ(cov(vy_vy, vy_vx), cov_yy_xy);
 }
 
 TEST(test_covariance_function, test_linear_combinations) {
