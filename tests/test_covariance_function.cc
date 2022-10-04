@@ -191,6 +191,38 @@ TEST(test_covariance_function, test_caller_ordering) {
   EXPECT_EQ(cov(x, sum_of_two_ys), x_sum_of_two_ys);
 }
 
+TEST(test_covariance_function, test_linear_combo_variants) {
+  using ComboOfVariant = LinearCombination<variant<X, Y>>;
+  using ComplicatedFeature =
+      variant<X, Y, variant<X, Y>, LinearCombination<Y>, LinearCombination<variant<X, Y>>>;
+
+  const HasMultiple cov;
+
+  const ComplicatedFeature x = X();
+
+  const Y y;
+  const std::vector<Y> two_ys = {Y(), Y()};
+  const LinearCombination<Y> y_y(two_ys);
+
+  const std::vector<variant<X, Y>> vec_y_y = {Y(), Y()};
+  const ComboOfVariant vy_vy(vec_y_y);
+
+  const std::vector<variant<X, Y>> vec_y_x = {Y(), X()};
+  const ComboOfVariant vy_vx(vec_y_x);
+
+  const std::vector<variant<X, Y>> vec_x = {X()};
+  const ComboOfVariant vx(vec_x);
+
+  const double cov_x_y = cov(x, y);
+  const double cov_x_yy = 2 * cov(x, y);
+  const double cov_yy_xy = 2 * cov(y, x) + 2 * cov(y, y);
+
+  EXPECT_EQ(cov(vx, y), cov_x_y);
+  EXPECT_EQ(cov(x, y_y), cov_x_yy);
+  EXPECT_EQ(cov(vy_vy, vy_vx),
+            cov_yy_xy);
+}
+
 TEST(test_covariance_function, test_linear_combinations) {
   HasMultiple cov_func;
   X x;
