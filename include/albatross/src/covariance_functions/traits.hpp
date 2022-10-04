@@ -30,6 +30,17 @@ class has_valid_call_impl
 template <typename U, typename... Args>
 class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 
+// Here we check if a class U has a call_impl which can be reused
+// inside things like sums and products where we may need to
+// leverage equivalencies like cov(X, Y) == cov(Y, X) but don't
+// want to worry about all the caller logic.
+template <typename U, typename X, typename Y>
+class has_usable_call_impl{
+public :
+  static constexpr bool value = has_valid_call_impl<U, X, Y>::value ||
+    has_valid_call_impl<U, Y, X>::value;
+};
+
 /*
  * has_valid_cov_caller
  */

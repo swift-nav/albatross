@@ -248,9 +248,10 @@ public:
    * this will return the sum of the two.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
-                                     has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
@@ -259,9 +260,10 @@ public:
    * If only LHS has a valid call method we ignore R.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
-                                     !has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 !has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
@@ -270,9 +272,10 @@ public:
    * If only RHS has a valid call method we ignore L.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(!has_valid_caller<LHS, X, Y>::value &&
-                                     has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (!has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
@@ -339,9 +342,10 @@ public:
    * this will return the product of the two.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
-                                     has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     double output = this->lhs_(x, y);
     if (output != 0.) {
@@ -354,9 +358,10 @@ public:
    * If only LHS has a valid call method we ignore R.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(has_valid_caller<LHS, X, Y>::value &&
-                                     !has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 !has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
@@ -365,9 +370,10 @@ public:
    * If only RHS has a valid call method we ignore L.
    */
   template <typename X, typename Y,
-            typename std::enable_if<(!has_valid_caller<LHS, X, Y>::value &&
-                                     has_valid_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (!has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
+                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
