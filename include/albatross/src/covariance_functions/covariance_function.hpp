@@ -249,8 +249,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (has_usable_call_impl<LHS, X, Y>::value &&
+                 has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
@@ -261,8 +261,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 !has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (has_usable_call_impl<LHS, X, Y>::value &&
+                 !has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
@@ -273,8 +273,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (!has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (!has_usable_call_impl<LHS, X, Y>::value &&
+                 has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
@@ -343,8 +343,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (has_usable_call_impl<LHS, X, Y>::value &&
+                 has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     double output = this->lhs_(x, y);
@@ -359,8 +359,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 !has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (has_usable_call_impl<LHS, X, Y>::value &&
+                 !has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
@@ -371,8 +371,8 @@ public:
    */
   template <typename X, typename Y,
             typename std::enable_if<
-                (!has_valid_call_impl_or_symmetric<LHS, X, Y>::value &&
-                 has_valid_call_impl_or_symmetric<RHS, X, Y>::value),
+                (!has_usable_call_impl<LHS, X, Y>::value &&
+                 has_usable_call_impl<RHS, X, Y>::value),
                 int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
