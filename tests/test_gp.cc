@@ -452,4 +452,34 @@ TEST(test_gp, test_get_prior) {
   EXPECT_EQ(prior.mean, mean);
 }
 
+TEST(test_gp, test_predict_with_complicated_feature) {
+
+  MakeGaussianProcessWithMean gp_with_mean_case;
+
+  const auto dataset = gp_with_mean_case.get_dataset();
+  const auto model = gp_with_mean_case.get_model();
+
+  using ComplexType =
+      variant<double, Eigen::VectorXd,
+              LinearCombination<variant<double, Eigen::VectorXd>>>;
+
+  const auto prior = model.prior(dataset.features);
+
+  std::vector<variant<double, Eigen::VectorXd>> vec = {1.0, 2.0};
+  LinearCombination<variant<double, Eigen::VectorXd>> sum(vec);
+  std::vector<ComplexType> features = {1.0, 2.0, sum};
+
+  const auto pred = model.fit(dataset).predict(features).joint();
+
+  Eigen::Vector3d for_sum;
+  for_sum << 1., 1., 0;
+
+  const double expected_mean = for_sum.transpose() * pred.mean;
+  const double expected_variance =
+      for_sum.transpose() * pred.covariance * for_sum;
+
+  EXPECT_NEAR(expected_mean, pred.mean[2], 1e-6);
+  EXPECT_NEAR(expected_variance, pred.covariance(2, 2), 1e-6);
+}
+
 } // namespace albatross
