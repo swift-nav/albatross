@@ -185,7 +185,7 @@ public:
 };
 
 typedef ::testing::Types<
-    DummyCovariance, IndependentNoise<double>, Polynomial<2>,
+    DummyCovariance, IndependentNoise<double>, Nugget, Polynomial<2>,
     SumOfCovarianceFunctions<IndependentNoise<double>, Polynomial<2>>,
     SumOfCovarianceFunctions<IndependentNoise<double>, DummyCovariance>>
     DoubleCompatibleCovarianceFunctions;
@@ -248,6 +248,35 @@ TEST(test_covariance_functions, test_state_space_representation) {
   auto xs_and_ys = with_both.state_space_representation(features);
   EXPECT_TRUE(bool(
       std::is_same<decltype(xs_and_ys), std::vector<variant<X, Y>>>::value));
+}
+
+TEST(test_covariance_functions, test_nugget) {
+
+  struct Foo {
+    Foo(int x_) : x(x_) {}
+    bool operator==(const Foo &other) const { return x == other.x; }
+    int x;
+  };
+
+  int x_int = 1;
+  int y_int = 2;
+
+  Foo x_foo(x_int);
+  Foo y_foo(y_int);
+
+  Nugget nugget;
+  const double expected = nugget.nugget_sigma.value * nugget.nugget_sigma.value;
+
+  EXPECT_GT(nugget(x_int, x_int), 0.);
+
+  EXPECT_EQ(nugget(x_int, x_int), expected);
+  EXPECT_EQ(nugget(x_foo, x_foo), expected);
+
+  EXPECT_EQ(nugget(y_int, y_int), expected);
+  EXPECT_EQ(nugget(y_foo, y_foo), expected);
+
+  EXPECT_EQ(nugget(x_int, y_int), 0.);
+  EXPECT_EQ(nugget(x_foo, y_foo), 0.);
 }
 
 } // namespace albatross
