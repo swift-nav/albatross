@@ -14,7 +14,6 @@
 #define ALBATROSS_COVARIANCE_FUNCTIONS_NOISE_H
 
 constexpr double default_sigma_noise = 0.1;
-constexpr double default_nugget_noise = 1e-8;
 
 namespace albatross {
 
@@ -41,25 +40,6 @@ public:
   double _call_impl(const Observed &x, const Observed &y) const {
     if (x == y) {
       return sigma_independent_noise.value * sigma_independent_noise.value;
-    } else {
-      return 0.;
-    }
-  }
-};
-
-class Nugget : public CovarianceFunction<Nugget> {
-public:
-  ALBATROSS_DECLARE_PARAMS(nugget_sigma);
-
-  std::string get_name() const { return "nugget"; }
-
-  Nugget() { nugget_sigma = {default_nugget_noise, FixedPrior()}; };
-
-  template <typename X,
-            typename std::enable_if_t<is_basic_type<X>::value, int> = 0>
-  double _call_impl(const X &x, const X &y) const {
-    if (x == y) {
-      return nugget_sigma.value * nugget_sigma.value;
     } else {
       return 0.;
     }
