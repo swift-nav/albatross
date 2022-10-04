@@ -246,6 +246,24 @@ public:
   /*
    * If both LHS and RHS have a valid call method for the types X and Y
    * this will return the sum of the two.
+   *
+   * Note that we don't use has_valid_caller which is going to look for any
+   * of a large number of complicated composite types, we only care about
+   * directly equivalent calls (such as symmetric definitions, or the use
+   * of the Measurement<> wrapper, see traits.hpp). This is to avoid
+   * polution of the instantiated methods.  If, for example, we used
+   * has_valid_caller here summing two functions would result in the
+   * instantiation of methods such as:
+   *
+   *   double _call_impl(const LinearCombination<X> &x,
+   *                     const variant<X, Y> &y) const;
+   *
+   * which doesn't neccesarily breaking anything, but those sorts of
+   * equivalencies are meant to be managed by the CovarianceFunction::call
+   * method above. Instead we only want summing (and product etc ...)
+   * to instantiate the minimal number of _call_impl methods and we
+   * then consolidate any of the composite type management to the
+   * highest level calls.
    */
   template <typename X, typename Y,
             typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
