@@ -488,6 +488,35 @@ template <typename CovFunc, typename... Args>
 class has_valid_caller
     : public caller_has_valid_call<DefaultCaller, CovFunc, Args...> {};
 
+/*
+ * This defines a helper trait which indicates whether a call to a
+ * function has an equivalent call. This is different from the valid
+ * caller which might do more complicated operations such as unpacking
+ * a variant, or integrating over linear combinations, here we just want
+ * to know if there is a call method available for types such as
+ * the Measurement<> wrapper for which we'd happily unwrap the type.
+ *
+ * For example if we have a function CovFunc for which we have defined:
+ *
+ *   double _call_impl(const X &x, const Y &y) const;
+ *
+ * We would expect
+ *
+ *   has_equivalent_caller<CovFunc, Measurement<X>, Y>::value == true
+ *   has_equivalent_caller<CovFunc, LinearCombination<X>, Y>::value == false
+ *   has_equivalent_caller<CovFunc, variant<X, Y>, Y>::value == false
+ *
+ * while has_valid_caller should evaluate true in both cases, but only the
+ * first is equivalent, the others _could_ be equivalent but aren't
+ * neccesarily.
+ */
+using EquivalentCaller = internal::MeasurementForwarder<
+    internal::SymmetricCaller<internal::DirectCaller>>;
+
+template <typename CovFunc, typename... Args>
+class has_equivalent_caller
+    : public caller_has_valid_call<EquivalentCaller, CovFunc, Args...> {};
+
 } // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTIONS_CALLERS_HPP_ */

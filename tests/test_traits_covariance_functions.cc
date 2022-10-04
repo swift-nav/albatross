@@ -57,6 +57,39 @@ TEST(test_traits_covariance, test_has_valid_call_impl) {
   EXPECT_FALSE(bool(has_valid_call_impl<HasMultiple, Z, Z>::value));
 }
 
+TEST(test_traits_covariance, test_has_equivalent_caller) {
+  EXPECT_TRUE(bool(has_equivalent_caller<HasPublicCallImpl, X, Y>::value));
+  EXPECT_TRUE(bool(has_equivalent_caller<HasPublicCallImpl, Y, X>::value));
+  EXPECT_TRUE(bool(has_equivalent_caller<HasMultiple, X, X>::value));
+  EXPECT_TRUE(bool(has_equivalent_caller<HasMultiple, Y, Y>::value));
+  EXPECT_FALSE(bool(has_equivalent_caller<HasMultiple, Z, X>::value));
+  EXPECT_FALSE(bool(has_equivalent_caller<HasMultiple, Z, Y>::value));
+  EXPECT_FALSE(bool(has_equivalent_caller<HasMultiple, Z, Z>::value));
+
+  EXPECT_TRUE(
+      bool(has_equivalent_caller<HasPublicCallImpl, Measurement<X>, Y>::value));
+  EXPECT_TRUE(
+      bool(has_equivalent_caller<HasPublicCallImpl, Y, Measurement<X>>::value));
+  EXPECT_TRUE(bool(has_equivalent_caller<HasPublicCallImpl, Measurement<Y>,
+                                         Measurement<X>>::value));
+
+  EXPECT_TRUE(
+      bool(has_equivalent_caller<HasMultiple, Measurement<X>, Y>::value));
+  EXPECT_TRUE(
+      bool(has_equivalent_caller<HasMultiple, Y, Measurement<X>>::value));
+  EXPECT_TRUE(bool(has_equivalent_caller<HasMultiple, Measurement<Y>,
+                                         Measurement<X>>::value));
+
+  EXPECT_FALSE(
+      bool(has_equivalent_caller<HasMultiple, Measurement<Z>, X>::value));
+  EXPECT_FALSE(
+      bool(has_equivalent_caller<HasMultiple, Z, Measurement<Y>>::value));
+  EXPECT_FALSE(
+      bool(has_equivalent_caller<HasMultiple, Z, Measurement<Z>>::value));
+  EXPECT_FALSE(bool(has_equivalent_caller<HasMultiple, Measurement<Z>,
+                                          Measurement<Z>>::value));
+}
+
 /*
  * Here we test to make sure we can identify situations where
  * _call_impl( has been defined but not necessarily properly.
