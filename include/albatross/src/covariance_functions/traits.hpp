@@ -226,6 +226,25 @@ struct has_valid_variant_mean_caller<U, Caller, variant<A, Ts...>,
       has_valid_variant_mean_caller<U, Caller, variant<Ts...>>::value;
 };
 
+/*
+ * Sometimes we need to distinguish between raw types for which we would
+ * explicitly write covariance function _call_impl methods and wrapped
+ * types which get handled by the callers.hpp logic.  For example, if
+ * you write a covariance function with _call_impl(X, X) you don't need
+ * to also write one which handles LinearCombination<X> types, that is
+ * handled by default inside the caller logic. Here we add a trait to
+ * be able to distinguish between a basic type and a composite type.
+ */
+template <typename X> struct is_basic_type : std::true_type {};
+
+template <typename X>
+struct is_basic_type<LinearCombination<X>> : std::false_type {};
+
+template <typename X> struct is_basic_type<Measurement<X>> : std::false_type {};
+
+template <typename... Ts>
+struct is_basic_type<variant<Ts...>> : std::false_type {};
+
 } // namespace albatross
 
 #endif

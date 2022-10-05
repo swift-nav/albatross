@@ -104,6 +104,22 @@ TEST(test_traits_covariance, test_has_possible_call_impl) {
   EXPECT_TRUE(bool(has_possible_call_impl<HasMultiple, Z, Z>::value));
 }
 
+TEST(test_traits_covariance, test_is_basic_type) {
+
+  struct Foo {};
+
+  EXPECT_TRUE(bool(is_basic_type<int>::value));
+  EXPECT_TRUE(bool(is_basic_type<double>::value));
+  EXPECT_TRUE(bool(is_basic_type<Foo>::value));
+
+  EXPECT_FALSE(bool(is_basic_type<variant<int>>::value));
+  EXPECT_FALSE(bool(is_basic_type<variant<int, double, Foo>>::value));
+  EXPECT_FALSE(bool(is_basic_type<LinearCombination<int>>::value));
+  EXPECT_FALSE(bool(is_basic_type<LinearCombination<Foo>>::value));
+  EXPECT_FALSE(bool(is_basic_type<Measurement<int>>::value));
+  EXPECT_FALSE(bool(is_basic_type<Measurement<Foo>>::value));
+}
+
 TEST(test_traits_covariance, test_has_invalid_call_impl) {
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, X, Y>::value));
   EXPECT_FALSE(bool(has_invalid_call_impl<HasPublicCallImpl, Y, X>::value));

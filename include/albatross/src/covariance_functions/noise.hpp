@@ -45,6 +45,7 @@ public:
     }
   }
 };
+
 } // namespace albatross
 
 #endif
