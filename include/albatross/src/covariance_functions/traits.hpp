@@ -24,8 +24,7 @@ DEFINE_CLASS_METHOD_TRAITS(_call_impl);
 
 template <typename U, typename... Args>
 class has_valid_call_impl
-    : public has__call_impl_with_return_type<
-          const U, double, typename const_ref<Args>::type...> {};
+    : public has__call_impl<const U, typename const_ref<Args>::type...> {};
 
 template <typename U, typename... Args>
 class has_possible_call_impl : public has__call_impl<U, Args &...> {};
@@ -38,9 +37,8 @@ DEFINE_CLASS_METHOD_TRAITS(call);
 
 template <typename CovFunc, typename Caller, typename... Args>
 class has_valid_cov_caller
-    : public has_call_with_return_type<Caller, double,
-                                       typename const_ref<CovFunc>::type,
-                                       typename const_ref<Args>::type...> {};
+    : public has_call<Caller, typename const_ref<CovFunc>::type,
+                      typename const_ref<Args>::type...> {};
 
 /*
  * has_valid_cross_cov_caller
@@ -55,10 +53,8 @@ public:
 
 template <typename MeanFunc, typename Caller, typename FeatureType>
 class has_valid_mean_caller
-    : public has_call_with_return_type<Caller, double,
-                                       typename const_ref<MeanFunc>::type,
-                                       typename const_ref<FeatureType>::type> {
-};
+    : public has_call<Caller, typename const_ref<MeanFunc>::type,
+                      typename const_ref<FeatureType>::type> {};
 
 /*
  * This determines whether or not a class has a method defined for,

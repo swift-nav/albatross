@@ -438,13 +438,57 @@ public:
   }
 
   template <typename FeatureType>
-  double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
+  double log_likelihood(const RegressionDataset<FeatureType> &dataset,
+                        Eigen::VectorXd *gradient = nullptr) const {
     Eigen::VectorXd zero_mean(dataset.targets.mean);
     const auto measurement_features = as_measurements(dataset.features);
     mean_function_.remove_from(measurement_features, &zero_mean);
     const Eigen::MatrixXd cov = covariance_function_(measurement_features);
-    double ll = -negative_log_likelihood(zero_mean, cov);
-    ll += this->prior_log_likelihood();
+
+    const auto ldlt = cov.ldlt();
+    double ll = -negative_log_likelihood(zero_mean, ldlt);
+    //    ll += this->prior_log_likelihood();
+
+    if (gradient != nullptr) {
+      const auto tunable_params = get_tunable_parameters(get_params());
+      *gradient = Eigen::VectorXd::Zero(tunable_params.values.size(), 1);
+
+      const Eigen::VectorXd alpha = ldlt.solve(zero_mean);
+
+      const double epsilon = 1e-6;
+      for (std::size_t i = 0; i < tunable_params.values.size(); ++i) {
+
+        auto perturbed_params = [&](double dx) {
+          auto params = this->get_params();
+          auto tune_params = get_tunable_parameters(params);
+          tune_params.values[i] += dx;
+          return set_tunable_params_values(params, tune_params.values);
+        };
+
+        const auto params_minus = perturbed_params(-epsilon);
+        const auto params_plus = perturbed_params(epsilon);
+        const double delta = params_plus.at(tunable_params.names[i]).value -
+                             params_minus.at(tunable_params.names[i]).value;
+        if (delta <= 0) {
+          (*gradient)[i] = 0.;
+          continue;
+        }
+
+        auto eval_cov = [&](const auto &ps) {
+          auto cov_copy = this->covariance_function_;
+          cov_copy.set_params(ps);
+          return cov_copy(measurement_features);
+        };
+
+        const Eigen::MatrixXd dcov =
+            (eval_cov(params_plus) - eval_cov(params_minus)) / delta;
+        const double dlog_det = -0.5 * ldlt.solve(dcov).trace();
+        const double ddata = 0.5 * alpha.transpose() * dcov * alpha;
+
+        (*gradient)[i] = ddata + dlog_det;
+      }
+    }
+
     return ll;
   }
 

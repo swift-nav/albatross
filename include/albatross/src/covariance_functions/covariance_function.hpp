@@ -25,7 +25,7 @@ namespace albatross {
  *
  *     std::string get_name() const {return "my_cov_func";}
  *
- *     double _call_impl(const X &x, const X &y) const {
+ *     auto _call_impl(const X &x, const X &y) const {
  *       return covariance_between_x_and_y(x, y);
  *     }
  *
@@ -39,7 +39,7 @@ namespace albatross {
  *     virtual std::string get_name() const = 0;
  *
  *     template <typename X, typename Y=X>
- *     double _call_impl(const X &x, const Y &y) const = 0;
+ *     auto _call_impl(const X &x, const Y &y) const = 0;
  *
  *     template <typename X, typename Y=X>
  *     double operator()(const X &x, const Y &y) const {
@@ -73,7 +73,7 @@ private:
   CovarianceFunction() : ParameterHandlingMixin(){};
   friend Derived;
 
-  template <typename X, typename Y> double call(const X &x, const Y &y) const {
+  template <typename X, typename Y> auto call(const X &x, const Y &y) const {
     return DefaultCaller::call(derived(), x, y);
   }
 
@@ -83,7 +83,7 @@ public:
                 "implies you aren't using CRTP.  Implementations "
                 "of a CovarianceFunction should look something like:\n"
                 "\n\tclass Foo : public CovarianceFunction<Foo> {"
-                "\n\t\tdouble _call_impl(const X &x, const Y &y) const;"
+                "\n\t\tauto _call_impl(const X &x, const Y &y) const;"
                 "\n\t\t..."
                 "\n\t}\n");
 
@@ -269,7 +269,7 @@ public:
             typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
                                      has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y) + this->rhs_(x, y);
   }
 
@@ -280,7 +280,7 @@ public:
             typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
                                      !has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -291,7 +291,7 @@ public:
             typename std::enable_if<(!has_equivalent_caller<LHS, X, Y>::value &&
                                      has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
 
@@ -360,7 +360,7 @@ public:
             typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
                                      has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     double output = this->lhs_(x, y);
     if (output != 0.) {
       output *= this->rhs_(x, y);
@@ -375,7 +375,7 @@ public:
             typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
                                      !has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     return this->lhs_(x, y);
   }
 
@@ -386,7 +386,7 @@ public:
             typename std::enable_if<(!has_equivalent_caller<LHS, X, Y>::value &&
                                      has_equivalent_caller<RHS, X, Y>::value),
                                     int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  auto _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
   }
 

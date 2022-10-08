@@ -85,9 +85,10 @@ using ParameterKey = std::string;
 // a corresponding cereal type included or you'll get some
 // really impressive compilation errors.
 using ParameterPrior = PriorContainer;
-using ParameterValue = double;
+using ParameterValue = autodiff::var;
 
 using ParameterStore = std::map<ParameterKey, Parameter>;
+using ParameterConstReferences = std::map<ParameterKey, const Parameter &>;
 
 /*
  * Distributions
