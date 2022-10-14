@@ -31,33 +31,94 @@ TYPED_TEST_P(DistributionTest, test_subset) {
   expect_subset_equal(dist.covariance, ss.covariance, indices);
 };
 
-TYPED_TEST_P(DistributionTest, test_multiply_with_matrix) {
+TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_marginal) {
 
   TypeParam test_case;
   const auto dist = test_case.create();
 
   Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist.size() - 1, dist.size());
 
-  const auto transformed_distribution = dist * mat;
+  const auto transformed_distribution = (mat * dist).marginal();
+  const MarginalDistribution alternate = mat * dist;
+  EXPECT_EQ(alternate, transformed_distribution);
 
   EXPECT_EQ(transformed_distribution.mean, mat * dist.mean);
-  EXPECT_EQ(transformed_distribution.covariance,
-            mat * dist.covariance * mat.transpose());
+  const Eigen::MatrixXd cov = mat * dist.covariance * mat.transpose();
+  EXPECT_LT(
+      (transformed_distribution.covariance.diagonal() - cov.diagonal()).norm(),
+      1e-8);
+};
+
+TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_joint) {
+
+  TypeParam test_case;
+  const auto dist = test_case.create();
+
+  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist.size() - 1, dist.size());
+  mat = Eigen::MatrixXd::Identity(dist.size(), dist.size());
+
+  const auto transformed_distribution = (mat * dist).joint();
+  const JointDistribution alternate = mat * dist;
+  EXPECT_EQ(alternate, transformed_distribution);
+
+  EXPECT_EQ(transformed_distribution.mean, mat * dist.mean);
+  const Eigen::MatrixXd cov = mat * dist.covariance * mat.transpose();
+  EXPECT_LT((transformed_distribution.covariance - cov).norm(), 1e-8);
+};
+
+TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_marginal) {
+
+  const Eigen::Index n = 3;
+  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
+  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
+  const MarginalDistribution dist(mean, var);
+  const Eigen::SparseMatrix<double> mat =
+      Eigen::MatrixXd::Random(dist.size() - 1, dist.size()).sparseView();
+
+  const auto transformed_distribution = (mat * dist).marginal();
+  const MarginalDistribution alternate = mat * dist;
+  EXPECT_EQ(alternate, transformed_distribution);
+
+  EXPECT_EQ(transformed_distribution.mean, mat * dist.mean);
+  const Eigen::MatrixXd cov = mat * dist.covariance * mat.transpose();
+  EXPECT_LT(
+      (transformed_distribution.covariance.diagonal() - cov.diagonal()).norm(),
+      1e-8);
+};
+
+TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_joint) {
+
+  const Eigen::Index n = 3;
+  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
+  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
+  const MarginalDistribution dist(mean, var);
+  const Eigen::SparseMatrix<double> mat =
+      Eigen::MatrixXd::Random(dist.size() - 1, dist.size()).sparseView();
+
+  const auto transformed_distribution = (mat * dist).joint();
+  const JointDistribution alternate = mat * dist;
+  EXPECT_EQ(alternate, transformed_distribution);
+
+  EXPECT_EQ(transformed_distribution.mean, mat * dist.mean);
+  const Eigen::MatrixXd cov = mat * dist.covariance * mat.transpose();
+  EXPECT_LT((transformed_distribution.covariance - cov).norm(), 1e-8);
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_vector) {
 
   TypeParam test_case;
   const auto dist = test_case.create();
-
   Eigen::VectorXd vector = Eigen::VectorXd::Random(dist.size());
 
-  const auto transformed_distribution = dist * vector;
+  const auto transformed_distribution = (vector.transpose() * dist).joint();
+  const JointDistribution alternate = vector.transpose() * dist;
+  EXPECT_EQ(alternate, transformed_distribution);
 
   double expected_mean = vector.dot(dist.mean);
   double expected_variance = vector.dot(dist.covariance * vector);
   EXPECT_EQ(transformed_distribution.mean[0], expected_mean);
-  EXPECT_EQ(transformed_distribution.covariance(0, 0), expected_variance);
+  EXPECT_NEAR(transformed_distribution.covariance(0, 0), expected_variance,
+              1e-8);
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_by_scalar) {
@@ -104,8 +165,12 @@ TYPED_TEST_P(DistributionTest, test_subtract) {
 };
 
 REGISTER_TYPED_TEST_CASE_P(DistributionTest, test_subset,
-                           test_multiply_with_matrix, test_multiply_with_vector,
-                           test_multiply_by_scalar, test_add, test_subtract);
+                           test_multiply_with_matrix_joint,
+                           test_multiply_with_matrix_marginal,
+                           test_multiply_with_sparse_matrix_joint,
+                           test_multiply_with_sparse_matrix_marginal,
+                           test_multiply_with_vector, test_multiply_by_scalar,
+                           test_add, test_subtract);
 
 Eigen::VectorXd arange(int k = 5) {
   Eigen::VectorXd mean(k);
