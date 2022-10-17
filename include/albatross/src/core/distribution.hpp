@@ -60,6 +60,7 @@ struct is_distribution : public std::is_base_of<DistributionBase<T>, T> {};
 struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
 
   using Base = DistributionBase<MarginalDistribution>;
+  using CovarianceType = DiagonalMatrixXd;
 
   MarginalDistribution(){};
 
@@ -102,10 +103,6 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     return (mean == other.mean && covariance == other.covariance);
   }
 
-  JointDistribution operator*(const Eigen::MatrixXd &mat) const;
-
-  JointDistribution operator*(const Eigen::VectorXd &mat) const;
-
   MarginalDistribution operator+(const MarginalDistribution &other) const {
     return MarginalDistribution(
         mean + other.mean, covariance.diagonal() + other.covariance.diagonal());
@@ -135,12 +132,13 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
                           &covariance.diagonal());
   }
 
-  DiagonalMatrixXd covariance;
+  CovarianceType covariance;
 };
 
 struct JointDistribution : public DistributionBase<JointDistribution> {
 
   using Base = DistributionBase<JointDistribution>;
+  using CovarianceType = Eigen::MatrixXd;
 
   JointDistribution(){};
 
@@ -169,14 +167,6 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
 
   bool operator==(const JointDistribution &other) const {
     return (mean == other.mean && covariance == other.covariance);
-  }
-
-  JointDistribution operator*(const Eigen::MatrixXd &mat) const {
-    return JointDistribution(mat * mean, mat * covariance * mat.transpose());
-  }
-
-  JointDistribution operator*(const Eigen::VectorXd &vector) const {
-    return JointDistribution(vector.dot(mean), vector.dot(covariance * vector));
   }
 
   JointDistribution operator*(double scale) const {
@@ -215,18 +205,8 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
     return MarginalDistribution(mean, covariance.diagonal());
   }
 
-  Eigen::MatrixXd covariance;
+  CovarianceType covariance;
 };
-
-inline JointDistribution
-MarginalDistribution::operator*(const Eigen::MatrixXd &mat) const {
-  return JointDistribution(mat * mean, mat * covariance * mat.transpose());
-}
-
-inline JointDistribution
-MarginalDistribution::operator*(const Eigen::VectorXd &vector) const {
-  return JointDistribution(vector.dot(mean), vector.dot(covariance * vector));
-}
 
 template <typename SizeType, typename DistributionType>
 inline DistributionType subset(const DistributionBase<DistributionType> &dist,
