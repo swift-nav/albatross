@@ -55,7 +55,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_joint) {
   const auto dist = test_case.create();
 
   Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist.size() - 1, dist.size());
-  mat = Eigen::MatrixXd::Identity(dist.size(), dist.size());
 
   const auto transformed_distribution = (mat * dist).joint();
   const JointDistribution alternate = mat * dist;
