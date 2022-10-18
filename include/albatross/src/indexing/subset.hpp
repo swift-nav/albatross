@@ -152,7 +152,7 @@ inline void set_subset(const Eigen::VectorXd &from,
 }
 
 /*
- * Set a subset of an Eigen::Vector.  If this worked it'd be
+ * Set a subset of an Eigen::DiagonalMatrix.  If this worked it'd be
  * the equivalent of:
  *
  *     to[indices] = from;

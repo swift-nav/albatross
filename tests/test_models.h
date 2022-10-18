@@ -445,4 +445,13 @@ void expect_predict_variants_inconsistent(const PredictionType &pred) {
   }
 }
 
+inline long int get_group(const double &f) {
+  return static_cast<double>(floor(f / 5.));
+}
+
+struct LeaveOneIntervalOut {
+
+  long int operator()(const double &f) const { return get_group(f); }
+};
+
 } // namespace albatross

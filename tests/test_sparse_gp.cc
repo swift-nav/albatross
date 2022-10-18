@@ -19,15 +19,6 @@
 
 namespace albatross {
 
-inline long int get_group(const double &f) {
-  return static_cast<double>(floor(f / 5.));
-}
-
-struct LeaveOneIntervalOut {
-
-  long int operator()(const double &f) const { return get_group(f); }
-};
-
 template <typename GrouperFunction>
 class SparseGaussianProcessTest : public ::testing::Test {
 public:

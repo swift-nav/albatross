@@ -137,14 +137,6 @@ TEST(test_samplers, test_samplers_gp) {
   EXPECT_GT(oss->str().size(), 1);
 }
 
-inline long int get_group(const double &f) {
-  return static_cast<double>(floor(f / 5.));
-}
-
-struct LeaveOneIntervalOut {
-  long int operator()(const double &f) const { return get_group(f); }
-};
-
 TEST(test_samplers, test_samplers_sparse_gp) {
   const double a = 3.14;
   const double b = sqrt(2.);

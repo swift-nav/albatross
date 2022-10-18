@@ -23,5 +23,6 @@
 #include "utils/AsyncUtils"
 
 #include <albatross/src/indexing/group_by.hpp>
+#include <albatross/src/indexing/covariance.hpp>
 
 #endif

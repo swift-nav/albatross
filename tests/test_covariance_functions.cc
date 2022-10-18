@@ -13,8 +13,10 @@
 
 #include <albatross/Core>
 #include <albatross/CovarianceFunctions>
+#include <albatross/Indexing>
 
 #include "test_covariance_utils.h"
+#include "test_models.h"
 
 namespace albatross {
 
@@ -206,6 +208,34 @@ TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
   assert(C.cols() == x_size);
   // Make sure C is positive definite.
   C.inverse();
+}
+
+TYPED_TEST(TestDoubleCovarianceFunctions, compute_covariance_by_group) {
+  const std::vector<double> features = {0., 1., 2., 4., 5., 7., 11., 15., 21.};
+
+  LeaveOneIntervalOut grouper;
+
+  const Eigen::MatrixXd by_group =
+      compute_covariance_by_group(this->covariance_function, grouper, features);
+
+  Eigen::MatrixXd expected = this->covariance_function(features);
+
+  EXPECT_EQ(by_group, expected);
+}
+
+TYPED_TEST(TestDoubleCovarianceFunctions,
+           compute_covariance_by_group_assymetric) {
+  const std::vector<double> xs = {0., 1., 2., 4., 5., 7., 11., 15., 21.};
+  const std::vector<double> ys = {0.5, 1.5, 2.5, 5.5, 7., 11.5, 15., 21.5};
+
+  LeaveOneIntervalOut grouper;
+
+  const Eigen::MatrixXd by_group =
+      compute_covariance_by_group(this->covariance_function, grouper, xs, ys);
+
+  Eigen::MatrixXd expected = this->covariance_function(xs, ys);
+
+  EXPECT_EQ(by_group, expected);
 }
 
 TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {
