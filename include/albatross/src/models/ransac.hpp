@@ -529,13 +529,10 @@ ModelBase<ModelType>::ransac(const StrategyType &strategy,
   return Ransac<ModelType, StrategyType>(derived(), strategy, config);
 }
 
-} // namespace albatross
-
-template <typename X, typename std::enable_if_t<
-                          albatross::is_streamable<X>::value, int> = 0>
-inline std::ostream &
-operator<<(std::ostream &os, const albatross::RansacIteration<X> &iteration) {
-
+template <typename X,
+          typename std::enable_if_t<is_streamable<X>::value, int> = 0>
+inline std::ostream &operator<<(std::ostream &os,
+                                const RansacIteration<X> &iteration) {
   os << "CANDIDATES: ";
   for (const auto &k : iteration.candidates) {
     os << k << ", ";
@@ -556,11 +553,10 @@ operator<<(std::ostream &os, const albatross::RansacIteration<X> &iteration) {
   return os;
 }
 
-template <typename X, typename std::enable_if_t<
-                          albatross::is_streamable<X>::value, int> = 0>
+template <typename X,
+          typename std::enable_if_t<is_streamable<X>::value, int> = 0>
 inline std::ostream &operator<<(std::ostream &os,
-                                const albatross::RansacOutput<X> &output) {
-
+                                const RansacOutput<X> &output) {
   for (std::size_t i = 0; i < output.iterations.size(); ++i) {
     os << "==== Iteration " << i << "====" << std::endl;
     os << output.iterations[i] << std::endl;
@@ -572,4 +568,5 @@ inline std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
+} // namespace albatross
 #endif
