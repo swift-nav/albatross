@@ -252,10 +252,8 @@ concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
   return MarginalDistribution(mean, variance);
 }
 
-} // namespace albatross
-
-inline std::ostream &
-operator<<(std::ostream &os, const albatross::MarginalDistribution &marginal) {
+inline std::ostream &operator<<(std::ostream &os,
+                                const MarginalDistribution &marginal) {
   for (std::size_t i = 0; i < marginal.size(); ++i) {
     os << i << "    " << marginal.mean[i] << "   +/- "
        << std::sqrt(marginal.get_diagonal(i)) << std::endl;
@@ -264,7 +262,7 @@ operator<<(std::ostream &os, const albatross::MarginalDistribution &marginal) {
 }
 
 inline std::ostream &operator<<(std::ostream &os,
-                                const albatross::JointDistribution &joint) {
+                                const JointDistribution &joint) {
   Eigen::MatrixXd combined(joint.covariance.rows(),
                            joint.covariance.cols() + 1);
   combined.rightCols(joint.covariance.cols()) = joint.covariance;
@@ -273,4 +271,5 @@ inline std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
+} // namespace albatross
 #endif
