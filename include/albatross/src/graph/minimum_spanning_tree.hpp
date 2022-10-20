@@ -30,12 +30,6 @@ template <typename VertexType> struct Edge {
            std::tie(other.cost, other.a, other.b);
   }
 
-  friend std::ostream &operator<<(std::ostream &os,
-                                  const Edge<VertexType> &edge) {
-    os << edge.a << " <--> " << edge.b << " [" << edge.cost << "]";
-    return os;
-  }
-
   VertexType a;
   VertexType b;
   double cost;
@@ -58,14 +52,6 @@ compute_vertices(const std::vector<Edge<VertexType>> &edges) {
 template <typename VertexType> struct Graph {
   std::vector<Edge<VertexType>> edges;
   std::set<VertexType> vertices;
-
-  friend std::ostream &operator<<(std::ostream &os,
-                                  const Graph<VertexType> &graph) {
-    for (const auto &edge : graph.edges) {
-      std::cout << edge << std::endl;
-    }
-    return os;
-  }
 };
 
 template <typename VertexType>
@@ -279,6 +265,22 @@ Graph<VertexType> maximum_spanning_forest(const Graph<VertexType> &graph) {
     edge.cost *= -1;
   }
   return output;
+}
+
+template <typename VertexType>
+inline std::ostream &operator<<(std::ostream &os,
+                                const Edge<VertexType> &edge) {
+  os << edge.a << " <--> " << edge.b << " [" << edge.cost << "]";
+  return os;
+}
+
+template <typename VertexType>
+inline std::ostream &operator<<(std::ostream &os,
+                                const Graph<VertexType> &graph) {
+  for (const auto &edge : graph.edges) {
+    std::cout << edge << std::endl;
+  }
+  return os;
 }
 
 } // namespace albatross

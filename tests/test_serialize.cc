@@ -424,3 +424,29 @@ TEST(test_serialize, test_gp_serialize_version) {
 }
 
 } // namespace albatross
+
+namespace other {
+
+TEST(test_serialize, test_dataset_streamable) {
+
+  albatross::MarginalDistribution targets(Eigen::VectorXd(1));
+  RegressionDataset<int> dataset({1}, targets);
+  std::ostringstream oss;
+  oss << dataset;
+}
+
+TEST(test_serialize, test_marginal_streamable) {
+
+  albatross::MarginalDistribution dist(Eigen::VectorXd(1));
+  std::ostringstream oss;
+  oss << dist;
+}
+
+TEST(test_serialize, test_joint_streamable) {
+
+  albatross::JointDistribution dist(Eigen::VectorXd(1), Eigen::MatrixXd(1, 1));
+  std::ostringstream oss;
+  oss << dist;
+}
+
+} // namespace other
