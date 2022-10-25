@@ -651,9 +651,11 @@ private:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    *K_fu = this->covariance_function_(features, inducing_features);
+    *K_fu = compute_covariance_by_group(this->covariance_function_, this->independent_group_function_, features, inducing_features);
+    //*K_fu = this->covariance_function_(features, inducing_features);
 
-    auto K_uu = this->covariance_function_(inducing_features);
+    auto K_uu = compute_covariance_by_group(this->covariance_function_, this->independent_group_function_, inducing_features);
+    //auto K_uu = this->covariance_function_(inducing_features);
 
     K_uu.diagonal() +=
         inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
