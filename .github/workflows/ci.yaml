@@ -104,9 +104,6 @@ jobs:
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
           sudo apt-get update && \
           sudo apt-get install clang-14 clang-format-14
-      - name: Remove fortran compiler # fortran compiler breaks
-        run: |
-          sudo apt-get remove -y gfortran
       - name: Run Bazel
         env:
           CC: clang-14
