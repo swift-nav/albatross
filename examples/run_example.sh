@@ -1,4 +1,7 @@
 #! /bin/bash
+# Usages:
+# run_examples <BINARY> <ARGS>
+set -e
 
 BINARY=$(realpath $1)
 
