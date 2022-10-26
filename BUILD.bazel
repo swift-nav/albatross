@@ -137,7 +137,7 @@ swift_cc_library(
     deps = [
         "@cereal",
         "@eigen",
-        "@fast-cpp-csv-parser",
+        "@fast_csv",
         "@gzip",
         "@nlopt",
         "@variant",
@@ -209,4 +209,4 @@ swift_cc_test(
         ":albatross",
         "@gtest//:gtest_main",
     ],
-
+)

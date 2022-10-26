@@ -35,8 +35,8 @@ new_local_repository(
 )
 
 new_local_repository(
-    name = "fast-cpp-csv-parser",
-    build_file = "bazel/fast-cpp-csv-parser.BUILD",
+    name = "fast_csv",
+    build_file = "bazel/fast_csv.BUILD",
     path = "third_party/fast-cpp-csv-parser",
 )
 
