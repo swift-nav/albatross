@@ -1,0 +1,71 @@
+load(":example.bzl", "example")
+
+example(
+    name = "sinc",
+    srcs = [
+        "example_utils.h",
+        "sinc_example.cc",
+        "sinc_example_utils.h",
+    ],
+    args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv -tune > examples_out/sinc_example_output.txt",
+)
+
+example(
+    name = "sampler",
+    srcs = [
+        "example_utils.h",
+        "sampler_example.cc",
+        "sinc_example_utils.h",
+    ],
+    args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv --maxiter 100 > examples_out/sampler_example_output.txt",
+)
+
+example(
+    name = "inspection",
+    srcs = [
+        "example_utils.h",
+        "inspection.cc",
+    ],
+    args = "-input examples/inspection_input.csv",
+)
+
+example(
+    name = "temperature",
+    srcs = [
+        "example_utils.h",
+        "sinc_example_utils.h",
+        "temperature_example/temperature_example.cc",
+        "temperature_example/temperature_example_utils.h",
+    ],
+    args = "-input examples/temperature_example/gsod.csv -predict examples/temperature_example/prediction_locations.csv -output examples_out/test_temperature_predictions.csv -thin 5",
+)
+
+example(
+    name = "call-trace",
+    srcs = [
+        "call_trace_example.cc",
+        "example_utils.h",
+        "sinc_example_utils.h",
+    ],
+    args = "",
+)
+
+example(
+    name = "sparse",
+    srcs = [
+        "example_utils.h",
+        "sinc_example_utils.h",
+        "sparse_example.cc",
+    ],
+    args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv",
+)
+
+example(
+    name = "patchwork",
+    srcs = [
+        "example_utils.h",
+        "patchwork_example.cc",
+        "sinc_example_utils.h",
+    ],
+    args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv",
+)
