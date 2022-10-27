@@ -1,3 +1,5 @@
+load("//:copts.bzl", "COPTS")
+
 TAGS = ["manual"]
 
 DEPS = [
@@ -5,15 +7,13 @@ DEPS = [
     "@gflags",
 ]
 
-COPTS = ["-std=c++14"]
-
 def example(name, srcs, args):
     native.cc_binary(
         name = name,
         srcs = srcs,
-        copts = COPTS,
         tags = TAGS,
         deps = DEPS,
+        copts = COPTS,
     )
 
     native.sh_binary(

@@ -96,13 +96,6 @@ jobs:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-      - name: Install clang-14
-        run: |
-          sudo apt-get update && \
-          sudo apt-get install build-essential software-properties-common -y && \
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
-          sudo apt-get update && \
-          sudo apt-get install clang-14 clang-format-14
       - name: Run Bazel
         env:
           CC: clang-14

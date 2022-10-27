@@ -1,4 +1,5 @@
 load("//bazel:swift_cc_defs.bzl", "UNIT", "swift_cc_library", "swift_cc_test")
+load("//:copts.bzl", "COPTS")
 
 swift_cc_library(
     name = "albatross",
@@ -129,10 +130,7 @@ swift_cc_library(
         "include/albatross/utils/RandomUtils",
         "include/albatross/utils/VariantUtils",
     ],
-    includes = [
-        "include",
-        "tests",
-    ],
+    includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
         "@cereal",
@@ -201,7 +199,7 @@ swift_cc_test(
         "tests/test_utils.h",
         "tests/test_variant_utils.cc",
     ],
-    copts = ["-std=c++14"],
+    copts = COPTS,
     includes = ["tests"],
     linkopts = ["-lz"],
     type = UNIT,
