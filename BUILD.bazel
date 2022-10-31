@@ -1,7 +1,7 @@
-load("//bazel:swift_cc_defs.bzl", "UNIT", "swift_cc_library", "swift_cc_test")
+load("//bazel:swift_cc_defs.bzl", "UNIT", "swift_cc_test")
 load("//:copts.bzl", "COPTS")
 
-swift_cc_library(
+cc_library(
     name = "albatross",
     hdrs = [
         "include/albatross/Common",
