@@ -84,8 +84,10 @@ template <typename T> class is_streamable {
   template <typename> static std::false_type test(...);
 
 public:
-  static const bool value = decltype(test<T>(0))::value;
+  static constexpr bool value = decltype(test<T>(0))::value;
 };
+
+template <typename T> constexpr bool is_streamable<T>::value;
 
 /*
  * is_in_variant
