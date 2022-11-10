@@ -1,4 +1,4 @@
-load("//bazel:swift_cc_defs.bzl", "UNIT", "swift_cc_test")
+load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test")
 load("//:copts.bzl", "COPTS")
 
 cc_library(

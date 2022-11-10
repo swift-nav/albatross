@@ -25,6 +25,3 @@
 [submodule "third_party/nlopt"]
 	path = third_party/nlopt
 	url = https://github.com/swift-nav/nlopt.git
-[submodule "bazel"]
-	path = bazel
-	url = git@github.com:swift-nav/swiftnav-bazel.git
