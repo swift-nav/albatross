@@ -1,52 +1,12 @@
 workspace(name = "albatross")
 
-local_repository(
-    name = "gflags",
-    path = "third_party/googleflags",
-)
-
-local_repository(
-    name = "gtest",
-    path = "third_party/googletest",
-)
-
-new_local_repository(
-    name = "eigen",
-    build_file = "bazel/eigen.BUILD",
-    path = "third_party/eigen",
-)
-
-new_local_repository(
-    name = "gzip",
-    build_file = "bazel/gzip.BUILD",
-    path = "third_party/gzip-hpp",
-)
-
-new_local_repository(
-    name = "variant",
-    build_file = "bazel/variant.BUILD",
-    path = "third_party/variant",
-)
-
-new_local_repository(
-    name = "cereal",
-    build_file = "bazel/cereal.BUILD",
-    path = "third_party/cereal",
-)
-
-new_local_repository(
-    name = "fast_csv",
-    build_file = "bazel/fast_csv.BUILD",
-    path = "third_party/fast-cpp-csv-parser",
-)
-
-new_local_repository(
-    name = "nlopt",
-    build_file = "bazel/nlopt.BUILD",
-    path = "third_party/nlopt",
-)
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+    
+http_archive(
+    name = "rules_swiftnav",
+    strip_prefix = "rules_swiftnav-b80ca392ea24a14f8d810380b14495680255903b",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/b80ca392ea24a14f8d810380b14495680255903b.tar.gz",
+)
 
 # Rules for integrating with cmake builds
 http_archive(
@@ -71,3 +31,50 @@ http_archive(
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 hedron_compile_commands_setup()
+
+local_repository(
+    name = "gflags",
+    path = "third_party/googleflags",
+)
+
+local_repository(
+    name = "gtest",
+    path = "third_party/googletest",
+)
+
+new_local_repository(
+    name = "eigen",
+    build_file = "@rules_swiftnav//third_party:eigen.BUILD",
+    path = "third_party/eigen",
+)
+
+new_local_repository(
+    name = "gzip",
+    build_file = "@rules_swiftnav//third_party:gzip.BUILD",
+    path = "third_party/gzip-hpp",
+)
+
+new_local_repository(
+    name = "variant",
+    build_file = "@rules_swiftnav//third_party:variant.BUILD",
+    path = "third_party/variant",
+)
+
+new_local_repository(
+    name = "cereal",
+    build_file = "@rules_swiftnav//third_party:cereal.BUILD",
+    path = "third_party/cereal",
+)
+
+new_local_repository(
+    name = "fast_csv",
+    build_file = "@rules_swiftnav//third_party:fast_csv.BUILD",
+    path = "third_party/fast-cpp-csv-parser",
+)
+
+new_local_repository(
+    name = "nlopt",
+    build_file = "@rules_swiftnav//third_party:nlopt.BUILD",
+    path = "third_party/nlopt",
+)
+
