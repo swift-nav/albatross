@@ -54,8 +54,8 @@ public:
    * so you can move one if you move the rest the same amount.
    */
   template <typename X, typename Y>
-  double _call_impl(const X &x __attribute__((unused)),
-                    const Y &y __attribute__((unused))) const {
+  autodiff::var _call_impl(const X &x __attribute__((unused)),
+                           const Y &y __attribute__((unused))) const {
     return sigma_constant.value * sigma_constant.value;
   }
 };
@@ -101,7 +101,7 @@ public:
     offset = {0., GaussianPrior(0., 1000.)};
   }
 
-  double _call_impl(const double &x) const {
+  autodiff::var _call_impl(const double &x) const {
     return slope.value * x + offset.value;
   }
 };

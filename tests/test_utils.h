@@ -76,7 +76,7 @@ static inline void
 expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
                               const std::vector<ParameterValue> &y) {
   for (std::size_t i = 0; i < x.size(); i++) {
-    EXPECT_DOUBLE_EQ(x[i], y[i]);
+    EXPECT_DOUBLE_EQ(static_cast<double>(x[i]), static_cast<double>(y[i]));
   }
   EXPECT_EQ(x.size(), y.size());
 }
