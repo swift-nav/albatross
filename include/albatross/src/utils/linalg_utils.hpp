@@ -20,8 +20,10 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
   // Unfortunately the matrixR() method in Eigen's QR decomposition isn't
   // actually the R matrix, it's tall skinny matrix whose lower trapezoid
   // contains internal data, only the upper triangular portion is useful
+  //
+  // https://eigen.tuxfamily.org/dox/classEigen_1_1ColPivHouseholderQR.html#abe18678c6af88786f2902eeaf2483251
   return qr.matrixR()
-      .topRows(qr.matrixR().cols())
+      .topLeftCorner(qr.rank(), qr.rank())
       .template triangularView<Eigen::Upper>();
 }
 
@@ -32,7 +34,9 @@ template <typename MatrixType>
 inline Eigen::MatrixXd sqrt_solve(const Eigen::MatrixXd &R,
                                   const Eigen::VectorXi &permutation_indices,
                                   const MatrixType &rhs) {
-
+  // If `R` is not full-rank, the solve operation below isn't
+  // well-defined.
+  ALBATROSS_ASSERT(R.rows() == rhs.rows());
   Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
   for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {
     sqrt.row(i) = rhs.row(permutation_indices.coeff(i));
