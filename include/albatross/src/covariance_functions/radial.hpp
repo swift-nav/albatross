@@ -18,6 +18,97 @@ constexpr double default_radial_sigma = 10.;
 
 namespace albatross {
 
+inline auto block_squared_exponential_full(const std::vector<double> &xpoints,
+                                           const std::vector<double> &ypoints,
+                                           double length_scale, double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  return (-((xs.replicate(1, ysize).rowwise() - ys.transpose()).array().abs() /
+            length_scale)
+               .square())
+             .exp() *
+         sigma * sigma;
+}
+
+inline auto block_squared_exponential_full_rows(
+    const std::vector<double> &xpoints, const std::vector<double> &ypoints,
+    double length_scale, double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  return (-((ys.transpose().replicate(xsize, 1).colwise() - xs).array().abs() /
+            length_scale)
+               .square())
+             .exp() *
+         sigma * sigma;
+}
+
+inline auto block_squared_exponential_full_vecs(
+    const std::vector<double> &xpoints, const std::vector<double> &ypoints,
+    double length_scale, double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  return (-((ys.transpose() - xs).array().abs() / length_scale).square())
+             .exp() *
+         sigma * sigma;
+}
+
+inline auto block_squared_exponential_columns(
+    const std::vector<double> &xpoints, const std::vector<double> &ypoints,
+    double length_scale, double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  Eigen::MatrixXd output(xsize, ysize);
+  for (Eigen::Index col = 0; col < ysize; ++col) {
+    output.col(col) =
+        (-((ys(col) - xs.array()).abs() / length_scale).square()).exp() *
+        sigma * sigma;
+  }
+  return output;
+}
+
+inline auto squared_exponential_column_major(const std::vector<double> &xpoints,
+                                             const std::vector<double> &ypoints,
+                                             double length_scale,
+                                             double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  Eigen::MatrixXd output(xsize, ysize);
+  for (Eigen::Index col = 0; col < ysize; ++col) {
+    for (Eigen::Index row = 0; row < xsize; ++row) {
+      const double diff = fabs(xs(row) - ys(col)) / length_scale;
+      output(row, col) = sigma * sigma * exp(-diff * diff);
+    }
+  }
+  return output;
+}
+
+inline auto squared_exponential_row_major(const std::vector<double> &xpoints,
+                                          const std::vector<double> &ypoints,
+                                          double length_scale, double sigma) {
+  const auto xsize = static_cast<Eigen::Index>(xpoints.size());
+  const auto xs = Eigen::Map<const Eigen::VectorXd>(xpoints.data(), xsize);
+  const auto ysize = static_cast<Eigen::Index>(ypoints.size());
+  const auto ys = Eigen::Map<const Eigen::VectorXd>(ypoints.data(), ysize);
+  Eigen::MatrixXd output(xsize, ysize);
+  for (Eigen::Index row = 0; row < xsize; ++row) {
+    for (Eigen::Index col = 0; col < ysize; ++col) {
+      const double diff = fabs(xs(row) - ys(col)) / length_scale;
+      output(row, col) = sigma * sigma * exp(-diff * diff);
+    }
+  }
+  return output;
+}
+
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
@@ -35,7 +126,7 @@ inline double squared_exponential_covariance(double distance,
 template <class DistanceMetricType>
 class SquaredExponential
     : public CovarianceFunction<SquaredExponential<DistanceMetricType>> {
-public:
+ public:
   // The SquaredExponential radial function is not positive definite
   // when the distance is an angular (or great circle) distance.
   // See:
@@ -101,7 +192,7 @@ inline double exponential_covariance(double distance, double length_scale,
  */
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
-public:
+ public:
   ALBATROSS_DECLARE_PARAMS(exponential_length_scale, sigma_exponential);
 
   Exponential(double length_scale_ = default_length_scale,
@@ -143,5 +234,5 @@ public:
   DistanceMetricType distance_metric_;
 };
 
-} // namespace albatross
+}  // namespace albatross
 #endif

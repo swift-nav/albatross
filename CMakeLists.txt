@@ -27,6 +27,7 @@ find_package(FastCSV REQUIRED)
 find_package(Gzip-Hpp REQUIRED)
 find_package(Variant REQUIRED)
 find_package(Nlopt REQUIRED)
+find_package(Benchmark REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
@@ -88,3 +89,5 @@ endif()
 if(albatross_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+add_subdirectory(benchmark)

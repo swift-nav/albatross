@@ -46,6 +46,7 @@ add_executable(albatross_unit_tests
   test_traits_indexing.cc
   test_tune.cc
   test_variant_utils.cc
+  uninlineable.cc
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE
   "${gtest_SOURCE_DIR}"
