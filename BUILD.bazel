@@ -139,11 +139,12 @@ cc_library(
         "@gzip",
         "@nlopt",
         "@variant",
+        "@ThreadPool",
     ],
 )
 
 swift_cc_test(
-    name = "albatorss-test",
+    name = "albatross-test",
     srcs = [
         "tests/mock_model.h",
         "tests/test_apply.cc",
@@ -189,6 +190,7 @@ swift_cc_test(
         "tests/test_serialize.h",
         "tests/test_sparse_gp.cc",
         "tests/test_stats.cc",
+        "tests/test_thread_pool.cc",
         "tests/test_traits_cereal.cc",
         "tests/test_traits_core.cc",
         "tests/test_traits_covariance_functions.cc",
@@ -207,5 +209,6 @@ swift_cc_test(
     deps = [
         ":albatross",
         "@gtest//:gtest_main",
+        "@zlib",
     ],
 )

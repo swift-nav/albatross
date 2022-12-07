@@ -78,3 +78,8 @@ new_local_repository(
     path = "third_party/nlopt",
 )
 
+new_local_repository(
+    name = "ThreadPool",
+    build_file = "@rules_swiftnav//third_party:ThreadPool.BUILD",
+    path = "third_party/ThreadPool",
+)
