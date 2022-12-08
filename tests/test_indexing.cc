@@ -338,4 +338,34 @@ TEST(test_indexing, test_is_subsetable) {
   EXPECT_FALSE(bool(details::is_subsetable<std::map<int, int>>::value));
 }
 
+TEST(test_indexing, test_partition_triangular) {
+  // Exhaustive testing
+  constexpr Eigen::Index kLotsOfThreads = 129;
+  constexpr Eigen::Index kSmall = 128;
+  constexpr Eigen::Index kBig = 1 << 17;
+
+  const auto compute_area = [](const auto idxs) {
+    return (idxs.second * idxs.second - idxs.first * idxs.first) / 2;
+  };
+
+  for (Eigen::Index size = kSmall; size < kBig; size = (size * 3) / 2) {
+    for (Eigen::Index count = 1; count < kLotsOfThreads; ++count) {
+      const auto blocks = detail::partition_triangular(size, count);
+      EXPECT_EQ(blocks.size(), static_cast<std::size_t>(count));
+      EXPECT_EQ(blocks.front().first, 0);
+      EXPECT_EQ(blocks.back().second, size);
+      for (std::size_t i = 1; i < blocks.size(); ++i) {
+        EXPECT_EQ(blocks[i - 1].second, blocks[i].first);
+      }
+
+      const auto expected_area = size * size / (2 * count);
+      for (const auto &block : blocks) {
+        // Maximum discrepancy should be the cost of having to round the
+        // index of the taller column
+        EXPECT_LE(abs(compute_area(block) - expected_area), block.second);
+      }
+    }
+  }
+}
+
 } // namespace albatross

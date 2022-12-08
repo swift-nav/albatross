@@ -129,11 +129,12 @@ public:
   template <typename X,
             typename std::enable_if<has_valid_caller<Derived, X, X>::value,
                                     int>::type = 0>
-  Eigen::MatrixXd operator()(const std::vector<X> &xs) const {
+  Eigen::MatrixXd operator()(const std::vector<X> &xs,
+                             ThreadPool *pool = nullptr) const {
     auto caller = [&](const auto &x, const auto &y) {
       return this->call(x, y);
     };
-    return compute_covariance_matrix(caller, xs);
+    return compute_covariance_matrix(caller, xs, pool);
   }
 
   /*
@@ -142,12 +143,12 @@ public:
   template <typename X, typename Y,
             typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
                                     int>::type = 0>
-  Eigen::MatrixXd operator()(const std::vector<X> &xs,
-                             const std::vector<Y> &ys) const {
+  Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
+                             ThreadPool *pool = nullptr) const {
     auto caller = [&](const auto &x, const auto &y) {
       return this->call(x, y);
     };
-    return compute_covariance_matrix(caller, xs, ys);
+    return compute_covariance_matrix(caller, xs, ys, pool);
   }
 
   /*

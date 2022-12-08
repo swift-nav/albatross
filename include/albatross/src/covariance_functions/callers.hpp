@@ -60,6 +60,48 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
 }
 
 /*
+ * Multithreaded cross covariance between two vectors of (possibly)
+ * different types.
+ */
+template <typename CovFuncCaller, typename X, typename Y>
+inline Eigen::MatrixXd
+compute_covariance_matrix(CovFuncCaller caller, const std::vector<X> &xs,
+                          const std::vector<Y> &ys, ThreadPool *pool) {
+  static_assert(is_invocable<CovFuncCaller, X, Y>::value,
+                "caller does not support the required arguments");
+  static_assert(is_invocable_with_result<CovFuncCaller, double, X, Y>::value,
+                "caller does not return a double");
+  if (detail::should_serial_apply(pool)) {
+    return compute_covariance_matrix(caller, xs, ys);
+  }
+
+  // Here we use `ceil()` because it should be faster to have one
+  // block slightly smaller than slightly larger.
+  const auto block_size = static_cast<Eigen::Index>(
+      ceil(cast::to_double(ys.size()) / cast::to_double(pool->thread_count())));
+  const auto num_rows = cast::to_index(xs.size());
+  const auto num_cols = cast::to_index(ys.size());
+  Eigen::MatrixXd output(num_rows, num_cols);
+
+  const auto apply_block = [&](const Eigen::Index block_index) {
+    const auto start = block_index * block_size;
+    const auto end = std::min(num_cols, (block_index + 1) * block_size);
+    for (Eigen::Index col = start; col < end; ++col) {
+      const auto yidx = cast::to_size(col);
+      for (Eigen::Index row = 0; row < num_rows; ++row) {
+        const auto xidx = cast::to_size(row);
+        output(row, col) = caller(xs[xidx], ys[yidx]);
+      }
+    }
+  };
+  std::vector<Eigen::Index> block_indices(pool->thread_count());
+  std::iota(block_indices.begin(), block_indices.end(), 0);
+
+  apply(block_indices, apply_block, pool);
+  return output;
+}
+
+/*
  * Cross covariance between all elements of a vector.
  */
 template <typename CovFuncCaller, typename X>
@@ -84,6 +126,43 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
     }
   }
   return C;
+}
+
+/*
+ * Cross covariance between all elements of a vector.
+ */
+template <typename CovFuncCaller, typename X>
+inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
+                                                 const std::vector<X> &xs,
+                                                 ThreadPool *pool) {
+  static_assert(is_invocable<CovFuncCaller, X, X>::value,
+                "caller does not support the required arguments");
+  static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
+                "caller does not return a double");
+  if (detail::should_serial_apply(pool)) {
+    return compute_covariance_matrix(caller, xs);
+  }
+
+  const auto size = cast::to_index(xs.size());
+  Eigen::MatrixXd output(size, size);
+
+  const auto apply_block = [&](const auto indices) {
+    for (Eigen::Index col = indices.first; col < indices.second; ++col) {
+      const auto vcol = cast::to_size(col);
+      for (Eigen::Index row = 0; row <= col; ++row) {
+        const auto vrow = cast::to_size(row);
+        output(row, col) = caller(xs[vrow], xs[vcol]);
+      }
+    }
+  };
+
+  const auto block_count = cast::to_index(pool->thread_count());
+  const auto blocks = detail::partition_triangular(size, block_count);
+  apply(blocks, apply_block, pool);
+
+  // Copy upper triangle to lower.
+  output.triangularView<Eigen::Lower>() = output.transpose();
+  return output;
 }
 
 /*
