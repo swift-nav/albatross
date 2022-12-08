@@ -332,11 +332,7 @@ public:
         old_fit.sigma_R.template triangularView<Eigen::Upper>() *
         y_augmented.topRows(n_old);
 
-    if (Base::use_async_) {
-      y_augmented.bottomRows(n_new) = A_ldlt.async_sqrt_solve(y);
-    } else {
-      y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y);
-    }
+    y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
     const Eigen::VectorXd v = B_qr.solve(y_augmented);
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
@@ -385,11 +381,7 @@ public:
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
-    if (Base::use_async_) {
-      y_augmented.topRows(y.size()) = A_ldlt.async_sqrt_solve(y);
-    } else {
-      y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y);
-    }
+    y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
     const Eigen::VectorXd v = B_qr.solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;

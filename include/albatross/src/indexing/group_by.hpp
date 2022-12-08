@@ -154,8 +154,9 @@ public:
     return albatross::apply(map_, std::forward<ApplyFunction>(f));
   }
 
-  template <typename ApplyFunction> auto async_apply(ApplyFunction &&f) const {
-    return albatross::async_apply(map_, std::forward<ApplyFunction>(f));
+  template <typename ApplyFunction>
+  auto apply(ApplyFunction &&f, ThreadPool *pool) const {
+    return albatross::apply(map_, std::forward<ApplyFunction>(f), pool);
   }
 
 protected:
@@ -504,8 +505,8 @@ public:
   }
 
   template <typename ApplyFunction>
-  auto async_apply(const ApplyFunction &f) const {
-    return groups().async_apply(f);
+  auto apply(const ApplyFunction &f, ThreadPool *pool) const {
+    return groups().apply(f, pool);
   }
 
   ValueType get_group(const KeyType &key) const {

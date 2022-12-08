@@ -17,8 +17,7 @@ namespace albatross {
 template <typename Function>
 inline std::vector<double>
 compute_gradient(Function f, const std::vector<double> &params, double f_val,
-                 bool use_async = false) {
-
+                 ThreadPool *threads = nullptr) {
   std::vector<std::size_t> inds(params.size());
   std::iota(std::begin(inds), std::end(inds), 0);
   const double epsilon = 1e-6;
@@ -29,18 +28,13 @@ compute_gradient(Function f, const std::vector<double> &params, double f_val,
     return (f(perturbed) - f_val) / epsilon;
   };
 
-  if (use_async) {
-    return albatross::async_apply(inds, compute_single_gradient);
-  } else {
-    return albatross::apply(inds, compute_single_gradient);
-  }
+  return albatross::apply(inds, compute_single_gradient, threads);
 }
 
 template <typename Function>
 inline std::vector<double>
 compute_gradient(Function f, const ParameterStore &params, double f_val,
-                 bool use_async = false) {
-
+                 ThreadPool *threads = nullptr) {
   TunableParameters tunable_params = get_tunable_parameters(params);
 
   std::vector<std::size_t> inds(tunable_params.values.size());
@@ -83,11 +77,7 @@ compute_gradient(Function f, const ParameterStore &params, double f_val,
     return grad_i;
   };
 
-  if (use_async) {
-    return albatross::async_apply(inds, compute_single_sub_gradient);
-  } else {
-    return albatross::apply(inds, compute_single_sub_gradient);
-  }
+  return albatross::apply(inds, compute_single_sub_gradient, threads);
 }
 
 } // namespace albatross

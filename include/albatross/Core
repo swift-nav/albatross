@@ -16,6 +16,7 @@
 #include "Dataset"
 
 #include <type_traits>
+#include <ThreadPool.h>
 
 #include <albatross/src/core/traits.hpp>
 #include <albatross/src/core/priors.hpp>

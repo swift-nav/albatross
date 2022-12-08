@@ -15,15 +15,13 @@
 
 namespace albatross {
 
-// This method makes sure we don't accidentally call async with the
-// default mode which has some flaws:
-//
-// https://eli.thegreenplace.net/2016/the-promises-and-challenges-of-stdasync-task-based-parallelism-in-c11/
-template <typename F, typename... Ts>
-inline auto async_safe(F &&f, Ts &&...params) {
-  return std::async(std::launch::async, std::forward<F>(f),
-                    std::forward<Ts>(params)...);
+namespace detail {
+
+inline bool should_serial_apply(ThreadPool *pool) {
+  return (nullptr == pool) || (pool->thread_count() <= 1);
 }
+
+} // namespace detail
 
 template <typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
@@ -32,11 +30,16 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline void async_apply(const std::vector<ValueType> &xs,
-                        const ApplyFunction &func) {
+inline void apply(const std::vector<ValueType> &xs, const ApplyFunction &func,
+                  ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    apply(xs, func);
+    return;
+  }
+
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(func, x));
+    futures.emplace_back(pool->enqueue(func, x));
   }
   for (auto &f : futures) {
     f.get();
@@ -50,11 +53,15 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline auto async_apply(const std::vector<ValueType> &xs,
-                        const ApplyFunction &func) {
+inline auto apply(const std::vector<ValueType> &xs, const ApplyFunction &func,
+                  ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    return apply(xs, func);
+  }
+
   std::vector<std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(func, x));
+    futures.emplace_back(pool->enqueue(func, x));
   }
 
   std::vector<ApplyType> output;
@@ -72,11 +79,16 @@ template <template <typename...> class Map, typename KeyType,
                                       ApplyFunction, ValueType>::value &&
                                       std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline void async_apply_map(const Map<KeyType, ValueType> &xs,
-                            const ApplyFunction &func) {
+inline void apply_map(const Map<KeyType, ValueType> &xs,
+                      const ApplyFunction &func, ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    apply_map(xs, func);
+    return;
+  }
+
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(func, x.second));
+    futures.emplace_back(pool->enqueue(func, x.second));
   }
   for (auto &f : futures) {
     f.get();
@@ -91,11 +103,16 @@ template <template <typename...> class Map, typename KeyType,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline Grouped<KeyType, ApplyType>
-async_apply_map(const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+inline Grouped<KeyType, ApplyType> apply_map(const Map<KeyType, ValueType> &xs,
+                                             const ApplyFunction &func,
+                                             ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    return apply_map(xs, func);
+  }
+
   Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures[x.first] = async_safe(func, x.second);
+    futures[x.first] = pool->enqueue(func, x.second);
   }
 
   Grouped<KeyType, ApplyType> output;
@@ -114,11 +131,16 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-inline void async_apply_map(const Map<KeyType, ValueType> &xs,
-                            const ApplyFunction &func) {
+inline void apply_map(const Map<KeyType, ValueType> &xs,
+                      const ApplyFunction &func, ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    apply_map(xs, func);
+    return;
+  }
+
   std::vector<std::future<void>> futures;
   for (const auto &x : xs) {
-    futures.emplace_back(async_safe(func, x.first, x.second));
+    futures.emplace_back(pool->enqueue(func, x.first, x.second));
   }
   for (auto &f : futures) {
     f.get();
@@ -134,11 +156,16 @@ template <
                                 ApplyFunction, KeyType, ValueType>::value &&
                                 !std::is_same<void, ApplyType>::value,
                             int>::type = 0>
-inline Grouped<KeyType, ApplyType>
-async_apply_map(const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
+inline Grouped<KeyType, ApplyType> apply_map(const Map<KeyType, ValueType> &xs,
+                                             const ApplyFunction &func,
+                                             ThreadPool *pool) {
+  if (detail::should_serial_apply(pool)) {
+    return apply_map(xs, func);
+  }
+
   Grouped<KeyType, std::future<ApplyType>> futures;
   for (const auto &x : xs) {
-    futures[x.first] = async_safe(func, x.first, x.second);
+    futures[x.first] = pool->enqueue(func, x.first, x.second);
   }
 
   Grouped<KeyType, ApplyType> output;
@@ -149,15 +176,41 @@ async_apply_map(const Map<KeyType, ValueType> &xs, const ApplyFunction &func) {
 }
 
 template <typename KeyType, typename ValueType, typename ApplyFunction>
-inline auto async_apply(const std::map<KeyType, ValueType> &map,
-                        ApplyFunction &&f) {
-  return async_apply_map(map, std::forward<ApplyFunction>(f));
+inline auto apply(const std::map<KeyType, ValueType> &map, ApplyFunction &&f,
+                  ThreadPool *pool) {
+  return apply_map(map, std::forward<ApplyFunction>(f), pool);
 }
 
 template <typename KeyType, typename ValueType, typename ApplyFunction>
-inline auto async_apply(const Grouped<KeyType, ValueType> &map,
-                        ApplyFunction &&f) {
-  return async_apply_map(map, std::forward<ApplyFunction>(f));
+inline auto apply(const Grouped<KeyType, ValueType> &map, ApplyFunction &&f,
+                  ThreadPool *pool) {
+  return apply_map(map, std::forward<ApplyFunction>(f), pool);
+}
+
+// Returns the number of threads that the hardware supports cores, or
+// 1 if there was a problem calculating that..
+inline std::size_t get_default_thread_count() {
+  // This standard function is not guaranteed to return nonzero.
+  return std::max(std::size_t{1},
+                  std::size_t{std::thread::hardware_concurrency()});
+}
+
+// A thread pool object that performs normal serial evaluation.
+static constexpr std::nullptr_t serial_thread_pool = nullptr;
+
+// Returns a thread pool.  By default, the thread pool has
+// `get_default_thread_count()` threads.
+inline std::shared_ptr<ThreadPool>
+make_shared_thread_pool(std::size_t threads = 0) {
+  if (threads == 1) {
+    return serial_thread_pool;
+  }
+
+  if (threads < 1) {
+    threads = get_default_thread_count();
+  }
+
+  return std::make_shared<ThreadPool>(threads);
 }
 
 } // namespace albatross

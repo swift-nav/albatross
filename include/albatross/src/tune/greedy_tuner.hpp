@@ -103,9 +103,8 @@ template <typename Function>
 inline ParameterStore
 greedy_tune(Function evaluate_function, const ParameterStore &params,
             std::size_t n_queries_each_direction = 4,
-            std::size_t n_iterations = 10, bool use_async = true,
+            std::size_t n_iterations = 10, ThreadPool *threads = nullptr,
             std::ostream *os = &std::cout) {
-
   static_assert(
       has_call_operator<Function, ParameterStore>::value,
       "evaluate_function must have a single ParameterStore argument.");
@@ -162,15 +161,8 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
         (*os) << std::endl;
       }
 
-      auto evaluate = [&]() {
-        if (use_async) {
-          return async_apply(proposed_params, evaluate_function);
-        } else {
-          return apply(proposed_params, evaluate_function);
-        }
-      };
-
-      const auto evaluations = evaluate();
+      const auto evaluations =
+          apply(proposed_params, evaluate_function, threads);
 
       if (os) {
         (*os) << "EVALUATIONS: " << std::endl;

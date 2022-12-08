@@ -28,7 +28,13 @@ template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
   template <typename T, typename FeatureType> friend class fit_model_type;
 
 protected:
-  ModelBase() : insights(), use_async_(DEFAULT_USE_ASYNC){};
+  ModelBase()
+      : insights(),
+        threads_(DEFAULT_USE_ASYNC
+                     ? std::make_shared<ThreadPool>(std::max(
+                           std::size_t{1},
+                           std::size_t{std::thread::hardware_concurrency()}))
+                     : nullptr){};
 
   /*
    * Fit
@@ -122,7 +128,9 @@ public:
     return derived().name();
   }
 
-  void set_async_flag(const bool use_async) { use_async_ = use_async; }
+  void set_thread_pool(std::shared_ptr<ThreadPool> new_pool) {
+    threads_ = new_pool;
+  }
 
   template <typename FeatureType>
   auto fit(const std::vector<FeatureType> &features,
@@ -154,7 +162,7 @@ public:
                                      const RansacConfig &) const;
 
   Insights insights;
-  bool use_async_;
+  std::shared_ptr<ThreadPool> threads_;
 };
 } // namespace albatross
 #endif
