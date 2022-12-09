@@ -378,13 +378,13 @@ public:
           "CovFunc is not defined for FeatureType and FitFeatureType");
 
   template <typename Solver, typename FeatureType, typename UpdateFeatureType>
-  auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit,
+  auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit_,
                     const std::vector<UpdateFeatureType> &features,
                     const MarginalDistribution &targets) const {
 
-    const auto new_features = concatenate(fit.train_features, features);
+    const auto new_features = concatenate(fit_.train_features, features);
 
-    auto pred = this->_predict_impl(features, fit,
+    auto pred = this->_predict_impl(features, fit_,
                                     PredictTypeIdentity<JointDistribution>());
 
     Eigen::VectorXd delta = targets.mean - pred.mean;
@@ -392,16 +392,16 @@ public:
     const auto S_ldlt = pred.covariance.ldlt();
 
     const Eigen::MatrixXd cross =
-        covariance_function_(fit.train_features, features);
+        covariance_function_(fit_.train_features, features);
 
     const auto new_covariance =
-        build_block_symmetric(fit.train_covariance, cross, S_ldlt);
+        build_block_symmetric(fit_.train_covariance, cross, S_ldlt);
 
     const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
 
     Eigen::VectorXd new_information(new_covariance.rows());
-    new_information.topRows(fit.train_covariance.rows()) =
-        fit.information - new_covariance.Ai_B * Si_delta;
+    new_information.topRows(fit_.train_covariance.rows()) =
+        fit_.information - new_covariance.Ai_B * Si_delta;
     new_information.bottomRows(S_ldlt.rows()) = Si_delta;
 
     using NewFeatureType = typename decltype(new_features)::value_type;

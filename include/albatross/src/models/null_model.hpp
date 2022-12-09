@@ -55,7 +55,7 @@ public:
   template <typename FeatureType>
   JointDistribution
   _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<NullModel> &fit ALBATROSS_UNUSED,
+                const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
                 PredictTypeIdentity<JointDistribution> &&) const {
     const Eigen::Index n = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(n);
@@ -66,7 +66,7 @@ public:
   template <typename FeatureType>
   MarginalDistribution
   _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<NullModel> &fit ALBATROSS_UNUSED,
+                const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
     const Eigen::Index en = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(en);

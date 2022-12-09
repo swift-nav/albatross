@@ -311,9 +311,9 @@ public:
                          const GroupIndexer<GroupKey> &indexer) const {
     const auto folds = folds_from_group_indexer(dataset, indexer);
     const auto prediction = predict(dataset, indexer);
-    const auto predictions =
+    const auto predictions_ =
         prediction.template get<Grouped<GroupKey, RequiredPredictType>>();
-    return cross_validated_scores(metric, folds, predictions);
+    return cross_validated_scores(metric, folds, predictions_);
   }
 
   template <typename RequiredPredictType, typename FeatureType,

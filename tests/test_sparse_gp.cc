@@ -105,27 +105,27 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 
 TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
 
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto covariance = make_simple_covariance_function();
 
   // When the length scale is large the model with more inducing points
   // gets very nearly singular.  this checks to make sure that's dealt with
   // gracefully.
   covariance.set_param_value("squared_exponential_length_scale", 1000.);
-  expect_sparse_gp_performance(covariance, grouper, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5);
 
   covariance.set_param_value("squared_exponential_length_scale", 100.);
-  expect_sparse_gp_performance(covariance, grouper, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5);
 
   // Then when the length scale is shorter, the really sparse model
   // should become significantly worse than the sparse one.
   covariance.set_param_value("squared_exponential_length_scale", 10.);
-  expect_sparse_gp_performance(covariance, grouper, 5e-2, 100.);
+  expect_sparse_gp_performance(covariance, grouper_, 5e-2, 100.);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
 
   auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
 
@@ -146,7 +146,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   UniformlySpacedInducingPoints strategy(100);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
 
   sparse.set_param_value("inducing_nugget", 1e-6);
 
@@ -162,13 +162,13 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
 TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
 
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto dataset = make_toy_sine_data(5., 10., 0.1, 12);
   auto covariance = make_simple_covariance_function();
 
   UniformlySpacedInducingPoints strategy(2);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
   const auto inducing_points = strategy(covariance, dataset.features);
   // We need to make sure the priors on the parameters don't enter
   // into the log_likelihood computation.
@@ -190,7 +190,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
   const Eigen::MatrixXd Q_ff = K_fu * (K_uu.ldlt().solve(K_fu.transpose()));
 
   Eigen::MatrixXd K = Q_ff;
-  const auto indexers = group_by(dataset.features, grouper).indexers();
+  const auto indexers = group_by(dataset.features, grouper_).indexers();
   for (const auto &idx_pair : indexers) {
     for (const std::size_t i : idx_pair.second) {
       for (const std::size_t j : idx_pair.second) {
@@ -243,7 +243,7 @@ TEST(test_sparse_gp, test_update_exists) {
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_update) {
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -254,11 +254,11 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
-  auto groups = dataset.group_by(grouper).groups();
+  auto groups = dataset.group_by(grouper_).groups();
   const std::size_t num_groups = groups.size();
 
   const auto held_out_pair = groups.first_group();
@@ -323,7 +323,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -334,7 +334,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
@@ -367,17 +367,17 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
 
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
 
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
   UniformlySpacedInducingPoints strategy(10);
   auto model =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
   const auto inducing_points = strategy(covariance, dataset.features);
   auto test_features = linspace(0.1, 9.9, 5);
 
-  const auto grouped = dataset.group_by(grouper).groups();
+  const auto grouped = dataset.group_by(grouper_).groups();
   auto iteratively_fit_model = model.fit(grouped.first_value());
 
   // The first fit is going to space the inducing points only over the
@@ -406,7 +406,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
-  auto grouper = this->grouper;
+  auto &grouper_ = this->grouper;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -417,7 +417,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
