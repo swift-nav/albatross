@@ -293,7 +293,7 @@ typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
                          MakeRansacAdaptedGaussianProcess, MakeNullModel>
     ExampleModels;
 
-TYPED_TEST_CASE_P(RegressionModelTester);
+TYPED_TEST_SUITE_P(RegressionModelTester);
 
 enum PredictLevel { MEAN, MARGINAL, JOINT };
 

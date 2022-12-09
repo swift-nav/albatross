@@ -92,7 +92,7 @@ public:
 using StateSpaceTestCases =
     ::testing::Types<SquaredExponentialSSRTest, ExponentialSSRTest,
                      ExponentialAngularSSRTest>;
-TYPED_TEST_CASE(CovarianceStateSpaceTester, StateSpaceTestCases);
+TYPED_TEST_SUITE(CovarianceStateSpaceTester, StateSpaceTestCases);
 
 TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
 

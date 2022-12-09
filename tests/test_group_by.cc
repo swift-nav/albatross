@@ -166,7 +166,7 @@ typedef ::testing::Types<BoolClassMethodGrouper, BoolLambdaGrouper,
                          CustomFunctionGrouper>
     GrouperTestCases;
 
-TYPED_TEST_CASE_P(GroupByTester);
+TYPED_TEST_SUITE_P(GroupByTester);
 
 template <typename GrouperFunction, typename ValueType,
           typename GroupKey = typename details::grouper_result<GrouperFunction,
@@ -352,14 +352,14 @@ TYPED_TEST_P(GroupByTester, test_groupby_filter) {
             filtered.size());
 }
 
-REGISTER_TYPED_TEST_CASE_P(GroupByTester, test_groupby_access_methods,
-                           test_groupby_groups, test_groupby_counts,
-                           test_groupby_combine, test_groupby_modify_combine,
-                           test_groupby_apply_combine, test_groupby_apply_void,
-                           test_groupby_filter, test_groupby_apply_value_only,
-                           test_groupby_index_apply);
+REGISTER_TYPED_TEST_SUITE_P(GroupByTester, test_groupby_access_methods,
+                            test_groupby_groups, test_groupby_counts,
+                            test_groupby_combine, test_groupby_modify_combine,
+                            test_groupby_apply_combine, test_groupby_apply_void,
+                            test_groupby_filter, test_groupby_apply_value_only,
+                            test_groupby_index_apply);
 
-INSTANTIATE_TYPED_TEST_CASE_P(test_groupby, GroupByTester, GrouperTestCases);
+INSTANTIATE_TYPED_TEST_SUITE_P(test_groupby, GroupByTester, GrouperTestCases);
 
 /*
  * Test Filtering

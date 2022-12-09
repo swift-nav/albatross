@@ -88,7 +88,7 @@ typedef ::testing::Types<SquareClassMethodApply, SquareFunctionPointerApply,
                          SquareFunctionApply, SquareLambdaApply>
     ApplyTestCases;
 
-TYPED_TEST_CASE_P(ApplyTester);
+TYPED_TEST_SUITE_P(ApplyTester);
 
 TYPED_TEST_P(ApplyTester, test_apply_sanity) {
   auto parent = this->test_case.get_parent();
@@ -102,9 +102,9 @@ TYPED_TEST_P(ApplyTester, test_apply_sanity) {
   EXPECT_EQ(expected, actual);
 }
 
-REGISTER_TYPED_TEST_CASE_P(ApplyTester, test_apply_sanity);
+REGISTER_TYPED_TEST_SUITE_P(ApplyTester, test_apply_sanity);
 
-INSTANTIATE_TYPED_TEST_CASE_P(test_apply, ApplyTester, ApplyTestCases);
+INSTANTIATE_TYPED_TEST_SUITE_P(test_apply, ApplyTester, ApplyTestCases);
 
 TEST(test_apply, test_vector_apply_free_function) {
 

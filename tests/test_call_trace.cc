@@ -146,7 +146,7 @@ typedef ::testing::Types<SumXandXY, SumXandY, SumSumXandYandXY, ProdXandXY,
                          ProdSumXandXYProdXandXY>
     TestFunctions;
 
-TYPED_TEST_CASE(TestCallTreeCovarianceFunctions, TestFunctions);
+TYPED_TEST_SUITE(TestCallTreeCovarianceFunctions, TestFunctions);
 
 TYPED_TEST(TestCallTreeCovarianceFunctions, prints_call_trace) {
   X x;

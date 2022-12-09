@@ -121,12 +121,12 @@ TYPED_TEST_P(RegressionModelTester, test_score_variants) {
   }
 }
 
-REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_loo_predict_variants,
-                           test_logo_predict_variants, test_loo_get_predictions,
-                           test_score_variants);
+REGISTER_TYPED_TEST_SUITE_P(RegressionModelTester, test_loo_predict_variants,
+                            test_logo_predict_variants,
+                            test_loo_get_predictions, test_score_variants);
 
-INSTANTIATE_TYPED_TEST_CASE_P(test_cross_validation, RegressionModelTester,
-                              ExampleModels);
+INSTANTIATE_TYPED_TEST_SUITE_P(test_cross_validation, RegressionModelTester,
+                               ExampleModels);
 
 /*
  * Here we build two different datasets.  Each dataset consists of targets
@@ -234,7 +234,7 @@ public:
 typedef ::testing::Types<MakeLargeGaussianProcess,
                          MakeLargeAdaptedGaussianProcess>
     SpecializedModels;
-TYPED_TEST_CASE(SpecializedCrossValidationTester, SpecializedModels);
+TYPED_TEST_SUITE(SpecializedCrossValidationTester, SpecializedModels);
 
 TYPED_TEST(SpecializedCrossValidationTester,
            test_uses_specialized_cross_validation_functions) {
