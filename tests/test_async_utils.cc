@@ -105,7 +105,7 @@ TEST(test_async_utils, test_async_apply_speedup_vector) {
 
   std::vector<int> inds;
   for (std::size_t i = 0; i < 4; ++i) {
-    inds.push_back(i);
+    inds.push_back(static_cast<int>(i));
   }
 
   const auto start = std::chrono::system_clock::now();

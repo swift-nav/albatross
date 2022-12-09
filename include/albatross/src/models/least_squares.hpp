@@ -57,11 +57,11 @@ public:
     // variance (or zero variance).
     ALBATROSS_ASSERT(all_same_value(targets.covariance.diagonal()));
     // Build the design matrix
-    int m = static_cast<int>(features.size());
-    int n = static_cast<int>(features[0].size());
+    const Eigen::Index m = cast::to_index(features.size());
+    const Eigen::Index n = features[0].size();
     Eigen::MatrixXd A(m, n);
-    for (int i = 0; i < m; i++) {
-      A.row(i) = features[static_cast<std::size_t>(i)];
+    for (Eigen::Index i = 0; i < m; i++) {
+      A.row(i) = features[cast::to_size(i)];
     }
 
     FitType model_fit = {least_squares_solver(A, targets.mean)};
@@ -71,11 +71,10 @@ public:
   Eigen::VectorXd _predict_impl(const std::vector<Eigen::VectorXd> &features,
                                 const FitType &least_squares_fit,
                                 PredictTypeIdentity<Eigen::VectorXd>) const {
-    std::size_t n = features.size();
+    const auto n = cast::to_index(features.size());
     Eigen::VectorXd mean(n);
-    for (std::size_t i = 0; i < n; i++) {
-      mean(static_cast<Eigen::Index>(i)) =
-          features[i].dot(least_squares_fit.coefs);
+    for (Eigen::Index i = 0; i < n; i++) {
+      mean(i) = features[cast::to_size(i)].dot(least_squares_fit.coefs);
     }
     return Eigen::VectorXd(mean);
   }

@@ -31,9 +31,9 @@ static inline auto make_toy_sine_data(const double a = 5., const double b = 10.,
   Eigen::VectorXd targets(n);
 
   for (std::size_t i = 0; i < n; i++) {
-    double x = static_cast<double>(i);
+    const double x = cast::to_double(i);
     features.push_back(x);
-    targets[i] = a * sin(x * b) + d(gen);
+    targets[cast::to_index(i)] = a * sin(x * b) + d(gen);
   }
 
   return RegressionDataset<double>(features, targets);
@@ -51,9 +51,9 @@ static inline auto make_toy_linear_data(const double a = 5.,
   Eigen::VectorXd targets(n);
 
   for (std::size_t i = 0; i < n; i++) {
-    double x = static_cast<double>(i);
+    const double x = cast::to_double(i);
     features.push_back(x);
-    targets[i] = a + x * b + d(gen);
+    targets[cast::to_index(i)] = a + x * b + d(gen);
   }
 
   return RegressionDataset<double>(features, targets);
@@ -96,7 +96,7 @@ make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
   auto variance = Eigen::VectorXd(targets.size());
 
   for (int i = 0; i < targets.size(); i++) {
-    double std = 0.1 * fabs(dataset.features[i]);
+    double std = 0.1 * fabs(dataset.features[cast::to_size(i)]);
     targets[i] += std * d(gen);
     variance[i] = sigma * sigma + std * std;
   }
@@ -141,10 +141,10 @@ static inline auto make_adapted_toy_linear_data(const double a = 5.,
 }
 
 inline auto random_spherical_points(std::size_t n = 10, double radius = 1.,
-                                    int seed = 5) {
+                                    std::size_t seed = 5) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
-  gen.seed(seed);
+  gen.seed(static_cast<std::mt19937::result_type>(seed));
 
   std::uniform_real_distribution<double> rand_lon(0., 2 * M_PI);
   std::uniform_real_distribution<double> rand_lat(-M_PI / 2., M_PI / 2.);

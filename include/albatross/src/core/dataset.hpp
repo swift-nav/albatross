@@ -174,8 +174,10 @@ template <typename X,
 inline std::ostream &operator<<(std::ostream &os,
                                 const RegressionDataset<X> &dataset) {
   for (std::size_t i = 0; i < dataset.size(); ++i) {
-    os << dataset.features[i] << "    " << dataset.targets.mean[i] << "   +/- "
-       << std::sqrt(dataset.targets.get_diagonal(i)) << std::endl;
+    os << dataset.features[i] << "    "
+       << dataset.targets.mean[cast::to_index(i)] << "   +/- "
+       << std::sqrt(dataset.targets.get_diagonal(cast::to_index(i)))
+       << std::endl;
   }
   return os;
 }
@@ -185,8 +187,9 @@ template <typename X,
 inline std::ostream &operator<<(std::ostream &os,
                                 const RegressionDataset<X> &dataset) {
   for (std::size_t i = 0; i < dataset.size(); ++i) {
-    os << i << "    " << dataset.targets.mean[i] << "   +/- "
-       << std::sqrt(dataset.targets.get_diagonal(i)) << std::endl;
+    os << i << "    " << dataset.targets.mean[cast::to_index(i)] << "   +/- "
+       << std::sqrt(dataset.targets.get_diagonal(cast::to_index(i)))
+       << std::endl;
   }
   return os;
 }

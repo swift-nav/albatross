@@ -31,7 +31,7 @@ struct ExamplePatchworkFunctions {
 
   std::vector<double> boundary(long int x, long int y) const {
     if (std::abs(x - y) == 1) {
-      double center = width * 0.5 * (x + y);
+      double center = width * 0.5 * cast::to_double(x + y);
       std::vector<double> boundary = {center - 1., center, center + 1.};
       return boundary;
     }
@@ -67,7 +67,8 @@ shuffle_dataset(const RegressionDataset<double> &dataset) {
     std::size_t j = dist(gen);
     if (i != j) {
       std::swap(output.features[i], output.features[j]);
-      std::swap(output.targets.mean[i], output.targets.mean[j]);
+      std::swap(output.targets.mean[cast::to_index(i)],
+                output.targets.mean[cast::to_index(j)]);
     }
   }
   return output;
@@ -171,7 +172,8 @@ TEST(test_patchwork_gp, test_scales) {
   auto patchwork_duration = duration_cast<microseconds>(end - start).count();
 
   // Make sure the patchwork version is a lot faster.
-  EXPECT_LT(patchwork_duration, 0.3 * direct_duration);
+  EXPECT_LT(static_cast<double>(patchwork_duration),
+            0.3 * static_cast<double>(direct_duration));
 }
 
 } // namespace albatross

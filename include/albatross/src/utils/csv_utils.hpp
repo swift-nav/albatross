@@ -147,8 +147,8 @@ inline std::map<std::string, std::string>
 to_map(const RegressionDataset<FeatureType> &dataset,
        const DistributionBase<DistributionType> &predictions, std::size_t i) {
   ALBATROSS_ASSERT(dataset.targets.size() == predictions.size());
-  ALBATROSS_ASSERT(i < dataset.features.size() && i >= 0);
-  const auto ei = static_cast<Eigen::Index>(i);
+  ALBATROSS_ASSERT(i < dataset.features.size());
+  const auto ei = cast::to_index(i);
 
   double target_variance = dataset.targets.get_diagonal(ei);
   double predict_variance = predictions.get_diagonal(ei);

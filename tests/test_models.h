@@ -317,7 +317,8 @@ template <typename PredictionType, typename = void> struct TestPredictVariants {
     const Eigen::VectorXd pred_mean = pred.mean();
     EXPECT_EQ(pred_mean.size(), individual_preds.size());
     for (std::size_t i = 0; i < individual_preds.size(); ++i) {
-      EXPECT_NEAR(pred_mean[i], individual_preds[i].mean()[0], 1e-6);
+      EXPECT_NEAR(pred_mean[cast::to_index(i)], individual_preds[i].mean()[0],
+                  1e-6);
     }
     return PredictLevel::MEAN;
   }
@@ -390,8 +391,9 @@ struct TestPredictVariants<PredictionType,
     EXPECT_EQ(pred_joint.size(), individual_preds.size());
     for (std::size_t i = 0; i < individual_preds.size(); ++i) {
       const auto pred_i = individual_preds[i].joint();
-      EXPECT_NEAR(pred_joint.mean[i], pred_i.mean[0], 1e-6);
-      EXPECT_NEAR(pred_joint.get_diagonal(i), pred_i.get_diagonal(0), 1e-6);
+      EXPECT_NEAR(pred_joint.mean[cast::to_index(i)], pred_i.mean[0], 1e-6);
+      EXPECT_NEAR(pred_joint.get_diagonal(cast::to_index(i)),
+                  pred_i.get_diagonal(0), 1e-6);
     }
     return PredictLevel::JOINT;
   }

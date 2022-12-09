@@ -57,7 +57,7 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<NullModel> &fit ALBATROSS_UNUSED,
                 PredictTypeIdentity<JointDistribution> &&) const {
-    const Eigen::Index n = static_cast<Eigen::Index>(features.size());
+    const Eigen::Index n = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(n);
     const Eigen::MatrixXd cov = 1.e4 * Eigen::MatrixXd::Identity(n, n);
     return JointDistribution(mean, cov);
@@ -68,7 +68,7 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<NullModel> &fit ALBATROSS_UNUSED,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
-    const Eigen::Index en = static_cast<Eigen::Index>(features.size());
+    const Eigen::Index en = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(en);
     const Eigen::VectorXd diag = 1.e4 * Eigen::VectorXd::Ones(en);
     return MarginalDistribution(mean, diag.asDiagonal());

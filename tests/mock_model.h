@@ -62,12 +62,11 @@ public:
 
   Fit<MockModel> _fit_impl(const std::vector<MockFeature> &features,
                            const MarginalDistribution &targets) const {
-    int n = static_cast<int>(features.size());
+    const auto n = cast::to_index(features.size());
     Eigen::VectorXd predictions(n);
     Fit<MockModel> model_fit;
-    for (int i = 0; i < n; i++) {
-      model_fit.train_data[features[static_cast<std::size_t>(i)].value] =
-          targets.mean[i];
+    for (Eigen::Index i = 0; i < n; i++) {
+      model_fit.train_data[features[cast::to_size(i)].value] = targets.mean[i];
     }
     return model_fit;
   }
@@ -76,11 +75,11 @@ public:
   Eigen::VectorXd _predict_impl(const std::vector<MockFeature> &features,
                                 const Fit<MockModel> &fit_,
                                 PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    int n = static_cast<int>(features.size());
+    const auto n = cast::to_index(features.size());
     Eigen::VectorXd predictions(n);
 
-    for (int i = 0; i < n; i++) {
-      int index = features[static_cast<std::size_t>(i)].value;
+    for (Eigen::Index i = 0; i < n; i++) {
+      const int index = features[cast::to_size(i)].value;
       predictions[i] = fit_.train_data.find(index)->second;
     }
 
@@ -102,12 +101,12 @@ public:
 };
 
 static inline RegressionDataset<MockFeature>
-mock_training_data(const int n = 10) {
+mock_training_data(const Eigen::Index n = 10) {
   std::vector<MockFeature> features;
   Eigen::VectorXd targets(n);
   for (int i = 0; i < n; i++) {
     features.push_back(MockFeature(i));
-    targets[i] = static_cast<double>(i + n);
+    targets[static_cast<Eigen::Index>(i)] = cast::to_double(i + n);
   }
   return RegressionDataset<MockFeature>(features, targets);
 }

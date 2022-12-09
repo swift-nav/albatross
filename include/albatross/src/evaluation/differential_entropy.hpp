@@ -36,7 +36,7 @@ log_determinant_of_symmetric(const Eigen::LDLT<Eigen::MatrixXd> &ldlt) {
  */
 inline double
 differential_entropy(const Eigen::LDLT<Eigen::MatrixXd> &cov_ldlt) {
-  double k = static_cast<double>(cov_ldlt.rows());
+  double k = cast::to_double(cov_ldlt.rows());
   double log_det = log_determinant_of_symmetric(cov_ldlt);
   return 0.5 * (k * (1 + log(2 * M_PI) + log_det));
 }

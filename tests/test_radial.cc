@@ -18,20 +18,20 @@
 namespace albatross {
 
 inline auto random_spherical_dataset(std::vector<Eigen::VectorXd> points,
-                                     int seed = 7) {
+                                     std::size_t seed = 7) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
-  gen.seed(seed);
+  gen.seed(static_cast<std::mt19937::result_type>(seed));
   std::normal_distribution<> d{0., 0.1};
 
-  Eigen::VectorXd targets(static_cast<Eigen::Index>(points.size()));
+  Eigen::VectorXd targets(cast::to_index(points.size()));
 
   auto spherical_function = [](Eigen::VectorXd &x) {
     return x[0] * x[1] + x[1] * x[2] + x[3];
   };
 
   for (std::size_t i = 0; i < points.size(); i++) {
-    targets[static_cast<Eigen::Index>(i)] = spherical_function(points[i]);
+    targets[cast::to_index(i)] = spherical_function(points[i]);
   }
 
   return RegressionDataset<Eigen::VectorXd>(points, targets);

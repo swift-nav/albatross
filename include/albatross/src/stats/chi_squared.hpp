@@ -26,11 +26,11 @@ namespace albatross {
 
 namespace details {
 
-inline double chi_squared_cdf_unsafe(double x, double degrees_of_freedom) {
-  return incomplete_gamma(0.5 * degrees_of_freedom, 0.5 * x);
+inline double chi_squared_cdf_unsafe(double x, std::size_t degrees_of_freedom) {
+  return incomplete_gamma(0.5 * cast::to_double(degrees_of_freedom), 0.5 * x);
 }
 
-inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
+inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
 
   if (std::isnan(x) || x < 0.) {
     return NAN;
@@ -48,21 +48,17 @@ inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
     return 1.;
   }
 
-  if (std::isinf(degrees_of_freedom)) {
-    return 0.;
-  }
-
   return chi_squared_cdf_unsafe(x, degrees_of_freedom);
 }
 
 } // namespace details
 
-inline double chi_squared_cdf(double x, double degrees_of_freedom) {
+inline double chi_squared_cdf(double x, std::size_t degrees_of_freedom) {
   return details::chi_squared_cdf_safe(x, degrees_of_freedom);
 }
 
 inline double chi_squared_cdf(double deviation, double variance,
-                              double degrees_of_freedom) {
+                              std::size_t degrees_of_freedom) {
   return chi_squared_cdf(deviation * deviation / variance, degrees_of_freedom);
 }
 
@@ -71,7 +67,7 @@ inline double chi_squared_cdf(const Eigen::VectorXd &deviation,
   const Eigen::VectorXd normalized =
       covariance.llt().matrixL().solve(deviation);
   const double distance_squared = normalized.squaredNorm();
-  const std::size_t n = static_cast<std::size_t>(deviation.size());
+  const auto n = cast::to_size(deviation.size());
   return chi_squared_cdf(distance_squared, n);
 }
 

@@ -72,8 +72,8 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
     for (const std::size_t &k : split) {
 
       SamplerState current(next_ensembles[k]);
-      SamplerState proposed(current);
-      proposed.accepted = false;
+      SamplerState proposal(current);
+      proposal.accepted = false;
 
       // Choose X_j from the complementary ensembles.
       std::size_t j = complement[random_complement_idx(gen)];
@@ -87,12 +87,12 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
       // Draw a random z
       double p = uniform_real(gen);
       double z = pow((a - 1.0) * p + 1, 2.0) / a;
-      log_prob_z[k] = (n_dim - 1.0) * log(z);
+      log_prob_z[k] = (cast::to_double(n_dim) - 1.0) * log(z);
 
-      // proposed = x_j + z * (x_k - x_j)
+      // proposal = x_j + z * (x_k - x_j)
       for (std::size_t i = 0; i < n_dim; ++i) {
         const double v_j = next_ensembles[j].params[i];
-        double delta = (proposed.params[i] - v_j);
+        double delta = (proposal.params[i] - v_j);
         // Occasionally (especially with bounds) some
         // parameters can end up identical across samples
         // in this occasion we switch to a gaussian style
@@ -100,19 +100,19 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
         if (delta == 0.) {
           delta = 1e-6;
         }
-        proposed.params[i] = v_j + z * delta;
+        proposal.params[i] = v_j + z * delta;
       }
 
-      proposed.log_prob = compute_log_prob(proposed.params);
+      proposal.log_prob = compute_log_prob(proposal.params);
       const double log_diff =
-          log_prob_z[k] + proposed.log_prob - current.log_prob;
+          log_prob_z[k] + proposal.log_prob - current.log_prob;
 
       const double random = uniform_real(gen);
       const bool accepted = log_diff > log(random);
-      const bool is_finite = std::isfinite(proposed.log_prob);
+      const bool is_finite = std::isfinite(proposal.log_prob);
       if (accepted && is_finite) {
-        proposed.accepted = true;
-        next_ensembles[k] = proposed;
+        proposal.accepted = true;
+        next_ensembles[k] = proposal;
       } else {
         next_ensembles[k].accepted = false;
       }

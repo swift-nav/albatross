@@ -207,7 +207,7 @@ public:
   auto mean() const {
     double output = 0.;
     for (const auto &pair : this->map_) {
-      output += pair.second / static_cast<double>(this->size());
+      output += pair.second / cast::to_double(this->size());
     }
     return output;
   }
@@ -269,7 +269,7 @@ combine(const Map<KeyType, std::vector<FeatureType>> &groups) {
 
 template <template <typename...> class Map, typename KeyType>
 Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
-  Eigen::VectorXd output(static_cast<Eigen::Index>(groups.size()));
+  Eigen::VectorXd output(cast::to_index(groups.size()));
   Eigen::Index i = 0;
   for (const auto &x : map_values(groups)) {
     output[i] = x;

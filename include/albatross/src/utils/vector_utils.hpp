@@ -16,12 +16,13 @@
 namespace albatross {
 
 inline std::size_t safe_cast_to_size_t(double x) {
-  ALBATROSS_ASSERT(x < std::numeric_limits<std::size_t>::max());
+  ALBATROSS_ASSERT(
+      x < static_cast<double>(std::numeric_limits<std::size_t>::max()));
   return static_cast<std::size_t>(x);
 }
 
 inline std::vector<double> linspace(double a, double b, std::size_t n) {
-  double step = (b - a) / static_cast<double>(n - 1);
+  double step = (b - a) / cast::to_double(n - 1);
   std::vector<double> xs(n);
   double val = a;
   for (auto &x : xs) {

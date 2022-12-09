@@ -103,7 +103,8 @@ inline std::string pretty_param_details(const ParameterStore &params) {
   for (const auto &pair : params) {
     std::string prior_name;
     prior_name = pair.second.prior.get_name();
-    ss << "    " << std::left << std::setw(max_name_length + 1) << pair.first
+    ss << "    " << std::left
+       << std::setw(static_cast<int>(max_name_length + 1)) << pair.first
        << " value: " << std::left << std::setw(12) << pair.second.value
        << " valid: " << std::left << std::setw(3) << pair.second.is_valid()
        << " prior: " << std::setw(15) << prior_name << " bounds: ["

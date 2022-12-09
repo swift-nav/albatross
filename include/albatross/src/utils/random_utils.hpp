@@ -50,7 +50,7 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
   }
 
   std::uniform_int_distribution<std::size_t> dist(low, high);
-  std::set<int> samples;
+  std::set<std::size_t> samples;
   while (samples.size() < n) {
     samples.insert(dist(gen));
   }

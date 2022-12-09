@@ -43,16 +43,16 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
                 "caller does not support the required arguments");
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, Y>::value,
                 "caller does not return a double");
-  Eigen::Index m = static_cast<Eigen::Index>(xs.size());
-  Eigen::Index n = static_cast<Eigen::Index>(ys.size());
+  Eigen::Index m = cast::to_index(xs.size());
+  Eigen::Index n = cast::to_index(ys.size());
   Eigen::MatrixXd C(m, n);
 
   Eigen::Index i, j;
   std::size_t si, sj;
   for (i = 0; i < m; i++) {
-    si = static_cast<std::size_t>(i);
+    si = cast::to_size(i);
     for (j = 0; j < n; j++) {
-      sj = static_cast<std::size_t>(j);
+      sj = cast::to_size(j);
       C(i, j) = caller(xs[si], ys[sj]);
     }
   }
@@ -70,15 +70,15 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
                 "caller does not return a double");
 
-  Eigen::Index n = static_cast<Eigen::Index>(xs.size());
+  Eigen::Index n = cast::to_index(xs.size());
   Eigen::MatrixXd C(n, n);
 
   Eigen::Index i, j;
   std::size_t si, sj;
   for (i = 0; i < n; i++) {
-    si = static_cast<std::size_t>(i);
+    si = cast::to_size(i);
     for (j = 0; j <= i; j++) {
-      sj = static_cast<std::size_t>(j);
+      sj = cast::to_size(j);
       C(i, j) = caller(xs[si], xs[sj]);
       C(j, i) = C(i, j);
     }
@@ -97,13 +97,13 @@ inline Eigen::VectorXd compute_mean_vector(MeanFuncCaller caller,
   static_assert(is_invocable_with_result<MeanFuncCaller, double, X>::value,
                 "caller does not return a double");
 
-  Eigen::Index n = static_cast<Eigen::Index>(xs.size());
+  Eigen::Index n = cast::to_index(xs.size());
   Eigen::VectorXd m(n);
 
   Eigen::Index i;
   std::size_t si;
   for (i = 0; i < n; i++) {
-    si = static_cast<std::size_t>(i);
+    si = cast::to_size(i);
     m[i] = caller(xs[si]);
   }
   return m;
@@ -277,7 +277,8 @@ template <typename SubCaller> struct LinearCombinationCaller {
                      const LinearCombination<Y> &ys) {
     double sum = 0.;
     for (std::size_t i = 0; i < ys.values.size(); ++i) {
-      sum += ys.coefficients[i] * SubCaller::call(cov_func, x, ys.values[i]);
+      sum += ys.coefficients[cast::to_index(i)] *
+             SubCaller::call(cov_func, x, ys.values[i]);
     }
     return sum;
   }
@@ -290,7 +291,8 @@ template <typename SubCaller> struct LinearCombinationCaller {
                      const Y &y) {
     double sum = 0.;
     for (std::size_t i = 0; i < xs.values.size(); ++i) {
-      sum += xs.coefficients[i] * SubCaller::call(cov_func, xs.values[i], y);
+      sum += xs.coefficients[cast::to_index(i)] *
+             SubCaller::call(cov_func, xs.values[i], y);
     }
     return sum;
   }
@@ -312,7 +314,8 @@ template <typename SubCaller> struct LinearCombinationCaller {
                      const LinearCombination<X> &xs) {
     double sum = 0.;
     for (std::size_t i = 0; i < xs.values.size(); ++i) {
-      sum += xs.coefficients[i] * SubCaller::call(mean_func, xs.values[i]);
+      sum += xs.coefficients[cast::to_index(i)] *
+             SubCaller::call(mean_func, xs.values[i]);
     }
     return sum;
   }
@@ -374,7 +377,7 @@ template <typename SubCaller> struct VariantForwarder {
               typename std::enable_if<
                   !has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value,
                   int>::type = 0>
-    double operator()(const Y &y) const {
+    double operator()(const Y &y ALBATROSS_UNUSED) const {
       return 0.;
     };
 
@@ -442,7 +445,7 @@ template <typename SubCaller> struct VariantForwarder {
               typename std::enable_if<
                   !has_valid_mean_caller<MeanFunc, SubCaller, X>::value,
                   int>::type = 0>
-    double operator()(const X &x) const {
+    double operator()(const X &x ALBATROSS_UNUSED) const {
       return 0.;
     };
 

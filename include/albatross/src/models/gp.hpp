@@ -332,9 +332,10 @@ public:
       PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
-    Eigen::VectorXd prior_variance(static_cast<Eigen::Index>(features.size()));
+    Eigen::VectorXd prior_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < prior_variance.size(); ++i) {
-      prior_variance[i] = covariance_function_(features[i], features[i]);
+      prior_variance[i] = covariance_function_(features[cast::to_size(i)],
+                                               features[cast::to_size(i)]);
     }
     auto pred = gp_marginal_prediction(
         cross_cov, prior_variance, gp_fit.information, gp_fit.train_covariance);

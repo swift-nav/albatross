@@ -157,13 +157,11 @@ public:
             typename std::enable_if<has_valid_caller<Derived, X, X>::value,
                                     int>::type = 0>
   Eigen::VectorXd diagonal(const std::vector<X> &xs) const {
-    int n = static_cast<int>(xs.size());
+    const Eigen::Index n = cast::to_index(xs.size());
     Eigen::VectorXd diag(n);
 
-    int i;
-    std::size_t si;
-    for (i = 0; i < n; i++) {
-      si = static_cast<std::size_t>(i);
+    for (Eigen::Index i = 0; i < n; i++) {
+      const auto si = cast::to_size(i);
       diag[i] = call(xs[si], xs[si]);
     }
     return diag;
