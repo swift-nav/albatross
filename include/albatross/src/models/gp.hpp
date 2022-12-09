@@ -177,10 +177,6 @@ protected:
   using CholeskyFit = GPFitType<Eigen::SerializableLDLT, FitFeatureType>;
 
 public:
-  GaussianProcessBase(const GaussianProcessBase &other)
-      : covariance_function_(other.covariance_function_),
-        mean_function_(other.mean_function_), model_name_(other.model_name_){};
-
   GaussianProcessBase()
       : covariance_function_(), mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
