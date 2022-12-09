@@ -1,4 +1,7 @@
-add_executable(albatross_unit_tests 
+include(SwiftTargets)
+
+swift_add_tool(albatross_unit_tests
+  SOURCES
   test_apply.cc
   test_async_utils.cc
   test_block_utils.cc
@@ -46,6 +49,10 @@ add_executable(albatross_unit_tests
   test_traits_indexing.cc
   test_tune.cc
   test_variant_utils.cc
+  RTTI
+  EXCEPTIONS
+  REMOVE_COMPILE_OPTIONS
+  -Wfloat-equal
   )
 target_include_directories(albatross_unit_tests SYSTEM PRIVATE
   "${gtest_SOURCE_DIR}"
