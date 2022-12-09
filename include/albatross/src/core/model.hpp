@@ -77,6 +77,10 @@ protected:
                                    PredictTypeIdentity<PredictType>());
   }
 
+// The `ALBATROSS_FAIL` macro leads to a mysterious error with GCC 6
+// that does not appear in later versions.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   template <
       typename PredictFeatureType, typename FitType, typename PredictType,
       typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
@@ -89,6 +93,7 @@ protected:
       ALBATROSS_FAIL(PredictFeatureType,
                      "The ModelType is missing a _predict_impl method for "
                      "PredictFeatureType, FitType, PredictType.");
+#pragma GCC diagnostic pop
 
 public:
   /*
