@@ -395,10 +395,8 @@ public:
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    const FitType fit(u, K_uu_ldlt, get_R(B_qr),
-                      B_qr.colsPermutation().indices(), v, B_qr.rank());
-
-    return fit;
+    return FitType(u, K_uu_ldlt, get_R(B_qr), B_qr.colsPermutation().indices(),
+                   v, B_qr.rank());
   }
 
   template <typename FeatureType>

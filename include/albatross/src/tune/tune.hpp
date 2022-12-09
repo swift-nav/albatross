@@ -123,9 +123,9 @@ struct GenericTuner {
     optimizer = default_optimizer(initial_params);
   };
 
-  GenericTuner(const std::vector<double> &initial_params,
+  GenericTuner(const std::vector<double> &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : GenericTuner(uninformative_params(initial_params), output_stream_){};
+      : GenericTuner(uninformative_params(initial_params_), output_stream_){};
 
   template <
       typename ObjectiveFunction,
