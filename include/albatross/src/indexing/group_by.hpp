@@ -68,7 +68,6 @@ template <typename KeyType, typename ValueType> class GroupedBase {
 
 public:
   GroupedBase() : map_(){};
-  GroupedBase(const GroupedBase &other) = default;
   GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)){};
   GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map){};
 

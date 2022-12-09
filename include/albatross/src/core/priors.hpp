@@ -202,8 +202,6 @@ class PriorContainer : public Prior {
 public:
   PriorContainer() : priors_(UninformativePrior()){};
 
-  PriorContainer(const PriorContainer &prior) = default;
-
   template <typename PriorType,
             typename std::enable_if<
                 is_in_variant<PriorType, PossiblePriors>::value, int>::type = 0>
