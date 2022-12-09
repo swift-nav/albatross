@@ -108,11 +108,12 @@ void read_test_csv(std::istream &stream) {
   }
 }
 
+static long test_integer = 5;
+
 std::vector<TestFeature> test_features() {
-  long other = 5;
   SubFeature sub = {4.4, 6};
   TestFeature one(1.2, 2, {1.3, 3}, nullptr, 3.);
-  TestFeature two(2.2, 3, {2.3, 4}, &other, 3.);
+  TestFeature two(2.2, 3, {2.3, 4}, &test_integer, 3.);
   TestFeature three(3.2, 4, {3.3, 5}, nullptr, sub);
 
   std::vector<TestFeature> features = {one, two, three};
