@@ -221,14 +221,30 @@ void expect_same_but_maybe_out_of_order(const std::vector<FeatureType> &x,
   EXPECT_EQ(vector_set_difference(x, y).size(), 0);
 }
 
-TYPED_TEST_P(GroupByTester, test_groupby_access_methods) {
-  auto parent = this->test_case.get_parent();
-  const auto grouper = group_by(parent, this->test_case.get_grouper());
-
-  const auto const_groups = grouper.groups();
+// This function is separate so that it can be annotated to disable
+// sanitizers, which doesn't work with the `TYPED_TEST_P` or other
+// googletest macros.
+template <typename Grouper>
+static auto const_groups_key(Grouper *grouper)
+#ifdef __clang__
+  // https://github.com/swift-nav/albatross/issues/372
+  __attribute__((no_sanitize("address")))
+  __attribute__((no_sanitize("thread")))
+#endif // __clang__
+{
+  const auto const_groups = grouper->groups();
   assert(const_groups.size() > 0);
   const auto first_key = const_groups.keys()[0];
   const_groups.at(first_key);
+  return first_key;
+}
+
+TYPED_TEST_P(GroupByTester, test_groupby_access_methods)
+{
+  auto parent = this->test_case.get_parent();
+  const auto grouper = group_by(parent, this->test_case.get_grouper());
+
+  const auto first_key = const_groups_key(&grouper);
 
   auto groups = grouper.groups();
   groups.at(first_key);
