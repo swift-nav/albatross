@@ -76,7 +76,7 @@ public:
   Eigen::VectorXd operator()(const std::vector<X> &xs) const {
 
     if (std::is_same<Derived, ZeroMean>::value) {
-      Eigen::Index n = static_cast<Eigen::Index>(xs.size());
+      Eigen::Index n = cast::to_index(xs.size());
       return Eigen::VectorXd::Zero(n);
     }
 

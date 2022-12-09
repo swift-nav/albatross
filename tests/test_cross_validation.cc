@@ -260,7 +260,8 @@ TYPED_TEST(SpecializedCrossValidationTester,
 
   // Make sure the faster variant is actually faster and that the results
   // are the same.
-  EXPECT_LT(fast_duration, 0.5 * slow_duration);
+  EXPECT_LT(static_cast<double>(fast_duration),
+            0.5 * static_cast<double>(slow_duration));
   EXPECT_NEAR((cv_fast_scores - cv_slow_scores).norm(), 0., 1e-8);
 }
 

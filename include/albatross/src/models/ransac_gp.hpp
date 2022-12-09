@@ -81,7 +81,7 @@ struct FeatureCountConsensusMetric {
   double operator()(const JointDistribution &prior ALBATROSS_UNUSED,
                     const MarginalDistribution &truth) const {
     // Negative because a lower metric is better.
-    return (-1.0 * static_cast<double>(truth.size()));
+    return (-1.0 * cast::to_double(truth.size()));
   }
 };
 

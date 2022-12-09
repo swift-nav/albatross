@@ -106,8 +106,9 @@ inline double incomplete_gamma_quadrature(double a, double z) {
 
 inline double
 incomplete_gamma_continuous_fraction_numerator(double a, double z,
-                                               std::size_t depth) {
-  if (depth % 2 == 0) {
+                                               std::size_t depth_) {
+  const auto depth = cast::to_double(depth_);
+  if (depth_ % 2 == 0) {
     return 0.5 * depth * z;
   } else {
     return -(a - 1 + 0.5 * (depth + 1)) * z;
@@ -115,13 +116,14 @@ incomplete_gamma_continuous_fraction_numerator(double a, double z,
 }
 
 inline double incomplete_gamma_continuous_fraction(double a, double z,
-                                                   std::size_t depth) {
-  if (depth > INCOMPLETE_GAMMA_RECURSSION_LIMIT) {
+                                                   std::size_t depth_) {
+  const auto depth = cast::to_double(depth_);
+  if (depth_ > INCOMPLETE_GAMMA_RECURSSION_LIMIT) {
     return a + depth - 1;
   } else {
     double numerator =
-        incomplete_gamma_continuous_fraction_numerator(a, z, depth);
-    double denominator = incomplete_gamma_continuous_fraction(a, z, depth + 1);
+        incomplete_gamma_continuous_fraction_numerator(a, z, depth_);
+    double denominator = incomplete_gamma_continuous_fraction(a, z, depth_ + 1);
     return (a + depth - 1) + numerator / denominator;
   }
 }

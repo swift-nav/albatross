@@ -39,7 +39,7 @@ public:
     // If the covariance is defined it must have the same number
     // of rows and columns which should be the same size as the mean.
     derived().assert_valid();
-    return static_cast<std::size_t>(mean.size());
+    return cast::to_size(mean.size());
   }
 
   double get_diagonal(Eigen::Index i) const {
@@ -254,7 +254,7 @@ concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
 
 inline std::ostream &operator<<(std::ostream &os,
                                 const MarginalDistribution &marginal) {
-  for (std::size_t i = 0; i < marginal.size(); ++i) {
+  for (Eigen::Index i = 0; i < cast::to_index(marginal.size()); ++i) {
     os << i << "    " << marginal.mean[i] << "   +/- "
        << std::sqrt(marginal.get_diagonal(i)) << std::endl;
   }

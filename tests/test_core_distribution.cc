@@ -23,7 +23,7 @@ TYPED_TEST_P(DistributionTest, test_subset) {
   TypeParam test_case;
   const auto dist = test_case.create();
 
-  std::vector<int> indices = {1, 3, 2};
+  std::vector<Eigen::Index> indices = {1, 3, 2};
   const auto ss = subset(dist, indices);
 
   expect_subset_equal(dist.mean, ss.mean, indices);
@@ -36,7 +36,8 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_marginal) {
   TypeParam test_case;
   const auto dist = test_case.create();
 
-  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist.size() - 1, dist.size());
+  const auto dist_size = cast::to_index(dist.size());
+  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist_size - 1, dist_size);
 
   const auto transformed_distribution = (mat * dist).marginal();
   const MarginalDistribution alternate = mat * dist;
@@ -54,7 +55,8 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_joint) {
   TypeParam test_case;
   const auto dist = test_case.create();
 
-  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist.size() - 1, dist.size());
+  const auto dist_size = cast::to_index(dist.size());
+  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(dist_size - 1, dist_size);
 
   const auto transformed_distribution = (mat * dist).joint();
   const JointDistribution alternate = mat * dist;
@@ -71,8 +73,9 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_marginal) {
   const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
   const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
   const MarginalDistribution dist(mean, var);
+  const auto dist_size = cast::to_index(dist.size());
   const Eigen::SparseMatrix<double> mat =
-      Eigen::MatrixXd::Random(dist.size() - 1, dist.size()).sparseView();
+      Eigen::MatrixXd::Random(dist_size - 1, dist_size).sparseView();
 
   const auto transformed_distribution = (mat * dist).marginal();
   const MarginalDistribution alternate = mat * dist;
@@ -91,8 +94,9 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_joint) {
   const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
   const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
   const MarginalDistribution dist(mean, var);
+  const auto dist_size = cast::to_index(dist.size());
   const Eigen::SparseMatrix<double> mat =
-      Eigen::MatrixXd::Random(dist.size() - 1, dist.size()).sparseView();
+      Eigen::MatrixXd::Random(dist_size - 1, dist_size).sparseView();
 
   const auto transformed_distribution = (mat * dist).joint();
   const JointDistribution alternate = mat * dist;
@@ -107,7 +111,7 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_vector) {
 
   TypeParam test_case;
   const auto dist = test_case.create();
-  Eigen::VectorXd vector = Eigen::VectorXd::Random(dist.size());
+  Eigen::VectorXd vector = Eigen::VectorXd::Random(cast::to_index(dist.size()));
 
   const auto transformed_distribution = (vector.transpose() * dist).joint();
   const JointDistribution alternate = vector.transpose() * dist;
@@ -171,10 +175,10 @@ REGISTER_TYPED_TEST_CASE_P(DistributionTest, test_subset,
                            test_multiply_with_vector, test_multiply_by_scalar,
                            test_add, test_subtract);
 
-Eigen::VectorXd arange(int k = 5) {
+Eigen::VectorXd arange(Eigen::Index k = 5) {
   Eigen::VectorXd mean(k);
   for (Eigen::Index i = 0; i < k; i++) {
-    mean[i] = i;
+    mean[i] = cast::to_double(i);
   }
   return mean;
 }

@@ -113,14 +113,13 @@ public:
   Eigen::VectorXd
   _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
                 const PredictTypeIdentity<Eigen::VectorXd>) const {
-    return Eigen::VectorXd::Ones(static_cast<Eigen::Index>(features.size()));
+    return Eigen::VectorXd::Ones(cast::to_index(features.size()));
   }
 
   MarginalDistribution
   _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
                 const PredictTypeIdentity<MarginalDistribution>) const {
-    const auto zeros =
-        Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
+    const auto zeros = Eigen::VectorXd::Zero(cast::to_index(features.size()));
     return MarginalDistribution(zeros, zeros.asDiagonal());
   }
 };

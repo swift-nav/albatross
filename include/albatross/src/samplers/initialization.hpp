@@ -97,9 +97,10 @@ initial_params_from_csv(const ParameterStore &param_store, std::istream &ss) {
 }
 
 template <typename JitterDistribution>
-std::vector<std::vector<double>> initial_params_from_jitter(
-    const ParameterStore &params, JitterDistribution &jitter_distribution,
-    std::default_random_engine &gen, std::size_t n = -1) {
+std::vector<std::vector<double>>
+initial_params_from_jitter(const ParameterStore &params,
+                           JitterDistribution &jitter_distribution,
+                           std::default_random_engine &gen, std::size_t n = 0) {
 
   n = std::max(n, 2 * params.size() + 1);
 

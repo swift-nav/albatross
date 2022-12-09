@@ -420,7 +420,7 @@ public:
     // numerical instability
     JointDistribution prediction(prediction_);
     prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
-        prediction.size(), 1, details::DEFAULT_NUGGET);
+        cast::to_index(prediction.size()), 1, details::DEFAULT_NUGGET);
     new_fit.information = new_fit.train_covariance.solve(prediction.mean);
 
     // Here P is the posterior covariance at the new inducing points.  If
@@ -487,11 +487,10 @@ public:
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
 
-    Eigen::VectorXd marginal_variance(
-        static_cast<Eigen::Index>(features.size()));
+    Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
-      marginal_variance[i] =
-          this->covariance_function_(features[i], features[i]);
+      marginal_variance[i] = this->covariance_function_(
+          features[cast::to_size(i)], features[cast::to_size(i)]);
     }
 
     const Eigen::MatrixXd Q_sqrt =
@@ -595,7 +594,7 @@ public:
     double log_quadratic = y.transpose() * y_a;
     log_quadratic -= y_b.transpose() * y_b;
 
-    const double rank = static_cast<double>(y.size());
+    const double rank = cast::to_double(y.size());
     const double log_dimension = rank * log(2 * M_PI);
 
     return -0.5 * (log_det + log_quadratic + log_dimension) +
@@ -670,7 +669,7 @@ private:
     BlockDiagonal Q_ff_diag;
     Eigen::Index i = 0;
     for (const auto &pair : indexer) {
-      Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
+      Eigen::Index cols = cast::to_index(pair.second.size());
       auto P_cols = P.block(0, i, P.rows(), cols);
       Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
       i += cols;

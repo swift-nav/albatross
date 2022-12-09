@@ -151,15 +151,15 @@ void write_predictions_to_csv(
   std::ofstream output;
   output.open(output_path);
 
-  const std::size_t k = 161;
-  auto grid_xs = uniform_points_on_line(k, low - 10., high + 10.);
+  constexpr std::size_t kNumPoints = 161;
+  auto grid_xs = uniform_points_on_line(kNumPoints, low - 10., high + 10.);
 
   auto prediction =
       fit_model.predict_with_measurement_noise(grid_xs).marginal();
 
-  Eigen::VectorXd targets(static_cast<Eigen::Index>(k));
-  for (std::size_t i = 0; i < k; i++) {
-    targets[static_cast<Eigen::Index>(i)] = truth(grid_xs[i]);
+  Eigen::VectorXd targets(albatross::cast::to_index(kNumPoints));
+  for (std::size_t i = 0; i < kNumPoints; i++) {
+    targets[albatross::cast::to_index(i)] = truth(grid_xs[i]);
   }
 
   const albatross::RegressionDataset<double> dataset(grid_xs, targets);

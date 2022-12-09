@@ -25,7 +25,7 @@ inline double mean_aggregator(const std::vector<double> &metrics) {
   for (const auto &metric : metrics) {
     mean += metric;
   }
-  mean /= static_cast<double>(metrics.size());
+  mean /= cast::to_double(metrics.size());
   return mean;
 }
 

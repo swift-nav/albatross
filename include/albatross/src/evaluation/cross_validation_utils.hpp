@@ -62,16 +62,15 @@ concatenate_mean_predictions(const GroupIndexer<GroupKey> &indexer,
                              const Grouped<GroupKey, Eigen::VectorXd> &means) {
   ALBATROSS_ASSERT(indexer.size() == means.size());
 
-  Eigen::Index n =
-      static_cast<Eigen::Index>(dataset_size_from_indexer(indexer));
+  Eigen::Index n = cast::to_index(dataset_size_from_indexer(indexer));
   Eigen::VectorXd pred(n);
   Eigen::Index number_filled = 0;
   // Put all the predicted means back in order.
   for (const auto &pair : indexer) {
     ALBATROSS_ASSERT(means.at(pair.first).size() ==
-                     static_cast<Eigen::Index>(pair.second.size()));
+                     cast::to_index(pair.second.size()));
     set_subset(means.at(pair.first), pair.second, &pred);
-    number_filled += static_cast<Eigen::Index>(pair.second.size());
+    number_filled += cast::to_index(pair.second.size());
   }
   ALBATROSS_ASSERT(number_filled == n);
   return pred;
@@ -84,8 +83,7 @@ inline MarginalDistribution concatenate_marginal_predictions(
     const PredictionContainer<GroupKey, DistributionType> &preds) {
   ALBATROSS_ASSERT(indexer.size() == preds.size());
 
-  Eigen::Index n =
-      static_cast<Eigen::Index>(dataset_size_from_indexer(indexer));
+  Eigen::Index n = cast::to_index(dataset_size_from_indexer(indexer));
   Eigen::VectorXd mean(n);
   Eigen::VectorXd variance(n);
   Eigen::Index number_filled = 0;
@@ -95,7 +93,7 @@ inline MarginalDistribution concatenate_marginal_predictions(
     set_subset(preds.at(pair.first).mean, pair.second, &mean);
     set_subset(preds.at(pair.first).covariance.diagonal(), pair.second,
                &variance);
-    number_filled += static_cast<Eigen::Index>(pair.second.size());
+    number_filled += cast::to_index(pair.second.size());
   }
   ALBATROSS_ASSERT(number_filled == n);
   return MarginalDistribution(mean, variance.asDiagonal());
@@ -111,8 +109,8 @@ Eigen::VectorXd cross_validated_scores(
 
   const auto score_one_group = [&](const GroupKey &key,
                                    const RegressionFold<FeatureType> &fold) {
-    ALBATROSS_ASSERT(static_cast<std::size_t>(fold.test_dataset.size()) ==
-                     static_cast<std::size_t>(predictions.at(key).size()));
+    ALBATROSS_ASSERT(static_cast<size_t>(fold.test_dataset.size()) ==
+                     static_cast<size_t>(predictions.at(key).size()));
     return metric(predictions.at(key), fold.test_dataset.targets);
   };
 

@@ -142,7 +142,7 @@ RegressionDataset<double> test_unobservable_dataset() {
 
   std::vector<double> train_features;
   for (Eigen::Index i = 0; i < k; ++i) {
-    train_features.push_back(static_cast<double>(i) * 0.3);
+    train_features.push_back(cast::to_double(i) * 0.3);
   }
 
   RegressionDataset<double> dataset(train_features, targets);
@@ -277,7 +277,8 @@ TEST(test_gp, test_model_from_different_datasets) {
   // Then we create a new model in which the inducing points are
   // constrained to be the same as the previous prediction.
   inducing_prediction.covariance =
-      1e-12 * Eigen::VectorXd::Ones(inducing_prediction.size()).asDiagonal();
+      1e-12 * Eigen::VectorXd::Ones(cast::to_index(inducing_prediction.size()))
+                  .asDiagonal();
   RegressionDataset<double> dataset(unobservable_dataset);
   RegressionDataset<InducingFeature> inducing_dataset(inducing_points,
                                                       inducing_prediction);
@@ -312,7 +313,7 @@ TEST(test_gp, test_model_from_prediction_low_rank) {
 
   std::vector<double> train_features;
   for (Eigen::Index i = 0; i < k; ++i) {
-    train_features.push_back(static_cast<double>(i) * 0.3);
+    train_features.push_back(cast::to_double(i) * 0.3);
   }
 
   ConstantEverywhere constant;

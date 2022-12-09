@@ -33,21 +33,21 @@ TEST(test_linalg_utils, test_qr_sqrt_solve) {
 
 TEST(test_linalg_utils, test_print_eigen_values) {
 
-  Eigen::Index k = 10;
+  constexpr Eigen::Index k = 10;
   Eigen::MatrixXd random = Eigen::MatrixXd::Random(k, k);
   random = random * random.transpose();
 
-  std::vector<int> features;
+  std::vector<Eigen::Index> features;
   for (Eigen::Index i = 0; i < k; ++i) {
     features.push_back(i);
   }
 
   // Simple sanity check;
   std::ostringstream oss;
-  print_small_eigen_directions(random, features, k - 4,
+  print_small_eigen_directions(random, features, cast::to_size(k) - 4,
                                details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
                                &oss);
-  print_large_eigen_directions(random, features, k - 4,
+  print_large_eigen_directions(random, features, cast::to_size(k) - 4,
                                details::DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD,
                                &oss);
 }

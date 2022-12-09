@@ -57,7 +57,7 @@ template <typename RequiredPredictType> struct PredictionMetric {
 static inline double root_mean_square_error(const Eigen::VectorXd &prediction,
                                             const Eigen::VectorXd &truth) {
   const Eigen::VectorXd error = prediction - truth;
-  double mse = error.dot(error) / static_cast<double>(error.size());
+  double mse = error.dot(error) / cast::to_double(error.size());
   return sqrt(mse);
 }
 
@@ -82,7 +82,7 @@ static inline double standard_deviation(const Eigen::VectorXd &x) {
 
   double output = 0.;
   double mean = x.mean();
-  const auto n_elements = static_cast<double>(x.size());
+  const auto n_elements = cast::to_double(x.size());
 
   for (Eigen::Index i = 0; i < x.size(); ++i) {
     output += pow(x[i] - mean, 2.) / (n_elements - 1);

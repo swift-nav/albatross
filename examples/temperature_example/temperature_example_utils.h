@@ -127,7 +127,7 @@ void write_predictions(const std::string &output_path,
   ostream.open(output_path);
 
   Eigen::VectorXd targets =
-      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
+      Eigen::VectorXd::Zero(cast::to_index(features.size()));
 
   albatross::RegressionDataset<Station> dataset(features, targets);
 

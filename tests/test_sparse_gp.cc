@@ -20,7 +20,7 @@
 namespace albatross {
 
 inline long int get_group(const double &f) {
-  return static_cast<double>(floor(f / 5.));
+  return static_cast<long int>(floor(f / 5.));
 }
 
 struct LeaveOneIntervalOut {
@@ -156,7 +156,8 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
   auto sparse_duration = duration_cast<microseconds>(end - start).count();
 
   // Make sure the sparse version is a lot faster.
-  EXPECT_LT(sparse_duration, 0.3 * direct_duration);
+  EXPECT_LT(static_cast<double>(sparse_duration),
+            0.3 * static_cast<double>(direct_duration));
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
@@ -191,9 +192,10 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
   Eigen::MatrixXd K = Q_ff;
   const auto indexers = group_by(dataset.features, grouper).indexers();
   for (const auto &idx_pair : indexers) {
-    for (const Eigen::Index i : idx_pair.second) {
-      for (const Eigen::Index j : idx_pair.second) {
-        K(i, j) = covariance(measurements[i], measurements[j]);
+    for (const std::size_t i : idx_pair.second) {
+      for (const std::size_t j : idx_pair.second) {
+        K(cast::to_index(i), cast::to_index(j)) =
+            covariance(measurements[i], measurements[j]);
       }
     }
   }

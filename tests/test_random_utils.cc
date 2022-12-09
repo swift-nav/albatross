@@ -18,13 +18,13 @@ namespace albatross {
 
 TEST(test_random_utils, randint_without_replacement) {
 
-  int iterations = 10;
-  int k = 6;
+  constexpr std::size_t iterations = 10;
+  constexpr std::size_t k = 6;
 
   std::default_random_engine gen;
 
-  for (int i = 0; i < iterations; i++) {
-    for (int n = 0; n <= k + 1; n++) {
+  for (std::size_t i = 0; i < iterations; i++) {
+    for (std::size_t n = 0; n <= k + 1; n++) {
       const auto inds = randint_without_replacement(n, i, i + k, gen);
       EXPECT_EQ(inds.size(), n);
       for (const auto &j : inds) {
