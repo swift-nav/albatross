@@ -381,7 +381,7 @@ struct LeaveOneOutGrouper {
 template <> struct IndexerBuilder<LeaveOneOutGrouper> {
 
   template <typename Iterable>
-  static auto build(const LeaveOneOutGrouper &grouper_function,
+  static auto build(const LeaveOneOutGrouper &grouper_function ALBATROSS_UNUSED,
                     const Iterable &iterable) {
     GroupIndexer<std::size_t> output;
     std::size_t i = 0;

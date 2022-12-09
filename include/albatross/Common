@@ -37,6 +37,7 @@
 #include <albatross/src/details/traits.hpp>
 #include <albatross/src/details/method_inspection_macros.hpp>
 #include <albatross/src/details/error_handling.hpp>
+#include <albatross/src/details/unused.hpp>
 
 #include <albatross/src/utils/vector_utils.hpp>
 #include <albatross/src/utils/map_utils.hpp>

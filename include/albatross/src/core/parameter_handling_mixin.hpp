@@ -160,8 +160,9 @@ inline bool set_param_values_if_exists(
 
 namespace details {
 
-inline bool variadic_set_param_if_exists(const ParameterKey &key,
-                                         const Parameter &param) {
+inline bool
+variadic_set_param_if_exists(const ParameterKey &key ALBATROSS_UNUSED,
+                             const Parameter &param ALBATROSS_UNUSED) {
   return false;
 }
 

@@ -212,8 +212,9 @@ struct FixedInducingPoints {
       : min_(min), max_(max), num_points_(num_points) {}
 
   template <typename CovarianceFunction>
-  std::vector<double> operator()(const CovarianceFunction &cov,
-                                 const std::vector<double> &features) const {
+  std::vector<double>
+  operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
+             const std::vector<double> &features ALBATROSS_UNUSED) const {
     return linspace(min_, max_, num_points_);
   }
 

@@ -295,8 +295,8 @@ public:
             typename std::enable_if<
                 !has_call_operator<CovFunc, FeatureType, FeatureType>::value,
                 int>::type = 0>
-  void _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const
+  void _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+                 const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType");
 
   template <
@@ -368,8 +368,9 @@ public:
               !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
           int>::type = 0>
   PredictType _predict_impl(
-      const std::vector<FeatureType> &features,
-      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit,
+      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit
+          ALBATROSS_UNUSED,
       PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(
           FeatureType,

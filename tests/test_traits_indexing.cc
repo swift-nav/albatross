@@ -26,13 +26,15 @@ TEST(test_traits_indexing, test_is_valid_map_key) {
   EXPECT_FALSE(bool(details::is_valid_map_key<void>::value));
 }
 
-std::string free_string_const_ref_int(const int &x) { return "int"; }
+std::string free_string_const_ref_int(const int &x ALBATROSS_UNUSED) {
+  return "int";
+}
 
 std::string free_string_ref_int(int &x) { return free_string_const_ref_int(x); }
 
 std::string free_string_int(int x) { return free_string_const_ref_int(x); }
 
-std::string free_string_X(const X &x) { return "x"; }
+std::string free_string_X(const X &x ALBATROSS_UNUSED) { return "x"; }
 
 const auto lambda_string_const_ref_int = [](const int &x) {
   return free_string_const_ref_int(x);
@@ -134,13 +136,13 @@ TEST(test_traits_indexing, test_can_be_called_with_deduction) {
 /*
  * Test Filter Function Traits
  */
-bool free_bool_const_ref_int(const int &x) { return true; }
+bool free_bool_const_ref_int(const int &x ALBATROSS_UNUSED) { return true; }
 
 bool free_bool_ref_int(int &x) { return free_bool_const_ref_int(x); }
 
 bool free_bool_int(int x) { return free_bool_const_ref_int(x); }
 
-bool free_bool_X(const X &x) { return true; }
+bool free_bool_X(const X &x ALBATROSS_UNUSED) { return true; }
 
 const auto lambda_bool_const_ref_int = [](const int &x) {
   return free_bool_const_ref_int(x);

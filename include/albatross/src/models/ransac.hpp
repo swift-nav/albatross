@@ -393,10 +393,12 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
   struct EmptyFit {
-    bool operator==(const EmptyFit &other) const { return true; };
+    bool operator==(const EmptyFit &other ALBATROSS_UNUSED) const {
+      return true;
+    };
 
     template <typename Archive>
-    void serialize(Archive &archive, const std::uint32_t){};
+    void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t){};
   };
 
   Fit() : maybe_empty_fit_model(EmptyFit()){};

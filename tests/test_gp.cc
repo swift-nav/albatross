@@ -78,14 +78,18 @@ public:
    * which is saying all observations are perfectly correlated,
    * so you can move one if you move the rest the same amount.
    */
-  double _call_impl(const double &x, const double &y) const { return variance; }
-
-  double _call_impl(const ConstantEverywhereFeature &x, const double &y) const {
+  double _call_impl(const double &x ALBATROSS_UNUSED,
+                    const double &y ALBATROSS_UNUSED) const {
     return variance;
   }
 
-  double _call_impl(const ConstantEverywhereFeature &x,
-                    const ConstantEverywhereFeature &y) const {
+  double _call_impl(const ConstantEverywhereFeature &x ALBATROSS_UNUSED,
+                    const double &y ALBATROSS_UNUSED) const {
+    return variance;
+  }
+
+  double _call_impl(const ConstantEverywhereFeature &x ALBATROSS_UNUSED,
+                    const ConstantEverywhereFeature &y ALBATROSS_UNUSED) const {
     return variance;
   }
 };

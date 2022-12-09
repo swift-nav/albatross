@@ -151,7 +151,8 @@ TEST(test_scaling_functions, test_inference) {
 class ZeroCovariance : public CovarianceFunction<ZeroCovariance> {
 public:
   template <typename X, typename Y>
-  double _call_impl(const X &x, const Y &y) const {
+  double _call_impl(const X &x ALBATROSS_UNUSED,
+                    const Y &y ALBATROSS_UNUSED) const {
     return 0.;
   }
 };
