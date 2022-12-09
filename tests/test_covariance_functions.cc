@@ -123,8 +123,8 @@ typedef ::testing::Types<
     Exponential<RadialDistance>>
     VectorCompatibleCovarianceFunctions;
 
-TYPED_TEST_CASE(TestVectorCovarianceFunctions,
-                VectorCompatibleCovarianceFunctions);
+TYPED_TEST_SUITE(TestVectorCovarianceFunctions,
+                 VectorCompatibleCovarianceFunctions);
 
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
   const auto xs = points_on_a_line(5);
@@ -190,8 +190,8 @@ typedef ::testing::Types<
     SumOfCovarianceFunctions<IndependentNoise<double>, DummyCovariance>>
     DoubleCompatibleCovarianceFunctions;
 
-TYPED_TEST_CASE(TestDoubleCovarianceFunctions,
-                DoubleCompatibleCovarianceFunctions);
+TYPED_TEST_SUITE(TestDoubleCovarianceFunctions,
+                 DoubleCompatibleCovarianceFunctions);
 
 TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
   const auto xs = points_on_a_line(5);

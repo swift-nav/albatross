@@ -53,5 +53,5 @@ struct DistributionTest : public ::testing::Test {
   typedef typename Distribution::RepresentationType Representation;
 };
 
-TYPED_TEST_CASE_P(DistributionTest);
+TYPED_TEST_SUITE_P(DistributionTest);
 } // namespace albatross

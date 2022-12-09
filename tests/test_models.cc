@@ -95,13 +95,13 @@ TYPED_TEST_P(RegressionModelTester, test_correct_derived_type) {
   EXPECT_TRUE(same);
 }
 
-REGISTER_TYPED_TEST_CASE_P(RegressionModelTester,
-                           test_performs_reasonably_on_linear_data,
-                           test_predict_order_preserved, test_predict_variants,
-                           test_correct_derived_type);
+REGISTER_TYPED_TEST_SUITE_P(RegressionModelTester,
+                            test_performs_reasonably_on_linear_data,
+                            test_predict_order_preserved, test_predict_variants,
+                            test_correct_derived_type);
 
-INSTANTIATE_TYPED_TEST_CASE_P(test_models, RegressionModelTester,
-                              ExampleModels);
+INSTANTIATE_TYPED_TEST_SUITE_P(test_models, RegressionModelTester,
+                               ExampleModels);
 
 class BadModel : public ModelBase<BadModel> {
 public:
