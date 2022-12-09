@@ -64,6 +64,11 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
 
   ALBATROSS_ASSERT(size_in_bytes == decompressed.size());
 
+  if (size_in_bytes == 0) {
+    m = Eigen::Matrix<_Scalar, _Rows, _Cols>(rows, cols);
+    return;
+  }
+
   std::vector<_Scalar> decoded_data(size);
   std::memcpy(decoded_data.data(), decompressed.data(), size_in_bytes);
 
