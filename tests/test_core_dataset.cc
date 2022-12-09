@@ -70,7 +70,13 @@ TEST(test_dataset, test_align_datasets_a_in_b_custom_compare) {
   auto dataset_b = random_dataset_for(std::vector<int>{2, 3, 0, 1});
 
   EXPECT_NE(dataset_a.features, dataset_b.features);
+
+// GCC 6 gets confused by this line, I think because `align_datasets`
+// is marked `inline`
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   auto custom_compare = [](const auto &x, const auto &y) { return x == y; };
+#pragma GCC diagnostic pop
 
   align_datasets(&dataset_a, &dataset_b, custom_compare);
   EXPECT_EQ(dataset_a.size(), 3);

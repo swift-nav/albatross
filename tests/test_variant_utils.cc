@@ -107,10 +107,15 @@ TEST(test_variant_utils, test_to_variant_vector) {
   auto from_mixed =
       to_variant_vector<variant<int, double, VariantUtilsTestType>>(mixed);
   for (std::size_t i = 0; i < mixed.size(); ++i) {
+// GCC 6 gets confused because inside the inlined body of `match()`, a
+// variable is also called `v`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
     mixed[i].match([&](auto v) {
       EXPECT_TRUE(from_mixed[i].is<decltype(v)>());
       EXPECT_EQ(from_mixed[i].get<decltype(v)>(), v);
     });
+#pragma GCC diagnostic pop
   }
 }
 
