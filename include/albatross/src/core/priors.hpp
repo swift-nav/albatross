@@ -211,7 +211,7 @@ public:
       typename PriorType,
       typename std::enable_if<!is_in_variant<PriorType, PossiblePriors>::value,
                               int>::type = 0>
-  PriorContainer(const PriorType &prior) {
+  PriorContainer(const PriorType &prior ALBATROSS_UNUSED) {
     static_assert(delay_static_assert<PriorType>::value,
                   "Attempt to initialize a prior which is not one of the types "
                   "see PossiblePriors");

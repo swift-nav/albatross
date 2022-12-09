@@ -116,7 +116,7 @@ public:
                             (!has_valid_caller<Derived, X>::value &&
                              !has_possible_call_impl<Derived, X>::value),
                             int>::type = 0>
-  void operator()(const X &x) const
+  void operator()(const X &x ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(X, "No public method with signature 'double "
                         "Derived::_call_impl(const X&) const'");
 
@@ -124,7 +124,7 @@ public:
             typename std::enable_if<(!has_valid_caller<Derived, X>::value &&
                                      has_invalid_call_impl<Derived, X>::value),
                                     int>::type = 0>
-  void operator()(const X &x) const
+  void operator()(const X &x ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(X, "Incorrectly defined method 'double "
                         "Derived::_call_impl(const X&) const'");
 

@@ -42,7 +42,8 @@ set_variant(const X &x, variant<Ts...> *to_set) {
 template <typename... Ts, typename X>
 inline std::enable_if_t<
     !is_variant<X>::value && !is_in_variant<X, variant<Ts...>>::value, void>
-set_variant(const X &x, variant<Ts...> *to_set) {
+set_variant(const X &x ALBATROSS_UNUSED,
+            variant<Ts...> *to_set ALBATROSS_UNUSED) {
   static_assert(delay_static_assert<X>::value,
                 "Incompatible type. X does not belong to variant.");
 }

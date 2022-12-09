@@ -35,7 +35,7 @@ struct UniformlySpacedInducingPoints {
       : num_points(num_points_) {}
 
   template <typename CovarianceFunction>
-  std::vector<double> operator()(const CovarianceFunction &cov,
+  std::vector<double> operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
                                  const std::vector<double> &features) const {
     double min = *std::min_element(features.begin(), features.end());
     double max = *std::max_element(features.begin(), features.end());
@@ -60,8 +60,9 @@ struct StateSpaceInducingPointStrategy {
             std::enable_if_t<!has_valid_state_space_representation<
                                  CovarianceFunction, FeatureType>::value,
                              int> = 0>
-  auto operator()(const CovarianceFunction &cov,
-                  const std::vector<FeatureType> &features) const
+  auto
+  operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
+             const std::vector<FeatureType> &features ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(
           CovarianceFunction,
           "Covariance function is missing state_space_representation method, "

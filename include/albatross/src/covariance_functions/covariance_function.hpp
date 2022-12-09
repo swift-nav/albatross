@@ -184,7 +184,7 @@ public:
                             (!has_valid_caller<Derived, X, X>::value &&
                              !has_possible_call_impl<Derived, X, X>::value),
                             int>::type = 0>
-  void operator()(const X &x) const
+  void operator()(const X &x ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(X, "No public method with signature 'double "
                         "Derived::_call_impl(const X&, const X&) const'");
 
@@ -192,14 +192,14 @@ public:
                             (!has_valid_caller<Derived, X, X>::value &&
                              has_invalid_call_impl<Derived, X, X>::value),
                             int>::type = 0>
-  void operator()(const X &x) const
+  void operator()(const X &x ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(X, "Incorrectly defined method 'double "
                         "Derived::_call_impl(const X&, const X&) const'");
 
   template <typename X,
             typename std::enable_if<!has_valid_caller<Derived, X, X>::value,
                                     int>::type = 0>
-  void diagonal(const std::vector<X> &xs) const
+  void diagonal(const std::vector<X> &xs ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(X, "No public method with signature 'double "
                         "Derived::_call_impl(const X&, const X&) const'");
 

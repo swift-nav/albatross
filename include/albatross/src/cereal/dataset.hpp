@@ -32,7 +32,7 @@ serialize(Archive &archive, RegressionDataset<FeatureType> &dataset,
 template <class Archive, class FeatureType>
 typename std::enable_if<!valid_in_out_serializer<FeatureType, Archive>::value,
                         void>::type
-serialize(Archive &archive, RegressionDataset<FeatureType> &dataset,
+serialize(Archive &archive ALBATROSS_UNUSED, RegressionDataset<FeatureType> &,
           const std::uint32_t) {
   static_assert(delay_static_assert<Archive>::value,
                 "In order to serialize a RegressionDataset the corresponding "

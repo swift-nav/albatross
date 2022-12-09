@@ -185,9 +185,10 @@ template <typename GrouperFunction, typename ValueType,
           typename std::enable_if<
               std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>
-void expect_group_key_matches_expected(const GrouperFunction &grouper,
-                                       const ValueType &value,
-                                       const GroupKey &expected) {}
+void expect_group_key_matches_expected(
+    const GrouperFunction &grouper ALBATROSS_UNUSED,
+    const ValueType &value ALBATROSS_UNUSED,
+    const GroupKey &expected ALBATROSS_UNUSED) {}
 
 TYPED_TEST_P(GroupByTester, test_groupby_groups) {
   auto parent = this->test_case.get_parent();

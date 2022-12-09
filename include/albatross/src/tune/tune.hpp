@@ -255,7 +255,7 @@ struct GenericTuner {
                     !is_invocable<ObjectiveFunction, ParameterStore>::value &&
                     !is_invocable<ObjectiveFunction, Eigen::VectorXd>::value,
                 int> = 0>
-  void tune(ObjectiveFunction &objective)
+  void tune(ObjectiveFunction &objective ALBATROSS_UNUSED)
       ALBATROSS_FAIL(ObjectiveFunction,
                      "Unsupported function signature for ObjectiveFunction");
 };

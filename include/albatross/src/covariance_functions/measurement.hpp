@@ -85,7 +85,8 @@ public:
       typename X, typename Y,
       typename std::enable_if<
           has_valid_call_impl<SubCovariance, X &, Y &>::value, int>::type = 0>
-  double _call_impl(const X &x, const Y &y) const {
+  double _call_impl(const X &x ALBATROSS_UNUSED,
+                    const Y &y ALBATROSS_UNUSED) const {
     return 0.;
   };
 

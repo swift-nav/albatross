@@ -16,7 +16,8 @@
 namespace cereal {
 
 template <typename Archive>
-inline void serialize(Archive &archive, albatross::Prior &prior,
+inline void serialize(Archive &archive ALBATROSS_UNUSED,
+                      albatross::Prior &prior ALBATROSS_UNUSED,
                       const std::uint32_t){};
 
 template <typename Archive>

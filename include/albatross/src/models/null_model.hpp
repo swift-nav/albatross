@@ -19,9 +19,11 @@ class NullModel;
 
 template <> struct Fit<NullModel> {
   template <typename Archive>
-  void serialize(Archive &archive, const std::uint32_t){};
+  void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t){};
 
-  bool operator==(const Fit<NullModel> &other) const { return true; }
+  bool operator==(const Fit<NullModel> &other ALBATROSS_UNUSED) const {
+    return true;
+  }
 };
 
 class NullModel : public ModelBase<NullModel> {
@@ -35,14 +37,16 @@ public:
   // If the implementing class doesn't have a fit method for this
   // FeatureType but the CovarianceFunction does.
   template <typename FeatureType>
-  Fit<NullModel> _fit_impl(const std::vector<FeatureType> &features,
-                           const MarginalDistribution &targets) const {
+  Fit<NullModel>
+  _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+            const MarginalDistribution &targets ALBATROSS_UNUSED) const {
     return {};
   }
 
   template <typename FeatureType>
-  auto fit_from_prediction(const std::vector<FeatureType> &features,
-                           const JointDistribution &prediction) const {
+  auto fit_from_prediction(
+      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+      const JointDistribution &prediction ALBATROSS_UNUSED) const {
     const NullModel m(*this);
     FitModel<NullModel, Fit<NullModel>> fit_model(m, Fit<NullModel>());
     return fit_model;
@@ -51,7 +55,7 @@ public:
   template <typename FeatureType>
   JointDistribution
   _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<NullModel> &fit,
+                const Fit<NullModel> &fit ALBATROSS_UNUSED,
                 PredictTypeIdentity<JointDistribution> &&) const {
     const Eigen::Index n = static_cast<Eigen::Index>(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(n);
@@ -62,7 +66,7 @@ public:
   template <typename FeatureType>
   MarginalDistribution
   _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<NullModel> &fit,
+                const Fit<NullModel> &fit ALBATROSS_UNUSED,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
     const Eigen::Index en = static_cast<Eigen::Index>(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(en);
