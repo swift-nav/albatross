@@ -223,7 +223,7 @@ TEST_F(TestTuneQuadratic, test_generic) {
 
   GenericTuner async_gradient_tuner(initial_x, output_stream);
   async_gradient_tuner.optimizer = default_gradient_optimizer(params);
-  async_gradient_tuner.use_async = true;
+  async_gradient_tuner.threads = make_shared_thread_pool();
   test_tuner(async_gradient_tuner);
 }
 
@@ -241,7 +241,6 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
 
   auto test_tuner = [&]() {
     const std::size_t n_threads = 8;
-    const bool use_async = false;
     const std::size_t n_iterations = 1000;
     ParameterStore params;
     for (std::size_t i = 0; i < initial_x.size(); ++i) {
@@ -250,7 +249,7 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
     }
     const auto params_result =
         greedy_tune(mahalanobis_distance_params, params, n_threads,
-                    n_iterations, use_async, &output_stream);
+                    n_iterations, nullptr, &output_stream);
 
     auto to_eigen = [](const auto &p) {
       auto param_vector = get_tunable_parameters(p).values;

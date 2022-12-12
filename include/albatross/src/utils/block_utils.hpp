@@ -171,11 +171,13 @@ struct BlockDiagonalLDLT {
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
-  async_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+        ThreadPool *pool) const;
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
-  async_sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+             ThreadPool *pool) const;
 
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
@@ -327,8 +329,9 @@ BlockDiagonalLDLT::block_to_row_map() const {
 }
 
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
-    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols>
+BlockDiagonalLDLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+                         ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
@@ -337,13 +340,14 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_solve(
         blocks[i].solve(rhs_chunk);
   };
 
-  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
+  apply_map(block_to_row_map(), solve_and_fill_one_block, pool);
   return output;
 }
 
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_sqrt_solve(
-    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols>
+BlockDiagonalLDLT::sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+                              ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
 
@@ -353,7 +357,7 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::async_sqrt_solve(
         blocks[i].sqrt_solve(rhs_chunk);
   };
 
-  async_apply_map(block_to_row_map(), solve_and_fill_one_block);
+  apply_map(block_to_row_map(), solve_and_fill_one_block, pool);
   return output;
 }
 

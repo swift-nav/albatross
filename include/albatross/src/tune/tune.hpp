@@ -114,12 +114,12 @@ struct GenericTuner {
   ParameterStore initial_params;
   nlopt::opt optimizer;
   std::ostream &output_stream;
-  bool use_async;
+  std::shared_ptr<ThreadPool> threads;
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
       : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_), use_async(false) {
+        output_stream(output_stream_), threads(nullptr) {
     optimizer = default_optimizer(initial_params);
   };
 
@@ -152,11 +152,10 @@ struct GenericTuner {
       double metric = objective(params);
 
       if (grad.size() > 0) {
-
         const auto tunable = get_tunable_parameters(initial_params);
 
         const auto grad_eval =
-            compute_gradient(objective, params, metric, use_async);
+            compute_gradient(objective, params, metric, threads.get());
         this->output_stream << "gradient" << std::endl;
         for (std::size_t i = 0; i < grad_eval.size(); ++i) {
           this->output_stream << "  " << tunable.names[i] << " : "
@@ -197,7 +196,7 @@ struct GenericTuner {
 
       if (grad.size() > 0) {
         const auto grad_eval =
-            compute_gradient(objective, x, metric, use_async);
+            compute_gradient(objective, x, metric, threads.get());
         this->output_stream << "gradient" << std::endl;
         for (std::size_t i = 0; i < grad_eval.size(); ++i) {
           this->output_stream << "  " << i << " : " << grad_eval[i]
