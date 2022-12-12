@@ -196,3 +196,27 @@ jobs:
           cd doc
           make html
 
+  clang-tidy:
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.SSH_KEY }}
+
+      - name: Install clang-tools-14
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install build-essential software-properties-common -y && \
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
+          sudo apt-get update && \
+          sudo apt-get install clang-14 clang-tools-14 clang-tidy-14 && \
+          sudo ln -s /usr/bin/clang-apply-replacements-14 /usr/local/bin/clang-apply-replacements
+      - name: Run build
+        env:
+          CC: clang-14
+          CXX: clang++-14
+        run: |
+          bash ./ci/run_tidy.sh

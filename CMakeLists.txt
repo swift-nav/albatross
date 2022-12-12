@@ -1,9 +1,10 @@
+cmake_minimum_required(VERSION 3.14)
 project(albatross)
-cmake_minimum_required(VERSION 2.8.7)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
 include(CCache)
+include(ClangTidy)
 include(SwiftCmakeOptions)
 swift_create_project_options(
     HAS_TESTS 
@@ -92,3 +93,5 @@ endif()
 if(albatross_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+swift_create_clang_tidy_targets(WITHOUT_SWIFT_TYPES)
