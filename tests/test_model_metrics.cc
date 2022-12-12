@@ -31,7 +31,7 @@ typedef ::testing::Types<LeaveOneOutLikelihood<JointDistribution>,
                          LeaveOneOutRMSE, GaussianProcessNegativeLogLikelihood>
     MetricsToTest;
 
-TYPED_TEST_CASE(ModelMetricTester, MetricsToTest);
+TYPED_TEST_SUITE(ModelMetricTester, MetricsToTest);
 
 TYPED_TEST(ModelMetricTester, test_sanity) {
   MakeGaussianProcess test_case;

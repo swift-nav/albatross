@@ -35,7 +35,7 @@ public:
 };
 
 typedef ::testing::Types<LeaveOneIntervalOut> IndependenceAssumptions;
-TYPED_TEST_CASE(SparseGaussianProcessTest, IndependenceAssumptions);
+TYPED_TEST_SUITE(SparseGaussianProcessTest, IndependenceAssumptions);
 
 template <typename CovFunc, typename GrouperFunction>
 void expect_sparse_gp_performance(const CovFunc &covariance,

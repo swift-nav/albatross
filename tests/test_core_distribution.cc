@@ -163,13 +163,13 @@ TYPED_TEST_P(DistributionTest, test_subtract) {
   EXPECT_EQ(actual, expected);
 };
 
-REGISTER_TYPED_TEST_CASE_P(DistributionTest, test_subset,
-                           test_multiply_with_matrix_joint,
-                           test_multiply_with_matrix_marginal,
-                           test_multiply_with_sparse_matrix_joint,
-                           test_multiply_with_sparse_matrix_marginal,
-                           test_multiply_with_vector, test_multiply_by_scalar,
-                           test_add, test_subtract);
+REGISTER_TYPED_TEST_SUITE_P(DistributionTest, test_subset,
+                            test_multiply_with_matrix_joint,
+                            test_multiply_with_matrix_marginal,
+                            test_multiply_with_sparse_matrix_joint,
+                            test_multiply_with_sparse_matrix_marginal,
+                            test_multiply_with_vector, test_multiply_by_scalar,
+                            test_add, test_subtract);
 
 Eigen::VectorXd arange(int k = 5) {
   Eigen::VectorXd mean(k);
@@ -203,6 +203,6 @@ struct JointWithCovariance : public DistributionTestCase<JointDistribution> {
 
 typedef ::testing::Types<MarginalWithCovariance, JointWithCovariance> ToTest;
 
-INSTANTIATE_TYPED_TEST_CASE_P(Albatross, DistributionTest, ToTest);
+INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, DistributionTest, ToTest);
 
 } // namespace albatross

@@ -275,8 +275,8 @@ struct LinearCombo : public SerializableType<LinearCombination<double>> {
   }
 };
 
-REGISTER_TYPED_TEST_CASE_P(SerializeTest, test_roundtrip_serialize_json,
-                           test_roundtrip_serialize_binary);
+REGISTER_TYPED_TEST_SUITE_P(SerializeTest, test_roundtrip_serialize_json,
+                            test_roundtrip_serialize_binary);
 
 typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
@@ -287,7 +287,7 @@ typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          VariantAsDouble, BlockSymmetricMatrix, LinearCombo>
     ToTest;
 
-INSTANTIATE_TYPED_TEST_CASE_P(Albatross, SerializeTest, ToTest);
+INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, SerializeTest, ToTest);
 
 /*
  * Make sure all the example models serialize.
@@ -380,11 +380,11 @@ TYPED_TEST_P(RegressionModelTester, test_fit_model_serializes) {
                                 SerializableFitModelType<TypeParam>>();
 }
 
-REGISTER_TYPED_TEST_CASE_P(RegressionModelTester, test_model_serializes,
-                           test_fit_model_serializes);
+REGISTER_TYPED_TEST_SUITE_P(RegressionModelTester, test_model_serializes,
+                            test_fit_model_serializes);
 
-INSTANTIATE_TYPED_TEST_CASE_P(test_serialize, RegressionModelTester,
-                              ExampleModels);
+INSTANTIATE_TYPED_TEST_SUITE_P(test_serialize, RegressionModelTester,
+                               ExampleModels);
 
 TEST(test_serialize, test_variant_version_0) {
   int one = 1;

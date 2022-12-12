@@ -27,7 +27,7 @@ template <typename Serializable> struct SerializeTest : public ::testing::Test {
   typedef typename Serializable::RepresentationType Representation;
 };
 
-TYPED_TEST_CASE_P(SerializeTest);
+TYPED_TEST_SUITE_P(SerializeTest);
 
 template <typename InputArchiveType, typename OutputArchiveType,
           typename SerializableTestType>

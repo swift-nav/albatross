@@ -66,7 +66,7 @@ typedef ::testing::Types<
     WithReturnType<CallOperatorStringConstRefInt, std::string>>
     TestFunctions;
 
-TYPED_TEST_CASE(TestCanBeCalledWithInt, TestFunctions);
+TYPED_TEST_SUITE(TestCanBeCalledWithInt, TestFunctions);
 
 TYPED_TEST(TestCanBeCalledWithInt, test_invocalbe) {
   using Expected = typename TypeParam::ReturnType;
@@ -163,7 +163,7 @@ typedef ::testing::Types<
     decltype(lambda_bool_const_ref_int), CallOperatorBoolConstRefInt>
     ValueFilterFunctionTestCases;
 
-TYPED_TEST_CASE(TestIsValueFilterFunction, ValueFilterFunctionTestCases);
+TYPED_TEST_SUITE(TestIsValueFilterFunction, ValueFilterFunctionTestCases);
 
 TYPED_TEST(TestIsValueFilterFunction, test_is_value_filter_function) {
   EXPECT_TRUE(bool(
