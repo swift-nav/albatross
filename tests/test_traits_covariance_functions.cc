@@ -394,14 +394,23 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
 
 struct HasSSRX : public CovarianceFunction<HasSSRX> {
 
-  std::vector<double> _ssr_impl(const std::vector<X> &xs) const { return {1.}; }
+  std::vector<double>
+  _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
+    return {1.};
+  }
 };
 
 struct HasSSRXY : public CovarianceFunction<HasSSRXY> {
 
-  std::vector<double> _ssr_impl(const std::vector<X> &xs) const { return {1.}; }
+  std::vector<double>
+  _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
+    return {1.};
+  }
 
-  std::vector<double> _ssr_impl(const std::vector<Y> &ys) const { return {1.}; }
+  std::vector<double>
+  _ssr_impl(const std::vector<Y> &ys ALBATROSS_UNUSED) const {
+    return {1.};
+  }
 };
 
 struct WithoutSSR : public CovarianceFunction<WithoutSSR> {};

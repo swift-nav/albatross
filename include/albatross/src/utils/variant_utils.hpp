@@ -26,7 +26,12 @@ template <typename X> struct ToVariantIdentity {};
 template <typename... Ts, typename X>
 inline std::enable_if_t<is_sub_variant<X, variant<Ts...>>::value, void>
 set_variant(const X &x, variant<Ts...> *to_set) {
+// GCC 6 gets confused because inside the inlined body of `match()`, a
+// variable is also called `v`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   x.match([&to_set](const auto &v) { *to_set = v; });
+#pragma GCC diagnostic pop
 }
 
 /*
@@ -42,7 +47,8 @@ set_variant(const X &x, variant<Ts...> *to_set) {
 template <typename... Ts, typename X>
 inline std::enable_if_t<
     !is_variant<X>::value && !is_in_variant<X, variant<Ts...>>::value, void>
-set_variant(const X &x, variant<Ts...> *to_set) {
+set_variant(const X &x ALBATROSS_UNUSED,
+            variant<Ts...> *to_set ALBATROSS_UNUSED) {
   static_assert(delay_static_assert<X>::value,
                 "Incompatible type. X does not belong to variant.");
 }

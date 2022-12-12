@@ -93,10 +93,10 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
     stream->flags(f);
 
     // Sort the indices from largest to smallest coef
-    std::vector<std::size_t> sorted_idx(vector.size());
+    std::vector<Eigen::Index> sorted_idx(cast::to_size(vector.size()));
     std::iota(sorted_idx.begin(), sorted_idx.end(), 0);
     std::sort(sorted_idx.begin(), sorted_idx.end(),
-              [&vector](std::size_t ii, std::size_t jj) {
+              [&vector](Eigen::Index ii, Eigen::Index jj) {
                 return fabs(vector[ii]) > fabs(vector[jj]);
               });
 
@@ -104,7 +104,7 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
       double coef = vector[sorted_idx[j]];
       if (fabs(coef) > print_if_above) {
         (*stream) << "    " << std::setw(12) << coef << "   "
-                  << features[sorted_idx[j]] << std::endl;
+                  << features[cast::to_size(sorted_idx[j])] << std::endl;
       }
     }
   }

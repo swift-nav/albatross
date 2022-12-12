@@ -25,7 +25,7 @@ TEST(test_outlier, test_ransac_direct) {
 
   std::vector<std::size_t> bad_inds = {3, 5};
   for (const auto &i : bad_inds) {
-    dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
+    dataset.targets.mean[cast::to_index(i)] = pow(-1, i) * 400.;
   }
 
   const auto indexer = dataset.group_by(LeaveOneOutGrouper()).indexers();
@@ -63,7 +63,7 @@ TEST(test_outlier, test_ransac_model) {
 
   std::vector<std::size_t> bad_inds = {3, 5};
   for (const auto &i : bad_inds) {
-    dataset.targets.mean[static_cast<Eigen::Index>(i)] = pow(-1, i) * 400.;
+    dataset.targets.mean[cast::to_index(i)] = pow(-1, i) * 400.;
   }
 
   DefaultRansacStrategy ransac_strategy;

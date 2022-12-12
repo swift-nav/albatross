@@ -48,8 +48,8 @@ protected:
       typename std::enable_if<has_possible_fit<ModelType, FeatureType>::value &&
                                   !has_valid_fit<ModelType, FeatureType>::value,
                               int>::type = 0>
-  void _fit(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const
+  void _fit(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+            const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(FeatureType,
                      "The ModelType *almost* has a _fit_impl method for "
                      "FeatureType, but it appears to be invalid");
@@ -59,8 +59,8 @@ protected:
                 !has_possible_fit<ModelType, FeatureType>::value &&
                     !has_valid_fit<ModelType, FeatureType>::value,
                 int>::type = 0>
-  void _fit(const std::vector<FeatureType> &features,
-            const MarginalDistribution &targets) const
+  void _fit(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+            const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(
           FeatureType,
           "The ModelType is missing a _fit_impl method for FeatureType.");
@@ -77,17 +77,23 @@ protected:
                                    PredictTypeIdentity<PredictType>());
   }
 
+// The `ALBATROSS_FAIL` macro leads to a mysterious error with GCC 6
+// that does not appear in later versions.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   template <
       typename PredictFeatureType, typename FitType, typename PredictType,
       typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
                                                  FitType, PredictType>::value,
                               int>::type = 0>
-  PredictType predict_(const std::vector<PredictFeatureType> &features,
-                       const FitType &fit,
-                       PredictTypeIdentity<PredictType> &&) const
+  PredictType
+  predict_(const std::vector<PredictFeatureType> &features ALBATROSS_UNUSED,
+           const FitType &fit ALBATROSS_UNUSED,
+           PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(PredictFeatureType,
                      "The ModelType is missing a _predict_impl method for "
                      "PredictFeatureType, FitType, PredictType.");
+#pragma GCC diagnostic pop
 
 public:
   /*

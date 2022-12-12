@@ -154,7 +154,7 @@ inline auto as_group_feature(GroupKey &&key, FeatureType &&feature) {
 }
 
 template <typename GroupKey, typename FeatureType>
-inline auto as_group_feature(GroupKey &&key,
+inline auto as_group_feature(GroupKey &&key ALBATROSS_UNUSED,
                              GroupFeature<GroupKey, FeatureType> &feature) {
   return feature;
 }

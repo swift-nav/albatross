@@ -23,10 +23,12 @@ inline double uniform_ks_test(const std::vector<double> &samples) {
   double largest_difference_between_sample_and_expected_cdf = 0.;
   std::vector<double> sorted(samples);
   std::sort(sorted.begin(), sorted.end());
-  double n = static_cast<double>(sorted.size());
+  double n = cast::to_double(sorted.size());
   for (std::size_t i = 0; i < sorted.size(); ++i) {
+    const auto di = cast::to_double(i);
 
-    double difference = std::max((i + 1) / n - sorted[i], sorted[i] - i / n);
+    const double difference =
+        std::max((di + 1) / n - sorted[i], sorted[i] - di / n);
     if (difference > largest_difference_between_sample_and_expected_cdf) {
       largest_difference_between_sample_and_expected_cdf = difference;
     }

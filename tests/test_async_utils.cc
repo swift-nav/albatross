@@ -79,7 +79,7 @@ TEST(test_async_utils, test_async_apply_map_key_value_function) {
 
   std::vector<int> order_processed;
 
-  auto add_to_sum = [&](const std::string &key, const int x) {
+  auto add_to_sum = [&](const std::string &key ALBATROSS_UNUSED, const int x) {
     std::this_thread::sleep_for(std::chrono::milliseconds(abs(x - 2)));
     std::lock_guard<std::mutex> lock(mu);
     sum += x;
@@ -105,7 +105,7 @@ TEST(test_async_utils, test_async_apply_speedup_vector) {
 
   std::vector<int> inds;
   for (std::size_t i = 0; i < 4; ++i) {
-    inds.push_back(i);
+    inds.push_back(static_cast<int>(i));
   }
 
   const auto start = std::chrono::system_clock::now();

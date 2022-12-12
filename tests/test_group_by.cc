@@ -65,7 +65,8 @@ struct CustomNearestEvenNumber {
 
 RegressionDataset<int> test_integer_dataset() {
   std::vector<int> features = {3, 7, 1, 2, 5, 8};
-  Eigen::VectorXd targets = Eigen::VectorXd::Random(6);
+  Eigen::VectorXd targets =
+      Eigen::VectorXd::Random(cast::to_index(features.size()));
   return RegressionDataset<int>(features, targets);
 }
 
@@ -185,9 +186,10 @@ template <typename GrouperFunction, typename ValueType,
           typename std::enable_if<
               std::is_same<GrouperFunction, LeaveOneOutGrouper>::value,
               int>::type = 0>
-void expect_group_key_matches_expected(const GrouperFunction &grouper,
-                                       const ValueType &value,
-                                       const GroupKey &expected) {}
+void expect_group_key_matches_expected(
+    const GrouperFunction &grouper ALBATROSS_UNUSED,
+    const ValueType &value ALBATROSS_UNUSED,
+    const GroupKey &expected ALBATROSS_UNUSED) {}
 
 TYPED_TEST_P(GroupByTester, test_groupby_groups) {
   auto parent = this->test_case.get_parent();
@@ -377,7 +379,7 @@ double mean(const std::vector<double> &xs) {
   for (const auto &x : xs) {
     mean += x;
   }
-  return mean / xs.size();
+  return mean / cast::to_double(xs.size());
 }
 
 long int number_of_digits(double x) { return lround(ceil(log10(x))); }
@@ -508,7 +510,7 @@ template <typename T> inline double test_sum(const std::vector<T> &ts) {
 };
 
 template <typename T> inline double test_mean(const std::vector<T> &ts) {
-  return test_sum(ts) / ts.size();
+  return test_sum(ts) / cast::to_double(ts.size());
 }
 
 TEST(test_groupby, test_group_by_min_max_value) {

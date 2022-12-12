@@ -167,10 +167,10 @@ public:
   Eigen::VectorXd inverse_diagonal() const {
     Eigen::Index n = this->rows();
 
-    std::size_t size_n = static_cast<std::size_t>(n);
+    const auto size_n = albatross::cast::to_size(n);
     std::vector<std::vector<std::size_t>> block_indices(size_n);
-    for (Eigen::Index i = 0; i < n; i++) {
-      block_indices[i] = {static_cast<std::size_t>(i)};
+    for (std::size_t i = 0; i < size_n; i++) {
+      block_indices[i] = {i};
     }
 
     Eigen::VectorXd inv_diag(n);
@@ -178,7 +178,7 @@ public:
     for (std::size_t i = 0; i < size_n; i++) {
       ALBATROSS_ASSERT(blocks[i].rows() == 1);
       ALBATROSS_ASSERT(blocks[i].cols() == 1);
-      inv_diag[i] = blocks[i](0, 0);
+      inv_diag[albatross::cast::to_index(i)] = blocks[i](0, 0);
     }
 
     return inv_diag;

@@ -41,10 +41,10 @@ inline std::vector<double> query_ratios(std::size_t n) {
     return {log_min};
   }
 
-  const double step = (log_max - log_min) / (n - 1);
+  const double step = (log_max - log_min) / (cast::to_double(n) - 1);
   std::vector<double> output;
   for (std::size_t i = 0; i < n; ++i) {
-    output.push_back(std::pow(10, log_min + i * step));
+    output.push_back(std::pow(10, log_min + cast::to_double(i) * step));
   }
 
   return output;

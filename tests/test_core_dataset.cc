@@ -18,12 +18,12 @@ namespace albatross {
 
 TEST(test_dataset, test_construct_and_subset) {
   std::vector<int> features = {3, 7, 1};
-  Eigen::VectorXd targets = Eigen::VectorXd::Random(3);
+  const auto targets = Eigen::VectorXd::Random(3);
 
   RegressionDataset<int> dataset(features, targets);
 
   EXPECT_EQ(dataset.size(), features.size());
-  EXPECT_EQ(dataset.size(), static_cast<std::size_t>(targets.size()));
+  EXPECT_EQ(dataset.size(), cast::to_size(targets.size()));
 
   std::vector<std::size_t> indices = {0, 2};
   const auto subset_dataset = dataset.subset(indices);
@@ -35,11 +35,18 @@ TEST(test_dataset, test_construct_and_subset) {
   EXPECT_EQ(subset_dataset, filtered_dataset);
 }
 
-TEST(test_dataset, test_deduplicate) {
-  std::vector<int> features = {0, 1, 1, 2};
-  Eigen::VectorXd targets = Eigen::VectorXd::Random(features.size());
-  RegressionDataset<int> dataset(features, targets);
+template <typename T>
+Eigen::VectorXd random_targets_for(const std::vector<T> &features) {
+  return Eigen::VectorXd::Random(cast::to_index(features.size()));
+}
 
+template <typename T>
+RegressionDataset<T> random_dataset_for(const std::vector<T> &features) {
+  return {features, random_targets_for(features)};
+}
+
+TEST(test_dataset, test_deduplicate) {
+  const auto dataset = random_dataset_for(std::vector<int>{0, 1, 1, 2});
   const auto dedupped = deduplicate(dataset);
 
   const std::vector<std::size_t> expected_inds = {0, 2, 3};
@@ -49,13 +56,8 @@ TEST(test_dataset, test_deduplicate) {
 }
 
 TEST(test_dataset, test_align_datasets_a_in_b) {
-  std::vector<int> features_a = {0, 1, 2};
-  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
-  RegressionDataset<int> dataset_a(features_a, targets_a);
-
-  std::vector<int> features_b = {2, 3, 0, 1};
-  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
-  RegressionDataset<int> dataset_b(features_b, targets_b);
+  auto dataset_a = random_dataset_for(std::vector<int>{0, 1, 2});
+  auto dataset_b = random_dataset_for(std::vector<int>{2, 3, 0, 1});
 
   EXPECT_NE(dataset_a.features, dataset_b.features);
   align_datasets(&dataset_a, &dataset_b);
@@ -64,16 +66,17 @@ TEST(test_dataset, test_align_datasets_a_in_b) {
 }
 
 TEST(test_dataset, test_align_datasets_a_in_b_custom_compare) {
-  std::vector<int> features_a = {0, 1, 2};
-  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
-  RegressionDataset<int> dataset_a(features_a, targets_a);
-
-  std::vector<int> features_b = {2, 3, 0, 1};
-  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
-  RegressionDataset<int> dataset_b(features_b, targets_b);
+  auto dataset_a = random_dataset_for(std::vector<int>{0, 1, 2});
+  auto dataset_b = random_dataset_for(std::vector<int>{2, 3, 0, 1});
 
   EXPECT_NE(dataset_a.features, dataset_b.features);
+
+// GCC 6 gets confused by this line, I think because `align_datasets`
+// is marked `inline`
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   auto custom_compare = [](const auto &x, const auto &y) { return x == y; };
+#pragma GCC diagnostic pop
 
   align_datasets(&dataset_a, &dataset_b, custom_compare);
   EXPECT_EQ(dataset_a.size(), 3);
@@ -81,13 +84,8 @@ TEST(test_dataset, test_align_datasets_a_in_b_custom_compare) {
 }
 
 TEST(test_dataset, test_align_datasets_a_in_b_unordered) {
-  std::vector<int> features_a = {0, 2, 1};
-  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
-  RegressionDataset<int> dataset_a(features_a, targets_a);
-
-  std::vector<int> features_b = {2, 3, 0, 1};
-  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
-  RegressionDataset<int> dataset_b(features_b, targets_b);
+  auto dataset_a = random_dataset_for(std::vector<int>{0, 2, 1});
+  auto dataset_b = random_dataset_for(std::vector<int>{2, 3, 0, 1});
 
   EXPECT_NE(dataset_a.features, dataset_b.features);
   align_datasets(&dataset_a, &dataset_b);
@@ -96,13 +94,8 @@ TEST(test_dataset, test_align_datasets_a_in_b_unordered) {
 }
 
 TEST(test_dataset, test_align_datasets_a_not_in_b) {
-  std::vector<int> features_a = {0, 1, 2, 3};
-  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
-  RegressionDataset<int> dataset_a(features_a, targets_a);
-
-  std::vector<int> features_b = {2, 4, 0};
-  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
-  RegressionDataset<int> dataset_b(features_b, targets_b);
+  auto dataset_a = random_dataset_for(std::vector<int>{0, 1, 2, 3});
+  auto dataset_b = random_dataset_for(std::vector<int>{2, 4, 0});
 
   EXPECT_NE(dataset_a.features, dataset_b.features);
   align_datasets(&dataset_a, &dataset_b);
@@ -111,13 +104,8 @@ TEST(test_dataset, test_align_datasets_a_not_in_b) {
 }
 
 TEST(test_dataset, test_align_datasets_no_intersect) {
-  std::vector<int> features_a = {0, 1, 2};
-  Eigen::VectorXd targets_a = Eigen::VectorXd::Random(features_a.size());
-  RegressionDataset<int> dataset_a(features_a, targets_a);
-
-  std::vector<int> features_b = {3, 4, 5};
-  Eigen::VectorXd targets_b = Eigen::VectorXd::Random(features_b.size());
-  RegressionDataset<int> dataset_b(features_b, targets_b);
+  auto dataset_a = random_dataset_for(std::vector<int>{0, 1, 2});
+  auto dataset_b = random_dataset_for(std::vector<int>{3, 4, 5});
 
   align_datasets(&dataset_a, &dataset_b);
   EXPECT_EQ(dataset_a.size(), 0);
@@ -140,8 +128,7 @@ void expect_split_recombine(const RegressionDataset<int> &dataset) {
 
 TEST(test_dataset, test_concatenate_same_type) {
   std::vector<int> features = {3, 7, 1};
-  Eigen::VectorXd mean_only_targets = Eigen::VectorXd::Random(3);
-
+  const auto mean_only_targets = random_targets_for(features);
   RegressionDataset<int> mean_only_dataset(features, mean_only_targets);
 
   expect_split_recombine(mean_only_dataset);
@@ -155,12 +142,12 @@ TEST(test_dataset, test_concatenate_same_type) {
 
 TEST(test_dataset, test_concatenate_different_type) {
   std::vector<int> int_features = {3, 7, 1};
-  Eigen::VectorXd int_targets = Eigen::VectorXd::Random(3);
-  RegressionDataset<int> int_dataset(int_features, int_targets);
+  RegressionDataset<int> int_dataset(int_features,
+                                     random_targets_for(int_features));
 
   std::vector<double> double_features = {3., 7., 1.};
-  Eigen::VectorXd double_targets = Eigen::VectorXd::Random(3);
-  RegressionDataset<double> double_dataset(double_features, double_targets);
+  RegressionDataset<double> double_dataset(double_features,
+                                           random_targets_for(double_features));
 
   const auto reconstructed = concatenate_datasets(int_dataset, double_dataset);
 
@@ -184,9 +171,7 @@ TEST(test_dataset, test_concatenate_different_type) {
 }
 
 TEST(test_dataset, test_streamable_features) {
-  std::vector<int> features = {3, 7, 1};
-  Eigen::VectorXd targets = Eigen::VectorXd::Random(3);
-  RegressionDataset<int> dataset(features, targets);
+  auto dataset = random_dataset_for(std::vector<int>{3, 7, 1});
 
   std::ostringstream oss;
   oss << dataset << std::endl;
@@ -195,10 +180,8 @@ TEST(test_dataset, test_streamable_features) {
 struct NotStreamable {};
 
 TEST(test_dataset, test_not_streamable_features) {
-  std::vector<NotStreamable> features = {NotStreamable(), NotStreamable(),
-                                         NotStreamable()};
-  Eigen::VectorXd targets = Eigen::VectorXd::Random(3);
-  RegressionDataset<NotStreamable> dataset(features, targets);
+  auto dataset = random_dataset_for(std::vector<NotStreamable>{
+      NotStreamable(), NotStreamable(), NotStreamable()});
 
   std::ostringstream oss;
   oss << dataset << std::endl;

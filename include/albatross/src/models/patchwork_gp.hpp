@@ -162,7 +162,8 @@ auto patchwork_solver_from_v(
   const Eigen::MatrixXd u = block_accumulate(C, v, compute_u_block);
 
   // w = A^-1 C u
-  auto compute_Cu_block = [&](const auto &key, const auto &C_i) {
+  auto compute_Cu_block = [&](const auto &key ALBATROSS_UNUSED,
+                              const auto &C_i) {
     return Eigen::MatrixXd(C_i * u);
   };
   const auto w = block_diag_solve(A, C.apply(compute_Cu_block));

@@ -27,15 +27,14 @@ public:
   Eigen::VectorXd _predict_impl(const std::vector<X> &features,
                                 const Fit<MeanOnlyModel> &,
                                 PredictTypeIdentity<Eigen::VectorXd>) const {
-    return Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
+    return Eigen::VectorXd::Zero(cast::to_index(features.size()));
   }
 };
 
 TEST(test_prediction, test_mean_only) {
   MeanOnlyModel m;
   std::vector<X> xs = {{}, {}};
-  const auto zeros =
-      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
+  const auto zeros = Eigen::VectorXd::Zero(cast::to_index(xs.size()));
   MarginalDistribution targets(zeros);
 
   const auto fit_model = m.fit(xs, targets);
@@ -57,8 +56,7 @@ public:
   MarginalDistribution
   _predict_impl(const std::vector<X> &features, const Fit<MarginalOnlyModel> &,
                 PredictTypeIdentity<MarginalDistribution>) const {
-    auto mean =
-        Eigen::VectorXd::Zero(static_cast<Eigen::Index>(features.size()));
+    auto mean = Eigen::VectorXd::Zero(cast::to_index(features.size()));
     return MarginalDistribution(mean);
   }
 };
@@ -66,8 +64,7 @@ public:
 TEST(test_prediction, test_marginal_only) {
   MarginalOnlyModel m;
   std::vector<X> xs = {{}, {}};
-  const auto zeros =
-      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
+  const auto zeros = Eigen::VectorXd::Zero(cast::to_index(xs.size()));
   MarginalDistribution targets(zeros);
 
   const auto fit_model = m.fit(xs, targets);
@@ -93,7 +90,7 @@ public:
   JointDistribution
   _predict_impl(const std::vector<X> &features, const Fit<JointOnlyModel> &,
                 PredictTypeIdentity<JointDistribution>) const {
-    const Eigen::Index n = static_cast<Eigen::Index>(features.size());
+    const Eigen::Index n = cast::to_index(features.size());
     const auto mean = Eigen::VectorXd::Zero(n);
     const auto covariance = Eigen::MatrixXd::Zero(n, n);
     return JointDistribution(mean, covariance);
@@ -103,8 +100,7 @@ public:
 TEST(test_prediction, test_joint_only) {
   JointOnlyModel m;
   std::vector<X> xs = {{}, {}};
-  const auto zeros =
-      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(xs.size()));
+  const auto zeros = Eigen::VectorXd::Zero(cast::to_index(xs.size()));
   MarginalDistribution targets(zeros);
 
   const auto fit_model = m.fit(xs, targets);

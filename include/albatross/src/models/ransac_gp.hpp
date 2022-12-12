@@ -72,16 +72,16 @@ get_gp_ransac_consensus_metric(const ConditionalGaussian &model,
 
 struct DifferentialEntropyConsensusMetric {
   double operator()(const JointDistribution &pred,
-                    const MarginalDistribution &truth) const {
+                    const MarginalDistribution &truth ALBATROSS_UNUSED) const {
     return differential_entropy(pred.covariance);
   }
 };
 
 struct FeatureCountConsensusMetric {
-  double operator()(const JointDistribution &prior,
+  double operator()(const JointDistribution &prior ALBATROSS_UNUSED,
                     const MarginalDistribution &truth) const {
     // Negative because a lower metric is better.
-    return (-1.0 * static_cast<double>(truth.size()));
+    return (-1.0 * cast::to_double(truth.size()));
   }
 };
 
@@ -111,8 +111,8 @@ private:
 };
 
 struct AlwaysAcceptCandidateMetric {
-  bool operator()(const JointDistribution &pred,
-                  const MarginalDistribution &truth) const {
+  bool operator()(const JointDistribution &pred ALBATROSS_UNUSED,
+                  const MarginalDistribution &truth ALBATROSS_UNUSED) const {
     return true;
   }
 };

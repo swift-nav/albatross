@@ -35,7 +35,7 @@ struct UniformlySpacedInducingPoints {
       : num_points(num_points_) {}
 
   template <typename CovarianceFunction>
-  std::vector<double> operator()(const CovarianceFunction &cov,
+  std::vector<double> operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
                                  const std::vector<double> &features) const {
     double min = *std::min_element(features.begin(), features.end());
     double max = *std::max_element(features.begin(), features.end());
@@ -60,8 +60,9 @@ struct StateSpaceInducingPointStrategy {
             std::enable_if_t<!has_valid_state_space_representation<
                                  CovarianceFunction, FeatureType>::value,
                              int> = 0>
-  auto operator()(const CovarianceFunction &cov,
-                  const std::vector<FeatureType> &features) const
+  auto
+  operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
+             const std::vector<FeatureType> &features ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(
           CovarianceFunction,
           "Covariance function is missing state_space_representation method, "
@@ -394,10 +395,8 @@ public:
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    const FitType fit(u, K_uu_ldlt, get_R(B_qr),
-                      B_qr.colsPermutation().indices(), v, B_qr.rank());
-
-    return fit;
+    return FitType(u, K_uu_ldlt, get_R(B_qr), B_qr.colsPermutation().indices(),
+                   v, B_qr.rank());
   }
 
   template <typename FeatureType>
@@ -419,7 +418,7 @@ public:
     // numerical instability
     JointDistribution prediction(prediction_);
     prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
-        prediction.size(), 1, details::DEFAULT_NUGGET);
+        cast::to_index(prediction.size()), 1, details::DEFAULT_NUGGET);
     new_fit.information = new_fit.train_covariance.solve(prediction.mean);
 
     // Here P is the posterior covariance at the new inducing points.  If
@@ -486,11 +485,10 @@ public:
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
 
-    Eigen::VectorXd marginal_variance(
-        static_cast<Eigen::Index>(features.size()));
+    Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
-      marginal_variance[i] =
-          this->covariance_function_(features[i], features[i]);
+      marginal_variance[i] = this->covariance_function_(
+          features[cast::to_size(i)], features[cast::to_size(i)]);
     }
 
     const Eigen::MatrixXd Q_sqrt =
@@ -594,7 +592,7 @@ public:
     double log_quadratic = y.transpose() * y_a;
     log_quadratic -= y_b.transpose() * y_b;
 
-    const double rank = static_cast<double>(y.size());
+    const double rank = cast::to_double(y.size());
     const double log_dimension = rank * log(2 * M_PI);
 
     return -0.5 * (log_det + log_quadratic + log_dimension) +
@@ -669,7 +667,7 @@ private:
     BlockDiagonal Q_ff_diag;
     Eigen::Index i = 0;
     for (const auto &pair : indexer) {
-      Eigen::Index cols = static_cast<Eigen::Index>(pair.second.size());
+      Eigen::Index cols = cast::to_index(pair.second.size());
       auto P_cols = P.block(0, i, P.rows(), cols);
       Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
       i += cols;

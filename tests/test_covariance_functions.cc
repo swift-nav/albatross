@@ -20,10 +20,11 @@ namespace albatross {
 
 std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
   std::vector<Eigen::Vector3d> xs;
-  for (int i = 0; i < n; i++) {
+  for (Eigen::Index i = 0; i < n; i++) {
     Eigen::Vector3d x;
-    for (int j = 0; j < 3; j++)
-      x[static_cast<std::size_t>(j)] = 1000 * i + j;
+    for (Eigen::Index j = 0; j < 3; j++) {
+      x[j] = 1000 * cast::to_double(i + j);
+    }
     xs.push_back(x);
   }
   return xs;
@@ -102,8 +103,8 @@ TEST(test_covariance_functions, test_build_covariance) {
 
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = covariance_function(xs);
-  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
-  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.rows() == cast::to_index(xs.size()));
+  assert(C.cols() == cast::to_index(xs.size()));
 }
 
 /*
@@ -129,8 +130,8 @@ TYPED_TEST_SUITE(TestVectorCovarianceFunctions,
 TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
   const auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
-  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.rows() == cast::to_index(xs.size()));
+  assert(C.cols() == cast::to_index(xs.size()));
   // Make sure C is positive definite.
   C.inverse();
 }
@@ -138,8 +139,8 @@ TYPED_TEST(TestVectorCovarianceFunctions, WorksWithEigen) {
 TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
   auto xs = points_on_a_line(5);
   Eigen::MatrixXd C = this->covariance_function(xs);
-  assert(C.rows() == static_cast<Eigen::Index>(xs.size()));
-  assert(C.cols() == static_cast<Eigen::Index>(xs.size()));
+  assert(C.rows() == cast::to_index(xs.size()));
+  assert(C.cols() == cast::to_index(xs.size()));
   // Make sure C is positive definite.
   C.inverse();
 }
@@ -196,9 +197,9 @@ TYPED_TEST_SUITE(TestDoubleCovarianceFunctions,
 TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
   const auto xs = points_on_a_line(5);
   std::vector<double> features;
-  const auto x_size = static_cast<Eigen::Index>(xs.size());
+  const auto x_size = cast::to_index(xs.size());
   for (Eigen::Index i = 0; i < x_size; ++i) {
-    features.push_back(xs[i][0]);
+    features.push_back(xs[cast::to_size(i)][0]);
   }
 
   Eigen::MatrixXd C = this->covariance_function(features);

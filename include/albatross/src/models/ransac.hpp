@@ -184,7 +184,7 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
   if (min_consensus_size >= groups.size() ||
       min_consensus_size < random_sample_size ||
       random_sample_size >= groups.size() || random_sample_size <= 0 ||
-      max_iterations <= 0 || max_failed_candidates < 0) {
+      max_iterations <= 0) {
     output.return_code = RANSAC_RETURN_CODE_INVALID_ARGUMENTS;
     return output;
   }
@@ -393,10 +393,12 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
   struct EmptyFit {
-    bool operator==(const EmptyFit &other) const { return true; };
+    bool operator==(const EmptyFit &other ALBATROSS_UNUSED) const {
+      return true;
+    };
 
     template <typename Archive>
-    void serialize(Archive &archive, const std::uint32_t){};
+    void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t){};
   };
 
   Fit() : maybe_empty_fit_model(EmptyFit()){};

@@ -126,7 +126,9 @@ TEST(test_apply, test_vector_apply_void) {
 
   std::size_t call_count = 0;
 
-  const auto count_calls = [&](const double &x) { ++call_count; };
+  const auto count_calls = [&](const double &x ALBATROSS_UNUSED) {
+    ++call_count;
+  };
 
   apply(xs, count_calls);
 

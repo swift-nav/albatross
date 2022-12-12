@@ -177,10 +177,6 @@ protected:
   using CholeskyFit = GPFitType<Eigen::SerializableLDLT, FitFeatureType>;
 
 public:
-  GaussianProcessBase(const GaussianProcessBase &other)
-      : covariance_function_(other.covariance_function_),
-        mean_function_(other.mean_function_), model_name_(other.model_name_){};
-
   GaussianProcessBase()
       : covariance_function_(), mean_function_(),
         model_name_(default_model_name(covariance_function_, mean_function_)){};
@@ -299,8 +295,8 @@ public:
             typename std::enable_if<
                 !has_call_operator<CovFunc, FeatureType, FeatureType>::value,
                 int>::type = 0>
-  void _fit_impl(const std::vector<FeatureType> &features,
-                 const MarginalDistribution &targets) const
+  void _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+                 const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType");
 
   template <
@@ -336,9 +332,10 @@ public:
       PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         covariance_function_(gp_fit.train_features, features);
-    Eigen::VectorXd prior_variance(static_cast<Eigen::Index>(features.size()));
+    Eigen::VectorXd prior_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < prior_variance.size(); ++i) {
-      prior_variance[i] = covariance_function_(features[i], features[i]);
+      prior_variance[i] = covariance_function_(features[cast::to_size(i)],
+                                               features[cast::to_size(i)]);
     }
     auto pred = gp_marginal_prediction(
         cross_cov, prior_variance, gp_fit.information, gp_fit.train_covariance);
@@ -372,21 +369,22 @@ public:
               !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
           int>::type = 0>
   PredictType _predict_impl(
-      const std::vector<FeatureType> &features,
-      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit,
+      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit
+          ALBATROSS_UNUSED,
       PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(
           FeatureType,
           "CovFunc is not defined for FeatureType and FitFeatureType");
 
   template <typename Solver, typename FeatureType, typename UpdateFeatureType>
-  auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit,
+  auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit_,
                     const std::vector<UpdateFeatureType> &features,
                     const MarginalDistribution &targets) const {
 
-    const auto new_features = concatenate(fit.train_features, features);
+    const auto new_features = concatenate(fit_.train_features, features);
 
-    auto pred = this->_predict_impl(features, fit,
+    auto pred = this->_predict_impl(features, fit_,
                                     PredictTypeIdentity<JointDistribution>());
 
     Eigen::VectorXd delta = targets.mean - pred.mean;
@@ -394,16 +392,16 @@ public:
     const auto S_ldlt = pred.covariance.ldlt();
 
     const Eigen::MatrixXd cross =
-        covariance_function_(fit.train_features, features);
+        covariance_function_(fit_.train_features, features);
 
     const auto new_covariance =
-        build_block_symmetric(fit.train_covariance, cross, S_ldlt);
+        build_block_symmetric(fit_.train_covariance, cross, S_ldlt);
 
     const Eigen::VectorXd Si_delta = S_ldlt.solve(delta);
 
     Eigen::VectorXd new_information(new_covariance.rows());
-    new_information.topRows(fit.train_covariance.rows()) =
-        fit.information - new_covariance.Ai_B * Si_delta;
+    new_information.topRows(fit_.train_covariance.rows()) =
+        fit_.information - new_covariance.Ai_B * Si_delta;
     new_information.bottomRows(S_ldlt.rows()) = Si_delta;
 
     using NewFeatureType = typename decltype(new_features)::value_type;

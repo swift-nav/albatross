@@ -25,13 +25,13 @@ template <typename X> struct LinearCombination {
   LinearCombination(){};
 
   LinearCombination(const std::vector<X> &values_)
-      : values(values_), coefficients(Eigen::VectorXd::Ones(values_.size())){};
+      : values(values_),
+        coefficients(Eigen::VectorXd::Ones(cast::to_index(values_.size()))){};
 
   LinearCombination(const std::vector<X> &values_,
                     const Eigen::VectorXd &coefficients_)
       : values(values_), coefficients(coefficients_) {
-    ALBATROSS_ASSERT(values_.size() ==
-                     static_cast<std::size_t>(coefficients_.size()));
+    ALBATROSS_ASSERT(values_.size() == cast::to_size(coefficients_.size()));
   };
 
   bool operator==(const LinearCombination &other) const {
@@ -55,9 +55,9 @@ template <typename X, typename Y> inline auto sum(const X &x, const Y &y) {
 }
 
 template <typename X> inline auto mean(const std::vector<X> &xs) {
-  const auto n = static_cast<Eigen::Index>(xs.size());
+  const auto n = cast::to_index(xs.size());
   Eigen::VectorXd coefs(n);
-  coefs.fill(1. / n);
+  coefs.fill(1. / cast::to_double(n));
   return LinearCombination<X>(xs, coefs);
 }
 

@@ -98,9 +98,9 @@ Eigen::MatrixXd distance_matrix(const DistanceMetrixType &distance_metric,
   int i, j;
   std::size_t si, sj;
   for (i = 0; i < n; i++) {
-    si = static_cast<std::size_t>(i);
+    si = cast::to_size(i);
     for (j = 0; j <= i; j++) {
-      sj = static_cast<std::size_t>(j);
+      sj = cast::to_size(j);
       D(i, j) = distance_metric(xs[si], xs[sj]);
       D(j, i) = D(i, j);
     }

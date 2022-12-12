@@ -94,8 +94,7 @@ inline ParameterStore run_optimizer(const ParameterStore &params,
 
   auto x = get_tunable_parameters(params).values;
 
-  ALBATROSS_ASSERT(static_cast<std::size_t>(optimizer.get_dimension()) ==
-                   x.size());
+  ALBATROSS_ASSERT(cast::to_size(optimizer.get_dimension()) == x.size());
 
   double minf;
   nlopt::result result = optimizer.optimize(x, minf);
@@ -124,9 +123,9 @@ struct GenericTuner {
     optimizer = default_optimizer(initial_params);
   };
 
-  GenericTuner(const std::vector<double> &initial_params,
+  GenericTuner(const std::vector<double> &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : GenericTuner(uninformative_params(initial_params), output_stream_){};
+      : GenericTuner(uninformative_params(initial_params_), output_stream_){};
 
   template <
       typename ObjectiveFunction,
@@ -237,15 +236,15 @@ struct GenericTuner {
 
     auto objective_converted_to_eigen = [&](const std::vector<double> &x) {
       std::vector<double> x_copy(x);
-      const Eigen::Map<Eigen::VectorXd> eigen_x(
-          &x_copy[0], static_cast<Eigen::Index>(x_copy.size()));
+      const Eigen::Map<Eigen::VectorXd> eigen_x(&x_copy[0],
+                                                cast::to_index(x_copy.size()));
 
       return objective(eigen_x);
     };
 
     auto vector_output = tune(objective_converted_to_eigen);
     const Eigen::Map<Eigen::VectorXd> eigen_output(
-        &vector_output[0], static_cast<Eigen::Index>(vector_output.size()));
+        &vector_output[0], cast::to_index(vector_output.size()));
     return eigen_output;
   }
 
@@ -255,7 +254,7 @@ struct GenericTuner {
                     !is_invocable<ObjectiveFunction, ParameterStore>::value &&
                     !is_invocable<ObjectiveFunction, Eigen::VectorXd>::value,
                 int> = 0>
-  void tune(ObjectiveFunction &objective)
+  void tune(ObjectiveFunction &objective ALBATROSS_UNUSED)
       ALBATROSS_FAIL(ObjectiveFunction,
                      "Unsupported function signature for ObjectiveFunction");
 };

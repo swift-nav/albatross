@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Swift Navigation Inc.
+ * Copyright (C) 2022 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,24 +10,13 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_TUNING_METRICS_H
-#define ALBATROSS_TUNING_METRICS_H
+#ifndef INCLUDE_ALBATROSS_SRC_DETAILS_UNUSED_HPP_
+#define INCLUDE_ALBATROSS_SRC_DETAILS_UNUSED_HPP_
 
 namespace albatross {
 
-using TuningMetricAggregator = double (*)(const std::vector<double> &);
-
-/*
- * Returns the mean of metrics computed across multiple datasets.
- */
-inline double mean_aggregator(const std::vector<double> &metrics) {
-  double mean = 0.;
-  for (const auto &metric : metrics) {
-    mean += metric;
-  }
-  mean /= cast::to_double(metrics.size());
-  return mean;
-}
+#define ALBATROSS_UNUSED __attribute__((unused))
 
 } // namespace albatross
-#endif
+
+#endif /* INCLUDE_ALBATROSS_SRC_DETAILS_UNUSED_HPP_ */

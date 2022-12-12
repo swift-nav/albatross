@@ -58,13 +58,16 @@ inline void print_call_trace(const std::vector<CallAndValue> &call_trace) {
     }
   }
 
-  std::cout << std::setw(max_value_length + 2) << std::left << "VALUE"
-            << std::setw(100) << "FUNCTION" << std::endl;
-  std::cout << std::setw(max_value_length + 2) << std::left << "-----"
-            << std::setw(100) << "--------" << std::endl;
+  const auto max_width = static_cast<int>(max_value_length + 2);
+  constexpr int kFunctionWidth = 100;
+
+  std::cout << std::setw(max_width) << std::left << "VALUE"
+            << std::setw(kFunctionWidth) << "FUNCTION" << std::endl;
+  std::cout << std::setw(max_width) << std::left << "-----"
+            << std::setw(kFunctionWidth) << "--------" << std::endl;
   for (const auto &cv : call_trace) {
-    std::cout << std::setw(max_value_length + 2) << std::left << cv.value
-              << std::setw(100) << cv.call_name << std::endl;
+    std::cout << std::setw(max_width) << std::left << cv.value
+              << std::setw(kFunctionWidth) << cv.call_name << std::endl;
   }
 }
 

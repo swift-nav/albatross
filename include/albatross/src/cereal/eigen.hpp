@@ -20,8 +20,8 @@ inline void save(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const &m,
                  const std::uint32_t) {
   Eigen::Index rows = m.rows();
   Eigen::Index cols = m.cols();
-  std::size_t size = static_cast<std::size_t>(rows * cols);
-  std::size_t size_in_bytes = static_cast<std::size_t>(size * sizeof(_Scalar));
+  std::size_t size = albatross::cast::to_size(rows * cols);
+  std::size_t size_in_bytes = size * sizeof(_Scalar);
 
   // Turn the Eigen::Matrix in to an array of characters
   std::vector<_Scalar> data(size);
@@ -52,8 +52,8 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   ar(CEREAL_NVP(cols));
   ar(CEREAL_NVP(payload));
 
-  std::size_t size = static_cast<std::size_t>(rows * cols);
-  std::size_t size_in_bytes = static_cast<std::size_t>(size * sizeof(_Scalar));
+  std::size_t size = albatross::cast::to_size(rows * cols);
+  std::size_t size_in_bytes = size * sizeof(_Scalar);
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload = base64::decode(payload);
@@ -124,13 +124,12 @@ inline void load_lower_triangle(Archive &archive,
   // We assume the matrix is square and compute the number of rows from the
   // storage size using the quadratic formula.
   //     rows^2 + rows - 2 * storage_size = 0
-  double a = 1;
-  double b = 1;
-  double c = -2. * static_cast<double>(data.size());
-  double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
+  const double a = 1.;
+  const double b = 1.;
+  const double c = -2. * albatross::cast::to_double(data.size());
+  const double rows_as_double = (std::sqrt(b * b - 4 * a * c) - b) / (2 * a);
   ALBATROSS_ASSERT(
-      rows_as_double - static_cast<Eigen::Index>(std::lround(rows_as_double)) ==
-          0. &&
+      rows_as_double - static_cast<double>(std::lround(rows_as_double)) == 0. &&
       "inferred a non integer number of rows");
   Eigen::Index rows = static_cast<Eigen::Index>(std::lround(rows_as_double));
 

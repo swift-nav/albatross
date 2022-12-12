@@ -24,9 +24,6 @@ public:
     sigma_independent_noise = {sigma_noise, PositivePrior()};
   };
 
-  IndependentNoise(const IndependentNoise &other)
-      : sigma_independent_noise(other.sigma_independent_noise){};
-
   ALBATROSS_DECLARE_PARAMS(sigma_independent_noise);
 
   ~IndependentNoise(){};

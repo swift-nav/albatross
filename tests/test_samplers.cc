@@ -138,7 +138,7 @@ TEST(test_samplers, test_samplers_gp) {
 }
 
 inline long int get_group(const double &f) {
-  return static_cast<double>(floor(f / 5.));
+  return static_cast<long int>(floor(f / 5.));
 }
 
 struct LeaveOneIntervalOut {

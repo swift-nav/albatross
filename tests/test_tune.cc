@@ -127,8 +127,8 @@ template <typename ObjectiveFunction>
 Eigen::VectorXd nlopt_solve(GenericTuner &tuner, ObjectiveFunction &objective) {
   const auto output = tuner.tune(objective);
   auto x = get_tunable_parameters(output).values;
-  const Eigen::Map<Eigen::VectorXd> eigen_output(
-      &x[0], static_cast<Eigen::Index>(x.size()));
+  const Eigen::Map<Eigen::VectorXd> eigen_output(&x[0],
+                                                 cast::to_index(x.size()));
   return eigen_output;
 }
 
@@ -150,8 +150,7 @@ public:
 
   double objective(const std::vector<double> &vector_x) const {
     std::vector<double> x(vector_x);
-    const Eigen::Map<Eigen::VectorXd> eigen_x(
-        &x[0], static_cast<Eigen::Index>(x.size()));
+    const Eigen::Map<Eigen::VectorXd> eigen_x(&x[0], cast::to_index(x.size()));
     return objective(eigen_x);
   }
 
@@ -161,8 +160,7 @@ public:
 
   Eigen::VectorXd gradient(const std::vector<double> &vector_x) const {
     std::vector<double> x(vector_x);
-    const Eigen::Map<Eigen::VectorXd> eigen_x(
-        &x[0], static_cast<Eigen::Index>(x.size()));
+    const Eigen::Map<Eigen::VectorXd> eigen_x(&x[0], cast::to_index(x.size()));
     return gradient(eigen_x);
   }
 
@@ -190,7 +188,7 @@ TEST_F(TestTuneQuadratic, test_generic) {
   };
 
   std::ostringstream output_stream;
-  std::vector<double> initial_x(b.size());
+  std::vector<double> initial_x(cast::to_size(b.size()));
   for (auto &d : initial_x) {
     d = 0.;
   }
@@ -203,13 +201,13 @@ TEST_F(TestTuneQuadratic, test_generic) {
 
     auto vector_result = tuner.tune(mahalanobis_distance_vector);
     const Eigen::Map<Eigen::VectorXd> eigen_vector_output(
-        &vector_result[0], static_cast<Eigen::Index>(vector_result.size()));
+        &vector_result[0], cast::to_index(vector_result.size()));
     EXPECT_LT((eigen_vector_output - truth).array().abs().maxCoeff(), 5e-3);
 
     const auto params_result = tuner.tune(mahalanobis_distance_params);
     auto param_vector = get_tunable_parameters(params_result).values;
     const Eigen::Map<Eigen::VectorXd> eigen_param_output(
-        &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+        &param_vector[0], cast::to_index(param_vector.size()));
 
     EXPECT_LT((eigen_param_output - truth).array().abs().maxCoeff(), 5e-3);
   };
@@ -236,7 +234,7 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
   };
 
   std::ostringstream output_stream;
-  std::vector<double> initial_x(b.size());
+  std::vector<double> initial_x(cast::to_size(b.size()));
   for (auto &d : initial_x) {
     d = 0.;
   }
@@ -257,7 +255,7 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
     auto to_eigen = [](const auto &p) {
       auto param_vector = get_tunable_parameters(p).values;
       const Eigen::VectorXd output = Eigen::Map<Eigen::VectorXd>(
-          &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+          &param_vector[0], cast::to_index(param_vector.size()));
       return output;
     };
 
@@ -293,8 +291,8 @@ TEST_F(TestTuneQuadratic, test_compute_gradient) {
   const auto expected_grad = this->gradient(x);
 
   for (std::size_t i = 0; i < vector_grad.size(); ++i) {
-    EXPECT_NEAR(vector_grad[i], expected_grad[i], 1e-4);
-    EXPECT_NEAR(param_grad[i], expected_grad[i], 1e-4);
+    EXPECT_NEAR(vector_grad[i], expected_grad[cast::to_index(i)], 1e-4);
+    EXPECT_NEAR(param_grad[i], expected_grad[cast::to_index(i)], 1e-4);
   }
 }
 
@@ -318,7 +316,7 @@ TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
       async_gradient_tuner.tune(mahalanobis_distance_params);
   auto param_vector = get_tunable_parameters(params_result).values;
   const Eigen::Map<Eigen::VectorXd> optimal(
-      &param_vector[0], static_cast<Eigen::Index>(param_vector.size()));
+      &param_vector[0], cast::to_index(param_vector.size()));
 
   Eigen::VectorXd active_constraint = Eigen::VectorXd::Zero(optimal.size());
   active_constraint[2] = 1.;

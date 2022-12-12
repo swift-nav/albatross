@@ -78,9 +78,9 @@ auto make_attenuation_data(const double attenuation = 3.14159,
 
   for (std::size_t i = 0; i < n; i++) {
     // x ranges from 0 to 2
-    double x = static_cast<double>(i) * (2. / static_cast<double>(n));
+    double x = cast::to_double(i) * (2. / cast::to_double(n));
     features.push_back(x);
-    targets[i] = obliquity_function(x) * attenuation + d(gen);
+    targets[cast::to_index(i)] = obliquity_function(x) * attenuation + d(gen);
   }
 
   return RegressionDataset<double>(features, targets);
@@ -151,7 +151,8 @@ TEST(test_scaling_functions, test_inference) {
 class ZeroCovariance : public CovarianceFunction<ZeroCovariance> {
 public:
   template <typename X, typename Y>
-  double _call_impl(const X &x, const Y &y) const {
+  double _call_impl(const X &x ALBATROSS_UNUSED,
+                    const Y &y ALBATROSS_UNUSED) const {
     return 0.;
   }
 };
