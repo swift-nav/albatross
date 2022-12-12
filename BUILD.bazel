@@ -75,6 +75,8 @@ cc_library(
         "include/albatross/src/details/error_handling.hpp",
         "include/albatross/src/details/method_inspection_macros.hpp",
         "include/albatross/src/details/traits.hpp",
+        "include/albatross/src/details/typecast.hpp",
+        "include/albatross/src/details/unused.hpp",
         "include/albatross/src/eigen/serializable_ldlt.hpp",
         "include/albatross/src/evaluation/cross_validation.hpp",
         "include/albatross/src/evaluation/cross_validation_utils.hpp",
@@ -209,6 +211,5 @@ swift_cc_test(
     deps = [
         ":albatross",
         "@gtest//:gtest_main",
-        "@zlib",
     ],
 )
