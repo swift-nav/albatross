@@ -24,8 +24,11 @@
 namespace albatross {
 
 TEST(test_async_utils, test_async_apply_with_capture) {
-  ThreadPool pool{get_default_thread_count()};
-  std::vector<int> xs = {0, 1, 2, 3, 4, 5};
+  const std::vector<int> xs = {0, 1, 2, 3, 4, 5};
+  // Run as many workers as elements to process; otherwise later ones
+  // might have to wait for a worker no matter how long they intend to
+  // sleep.
+  ThreadPool pool{xs.size()};
 
   std::mutex mu;
   int sum = 0.;
@@ -48,9 +51,9 @@ TEST(test_async_utils, test_async_apply_with_capture) {
 }
 
 TEST(test_async_utils, test_async_apply_map_value_only_function) {
-  ThreadPool pool{get_default_thread_count()};
-  std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2},
-                                   {"3", 3}, {"4", 4}, {"5", 5}};
+  const std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2},
+                                         {"3", 3}, {"4", 4}, {"5", 5}};
+  ThreadPool pool{xs.size()};
 
   std::mutex mu;
   int sum = 0.;
@@ -73,9 +76,9 @@ TEST(test_async_utils, test_async_apply_map_value_only_function) {
 }
 
 TEST(test_async_utils, test_async_apply_map_key_value_function) {
-  ThreadPool pool{get_default_thread_count()};
-  std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2},
-                                   {"3", 3}, {"4", 4}, {"5", 5}};
+  const std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2},
+                                         {"3", 3}, {"4", 4}, {"5", 5}};
+  ThreadPool pool{xs.size()};
 
   std::mutex mu;
   int sum = 0.;
