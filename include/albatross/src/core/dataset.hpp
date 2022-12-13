@@ -169,6 +169,28 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
                                                                     targets);
 }
 
+template <typename Derived, typename X>
+inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
+                      const albatross::RegressionDataset<X> &dataset) {
+
+  const auto transformed_features = matrix.derived() * dataset.features;
+  using TransformedType = typename decltype(transformed_features)::value_type;
+
+  return albatross::RegressionDataset<TransformedType>(
+      transformed_features, matrix.derived() * dataset.targets);
+}
+
+template <typename Derived, typename X>
+inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
+                      const albatross::RegressionDataset<X> &dataset) {
+
+  const auto transformed_features = matrix.derived() * dataset.features;
+  using TransformedType = typename decltype(transformed_features)::value_type;
+
+  return albatross::RegressionDataset<TransformedType>(
+      transformed_features, matrix.derived() * dataset.targets);
+}
+
 template <typename X,
           typename std::enable_if_t<is_streamable<X>::value, int> = 0>
 inline std::ostream &operator<<(std::ostream &os,
