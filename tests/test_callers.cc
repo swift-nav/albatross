@@ -208,4 +208,61 @@ TEST(test_callers, test_variant_caller_with_measurement) {
   expect_all_calls_false<DefaultCaller>();
 }
 
+static auto random_vector(std::mt19937 *generator) {
+  // Size bounds
+  constexpr std::size_t kMinSize = 500;
+  constexpr std::size_t kMaxSize = 2000;
+
+  std::uniform_real_distribution<double> dist{-1., 1.};
+  const auto gen = [&generator, &dist]() { return dist(*generator); };
+  const auto size = std::uniform_int_distribution<std::size_t>{
+      kMinSize, kMaxSize}(*generator);
+  std::vector<double> v(size);
+  std::generate(v.begin(), v.end(), gen);
+  return v;
+}
+
+TEST(test_callers, test_compute_covariance_matrix_cross) {
+  constexpr double length_scale = 0.5;
+  constexpr double sigma = 0.1;
+  constexpr std::size_t kSeed = 22;
+
+  std::mt19937 generator{kSeed};
+  const SquaredExponential<EuclideanDistance> cov{length_scale, sigma};
+
+  for (std::size_t i = 1; i < 33; ++i) {
+    ThreadPool pool{i};
+    const auto xs = random_vector(&generator);
+    const auto ys = random_vector(&generator);
+
+    // Computing blocks in parallel should give _exactly_ the same
+    // answer as computing serially.
+    const auto serial = compute_covariance_matrix(cov, xs, ys);
+    const auto parallel = compute_covariance_matrix(cov, xs, ys, &pool);
+
+    EXPECT_EQ(serial, parallel);
+  }
+}
+
+TEST(test_callers, test_compute_covariance_matrix) {
+  constexpr double length_scale = 0.5;
+  constexpr double sigma = 0.1;
+  constexpr std::size_t kSeed = 22;
+
+  std::mt19937 generator{kSeed};
+  const SquaredExponential<EuclideanDistance> cov{length_scale, sigma};
+
+  for (std::size_t i = 1; i < 33; ++i) {
+    ThreadPool pool{i};
+    const auto xs = random_vector(&generator);
+
+    // Computing blocks in parallel should give _exactly_ the same
+    // answer as computing serially.
+    const auto serial = compute_covariance_matrix(cov, xs);
+    const auto parallel = compute_covariance_matrix(cov, xs, &pool);
+
+    EXPECT_EQ(serial, parallel);
+  }
+}
+
 } // namespace albatross

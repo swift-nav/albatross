@@ -402,7 +402,7 @@ public:
     new_fit.train_features = new_inducing_points;
 
     const Eigen::MatrixXd K_zz =
-        this->covariance_function_(new_inducing_points);
+        this->covariance_function_(new_inducing_points, Base::threads_.get());
     new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
 
     // We're going to need to take the sqrt of the new covariance which
@@ -623,6 +623,7 @@ private:
 
     std::vector<std::size_t> reordered_inds;
     BlockDiagonal K_ff;
+    // TODO(@peddie): compute these blocks asynchronously?
     for (const auto &pair : indexer) {
       reordered_inds.insert(reordered_inds.end(), pair.second.begin(),
                             pair.second.end());
@@ -641,9 +642,11 @@ private:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    *K_fu = this->covariance_function_(features, inducing_features);
+    *K_fu = this->covariance_function_(features, inducing_features,
+                                       Base::threads_.get());
 
-    auto K_uu = this->covariance_function_(inducing_features);
+    auto K_uu =
+        this->covariance_function_(inducing_features, Base::threads_.get());
 
     K_uu.diagonal() +=
         inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());

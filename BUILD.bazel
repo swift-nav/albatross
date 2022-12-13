@@ -88,6 +88,7 @@ cc_library(
         "include/albatross/src/evaluation/traits.hpp",
         "include/albatross/src/graph/minimum_spanning_tree.hpp",
         "include/albatross/src/indexing/apply.hpp",
+        "include/albatross/src/indexing/block.hpp",
         "include/albatross/src/indexing/declarations.hpp",
         "include/albatross/src/indexing/filter.hpp",
         "include/albatross/src/indexing/group_by.hpp",
