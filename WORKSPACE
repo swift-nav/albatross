@@ -4,8 +4,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    strip_prefix = "rules_swiftnav-b80ca392ea24a14f8d810380b14495680255903b",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/b80ca392ea24a14f8d810380b14495680255903b.tar.gz",
+    strip_prefix = "rules_swiftnav-6f8f02805f9e15477d86628b8760780444a3f638",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/6f8f02805f9e15477d86628b8760780444a3f638.tar.gz",
 )
 
 # Rules for integrating with cmake builds
