@@ -227,7 +227,8 @@ TYPED_TEST_P(GroupByTester, test_groupby_access_methods) {
 
   const auto const_groups = grouper.groups();
   assert(const_groups.size() > 0);
-  const auto first_key = const_groups.keys()[0];
+  const typename decltype(const_groups)::key_t first_key =
+      const_groups.keys()[0];
   const_groups.at(first_key);
 
   auto groups = grouper.groups();
@@ -262,7 +263,7 @@ TYPED_TEST_P(GroupByTester, test_groupby_modify_combine) {
   const auto grouped = group_by(parent, this->test_case.get_grouper());
   auto groups = grouped.groups();
 
-  const auto first_key = map_keys(groups)[0];
+  const typename decltype(groups)::key_t first_key = map_keys(groups)[0];
   const auto first_group = groups[first_key];
 
   const std::size_t num_removed = first_group.size();
