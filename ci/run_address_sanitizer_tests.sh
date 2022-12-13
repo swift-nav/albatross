@@ -11,7 +11,10 @@ run_tests() {
           -DSWIFT_SANITIZE_ADDRESS=ON \
           -DSWIFT_SANITIZE_UNDEFINED=ON \
           -DSWIFT_SANITIZE_LEAK=ON \
+          -DSWIFT_SANITIZE_SUPPRESSION_FILE="$(pwd)/../sanitizers.supp" \
           ../
+    # Just above: clang seems to require an absolute path to the
+    # suppression file.
     ASAN_OPTIONS=check_initialization_order=true:detect_stack_use_after_return=true:strict_string_checks=true:halt_on_error=true \
         UBSAN_OPTIONS=halt_on_error=true:print_stacktrace=true \
         make \

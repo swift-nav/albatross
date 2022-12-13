@@ -9,6 +9,7 @@ run_tests() {
           -DCMAKE_C_COMPILER="$C_COMPILER" \
           -DCMAKE_CXX_COMPILER="$CXX_COMPILER" \
           -DSWIFT_SANITIZE_THREAD=ON \
+          -DSWIFT_SANITIZE_SUPPRESSION_FILE="$(pwd)/../sanitizers.supp" \
           ../
     TSAN_OPTIONS="force_seq_cst_atomics=1 halt_on_error=1" \
         make \

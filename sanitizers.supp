@@ -1,0 +1,36 @@
+## Every suppression in this file should have a comment pointing to
+## the corresponding ticket!
+##
+## Notes:
+##
+##  - If the issue is in Swift code, please use the `no_sanitize`
+##    attribute if possible.  This allows you to be more precise about
+##    both what checks and what code to exclude than masking a whole
+##    file or a common function name, and it documents the issue right
+##    where it is most relevant.
+##
+##    - https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+##    - https://clang.llvm.org/docs/AttributeReference.html#no-sanitize
+##
+##  - Sanitizer suppressions in this list can be applied to templated
+##    functions if bracketed by * wildcards.  I (@peddie) am not aware
+##    of a way to apply suppressions to templated functions via
+##    compiler attributes.  You can be specific to class names and
+##    namespaces using `*`.
+##
+##  - `src` type suppressions (as opposed to `fun` ones) must be given
+##    a relative path to the `build` directory (the working directory
+##    of the compiler when it's invoked), which is assumed everywhere
+##    to be just below the root of the repository.  They do not appear
+##    to work for header files!
+##
+##  - It seems that undefined behavior suppressions cannot be
+##    annotated with a specific check type at compile time.  Do not
+##    confuse this file with the runtime suppression format hinted at
+##    in the clang docs:
+##    https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#runtime-suppressions
+
+# https://github.com/swift-nav/albatross/issues/382
+# in ../third_party/cereal/include/cereal/external/rapidjson/internal/stack.h
+fun:*rapidjson*internal*Stack*Reserve*
+
