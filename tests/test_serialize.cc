@@ -449,4 +449,45 @@ TEST(test_serialize, test_joint_streamable) {
   oss << dist;
 }
 
+TEST(test_serialize, test_ThreadPool_threads) {
+  for (std::size_t n_threads = 1; n_threads < 33; ++n_threads) {
+    auto pool = albatross::make_shared_thread_pool(n_threads);
+    std::ostringstream os;
+    {
+      cereal::JSONOutputArchive oarchive(os);
+      save(oarchive, pool);
+    }
+
+    std::istringstream is(os.str());
+    std::shared_ptr<ThreadPool> pool_out = albatross::serial_thread_pool;
+    {
+      cereal::JSONInputArchive iarchive(is);
+      load(iarchive, pool_out);
+    }
+    if (n_threads < 2) {
+      EXPECT_EQ(pool, albatross::serial_thread_pool);
+    } else {
+      EXPECT_NE(pool_out, albatross::serial_thread_pool);
+      EXPECT_EQ(pool->thread_count(), pool_out->thread_count());
+    }
+  }
+}
+
+TEST(test_serialize, test_ThreadPool_nullptr) {
+  std::shared_ptr<ThreadPool> pool = albatross::serial_thread_pool;
+  std::ostringstream os;
+  {
+    cereal::JSONOutputArchive oarchive(os);
+    save(oarchive, pool);
+  }
+
+  std::istringstream is(os.str());
+  std::shared_ptr<ThreadPool> pool_out = albatross::serial_thread_pool;
+  {
+    cereal::JSONInputArchive iarchive(is);
+    load(iarchive, pool_out);
+  }
+  EXPECT_EQ(pool_out, albatross::serial_thread_pool);
+}
+
 } // namespace other

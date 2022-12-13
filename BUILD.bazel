@@ -42,6 +42,7 @@ cc_library(
         "include/albatross/src/cereal/ransac.hpp",
         "include/albatross/src/cereal/representations.hpp",
         "include/albatross/src/cereal/serializable_ldlt.hpp",
+        "include/albatross/src/cereal/ThreadPool.hpp",
         "include/albatross/src/cereal/traits.hpp",
         "include/albatross/src/cereal/variant.hpp",
         "include/albatross/src/core/concatenate.hpp",
