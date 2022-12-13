@@ -115,8 +115,6 @@ struct TransformedDistribution {
 
 } // namespace details
 
-} // namespace albatross
-
 template <typename MatrixType, typename DistributionType>
 inline auto
 operator*(const Eigen::MatrixBase<MatrixType> &matrix,
@@ -134,5 +132,7 @@ operator*(const Eigen::SparseMatrixBase<MatrixType> &matrix,
                                                      DistributionType>(
       matrix, distribution);
 }
+
+} // namespace albatross
 
 #endif
