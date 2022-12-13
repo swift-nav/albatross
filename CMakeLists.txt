@@ -14,6 +14,8 @@ swift_create_project_options(
 include(ClangFormat)
 swift_setup_clang_format()
 
+include(SanitizeTargets)
+
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
 
 if(albatross_BUILD_EXAMPLES)
