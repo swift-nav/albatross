@@ -78,14 +78,14 @@ template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const std::vector<X> &features) {
   std::vector<LinearCombination<X>> output(cast::to_size(matrix.rows()));
-
   std::vector<std::vector<double>> output_coefs(cast::to_size(matrix.rows()));
 
   for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
     for (typename Derived::InnerIterator it(matrix.derived(), k); it; ++it) {
-      output[cast::to_size(it.row())].values.push_back(
-          features[cast::to_size(it.col())]);
-      output_coefs[cast::to_size(it.row())].push_back(it.value());
+      const auto row = cast::to_size(it.row());
+      const auto col = cast::to_size(it.col());
+      output[row].values.push_back(features[col]);
+      output_coefs[row].push_back(it.value());
     }
   }
 
@@ -106,12 +106,13 @@ inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
 
   for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
     for (typename Derived::InnerIterator it(matrix.derived(), k); it; ++it) {
-      const auto &combo = features[cast::to_size(it.col())];
+      const auto row = cast::to_size(it.row());
+      const auto col = cast::to_size(it.col());
+      const auto &combo = features[col];
       for (Eigen::Index i = 0; i < combo.coefficients.size(); ++i) {
-        output[cast::to_size(it.row())].values.push_back(
-            combo.values[cast::to_size(i)]);
-        output_coefs[cast::to_size(it.row())].push_back(it.value() *
-                                                        combo.coefficients[i]);
+        const auto si = cast::to_size(i);
+        output[row].values.push_back(combo.values[si]);
+        output_coefs[row].push_back(it.value() * combo.coefficients[i]);
       }
     }
   }
