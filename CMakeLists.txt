@@ -3,6 +3,9 @@ project(albatross)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake/common")
 
+set(SWIFT_CLANG_TIDY_RATCHET_FILE
+  "${PROJECT_SOURCE_DIR}/ci/clang_tidy_ratchet.yaml")
+
 include(CCache)
 include(ClangTidy)
 include(SwiftCmakeOptions)
