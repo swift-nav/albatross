@@ -90,8 +90,10 @@ inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
   }
 
   for (std::size_t i = 0; i < output_coefs.size(); ++i) {
-    output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
-        &output_coefs[i][0], cast::to_index(output_coefs[i].size()));
+    if (output_coefs[i].size() > 0) {
+      output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
+          &output_coefs[i][0], cast::to_index(output_coefs[i].size()));
+    }
   }
 
   return output;
@@ -118,8 +120,11 @@ inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
   }
 
   for (std::size_t i = 0; i < output_coefs.size(); ++i) {
-    output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
-        &output_coefs[i][0], static_cast<Eigen::Index>(output_coefs[i].size()));
+    if (output_coefs[i].size() > 0) {
+      output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
+          &output_coefs[i][0],
+          static_cast<Eigen::Index>(output_coefs[i].size()));
+    }
   }
 
   return output;
