@@ -16,6 +16,7 @@
 #include "Distribution"
 
 #include <albatross/src/core/concatenate.hpp>
+#include <albatross/src/core/linear_combination.hpp>
 #include <albatross/src/core/dataset.hpp>
 
 #endif

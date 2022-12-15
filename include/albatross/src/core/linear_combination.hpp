@@ -74,6 +74,69 @@ inline auto difference(const X &x, const Y &y) {
   return difference(vx, vy);
 }
 
+template <typename Derived, typename X>
+inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
+                      const std::vector<X> &features) {
+  std::vector<LinearCombination<X>> output(cast::to_size(matrix.rows()));
+  std::vector<std::vector<double>> output_coefs(cast::to_size(matrix.rows()));
+
+  for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
+    for (typename Derived::InnerIterator it(matrix.derived(), k); it; ++it) {
+      const auto row = cast::to_size(it.row());
+      const auto col = cast::to_size(it.col());
+      output[row].values.push_back(features[col]);
+      output_coefs[row].push_back(it.value());
+    }
+  }
+
+  for (std::size_t i = 0; i < output_coefs.size(); ++i) {
+    if (output_coefs[i].size() > 0) {
+      output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
+          &output_coefs[i][0], cast::to_index(output_coefs[i].size()));
+    }
+  }
+
+  return output;
+}
+
+template <typename Derived, typename X>
+inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
+                      const std::vector<LinearCombination<X>> &features) {
+  std::vector<LinearCombination<X>> output(cast::to_size(matrix.rows()));
+
+  std::vector<std::vector<double>> output_coefs(cast::to_size(matrix.rows()));
+
+  for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
+    for (typename Derived::InnerIterator it(matrix.derived(), k); it; ++it) {
+      const auto row = cast::to_size(it.row());
+      const auto col = cast::to_size(it.col());
+      const auto &combo = features[col];
+      for (Eigen::Index i = 0; i < combo.coefficients.size(); ++i) {
+        const auto si = cast::to_size(i);
+        output[row].values.push_back(combo.values[si]);
+        output_coefs[row].push_back(it.value() * combo.coefficients[i]);
+      }
+    }
+  }
+
+  for (std::size_t i = 0; i < output_coefs.size(); ++i) {
+    if (output_coefs[i].size() > 0) {
+      output[i].coefficients = Eigen::Map<Eigen::VectorXd>(
+          &output_coefs[i][0],
+          static_cast<Eigen::Index>(output_coefs[i].size()));
+    }
+  }
+
+  return output;
+}
+
+template <typename Derived, typename X>
+inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
+                      const std::vector<X> &features) {
+  Eigen::SparseMatrix<typename Derived::Scalar> sparse = matrix.sparseView();
+  return sparse * features;
+}
+
 } // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTIONS_LINEAR_COMBINATION_HPP_ */

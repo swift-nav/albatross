@@ -34,3 +34,14 @@
 # in ../third_party/cereal/include/cereal/external/rapidjson/internal/stack.h
 fun:*rapidjson*internal*Stack*Reserve*
 
+# https://gitlab.com/libeigen/eigen/-/issues/2482
+#
+# This is not the exact same sanitizer failure, but the response here
+# and in the linked ticket is basically "we are not going to go out of
+# our way to satisfy the sanitizer when we know the value is never
+# used."  (Maybe they don't know that GCC takes the stance that once
+# undefined behavior occurs anywhere in the program, the rest of the
+# program may do anything.)
+#
+# The reporter provided a patch for 3.3 if we really care.
+fun:*Eigen*internal*blas_data_mapper*()*
