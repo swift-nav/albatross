@@ -10,6 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/CovarianceFunctions>
 #include <albatross/Dataset>
 #include <albatross/Indexing>
 #include <gtest/gtest.h>
@@ -194,10 +195,20 @@ struct EmptyTransform {
   }
 };
 
+struct EmptyRow {
+  auto get_matrix(Eigen::Index n) {
+    Eigen::SparseMatrix<double, Eigen::ColMajor> matrix(n, n);
+    matrix.setIdentity();
+    matrix.coeffRef(0, 0) = 0.;
+    matrix.prune(0.);
+    return matrix;
+  }
+};
+
 struct SparseIdentity {
 
   auto get_matrix(Eigen::Index n) {
-    Eigen::SparseMatrix<double> matrix(n, n);
+    Eigen::SparseMatrix<double, Eigen::ColMajor> matrix(n, n);
     matrix.setIdentity();
     return matrix;
   }
@@ -206,7 +217,7 @@ struct SparseIdentity {
 struct SparseShortIdentity {
 
   auto get_matrix(Eigen::Index n) {
-    Eigen::SparseMatrix<double> matrix =
+    Eigen::SparseMatrix<double, Eigen::ColMajor> matrix =
         Eigen::MatrixXd::Identity(n - 1, n).sparseView();
     return matrix;
   }
@@ -245,9 +256,9 @@ public:
   CaseType test_case;
 };
 
-typedef ::testing::Types<EmptyTransform, SparseIdentity, SparseShortIdentity,
-                         SparseShortIdentityRowMajor, SparseRandomTall,
-                         SparseRandomRowMajor>
+typedef ::testing::Types<EmptyTransform, EmptyRow, SparseIdentity,
+                         SparseShortIdentity, SparseShortIdentityRowMajor,
+                         SparseRandomTall, SparseRandomRowMajor>
     DatasetOperatorTestCases;
 
 TYPED_TEST_SUITE_P(DatasetOperatorTester);
@@ -279,7 +290,73 @@ TYPED_TEST_P(DatasetOperatorTester, test_output_type_ints) {
   using ActualType = typename decltype(linear_combos)::value_type;
   using ExpectedType = typename expected_transformed_type<OriginalType>::type;
   bool is_linear_combo = std::is_same<ActualType, ExpectedType>::value;
+
   EXPECT_TRUE(is_linear_combo);
+}
+
+TYPED_TEST_P(DatasetOperatorTester, test_output_size_combos) {
+
+  std::vector<albatross::LinearCombination<int>> features;
+
+  auto add_combo = [&](const std::vector<int> &values,
+                       const Eigen::VectorXd &coefs) {
+    features.emplace_back(values, coefs);
+  };
+
+  add_combo({1, 3}, Eigen::VectorXd::Random(2));
+  add_combo({7, 5}, Eigen::VectorXd::Random(2));
+  add_combo({3, 1, 4}, Eigen::VectorXd::Random(3));
+  add_combo({9}, Eigen::VectorXd::Random(1));
+
+  const auto matrix =
+      this->test_case.get_matrix(cast::to_index(features.size()));
+  const auto linear_combos = matrix * features;
+
+  const Eigen::MatrixXd dense = matrix;
+
+  EXPECT_EQ(cast::to_index(linear_combos.size()), matrix.rows());
+  for (Eigen::Index row = 0; row < dense.rows(); ++row) {
+    const auto srow = cast::to_size(row);
+    std::size_t expected_size_of_output_combo = 0;
+    for (Eigen::Index col = 0; col < dense.cols(); ++col) {
+      if (dense(row, col) != 0.) {
+        const auto scol = cast::to_size(col);
+        expected_size_of_output_combo += features[scol].values.size();
+      }
+    }
+    EXPECT_EQ(expected_size_of_output_combo, linear_combos[srow].values.size());
+  }
+}
+
+TYPED_TEST_P(DatasetOperatorTester, test_equivalent_cov_combos) {
+
+  std::vector<albatross::LinearCombination<int>> features;
+
+  auto add_combo = [&](const std::vector<int> &values,
+                       const Eigen::VectorXd &coefs) {
+    features.emplace_back(values, coefs);
+  };
+
+  add_combo({1, 3}, Eigen::VectorXd::Random(2));
+  add_combo({7, 5}, Eigen::VectorXd::Random(2));
+  add_combo({3, 1, 4}, Eigen::VectorXd::Random(3));
+  add_combo({9}, Eigen::VectorXd::Random(1));
+
+  const auto matrix =
+      this->test_case.get_matrix(cast::to_index(features.size()));
+  const auto linear_combos = matrix * features;
+
+  Exponential<EuclideanDistance> cov;
+
+  // Computing a covariance matrix using the original features then
+  // transforming the result should be the same as transforming the
+  // features, then computing the covariance.
+  const Eigen::MatrixXd full_cov_matrix = cov(features);
+  const Eigen::MatrixXd transformed_cov_matrix =
+      (matrix * full_cov_matrix) * matrix.transpose();
+  const Eigen::MatrixXd combo_cov_matrix = cov(linear_combos);
+
+  EXPECT_LT((transformed_cov_matrix - combo_cov_matrix).norm(), 1e-8);
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_output_type_combos) {
@@ -366,7 +443,8 @@ TYPED_TEST_P(DatasetOperatorTester, test_sparse_multiply_same_as_dense) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(DatasetOperatorTester, test_output_type_ints,
-                            test_output_type_combos,
+                            test_output_size_combos, test_output_type_combos,
+                            test_equivalent_cov_combos,
                             test_inferred_transformation,
                             test_sparse_multiply_same_as_dense,
                             test_multiply_dataset);
