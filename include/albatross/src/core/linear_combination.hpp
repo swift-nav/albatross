@@ -42,38 +42,6 @@ template <typename X> struct LinearCombination {
   Eigen::VectorXd coefficients;
 };
 
-template <typename X> inline auto sum(const X &x, const X &y) {
-  Eigen::Vector2d coefs;
-  coefs << 1., 1.;
-  return LinearCombination<X>({x, y}, coefs);
-}
-
-template <typename X, typename Y> inline auto sum(const X &x, const Y &y) {
-  variant<X, Y> vx = x;
-  variant<X, Y> vy = y;
-  return sum(vx, vy);
-}
-
-template <typename X> inline auto mean(const std::vector<X> &xs) {
-  const auto n = cast::to_index(xs.size());
-  Eigen::VectorXd coefs(n);
-  coefs.fill(1. / cast::to_double(n));
-  return LinearCombination<X>(xs, coefs);
-}
-
-template <typename X> inline auto difference(const X &x, const X &y) {
-  Eigen::Vector2d coefs;
-  coefs << 1., -1.;
-  return LinearCombination<X>({x, y}, coefs);
-}
-
-template <typename X, typename Y>
-inline auto difference(const X &x, const Y &y) {
-  variant<X, Y> vx = x;
-  variant<X, Y> vy = y;
-  return difference(vx, vy);
-}
-
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const std::vector<X> &features) {
@@ -135,6 +103,38 @@ inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
                       const std::vector<X> &features) {
   Eigen::SparseMatrix<typename Derived::Scalar> sparse = matrix.sparseView();
   return sparse * features;
+}
+
+template <typename X> inline auto sum(const X &x, const X &y) {
+  Eigen::Vector2d coefs;
+  coefs << 1., 1.;
+  return LinearCombination<X>({x, y}, coefs);
+}
+
+template <typename X, typename Y> inline auto sum(const X &x, const Y &y) {
+  variant<X, Y> vx = x;
+  variant<X, Y> vy = y;
+  return sum(vx, vy);
+}
+
+template <typename X> inline auto mean(const std::vector<X> &xs) {
+  const auto n = cast::to_index(xs.size());
+  Eigen::VectorXd coefs(n);
+  coefs.fill(1. / cast::to_double(n));
+  return (coefs.transpose() * xs)[0];
+}
+
+template <typename X> inline auto difference(const X &x, const X &y) {
+  Eigen::Vector2d coefs;
+  coefs << 1., -1.;
+  return LinearCombination<X>({x, y}, coefs);
+}
+
+template <typename X, typename Y>
+inline auto difference(const X &x, const Y &y) {
+  variant<X, Y> vx = x;
+  variant<X, Y> vy = y;
+  return difference(vx, vy);
 }
 
 } // namespace albatross
