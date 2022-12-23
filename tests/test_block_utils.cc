@@ -17,6 +17,8 @@
 #include <albatross/GP>
 #include <albatross/utils/RandomUtils>
 
+#include "../include/albatross/src/utils/block_sparse_matrix.hpp"
+
 #include "test_utils.h"
 
 namespace albatross {
@@ -144,6 +146,54 @@ TEST(test_block_utils, test_block_symmetric) {
   const auto block_direct = build_block_symmetric(A.ldlt(), B, S.ldlt());
   const Eigen::MatrixXd actual_direct = block_direct.solve(rhs);
   EXPECT_TRUE(actual_direct.isApprox(expected));
+}
+
+TEST(test_block_sparse, test_single_block) {
+
+  const std::vector<Eigen::Index> rows = {2, 1, 3};
+  const std::vector<Eigen::Index> cols = {3, 2};
+
+  albatross::BlockSparseMatrix<Eigen::MatrixXd> block_sparse(rows, cols);
+
+  const Eigen::MatrixXd block = Eigen::MatrixXd::Random(2, 2);
+  block_sparse.set_block(0, 1, block);
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(5, 3);
+
+  const Eigen::MatrixXd actual = block_sparse * rhs;
+  const Eigen::MatrixXd expected = block * rhs.block(3, 0, 2, 3);
+  EXPECT_EQ(actual.topRows(2), expected);
+  EXPECT_EQ(actual.bottomRows(4).array().abs().sum(), 0);
+}
+
+TEST(test_block_sparse, test_dense) {
+  const std::vector<Eigen::Index> rows = {2, 1, 3};
+  const std::vector<Eigen::Index> cols = {3, 2};
+
+  albatross::BlockSparseMatrix<Eigen::MatrixXd> block_sparse(rows, cols);
+
+  const Eigen::MatrixXd dense = Eigen::MatrixXd::Random(6, 5);
+
+  Eigen::Index i = 0;
+  Eigen::Index row = 0;
+  for (const auto &row_size : rows) {
+    Eigen::Index j = 0;
+    Eigen::Index col = 0;
+    for (const auto &col_size : cols) {
+      block_sparse.set_block(i, j, dense.block(row, col, row_size, col_size));
+      ++j;
+      col += col_size;
+    }
+    ++i;
+    row += row_size;
+  }
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(5, 3);
+
+  const Eigen::MatrixXd actual = block_sparse * rhs;
+  const Eigen::MatrixXd expected = dense * rhs;
+
+  EXPECT_LT((actual - expected).norm(), 1e-8);
 }
 
 } // namespace albatross
