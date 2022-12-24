@@ -640,4 +640,24 @@ TEST(test_groupby, test_group_by_with_map) {
   }
 }
 
+TEST(test_groupby, test_group_by_with_type) {
+
+  std::vector<variant<int, double>> xs = {int(1), double(1.5), double(4.5),
+                                          int(4)};
+
+  auto variant_above_three = [](const auto &x) {
+    return x.match([](const auto &v) { return v > 3; });
+  };
+
+  auto expected_with_type = [](const auto &x) {
+    return x.match(
+        [](const int &v) { return std::make_pair(int(0), bool(v > 3)); },
+        [](const double &v) { return std::make_pair(int(1), bool(v > 3)); });
+  };
+
+  const auto actual = group_by_with_type(xs, variant_above_three).indexers();
+  const auto expected = group_by(xs, expected_with_type).indexers();
+  EXPECT_EQ(actual, expected);
+}
+
 } // namespace albatross

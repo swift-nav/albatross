@@ -2,7 +2,7 @@ include(SwiftTargets)
 
 swift_add_tool(albatross_unit_tests
   SOURCES
-  test_sparse_gp.cc
+  test_group_by.cc
   test_block_utils.cc
   RTTI
   EXCEPTIONS
