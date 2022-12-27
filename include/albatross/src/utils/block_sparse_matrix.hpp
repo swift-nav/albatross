@@ -35,14 +35,43 @@ public:
         col_sizes_(block_col_sizes),
         col_starts_(sizes_to_starts(block_col_sizes)), blocks_() {}
 
+  bool is_zero(Eigen::Index i, Eigen::Index j) const {
+    const auto row_iter = blocks_.find(i);
+    if (row_iter == blocks_.end()) {
+      return true;
+    }
+    return row_iter->second.find(j) == row_iter->second.end();
+  }
+
   friend std::ostream &operator<<(std::ostream &s, const BlockSparseMatrix &m) {
+
+    std::cout << "BLOCKS : " << std::endl;
+    for (std::size_t i = 0; i < m.row_sizes_.size(); ++i) {
+      if (i == 0) {
+        s << "   ";
+        for (std::size_t j = 0; j < m.col_sizes_.size(); ++j) {
+          s << std::setw(3) << j;
+        }
+        s << std::endl;
+      }
+      s << std::setw(3) << i << " ";
+      for (std::size_t j = 0; j < m.col_sizes_.size(); ++j) {
+        if (m.is_zero(cast::to_index(i), cast::to_index(j))) {
+          s << " - ";
+        } else {
+          s << " X ";
+        }
+      }
+      s << std::endl;
+    }
+
+    s << std::endl;
     for (const auto &row : m.blocks_) {
       for (const auto &block : row.second) {
         s << "block[" << row.first << ", " << block.first
           << "] : " << std::endl;
         s << block.second << "    " << std::endl;
       }
-      s << std::endl;
     }
     return s;
   }
@@ -88,8 +117,6 @@ public:
   template <typename Rhs,
             std::enable_if_t<is_eigen_plain_object<Rhs>::value, int> = 0>
   auto operator*(const Rhs &rhs) const {
-    // decltype((std::declval<BlockType>() * rhs).eval()) output(rows(),
-    //                                                           rhs.cols());
     Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rows(), rhs.cols());
 
     assert(rhs.rows() == this->cols());
@@ -103,6 +130,32 @@ public:
         output.block(row_starts_[si], 0, row_sizes_[si], rhs.cols()) +=
             block.second *
             rhs.block(col_starts_[sj], 0, col_sizes_[sj], rhs.cols());
+      }
+    }
+    return output;
+  }
+
+  std::vector<Eigen::Index> get_row_sizes() const { return row_sizes_; }
+
+  std::vector<Eigen::Index> get_col_sizes() const { return col_sizes_; }
+
+  const std::map<Eigen::Index, std::map<Eigen::Index, BlockType>> &
+  get_blocks() const {
+    return blocks_;
+  }
+
+  void set_blocks(
+      std::map<Eigen::Index, std::map<Eigen::Index, BlockType>> &&blocks) {
+    blocks_ = std::move(blocks);
+  }
+
+  using TransposeReturnType =
+      decltype(std::declval<const BlockType>().transpose());
+  BlockSparseMatrix<TransposeReturnType> transpose() const {
+    BlockSparseMatrix<TransposeReturnType> output(col_sizes_, row_sizes_);
+    for (const auto &row : blocks_) {
+      for (const auto &col : row.second) {
+        output.set_block(row.first, col.first, col.second.transpose());
       }
     }
     return output;

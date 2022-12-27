@@ -661,7 +661,7 @@ private:
     //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
     //          = P^T P
     const Eigen::MatrixXd P =
-        K_uu_ldlt->sqrt_solve(K_fu->transpose(), Base::threads_.get());
+        K_uu_ldlt->sqrt_solve(K_fu->transpose());
 
     // We only need the diagonal blocks of Q_ff to get A
     BlockDiagonal Q_ff_diag;

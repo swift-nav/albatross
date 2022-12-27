@@ -169,6 +169,11 @@ struct BlockDiagonalLDLT {
   Eigen::MatrixXd sqrt_solve(const Eigen::DenseBase<MatrixType> &rhs,
                              ThreadPool *pool = nullptr) const;
 
+  template <typename BlockType>
+  BlockSparseMatrix<Eigen::MatrixXd>
+  sqrt_solve(const BlockSparseMatrix<BlockType> &rhs,
+             ThreadPool *pool = nullptr) const;
+
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
@@ -342,6 +347,39 @@ BlockDiagonalLDLT::sqrt_solve(const Eigen::DenseBase<MatrixType> &rhs,
   };
 
   apply_map(block_to_row_map(), solve_and_fill_one_block, pool);
+  return output;
+}
+
+template <typename BlockType>
+inline BlockSparseMatrix<Eigen::MatrixXd>
+BlockDiagonalLDLT::sqrt_solve(const BlockSparseMatrix<BlockType> &rhs,
+                              ThreadPool *pool) const {
+
+  std::vector<Eigen::Index> output_row_sizes;
+  const auto rhs_row_sizes = rhs.get_row_sizes();
+  assert(rhs_row_sizes.size() == blocks.size());
+  for (std::size_t i = 0; i < blocks.size(); ++i) {
+    // Without this the logic would become a LOT more complicated.
+    assert(blocks[i].cols() == rhs_row_sizes[i] &&
+           "LDLT blocks and sparse blocks must all be compatible");
+    output_row_sizes.push_back(blocks[i].rows());
+  }
+
+  BlockSparseMatrix<Eigen::MatrixXd> output(output_row_sizes,
+                                            rhs.get_col_sizes());
+
+  const auto rhs_blocks = rhs.get_blocks();
+
+  auto solve_one_row = [&](const Eigen::Index row, const auto &rhs_row_blocks) {
+    const auto lhs_block = this->blocks[cast::to_size(row)];
+    auto solve_one_block = [&lhs_block](const auto &rhs_block) {
+      return lhs_block.sqrt_solve(rhs_block);
+    };
+
+    return apply(rhs_row_blocks, solve_one_block);
+  };
+
+  output.set_blocks(apply_map(rhs_blocks, pool));
   return output;
 }
 

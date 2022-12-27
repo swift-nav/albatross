@@ -24,7 +24,7 @@ inline void serialize(Archive &archive,
           cereal::make_nvp("S", block_sym.S));
 }
 
-template <typename Archive, typename Solver>
+template <typename Archive>
 inline void serialize(Archive &archive,
                       albatross::BlockDiagonalLDLT &block_ldlt,
                       const std::uint32_t) {

@@ -130,4 +130,24 @@ TEST(test_covariance_functions_block, test_compute_block_covariance_matrix) {
   EXPECT_EQ(actual, cov_matrix.toDense());
 }
 
+TEST(test_covariance_functions_block,
+     test_compute_block_covariance_matrix_rectangular) {
+  std::vector<variant<Y, Z, X>> xyzs = {X(), Y(), X(), Z(), X()};
+  std::vector<variant<Y, Z>> yzs = {Y(), Z(), Y(), Z(), Z()};
+
+  HasIndependent cov;
+
+  const auto cov_matrix =
+      compute_block_cross_covariance_and_reorder(cov, &xyzs, &yzs);
+
+  Eigen::MatrixXd random = Eigen::MatrixXd::Random(cov_matrix.cols(), 5);
+
+  const Eigen::MatrixXd actual = cov_matrix * random;
+  const Eigen::MatrixXd expected = cov(xyzs, yzs) * random;
+
+  EXPECT_LT((actual - expected).norm(), 1e-6);
+
+  std::cout << cov_matrix << std::endl;
+}
+
 } // namespace albatross
