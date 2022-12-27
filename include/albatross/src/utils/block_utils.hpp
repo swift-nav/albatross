@@ -165,19 +165,16 @@ struct BlockDiagonalLDLT {
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  template <typename MatrixType>
+  Eigen::MatrixXd sqrt_solve(const Eigen::DenseBase<MatrixType> &rhs,
+                             ThreadPool *pool = nullptr) const;
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
         ThreadPool *pool) const;
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-             ThreadPool *pool) const;
+  BlockDiagonal sqrt_transpose() const;
 
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
@@ -209,6 +206,7 @@ template <typename MatrixType, unsigned int Mode> struct BlockTriangularView {
 struct BlockDiagonal {
   std::vector<Eigen::MatrixXd> blocks;
 
+  // Make these match BlockSparse
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
@@ -300,20 +298,6 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
   return output;
 }
 
-template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
-    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
-  ALBATROSS_ASSERT(cols() == rhs.rows());
-  Eigen::Index i = 0;
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
-  for (const auto &b : blocks) {
-    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
-    output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
-    i += b.rows();
-  }
-  return output;
-}
-
 inline std::map<size_t, Eigen::Index>
 BlockDiagonalLDLT::block_to_row_map() const {
   Eigen::Index row = 0;
@@ -344,12 +328,12 @@ BlockDiagonalLDLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
   return output;
 }
 
-template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLDLT::sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+template <typename MatrixType>
+inline Eigen::MatrixXd
+BlockDiagonalLDLT::sqrt_solve(const Eigen::DenseBase<MatrixType> &rhs,
                               ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  Eigen::MatrixXd output(rows(), rhs.cols());
 
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
     const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
@@ -359,6 +343,12 @@ BlockDiagonalLDLT::sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
 
   apply_map(block_to_row_map(), solve_and_fill_one_block, pool);
   return output;
+}
+
+inline BlockDiagonal BlockDiagonalLDLT::sqrt_transpose() const {
+  auto one_block = [](const auto &b) { return b.sqrt_transpose(); };
+
+  return BlockDiagonal{apply(blocks, one_block)};
 }
 
 inline double BlockDiagonalLDLT::log_determinant() const {

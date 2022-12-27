@@ -152,12 +152,8 @@ public:
    * (or group key and group).  If the function returns something other than
    * void the results will be aggregated into a new Grouped object.
    */
-  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
-    return albatross::apply(map_, std::forward<ApplyFunction>(f));
-  }
-
   template <typename ApplyFunction>
-  auto apply(ApplyFunction &&f, ThreadPool *pool) const {
+  auto apply(ApplyFunction &&f, ThreadPool *pool = nullptr) const {
     return albatross::apply(map_, std::forward<ApplyFunction>(f), pool);
   }
 

@@ -19,5 +19,6 @@
 #include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/models/sparse_gp.hpp>
+#include <albatross/src/covariance_functions/block.hpp>
 
 #endif

@@ -74,7 +74,7 @@ template <typename FeatureType> struct SparseGPFit {};
 template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   std::vector<FeatureType> train_features;
-  Eigen::SerializableLDLT train_covariance;
+  BlockDiagonalLDLT train_covariance;
   Eigen::MatrixXd sigma_R;
   Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
   Eigen::VectorXd information;
@@ -83,7 +83,7 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Fit(){};
 
   Fit(const std::vector<FeatureType> &features_,
-      const Eigen::SerializableLDLT &train_covariance_,
+      const BlockDiagonalLDLT &train_covariance_,
       const Eigen::MatrixXd sigma_R_,
       const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
@@ -295,12 +295,14 @@ public:
                     const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
 
+    std::vector<InducingPointFeatureType> inducing_points =
+        old_fit.train_features;
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
+    BlockDiagonalLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-    compute_internal_components(old_fit.train_features, features, targets,
-                                &A_ldlt, &K_uu_ldlt, &K_fu, &y);
+    compute_internal_components(features, targets, &inducing_points, &A_ldlt,
+                                &K_uu_ldlt, &K_fu, &y);
 
     const Eigen::Index n_old = old_fit.sigma_R.rows();
     const Eigen::Index n_new = A_ldlt.rows();
@@ -351,12 +353,12 @@ public:
   //   Sigma = (B^T B)^-1
   //
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
-  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
+  compute_sigma_qr(const BlockDiagonalLDLT &K_uu_ldlt,
                    const BlockDiagonalLDLT &A_ldlt,
                    const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
-    B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
+    B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose().toDense();
     return B.colPivHouseholderQr();
   };
 
@@ -368,15 +370,14 @@ public:
                  const MarginalDistribution &targets) const {
 
     // Determine the set of inducing points, u.
-    const auto u =
-        inducing_point_strategy_(this->covariance_function_, features);
+    auto u = inducing_point_strategy_(this->covariance_function_, features);
     ALBATROSS_ASSERT(u.size() > 0 && "Empty inducing points!");
 
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
+    BlockDiagonalLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-    compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
+    compute_internal_components(features, targets, &u, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
@@ -401,9 +402,10 @@ public:
 
     new_fit.train_features = new_inducing_points;
 
-    const Eigen::MatrixXd K_zz =
-        this->covariance_function_(new_inducing_points, Base::threads_.get());
-    new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
+    const auto K_zz = compute_block_covariance_and_reorder(
+        this->covariance_function_, &new_fit.train_features,
+        Base::threads_.get());
+    new_fit.train_covariance = K_zz.ldlt();
 
     // We're going to need to take the sqrt of the new covariance which
     // could be extremely small, so here we add a small nugget to avoid
@@ -439,7 +441,8 @@ public:
     // We can then compute and store the QR decomposition of B
     // as we do in a normal fit.
     const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
-    const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
+    // think about this, probably a better way:
+    const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz.toDense());
     const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
 
     new_fit.permutation_indices = B_qr.colsPermutation().indices();
@@ -526,14 +529,14 @@ public:
 
   template <typename FeatureType>
   double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
-    const auto u =
+    auto u =
         inducing_point_strategy_(this->covariance_function_, dataset.features);
 
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
+    BlockDiagonalLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-    compute_internal_components(u, dataset.features, dataset.targets, &A_ldlt,
+    compute_internal_components(dataset.features, dataset.targets, &u, &A_ldlt,
                                 &K_uu_ldlt, &K_fu, &y);
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
     // The log likelihood for y ~ N(0, K) is:
@@ -604,16 +607,24 @@ private:
   //
   template <typename InducingFeatureType, typename FeatureType>
   void compute_internal_components(
-      const std::vector<InducingFeatureType> &inducing_features,
       const std::vector<FeatureType> &out_of_order_features,
       const MarginalDistribution &out_of_order_targets,
-      BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
+      std::vector<InducingFeatureType> *inducing_features,
+      BlockDiagonalLDLT *A_ldlt, BlockDiagonalLDLT *K_uu_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
 
     ALBATROSS_ASSERT(A_ldlt != nullptr);
     ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
     ALBATROSS_ASSERT(K_fu != nullptr);
     ALBATROSS_ASSERT(y != nullptr);
+
+    auto K_uu = compute_block_covariance_and_reorder(
+        this->covariance_function_, inducing_features, Base::threads_.get());
+    for (auto &block : K_uu.blocks) {
+      block.diagonal() +=
+          inducing_nugget_.value * Eigen::VectorXd::Ones(block.rows());
+    }
+    *K_uu_ldlt = K_uu.ldlt();
 
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();
@@ -642,21 +653,15 @@ private:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    *K_fu = this->covariance_function_(features, inducing_features,
+    *K_fu = this->covariance_function_(features, *inducing_features,
                                        Base::threads_.get());
 
-    auto K_uu =
-        this->covariance_function_(inducing_features, Base::threads_.get());
-
-    K_uu.diagonal() +=
-        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
-
-    *K_uu_ldlt = K_uu.ldlt();
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
     //          = P^T P
-    const Eigen::MatrixXd P = K_uu_ldlt->sqrt_solve(K_fu->transpose());
+    const Eigen::MatrixXd P =
+        K_uu_ldlt->sqrt_solve(K_fu->transpose(), Base::threads_.get());
 
     // We only need the diagonal blocks of Q_ff to get A
     BlockDiagonal Q_ff_diag;

@@ -81,4 +81,53 @@ TEST(test_covariance_functions_block, test_independent) {
       bool(detail::is_independent_from<HasIndependent, Z, Y, W>::value));
 }
 
+TEST(test_covariance_functions_block, test_are_all_independent) {
+  EXPECT_TRUE(
+      bool(detail::are_all_independent<HasIndependent, variant<Y, Z>>::value));
+  EXPECT_TRUE(bool(
+      detail::are_all_independent<HasIndependent, variant<Y, Z, W>>::value));
+  EXPECT_TRUE(
+      bool(detail::are_all_independent<HasIndependent, variant<X, W>>::value));
+
+  EXPECT_FALSE(bool(
+      detail::are_all_independent<HasIndependent, variant<X, Y, Z>>::value));
+  EXPECT_FALSE(
+      bool(detail::are_all_independent<HasIndependent, variant<X, Y>>::value));
+  EXPECT_FALSE(
+      bool(detail::are_all_independent<HasIndependent, variant<X, Z>>::value));
+}
+
+TEST(test_covariance_functions_block,
+     test_compute_block_covariance_matrix_one_block) {
+  std::vector<variant<Y, Z>> ys = {Y(), Y(), Y()};
+
+  HasIndependent cov;
+
+  const auto before = ys;
+  const auto cov_matrix = compute_block_covariance_and_reorder(cov, &ys);
+
+  EXPECT_EQ(cov_matrix.blocks.size(), 1);
+  EXPECT_EQ(cov_matrix.rows(), cast::to_index(ys.size()));
+  EXPECT_EQ(cov_matrix.cols(), cast::to_index(ys.size()));
+
+  const Eigen::MatrixXd actual = cov(before);
+  EXPECT_EQ(actual, cov_matrix.toDense());
+}
+
+TEST(test_covariance_functions_block, test_compute_block_covariance_matrix) {
+  std::vector<variant<Y, Z>> yzs = {Y(), Z(), Y(), Z(), Z()};
+
+  HasIndependent cov;
+
+  const auto cov_matrix = compute_block_covariance_and_reorder(cov, &yzs);
+
+  EXPECT_EQ(cov_matrix.blocks.size(), 2);
+  EXPECT_EQ(cov_matrix.rows(), cast::to_index(yzs.size()));
+  EXPECT_EQ(cov_matrix.cols(), cast::to_index(yzs.size()));
+
+  const Eigen::MatrixXd actual = cov(yzs);
+
+  EXPECT_EQ(actual, cov_matrix.toDense());
+}
+
 } // namespace albatross
