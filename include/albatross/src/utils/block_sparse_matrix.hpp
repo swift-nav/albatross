@@ -81,8 +81,6 @@ public:
     assert(i >= 0);
     assert(j < col_sizes_.size());
     assert(j >= 0);
-    assert(block.rows() == row_sizes_[i]);
-    assert(block.cols() == col_sizes_[j]);
     const auto row_iter = blocks_.find(i);
     assert(row_iter != blocks_.end());
     return row_iter->second[j];
