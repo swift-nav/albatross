@@ -2,8 +2,9 @@ include(SwiftTargets)
 
 swift_add_tool(albatross_unit_tests
   SOURCES
-  test_group_by.cc
-  test_block_utils.cc
+  #test_group_by.cc
+  #test_block_utils.cc
+  test_covariance_functions_block.cc
   RTTI
   EXCEPTIONS
   REMOVE_COMPILE_OPTIONS
