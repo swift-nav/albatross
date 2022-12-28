@@ -19,29 +19,44 @@ namespace albatross {
  * Holds a structured representation of a matrix which often requires
  * permuting rows and columns;
  */
-template <typename MatrixType>
-stuct StructuredMatrix {
+template <typename MatrixType> struct Structured {
+
+  Eigen::Index rows() const { return matrix.rows(); }
+
+  Eigen::Index cols() const { return matrix.cols(); }
+
+  Eigen::MatrixXd toDense() const { return P_rows * matrix.toDense() * P_cols; }
 
   MatrixType matrix;
   Eigen::PermutationMatrix<Eigen::Dynamic> P_rows;
   Eigen::PermutationMatrix<Eigen::Dynamic> P_cols;
 };
 
+template <typename MatrixType, typename RhsType>
+auto operator*(const Structured<MatrixType> &lhs, const RhsType &rhs) {
+  return lhs.P_rows * (lhs.matrix * (lhs.P_cols * rhs));
+}
+
 namespace structured {
 
 template <typename MatrixType>
-auto ldlt(const StructuredMatrix<MatrixType> &x) {
-  return StructuredMatrix{x.matrix.ldlt(), x.P_rows, x.P_cols};
+auto make_structured(MatrixType &&x,
+                     const Eigen::PermutationMatrix<Eigen::Dynamic> &P_rows,
+                     const Eigen::PermutationMatrix<Eigen::Dynamic> &P_cols) {
+  return Structured<MatrixType>{x, P_rows, P_cols};
+}
+
+template <typename MatrixType> auto ldlt(const Structured<MatrixType> &x) {
+  return make_structured(x.matrix.ldlt(), x.P_rows, x.P_cols);
 }
 
 template <typename MatrixType, typename RhsType>
-auto sqrt_solve(const StructuredMatrix<MatrixType> &x,
-                const RhsType &rhs) {
+auto sqrt_solve(const Structured<MatrixType> &x, const RhsType &rhs) {
   assert(x.P_rows == x.P_cols);
   return x.matrix.sqrt_solve(x.P_rows.transpose() * rhs);
 }
 
-}
+} // namespace structured
 
 } // namespace albatross
 

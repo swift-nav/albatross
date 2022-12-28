@@ -15,14 +15,16 @@
 
 namespace albatross {
 
-template <typename T, typename GroupKey>
-Eigen::PermutationMatrix<Eigen::Dynamic> build_permutation_matrix(const std::vector<T> &x,
-                       const GroupIndexer<GroupKey> &indexer) {
-  Eigen::VectorXi indices(cast::to_index(x.size()));
+template <typename GroupKey>
+Eigen::PermutationMatrix<Eigen::Dynamic>
+build_permutation_matrix(const GroupIndexer<GroupKey> &indexer) {
+  Eigen::Index n = cast::to_index(
+      indexer.apply([](const auto &inds) { return inds.size(); }).sum());
+  Eigen::VectorXi indices(n);
   Eigen::Index i = 0;
   for (const auto &pair : indexer) {
     for (const auto &ind : pair.second) {
-      indices[i++] = ind;
+      indices[i++] = static_cast<int>(ind);
     }
   }
   return Eigen::PermutationMatrix<Eigen::Dynamic>(indices);

@@ -19,6 +19,7 @@
 
 #include <albatross/src/evaluation/likelihood.hpp>
 #include <albatross/src/eigen/serializable_ldlt.hpp>
+#include <albatross/src/utils/structured.hpp>
 #include <albatross/src/utils/block_sparse_matrix.hpp>
 #include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/covariance_functions/representations.hpp>

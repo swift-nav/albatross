@@ -400,22 +400,19 @@ public:
         output(*this, Fit<SparseGPFit<FeatureType>>());
     Fit<SparseGPFit<FeatureType>> &new_fit = output.get_fit();
 
-    new_fit.train_features = new_inducing_points;
+    const auto cov_and_permutations = compute_block_covariance(
+        this->covariance_function_, new_inducing_points, Base::threads_.get());
 
-    const auto orig_features = new_fit.train_features;
-    const auto K_zz = compute_block_covariance_and_reorder(
-        this->covariance_function_, &new_fit.train_features,
-        Base::threads_.get());
+    const auto &P = cov_and_permutations.P_cols;
+    new_fit.train_features = P * new_inducing_points;
+    const auto K_zz = cov_and_permutations.matrix;
     new_fit.train_covariance = K_zz.ldlt();
-
-    auto grouper = [](const auto &) -> bool { return true; };
-    const auto grouped = group_by_with_type(*xs, grouper);
-    *xs = reorder(*xs, grouped.indexers());
 
     // We're going to need to take the sqrt of the new covariance which
     // could be extremely small, so here we add a small nugget to avoid
     // numerical instability
-    JointDistribution prediction(prediction_);
+    JointDistribution prediction(P * prediction_.mean,
+                                 P * prediction_.covariance * P.transpose());
     prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
         cast::to_index(prediction.size()), 1, details::DEFAULT_NUGGET);
     new_fit.information = new_fit.train_covariance.solve(prediction.mean);
@@ -623,13 +620,15 @@ private:
     ALBATROSS_ASSERT(K_fu != nullptr);
     ALBATROSS_ASSERT(y != nullptr);
 
-    auto K_uu = compute_block_covariance_and_reorder(
-        this->covariance_function_, inducing_features, Base::threads_.get());
-    for (auto &block : K_uu.blocks) {
+    auto cov_and_perm = compute_block_covariance(
+        this->covariance_function_, *inducing_features, Base::threads_.get());
+    *inducing_features = cov_and_perm.P_cols * (*inducing_features);
+
+    for (auto &block : cov_and_perm.matrix.blocks) {
       block.diagonal() +=
           inducing_nugget_.value * Eigen::VectorXd::Ones(block.rows());
     }
-    *K_uu_ldlt = K_uu.ldlt();
+    *K_uu_ldlt = cov_and_perm.matrix.ldlt();
 
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();
@@ -665,8 +664,7 @@ private:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
     //          = P^T P
-    const Eigen::MatrixXd P =
-        K_uu_ldlt->sqrt_solve(K_fu->transpose());
+    const Eigen::MatrixXd P = K_uu_ldlt->sqrt_solve(K_fu->transpose());
 
     // We only need the diagonal blocks of Q_ff to get A
     BlockDiagonal Q_ff_diag;

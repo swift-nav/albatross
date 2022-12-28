@@ -53,21 +53,23 @@ struct are_all_independent<CovFunc, variant<X, Ts...>> {
  * Covariance between all elements of a vector.
  */
 template <typename CovFuncCaller, typename X>
-inline BlockDiagonal
-compute_block_covariance_and_reorder(CovFuncCaller caller, std::vector<X> *xs,
-                                     ThreadPool *pool = nullptr) {
+inline Structured<BlockDiagonal>
+compute_block_covariance(CovFuncCaller caller, const std::vector<X> &xs,
+                         ThreadPool *pool = nullptr) {
   static_assert(is_invocable<CovFuncCaller, X, X>::value,
                 "caller does not support the required arguments");
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
                 "caller does not return a double");
 
   auto grouper = [](const auto &) -> bool { return true; };
-  const auto grouped = group_by_with_type(*xs, grouper);
-  *xs = reorder(*xs, grouped.indexers());
+  const auto grouped = group_by_with_type(xs, grouper);
+
+  const auto P = build_permutation_matrix(grouped.indexers());
 
   auto compute_block = [&caller](const auto &g) { return caller(g); };
 
-  return BlockDiagonal{grouped.apply(compute_block, pool).values()};
+  return Structured<BlockDiagonal>{
+      BlockDiagonal{grouped.apply(compute_block, pool).values()}, P, P};
 }
 
 namespace detail {
