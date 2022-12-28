@@ -402,10 +402,15 @@ public:
 
     new_fit.train_features = new_inducing_points;
 
+    const auto orig_features = new_fit.train_features;
     const auto K_zz = compute_block_covariance_and_reorder(
         this->covariance_function_, &new_fit.train_features,
         Base::threads_.get());
     new_fit.train_covariance = K_zz.ldlt();
+
+    auto grouper = [](const auto &) -> bool { return true; };
+    const auto grouped = group_by_with_type(*xs, grouper);
+    *xs = reorder(*xs, grouped.indexers());
 
     // We're going to need to take the sqrt of the new covariance which
     // could be extremely small, so here we add a small nugget to avoid

@@ -16,6 +16,19 @@
 namespace albatross {
 
 template <typename T, typename GroupKey>
+Eigen::PermutationMatrix<Eigen::Dynamic> build_permutation_matrix(const std::vector<T> &x,
+                       const GroupIndexer<GroupKey> &indexer) {
+  Eigen::VectorXi indices(cast::to_index(x.size()));
+  Eigen::Index i = 0;
+  for (const auto &pair : indexer) {
+    for (const auto &ind : pair.second) {
+      indices[i++] = ind;
+    }
+  }
+  return Eigen::PermutationMatrix<Eigen::Dynamic>(indices);
+}
+
+template <typename T, typename GroupKey>
 std::vector<T> reorder(const std::vector<T> &x,
                        GroupIndexer<GroupKey> indexer) {
   std::vector<T> output(x.size());
