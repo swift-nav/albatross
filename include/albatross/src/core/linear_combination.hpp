@@ -74,6 +74,19 @@ inline auto difference(const X &x, const Y &y) {
   return difference(vx, vy);
 }
 
+template <int Size, typename X>
+inline auto operator*(const Eigen::PermutationMatrix<Size> &matrix,
+                      const std::vector<X> &features) {
+  std::vector<X> output(features.size());
+  const auto &indices = matrix.indices();
+  for (Eigen::Index i = 0; i < indices.size(); ++i) {
+    const std::size_t si = cast::to_size(i);
+    const std::size_t sj = cast::to_size(indices[i]);
+    output[sj] = features[si];
+  }
+  return output;
+}
+
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const std::vector<X> &features) {
