@@ -15,7 +15,7 @@ performance-inefficient-vector-operation: 26
 performance-move-const-arg: 1
 performance-no-automatic-move: 3
 performance-unnecessary-copy-initialization: 7
-readability-container-size-empty: 15
+readability-container-size-empty: 16
 readability-else-after-return: 21
 readability-named-parameter: 191
 readability-static-accessed-through-instance: 1
