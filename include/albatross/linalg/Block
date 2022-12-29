@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Swift Navigation Inc.
+ * Copyright (C) 2022 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -10,11 +10,12 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_LINALG_UTILS_H
-#define ALBATROSS_LINALG_UTILS_H
+#ifndef ALBATROSS_LINALG_BLOCK_H
+#define ALBATROSS_LINALG_BLOCK_H
 
 #include "../Common"
-#include "../src/linalg/qr_utils.hpp"
-#include "../src/linalg/print_eigen_directions.hpp"
+#include "../src/linalg/block_utils.hpp"
+#include "../src/linalg/block_diagonal.hpp"
+#include "../src/linalg/block_symmetric.hpp"
 
 #endif
