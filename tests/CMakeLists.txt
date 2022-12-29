@@ -7,6 +7,7 @@ swift_add_tool(albatross_unit_tests
   #test_sparse_gp.cc
   #test_covariance_functions_block.cc
   test_linalg_structured.cc
+  test_infer_structure.cc
   RTTI
   EXCEPTIONS
   REMOVE_COMPILE_OPTIONS
