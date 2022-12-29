@@ -152,12 +152,8 @@ public:
    * (or group key and group).  If the function returns something other than
    * void the results will be aggregated into a new Grouped object.
    */
-  template <typename ApplyFunction> auto apply(ApplyFunction &&f) const {
-    return albatross::apply(map_, std::forward<ApplyFunction>(f));
-  }
-
   template <typename ApplyFunction>
-  auto apply(ApplyFunction &&f, ThreadPool *pool) const {
+  auto apply(ApplyFunction &&f, ThreadPool *pool = nullptr) const {
     return albatross::apply(map_, std::forward<ApplyFunction>(f), pool);
   }
 
@@ -644,6 +640,30 @@ template <typename FeatureType, typename GrouperFunc>
 auto group_by(const std::vector<FeatureType> &vector, GrouperFunc grouper) {
   return GroupBy<std::vector<FeatureType>, GrouperFunc>(vector,
                                                         std::move(grouper));
+}
+
+namespace detail {
+
+template <typename T, std::enable_if_t<!is_variant<T>::value, int> = 0>
+inline int type_index(const T &) {
+  return 0;
+}
+
+template <typename T, std::enable_if_t<is_variant<T>::value, int> = 0>
+inline int type_index(const T &x) {
+  return x.which();
+}
+
+} // namespace detail
+
+template <typename FeatureType, typename GrouperFunc>
+auto group_by_with_type(const std::vector<FeatureType> &vector,
+                        GrouperFunc grouper) {
+  auto with_type = [&grouper](const auto &x) {
+    return std::make_pair(detail::type_index(x), grouper(x));
+  };
+
+  return group_by(vector, with_type);
 }
 
 } // namespace albatross

@@ -68,7 +68,7 @@ struct BlockDiagonal {
 
   Eigen::Index cols() const;
 
-  Eigen::MatrixXd toDense() const;
+  Eigen::MatrixXd to_dense() const;
 };
 
 /*
@@ -204,7 +204,7 @@ inline BlockDiagonal BlockDiagonal::operator-(const BlockDiagonal &rhs) const {
   return output;
 }
 
-inline Eigen::MatrixXd BlockDiagonal::toDense() const {
+inline Eigen::MatrixXd BlockDiagonal::to_dense() const {
   Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rows(), cols());
 
   Eigen::Index i = 0;

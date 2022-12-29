@@ -10,13 +10,21 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SPARSE_GP_H
-#define ALBATROSS_SPARSE_GP_H
+#ifndef ALBATROSS_SRC_LINALG_OPERATORS_HPP
+#define ALBATROSS_SRC_LINALG_OPERATORS_HPP
 
-#include "GP"
-#include "linalg/Utils"
+namespace albatross {
 
-#include <albatross/src/models/sparse_gp.hpp>
-#include <albatross/src/covariance_functions/block.hpp>
+template <typename MatrixType>
+inline Eigen::MatrixXd to_dense(const MatrixType &x) {
+  return x.to_dense();
+}
 
-#endif
+template <typename Derived>
+inline Eigen::MatrixXd to_dense(const Eigen::DenseBase<Derived> &x) {
+  return x.derived();
+}
+
+} // namespace albatross
+
+#endif // ALBATROSS_SRC_LINALG_OPERATORS_HPP
