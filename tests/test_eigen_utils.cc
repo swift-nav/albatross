@@ -20,36 +20,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-TEST(test_eigen_utils, test_dense_block_diag) {
-  Eigen::MatrixXd A = Eigen::MatrixXd::Random(2, 2);
-
-  Eigen::MatrixXd B = Eigen::MatrixXd::Random(2, 3);
-
-  std::vector<Eigen::MatrixXd> blocks = {A, B};
-  auto C = albatross::block_diagonal(blocks);
-
-  EXPECT_NEAR((C.block(0, 0, 2, 2) - A).norm(), 0., 1e-10);
-  EXPECT_NEAR(C.block(0, 2, 2, 3).norm(), 0., 1e-10);
-  EXPECT_NEAR((C.block(2, 2, 2, 3) - B).norm(), 0., 1e-10);
-  EXPECT_NEAR(C.block(2, 0, 2, 2).norm(), 0., 1e-10);
-}
-
-TEST(test_eigen_utils, test_diag_block_diag) {
-  Eigen::DiagonalMatrix<double, Eigen::Dynamic> A =
-      Eigen::VectorXd::Random(2).asDiagonal();
-
-  Eigen::DiagonalMatrix<double, Eigen::Dynamic> B =
-      Eigen::VectorXd::Random(3).asDiagonal();
-
-  std::vector<decltype(A)> blocks = {A, B};
-  auto C = albatross::block_diagonal(blocks);
-
-  EXPECT_NEAR((A.diagonal() - C.diagonal().segment(0, A.rows())).norm(), 0.,
-              1E-10);
-  EXPECT_NEAR((B.diagonal() - C.diagonal().segment(A.rows(), B.rows())).norm(),
-              0., 1E-10);
-}
-
 TEST(test_eigen_utils, test_vertical_stack_matrix) {
   Eigen::MatrixXd A(2, 3);
   A << 1, 2, 3, 4, 5, 6;
