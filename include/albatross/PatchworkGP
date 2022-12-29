@@ -15,8 +15,6 @@
 
 #include "GP"
 
-#include <albatross/src/utils/block_utils.hpp>
-#include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/models/patchwork_gp_details.hpp>
 #include <albatross/src/models/patchwork_gp.hpp>
 

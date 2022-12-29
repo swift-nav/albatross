@@ -16,10 +16,10 @@
 #include "Core"
 #include "Stats"
 #include "CovarianceFunctions"
+#include "linalg/Block"
 
 #include <albatross/src/evaluation/likelihood.hpp>
 #include <albatross/src/eigen/serializable_ldlt.hpp>
-#include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/covariance_functions/representations.hpp>
 #include <albatross/src/models/gp.hpp>
 #include <albatross/src/models/conditional_gaussian.hpp>
