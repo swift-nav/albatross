@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_
-#define INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_
+#ifndef ALBATROSS_SRC_MODELS_SPARSE_GP_HPP
+#define ALBATROSS_SRC_MODELS_SPARSE_GP_HPP
 
 namespace albatross {
 
@@ -760,4 +760,4 @@ auto sparse_gp_from_covariance(CovFunc covariance_function,
 
 } // namespace albatross
 
-#endif /* INCLUDE_ALBATROSS_MODELS_SPARSE_GP_H_ */
+#endif // ALBATROSS_SRC_MODELS_SPARSE_GP_HPP

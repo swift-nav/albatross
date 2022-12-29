@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_EIGEN_UTILS_H
-#define ALBATROSS_EIGEN_UTILS_H
+#ifndef ALBATROSS_SRC_UTILS_EIGEN_UTILS_HPP
+#define ALBATROSS_SRC_UTILS_EIGEN_UTILS_HPP
 
 namespace albatross {
 
@@ -86,4 +86,4 @@ inline auto truncated_psd_solve(
 
 } // namespace albatross
 
-#endif
+#endif // ALBATROSS_SRC_UTILS_EIGEN_UTILS_HPP

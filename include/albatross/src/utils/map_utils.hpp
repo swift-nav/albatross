@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_MAP_UTILS_H
-#define ALBATROSS_MAP_UTILS_H
+#ifndef ALBATROSS_SRC_UTILS_MAP_UTILS_HPP
+#define ALBATROSS_SRC_UTILS_MAP_UTILS_HPP
 
 namespace albatross {
 
@@ -91,4 +91,4 @@ inline Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
 }
 
 } // namespace albatross
-#endif
+#endif // ALBATROSS_SRC_UTILS_MAP_UTILS_HPP

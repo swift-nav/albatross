@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_INDEXING_GROUPBY_HPP_
-#define ALBATROSS_INDEXING_GROUPBY_HPP_
+#ifndef ALBATROSS_SRC_INDEXING_GROUP_BY_HPP
+#define ALBATROSS_SRC_INDEXING_GROUP_BY_HPP
 
 /*
  * Group By
@@ -668,4 +668,4 @@ auto group_by_with_type(const std::vector<FeatureType> &vector,
 
 } // namespace albatross
 
-#endif /* ALBATROSS_INDEXING_GROUPBY_HPP_ */
+#endif // ALBATROSS_SRC_INDEXING_GROUP_BY_HPP
