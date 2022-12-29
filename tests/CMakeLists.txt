@@ -27,10 +27,9 @@ swift_add_tool(albatross_unit_tests
   test_map_utils.cc
   test_minimum_spanning_tree.cc
   test_model_adapter.cc
-  test_model_metrics.cc  
+  test_model_metrics.cc
   test_models.cc
   test_parameter_handling_mixin.cc
-  test_patchwork_gp.cc
   test_prediction.cc
   test_radial.cc
   test_random_utils.cc
