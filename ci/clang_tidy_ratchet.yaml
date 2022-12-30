@@ -14,7 +14,7 @@ performance-inefficient-string-concatenation: 1
 performance-inefficient-vector-operation: 26
 performance-move-const-arg: 1
 performance-no-automatic-move: 3
-performance-unnecessary-copy-initialization: 7
+performance-unnecessary-copy-initialization: 6
 readability-container-size-empty: 17
 readability-else-after-return: 21
 readability-named-parameter: 191
