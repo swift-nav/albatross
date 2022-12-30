@@ -296,11 +296,11 @@ public:
                     const MarginalDistribution &targets) const {
 
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
+
     compute_internal_components(old_fit.train_features, features, targets,
-                                &A_ldlt, &K_uu_ldlt, &K_fu, &y);
+                                old_fit.train_covariance, &A_ldlt, &K_fu, &y);
 
     const Eigen::Index n_old = old_fit.sigma_R.rows();
     const Eigen::Index n_new = A_ldlt.rows();
@@ -368,16 +368,16 @@ public:
                  const MarginalDistribution &targets) const {
 
     // Determine the set of inducing points, u.
-    const auto u =
-        inducing_point_strategy_(this->covariance_function_, features);
-    ALBATROSS_ASSERT(u.size() > 0 && "Empty inducing points!");
+    auto u = inducing_point_strategy_(this->covariance_function_, features);
+    ALBATROSS_ASSERT(!u.empty() && "Empty inducing points!");
+
+    const auto K_uu_ldlt = compute_kuu_ldlt(&u);
 
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-    compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
-                                &K_fu, &y);
+    compute_internal_components(u, features, targets, K_uu_ldlt, &A_ldlt, &K_fu,
+                                &y);
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
@@ -526,15 +526,17 @@ public:
 
   template <typename FeatureType>
   double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
-    const auto u =
+    auto u =
         inducing_point_strategy_(this->covariance_function_, dataset.features);
 
+    const auto K_uu_ldlt = compute_kuu_ldlt(&u);
+
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
-    compute_internal_components(u, dataset.features, dataset.targets, &A_ldlt,
-                                &K_uu_ldlt, &K_fu, &y);
+    compute_internal_components(u, dataset.features, dataset.targets, K_uu_ldlt,
+                                &A_ldlt, &K_fu, &y);
+
     const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
     // The log likelihood for y ~ N(0, K) is:
     //
@@ -596,6 +598,16 @@ public:
   }
 
 private:
+  template <typename InducingFeatureType>
+  auto
+  compute_kuu_ldlt(std::vector<InducingFeatureType> *inducing_features) const {
+    auto K_uu =
+        this->covariance_function_(*inducing_features, Base::threads_.get());
+    K_uu.diagonal() +=
+        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
+    return Eigen::SerializableLDLT(K_uu);
+  }
+
   // This method takes care of a lot of the common book keeping required to
   // setup the Sparse Gaussian Process problem.  Namely, we want to get from
   // possibly unordered features to a structured representation
@@ -607,11 +619,10 @@ private:
       const std::vector<InducingFeatureType> &inducing_features,
       const std::vector<FeatureType> &out_of_order_features,
       const MarginalDistribution &out_of_order_targets,
-      BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
+      const Eigen::SerializableLDLT &K_uu_ldlt, BlockDiagonalLDLT *A_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
 
     ALBATROSS_ASSERT(A_ldlt != nullptr);
-    ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
     ALBATROSS_ASSERT(K_fu != nullptr);
     ALBATROSS_ASSERT(y != nullptr);
 
@@ -645,18 +656,11 @@ private:
     *K_fu = this->covariance_function_(features, inducing_features,
                                        Base::threads_.get());
 
-    auto K_uu =
-        this->covariance_function_(inducing_features, Base::threads_.get());
-
-    K_uu.diagonal() +=
-        inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
-
-    *K_uu_ldlt = K_uu.ldlt();
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
     //          = P^T P
-    const Eigen::MatrixXd P = K_uu_ldlt->sqrt_solve(K_fu->transpose());
+    const Eigen::MatrixXd P = K_uu_ldlt.sqrt_solve(K_fu->transpose());
 
     // We only need the diagonal blocks of Q_ff to get A
     BlockDiagonal Q_ff_diag;
