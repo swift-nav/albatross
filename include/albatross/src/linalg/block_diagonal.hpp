@@ -42,6 +42,8 @@ struct BlockDiagonalLDLT {
   sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
              ThreadPool *pool) const;
 
+  BlockDiagonal sqrt_transpose() const;
+
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
   double log_determinant() const;
@@ -99,6 +101,13 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
     output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
     i += b.rows();
   }
+  return output;
+}
+
+inline BlockDiagonal BlockDiagonalLDLT::sqrt_transpose() const {
+  auto sqrt_transpose_block = [](const auto &b) { return b.sqrt_transpose(); };
+  BlockDiagonal output;
+  output.blocks = apply(this->blocks, sqrt_transpose_block);
   return output;
 }
 
