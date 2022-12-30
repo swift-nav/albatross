@@ -24,6 +24,13 @@ inline void serialize(Archive &archive,
           cereal::make_nvp("S", block_sym.S));
 }
 
+template <typename Archive>
+inline void serialize(Archive &archive,
+                      albatross::BlockDiagonalLDLT &block_ldlt,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("blocks", block_ldlt.blocks));
+}
+
 } // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_BLOCK_UTILS_HPP_ */
