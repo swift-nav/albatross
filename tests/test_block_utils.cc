@@ -48,7 +48,7 @@ TEST(test_block_utils, test_to_dense) {
   auto block_diag = example.block;
   auto dense = example.dense;
 
-  const auto block_result = block_diag.toDense();
+  const auto block_result = block_diag.to_dense();
   EXPECT_LE((block_result - dense).norm(), 1e-6);
 }
 
