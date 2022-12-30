@@ -25,6 +25,19 @@ inline Eigen::MatrixXd to_dense(const Eigen::DenseBase<Derived> &x) {
   return x.derived();
 }
 
+template <int Size, typename X>
+inline auto operator*(const Eigen::PermutationMatrix<Size> &matrix,
+                      const std::vector<X> &features) {
+  std::vector<X> output(features.size());
+  const auto &indices = matrix.indices();
+  for (Eigen::Index i = 0; i < indices.size(); ++i) {
+    const std::size_t si = cast::to_size(i);
+    const std::size_t sj = cast::to_size(indices[i]);
+    output[sj] = features[si];
+  }
+  return output;
+}
+
 } // namespace albatross
 
 #endif // ALBATROSS_SRC_LINALG_OPERATORS_HPP
