@@ -355,7 +355,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   auto high_res_pred =
       high_res_fit.predict_with_measurement_noise(test_features).joint();
   // Increasing the inducing points shouldn't change much
-  EXPECT_LT((high_res_pred.mean - full_pred.mean).norm(), 1e-6);
+  EXPECT_LT((high_res_pred.mean - full_pred.mean).norm(), 1e-5);
 
   const auto low_high_res_fit =
       rebase_inducing_points(low_res_fit, high_res_features);
