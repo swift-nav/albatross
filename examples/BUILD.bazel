@@ -59,13 +59,3 @@ example(
     ],
     args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv",
 )
-
-example(
-    name = "patchwork",
-    srcs = [
-        "example_utils.h",
-        "patchwork_example.cc",
-        "sinc_example_utils.h",
-    ],
-    args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv",
-)
