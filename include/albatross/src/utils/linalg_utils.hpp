@@ -53,6 +53,37 @@ namespace details {
 
 constexpr double DEFAULT_EIGEN_VALUE_PRINT_THRESHOLD = 1e-3;
 
+/*
+ * When building models it can be helpful to understand what the
+ * model is good (or bad) at predicting. This provides one way of
+ * understanding a model's predictions by looking at the predicted
+ * covariance. So, for example, if you have a model and make a
+ * prediction,
+ *
+ *   pred = model.predict(features).joint();
+ *
+ * you could then call:
+ *
+ *   print_large_eigen_directions(pred.covariance, features, 1);
+ *
+ * this will compute the eigen decomposition of the covariance,
+ *
+ *   V D V^T = pred.covariance
+ *
+ * Here D is diagonal and holds the eigen values and V is orthonormal
+ * holding the eigen vectors. In this function we print out the
+ * largest (or smallest depending on `comp`) eigen value along with
+ * any of the features which have non-zero values in the corresponding
+ * eigen vector, something like:
+ *
+ *   eigen value: D[0]
+ *       V[0, 0]  features[0]
+ *       V[1, 0]  features[1]
+ *       ...
+ *
+ * Note that any V[i, j] which is smaller in magnitude than `print_if_above`
+ * will be ignored in the interest of brevity.
+ */
 template <typename FeatureType, typename Comparator>
 inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
                                     const std::vector<FeatureType> &features,
