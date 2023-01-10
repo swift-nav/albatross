@@ -147,6 +147,74 @@ inline void load_lower_triangle(Archive &archive,
   }
 }
 
+template <class Archive, class _Scalar, int _Options, typename _StorageIndex>
+inline void save(Archive &ar,
+                 Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> const &m,
+                 const std::uint32_t version ALBATROSS_UNUSED) {
+  const _StorageIndex rows = m.rows();
+  const _StorageIndex cols = m.cols();
+  const std::size_t nnz = albatross::cast::to_size(m.nonZeros());
+  const std::size_t size_bytes = nnz * sizeof(_Scalar);
+
+  std::vector<Eigen::Triplet<_Scalar>> elems;
+  elems.reserve(nnz);
+  for (_StorageIndex col = 0; col < m.outerSize(); ++col) {
+    for (typename Eigen::SparseMatrix<_Scalar, _Options,
+                                      _StorageIndex>::InnerIterator it(m, col);
+         it; ++it) {
+      elems.emplace_back(it.col(), it.row(), it.value());
+    }
+  }
+
+  std::string payload =
+      gzip::compress(reinterpret_cast<const char *>(elems.data()), size_bytes);
+  if (::cereal::traits::is_text_archive<Archive>::value) {
+    payload =
+        base64::encode(reinterpret_cast<const unsigned char *>(payload.data()),
+                       payload.size());
+  }
+
+  ar(CEREAL_NVP(rows));
+  ar(CEREAL_NVP(cols));
+  ar(CEREAL_NVP(nnz));
+  ar(CEREAL_NVP(payload));
+}
+
+template <class Archive, class _Scalar, int _Options, typename _StorageIndex>
+inline void load(Archive &ar,
+                 Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &m,
+                 const std::uint32_t version ALBATROSS_UNUSED) {
+  _StorageIndex rows = 0;
+  _StorageIndex cols = 0;
+  std::size_t nnz = 0;
+  std::string payload;
+  ar(CEREAL_NVP(rows));
+  ar(CEREAL_NVP(cols));
+  ar(CEREAL_NVP(nnz));
+  ar(CEREAL_NVP(payload));
+  const std::size_t size_bytes = nnz * sizeof(_Scalar);
+
+  if (::cereal::traits::is_text_archive<Archive>::value) {
+    payload = base64::decode(payload);
+  }
+
+  const std::string decompressed =
+      gzip::decompress(payload.data(), payload.size());
+
+  ALBATROSS_ASSERT(size_bytes == decompressed.size());
+  m.resize(rows, cols);
+
+  if (size_bytes == 0) {
+    m.setZero();
+  } else {
+    std::vector<Eigen::Triplet<_Scalar>> elems(nnz);
+    std::memcpy(elems.data(), decompressed.data(), size_bytes);
+    m.setFromTriplets(elems.begin(), elems.end());
+  }
+
+  m.makeCompressed();
+}
+
 } // namespace cereal
 
 #endif

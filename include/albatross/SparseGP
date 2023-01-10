@@ -13,9 +13,14 @@
 #ifndef ALBATROSS_SPARSE_GP_H
 #define ALBATROSS_SPARSE_GP_H
 
+#include <cholmod.h>
+#include <SuiteSparseQR.hpp>
+#include <Eigen/SPQRSupport>
+
 #include "GP"
 #include "utils/LinalgUtils"
 
+#include <albatross/src/eigen/serializable_spqr.hpp>
 #include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/models/sparse_gp.hpp>

@@ -72,6 +72,8 @@ target_link_libraries(albatross_unit_tests
   gflags
   nlopt
   z
+  spqr
+  cholmod
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 

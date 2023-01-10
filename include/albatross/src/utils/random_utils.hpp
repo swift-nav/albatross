@@ -147,6 +147,40 @@ random_multivariate_normal(const Eigen::MatrixXd &cov,
                                     gen);
 }
 
+template <typename T>
+Eigen::SparseMatrix<T> random_sparse_matrix(Eigen::Index rows,
+                                            Eigen::Index cols, double fill,
+                                            std::default_random_engine &gen,
+                                            T min_element = -1e6,
+                                            T max_element = 1e6) {
+  std::uniform_real_distribution<T> valdis(min_element, max_element);
+  std::uniform_int_distribution<Eigen::Index> rowdis(0, rows - 1);
+  std::uniform_int_distribution<Eigen::Index> coldis(0, cols - 1);
+
+  std::vector<Eigen::Triplet<T>> tripletList;
+  const auto nnz = static_cast<std::size_t>(static_cast<double>(rows) *
+                                            (static_cast<double>(cols) * fill));
+  std::set<Eigen::Index> nnz_pos;
+  for (std::size_t i = 0; i < nnz; ++i) {
+    Eigen::Index r = rowdis(gen);
+    Eigen::Index c = coldis(gen);
+    Eigen::Index pos = r * cols + c;
+    while (nnz_pos.find(pos) != nnz_pos.end()) {
+      r = rowdis(gen);
+      c = coldis(gen);
+      pos = r * cols + c;
+    }
+
+    nnz_pos.insert(pos);
+    tripletList.emplace_back(r, c, valdis(gen));
+  }
+
+  Eigen::SparseMatrix<T> mat(rows, cols);
+  mat.setFromTriplets(tripletList.begin(),
+                      tripletList.end()); // create the matrix
+  return mat;
+}
+
 } // namespace albatross
 
 #endif
