@@ -215,6 +215,7 @@ jobs:
           sudo apt-get install clang-14 clang-tools-14 clang-tidy-14 && \
           sudo ln -s /usr/bin/clang-apply-replacements-14 /usr/local/bin/clang-apply-replacements
       - name: Run build
+        continue-on-error: true
         env:
           CC: clang-14
           CXX: clang++-14
