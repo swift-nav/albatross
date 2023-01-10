@@ -2,7 +2,7 @@ cppcoreguidelines-pro-type-reinterpret-cast: 4
 google-build-using-namespace: 11
 google-explicit-constructor: 53
 google-global-names-in-headers: 23
-google-readability-avoid-underscore-in-googletest-name: 504
+google-readability-avoid-underscore-in-googletest-name: 503
 google-readability-casting: 10
 google-runtime-int: 17
 misc-definitions-in-headers: 14
