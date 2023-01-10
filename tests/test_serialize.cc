@@ -10,6 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <albatross/SparseGP>
 #include <albatross/serialize/GP>
 #include <albatross/serialize/LeastSquares>
 #include <albatross/serialize/Ransac>
@@ -517,6 +518,89 @@ TEST(test_serialize, test_ThreadPool_nullptr) {
     load(iarchive, pool_out);
   }
   EXPECT_EQ(pool_out, albatross::serial_thread_pool);
+}
+
+using SparseMatrix = Eigen::SparseMatrix<double>;
+using SPQR = Eigen::SerializableSPQR<SparseMatrix>;
+
+TEST(test_serialize, serialize_spqr_simple) {
+  Eigen::MatrixXd Adense(3, 3);
+  Adense <<
+    1., 4, 2,
+    2, 2, 9.1,
+    4, 8, 111.2;
+  Eigen::VectorXd b(3);
+  b <<
+    2,
+    4,
+    99;
+  SPQR spqr;
+  spqr.setSPQROrdering(SPQR_ORDERING_COLAMD);
+  spqr.compute(Adense.sparseView());
+  EXPECT_EQ(spqr.info(), Eigen::Success);
+  const auto x = spqr.solve(b);
+  EXPECT_EQ(spqr.info(), Eigen::Success);
+  std::ostringstream os;
+  {
+    cereal::JSONOutputArchive oarchive(os);
+    spqr.save(oarchive, 0);
+  }
+  SPQR spqr_out;
+  {
+    std::istringstream is(os.str());
+    cereal::JSONInputArchive iarchive(is);
+    spqr_out.load(iarchive, 0);
+  }
+  const auto x_out = spqr_out.solve(b);
+  EXPECT_EQ(x, x_out);
+}
+
+TEST(test_serialize, serialize_spqr_random) {
+  constexpr Eigen::Index kMaxSize = 10000;
+  constexpr Eigen::Index kMeanSize = 50;
+  constexpr double kMeanFill = 0.2;
+  constexpr std::size_t kNumIters = 1000;
+  std::seed_seq seed{22};
+  std::default_random_engine gen{seed};
+  const auto gen_size = [&gen, &kMaxSize]() {
+    std::poisson_distribution<Eigen::Index> size_dist{kMeanSize};
+    return std::max(Eigen::Index{1}, std::min(kMaxSize, size_dist(gen)));
+  };
+  const auto gen_fill = [&gen]() {
+    std::gamma_distribution<double> fill_dist{2, kMeanFill / 2};
+    return std::min(1.0, fill_dist(gen));
+  };
+  // Allocate this outside the loop to make sure we don't care what's
+  // in the incoming object when we deserialize.
+  SPQR spqr_out;
+  for (std::size_t iter = 0; iter < kNumIters; ++iter) {
+    const auto rows = gen_size();
+    const auto cols = gen_size();
+    const auto fill = gen_fill();
+    const SparseMatrix A =
+        albatross::random_sparse_matrix<double>(rows, cols, fill, gen);
+    const Eigen::VectorXd B = Eigen::VectorXd::Random(rows);
+
+    SPQR spqr;
+    spqr.setSPQROrdering(SPQR_ORDERING_COLAMD);
+    spqr.cholmodCommon()->SPQR_nthreads = 2;
+    spqr.compute(A);
+    EXPECT_EQ(spqr.info(), Eigen::Success);
+    const auto x = spqr.solve(B);
+    EXPECT_EQ(spqr.info(), Eigen::Success);
+    std::ostringstream os;
+    {
+      cereal::JSONOutputArchive oarchive(os);
+      spqr.save(oarchive, 0);
+    }
+    {
+      std::istringstream is(os.str());
+      cereal::JSONInputArchive iarchive(is);
+      spqr_out.load(iarchive, 0);
+    }
+    const auto x_out = spqr_out.solve(B);
+    EXPECT_EQ(x, x_out);
+  }
 }
 
 } // namespace other
