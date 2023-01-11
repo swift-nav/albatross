@@ -1,4 +1,4 @@
-load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
+load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test")
 load("//:copts.bzl", "COPTS")
 
 cc_library(
@@ -130,7 +130,10 @@ cc_library(
         "include/albatross/utils/MapUtils",
         "include/albatross/utils/RandomUtils",
         "include/albatross/utils/VariantUtils",
+        "tests/test_covariance_utils.h",
+        "tests/test_utils.h",
     ],
+    copts = ["-Itests"],
     includes = [
         "include",
     ],
@@ -146,23 +149,10 @@ cc_library(
     ],
 )
 
-swift_cc_test_library(
-    name = "albatross-test-utils",
-    srcs = [
-        "tests/mock_model.h",
-        "tests/test_core_distribution.h",
-        "tests/test_covariance_utils.h",
-        "tests/test_models.h",
-        "tests/test_serialize.h",
-        "tests/test_utils.h",
-    ],
-    includes = ["tests"],
-    visibility = ["//visibility:public"],
-)
-
 swift_cc_test(
     name = "albatross-test",
     srcs = [
+        "tests/mock_model.h",
         "tests/test_apply.cc",
         "tests/test_async_utils.cc",
         "tests/test_block_utils.cc",
@@ -176,6 +166,7 @@ swift_cc_test(
         "tests/test_core_model.cc",
         "tests/test_covariance_function.cc",
         "tests/test_covariance_functions.cc",
+        "tests/test_covariance_utils.h",
         "tests/test_cross_validation.cc",
         "tests/test_csv_utils.cc",
         "tests/test_distance_metrics.cc",
@@ -201,6 +192,7 @@ swift_cc_test(
         "tests/test_scaling_function.cc",
         "tests/test_serializable_ldlt.cc",
         "tests/test_serialize.cc",
+        "tests/test_serialize.h",
         "tests/test_sparse_gp.cc",
         "tests/test_stats.cc",
         "tests/test_thread_pool.cc",
@@ -211,6 +203,7 @@ swift_cc_test(
         "tests/test_traits_evaluation.cc",
         "tests/test_traits_indexing.cc",
         "tests/test_tune.cc",
+        "tests/test_utils.h",
         "tests/test_variant_utils.cc",
     ],
     copts = COPTS,
@@ -220,7 +213,6 @@ swift_cc_test(
     type = UNIT,
     deps = [
         ":albatross",
-        ":albatross-test-utils",
         "@gtest//:gtest_main",
     ],
 )
