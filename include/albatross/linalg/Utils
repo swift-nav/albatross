@@ -10,12 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SPARSE_GP_H
-#define ALBATROSS_SPARSE_GP_H
+#ifndef ALBATROSS_LINALG_UTILS_H
+#define ALBATROSS_LINALG_UTILS_H
 
-#include "GP"
-#include "linalg/Utils"
-
-#include <albatross/src/models/sparse_gp.hpp>
+#include "../Common"
+#include "../src/linalg/qr_utils.hpp"
+#include "../src/linalg/print_eigen_directions.hpp"
 
 #endif

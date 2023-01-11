@@ -11,7 +11,7 @@
  */
 
 #include <albatross/Core>
-#include <albatross/utils/LinalgUtils>
+#include <albatross/linalg/Utils>
 #include <gtest/gtest.h>
 
 namespace albatross {

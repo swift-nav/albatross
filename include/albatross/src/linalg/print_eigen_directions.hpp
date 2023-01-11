@@ -10,44 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_UTILS_LINALG_UTILS_HPP_
-#define ALBATROSS_UTILS_LINALG_UTILS_HPP_
+#ifndef ALBATROSS_SRC_LINALG_PRINT_EIGEN_DIRECTIONS_HPP
+#define ALBATROSS_SRC_LINALG_PRINT_EIGEN_DIRECTIONS_HPP
 
 namespace albatross {
-
-inline Eigen::MatrixXd
-get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
-  // Unfortunately the matrixR() method in Eigen's QR decomposition isn't
-  // actually the R matrix, it's tall skinny matrix whose lower trapezoid
-  // contains internal data, only the upper triangular portion is useful
-  return qr.matrixR()
-      .topRows(qr.matrixR().cols())
-      .template triangularView<Eigen::Upper>();
-}
-
-/*
- * Computes R^-T P^T rhs given R and P from a ColPivHouseholderQR decomposition.
- */
-template <typename MatrixType>
-inline Eigen::MatrixXd sqrt_solve(const Eigen::MatrixXd &R,
-                                  const Eigen::VectorXi &permutation_indices,
-                                  const MatrixType &rhs) {
-
-  Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
-  for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {
-    sqrt.row(i) = rhs.row(permutation_indices.coeff(i));
-  }
-  sqrt = R.template triangularView<Eigen::Upper>().transpose().solve(sqrt);
-  return sqrt;
-}
-
-template <typename MatrixType>
-inline Eigen::MatrixXd
-sqrt_solve(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr,
-           const MatrixType &rhs) {
-  const Eigen::MatrixXd R = get_R(qr);
-  return sqrt_solve(R, qr.colsPermutation().indices(), rhs);
-}
 
 namespace details {
 
@@ -142,4 +108,4 @@ inline void print_large_eigen_directions(
 
 } // namespace albatross
 
-#endif /* ALBATROSS_UTILS_LINALG_UTILS_HPP_ */
+#endif // ALBATROSS_SRC_LINALG_PRINT_EIGEN_DIRECTIONS_HPP
