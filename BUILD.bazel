@@ -130,16 +130,12 @@ cc_library(
         "include/albatross/utils/MapUtils",
         "include/albatross/utils/RandomUtils",
         "include/albatross/utils/VariantUtils",
-        "tests/mock_model.h",
-        "tests/test_core_distribution.h",
         "tests/test_covariance_utils.h",
-        "tests/test_models.h",
-        "tests/test_serialize.h",
         "tests/test_utils.h",
     ],
+    copts = ["-Itests"],
     includes = [
         "include",
-        "tests",
     ],
     visibility = ["//visibility:public"],
     deps = [
