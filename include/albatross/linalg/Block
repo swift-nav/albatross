@@ -13,9 +13,12 @@
 #ifndef ALBATROSS_LINALG_BLOCK_H
 #define ALBATROSS_LINALG_BLOCK_H
 
-#include "../Common"
+#include "../Indexing"
+#include "../src/linalg/operators.hpp"
+#include "../src/linalg/structured.hpp"
 #include "../src/linalg/block_utils.hpp"
 #include "../src/linalg/block_diagonal.hpp"
 #include "../src/linalg/block_symmetric.hpp"
+#include "../src/linalg/infer_structure.hpp"
 
 #endif

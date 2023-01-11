@@ -23,6 +23,8 @@ swift_add_tool(albatross_unit_tests
   test_gp.cc
   test_group_by.cc
   test_indexing.cc
+  test_linalg_infer_structure.cc
+  test_linalg_structured.cc
   test_linalg_utils.cc
   test_map_utils.cc
   test_minimum_spanning_tree.cc

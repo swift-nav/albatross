@@ -37,10 +37,11 @@ struct BlockDiagonalLDLT {
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
         ThreadPool *pool) const;
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-             ThreadPool *pool) const;
+  template <typename Derived>
+  Eigen::MatrixXd sqrt_solve(const Eigen::DenseBase<Derived> &rhs,
+                             ThreadPool *pool) const;
+
+  BlockDiagonal sqrt_transpose() const;
 
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
@@ -49,6 +50,8 @@ struct BlockDiagonalLDLT {
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
+
+  bool operator==(const BlockDiagonalLDLT &other) const;
 };
 
 struct BlockDiagonal {
@@ -68,7 +71,7 @@ struct BlockDiagonal {
 
   Eigen::Index cols() const;
 
-  Eigen::MatrixXd toDense() const;
+  Eigen::MatrixXd to_dense() const;
 };
 
 /*
@@ -102,6 +105,13 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
   return output;
 }
 
+inline BlockDiagonal BlockDiagonalLDLT::sqrt_transpose() const {
+  auto sqrt_transpose_block = [](const auto &b) { return b.sqrt_transpose(); };
+  BlockDiagonal output;
+  output.blocks = apply(this->blocks, sqrt_transpose_block);
+  return output;
+}
+
 inline std::map<size_t, Eigen::Index>
 BlockDiagonalLDLT::block_to_row_map() const {
   Eigen::Index row = 0;
@@ -132,15 +142,16 @@ BlockDiagonalLDLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
   return output;
 }
 
-template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLDLT::sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
+template <typename Derived>
+inline Eigen::MatrixXd
+BlockDiagonalLDLT::sqrt_solve(const Eigen::DenseBase<Derived> &rhs,
                               ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  Eigen::MatrixXd output(rows(), rhs.cols());
 
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
-    const auto rhs_chunk = rhs.block(row, 0, blocks[i].rows(), rhs.cols());
+    const auto rhs_chunk =
+        rhs.derived().block(row, 0, blocks[i].rows(), rhs.cols());
     output.block(row, 0, blocks[i].rows(), rhs.cols()) =
         blocks[i].sqrt_solve(rhs_chunk);
   };
@@ -173,6 +184,10 @@ inline Eigen::Index BlockDiagonalLDLT::cols() const {
   return n;
 }
 
+inline bool
+BlockDiagonalLDLT::operator==(const BlockDiagonalLDLT &other) const {
+  return blocks == other.blocks;
+}
 /*
  * Block Diagonal
  */
@@ -204,7 +219,7 @@ inline BlockDiagonal BlockDiagonal::operator-(const BlockDiagonal &rhs) const {
   return output;
 }
 
-inline Eigen::MatrixXd BlockDiagonal::toDense() const {
+inline Eigen::MatrixXd BlockDiagonal::to_dense() const {
   Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rows(), cols());
 
   Eigen::Index i = 0;
