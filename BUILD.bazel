@@ -134,6 +134,7 @@ cc_library(
         "include/albatross/utils/MapUtils",
         "include/albatross/utils/RandomUtils",
         "include/albatross/utils/VariantUtils",
+        "tests/mock_model.h",
         "tests/test_covariance_utils.h",
         "tests/test_utils.h",
     ],
