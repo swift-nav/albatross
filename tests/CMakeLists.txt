@@ -38,6 +38,7 @@ swift_add_tool(albatross_unit_tests
   test_scaling_function.cc
   test_serializable_ldlt.cc
   test_serialize.cc
+  test_sparse_cod.cc
   test_sparse_gp.cc
   test_stats.cc
   test_thread_pool.cc

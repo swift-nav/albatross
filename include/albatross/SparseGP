@@ -21,6 +21,7 @@
 #include "utils/LinalgUtils"
 
 #include <albatross/src/eigen/serializable_spqr.hpp>
+#include <albatross/src/eigen/sparse_cod.hpp>
 #include <albatross/src/utils/block_utils.hpp>
 #include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/models/sparse_gp.hpp>
