@@ -18,10 +18,11 @@ namespace Eigen {
 template <typename _MatrixType>
 class SerializableSPQR : public SPQR<_MatrixType> {
   using Base = SPQR<_MatrixType>;
-  using StorageIndex = typename Base::StorageIndex;
+public:
   using Base::rows;
   using Base::cols;
-public:
+  using StorageIndex = typename Base::StorageIndex;
+  enum { ColsAtCompileTime = Dynamic, MaxColsAtCompileTime = Dynamic };
   SerializableSPQR() : Base() {
     // Eigen does not initialise these, but it will happily call
     // `SPQR_free()` on itself in its destructor.  Try initializing

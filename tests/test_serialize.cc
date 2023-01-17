@@ -533,11 +533,11 @@ TEST(test_serialize, serialize_spqr_random) {
   constexpr std::size_t kNumIters = 1000;
   std::seed_seq seed{22};
   std::default_random_engine gen{seed};
-  const auto gen_size = [&gen, &kMeanSize, &kMaxSize]() {
+  const auto gen_size = [&gen, &kMaxSize]() {
     std::poisson_distribution<Eigen::Index> size_dist{kMeanSize};
     return std::max(Eigen::Index{1}, std::min(kMaxSize, size_dist(gen)));
   };
-  const auto gen_fill = [&gen, &kMeanFill]() {
+  const auto gen_fill = [&gen]() {
     std::gamma_distribution<double> fill_dist{2, kMeanFill / 2};
     return std::min(1.0, fill_dist(gen));
   };
