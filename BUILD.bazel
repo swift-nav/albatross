@@ -1,4 +1,4 @@
-load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test")
+load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
 load("//:copts.bzl", "COPTS")
 
 cc_library(
@@ -154,6 +154,16 @@ cc_library(
     ],
 )
 
+swift_cc_test_library(
+    name = "serialize-testsuite",
+    srcs = ["tests/test_serialize.h"],
+    includes = [
+        "tests",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@gtest"],
+)
+
 swift_cc_test(
     name = "albatross-test",
     srcs = [
@@ -197,7 +207,6 @@ swift_cc_test(
         "tests/test_scaling_function.cc",
         "tests/test_serializable_ldlt.cc",
         "tests/test_serialize.cc",
-        "tests/test_serialize.h",
         "tests/test_sparse_gp.cc",
         "tests/test_stats.cc",
         "tests/test_thread_pool.cc",
@@ -218,6 +227,7 @@ swift_cc_test(
     type = UNIT,
     deps = [
         ":albatross",
+        ":serialize-testsuite",
         "@gtest//:gtest_main",
     ],
 )
