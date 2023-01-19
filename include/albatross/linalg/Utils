@@ -13,8 +13,10 @@
 #ifndef ALBATROSS_LINALG_UTILS_H
 #define ALBATROSS_LINALG_UTILS_H
 
+#include <Eigen/SPQRSupport>
 #include "../Common"
 #include "../src/linalg/qr_utils.hpp"
+#include "../src/linalg/spqr_utils.hpp"
 #include "../src/linalg/print_eigen_directions.hpp"
 
 #endif

@@ -72,11 +72,13 @@ struct StateSpaceInducingPointStrategy {
 template <typename FeatureType> struct SparseGPFit {};
 
 template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
+  using PermutationIndices =
+      Eigen::Matrix<SPQR::StorageIndex, Eigen::Dynamic, 1>;
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_covariance;
   Eigen::MatrixXd sigma_R;
-  Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
+  PermutationIndices permutation_indices;
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
 
@@ -85,7 +87,7 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
       const Eigen::MatrixXd sigma_R_,
-      const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
+      const PermutationIndices permutation_indices_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
       : train_features(features_), train_covariance(train_covariance_),
         sigma_R(sigma_R_), permutation_indices(permutation_indices_),
@@ -317,7 +319,8 @@ public:
       B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    const auto B_qr = B.colPivHouseholderQr();
+    auto B_qr = SPQR_create(B.sparseView());
+    SPQR_set_threads(B_qr.get(), Base::threads_.get());
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -333,12 +336,12 @@ public:
         y_augmented.topRows(n_old);
 
     y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), B_qr.colsPermutation().indices(), v,
-                   B_qr.rank());
+                   get_R(*B_qr), B_qr->colsPermutation().indices(), v,
+                   B_qr->rank());
   }
 
   // Here we create the QR decomposition of:
@@ -350,14 +353,24 @@ public:
   //
   //   Sigma = (B^T B)^-1
   //
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
-  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
-                   const BlockDiagonalLDLT &A_ldlt,
-                   const Eigen::MatrixXd &K_fu) const {
+  // Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
+  // compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
+  //                  const BlockDiagonalLDLT &A_ldlt,
+  //                  const Eigen::MatrixXd &K_fu) const {
+  //   Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
+  //   B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
+  //   B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
+  //   return B.colPivHouseholderQr();
+  // };
+
+  // TODO(@peddie) SPQR configuration
+  std::unique_ptr<Eigen::SPQR<Eigen::SparseMatrix<double>>> compute_sigma_qr(
+      const Eigen::SerializableLDLT &K_uu_ldlt, const BlockDiagonalLDLT &A_ldlt,
+      const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
-    return B.colPivHouseholderQr();
+    return SPQR_create(B.sparseView());
   };
 
   template <
@@ -366,7 +379,6 @@ public:
           has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
-
     // Determine the set of inducing points, u.
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
@@ -378,23 +390,23 @@ public:
     Eigen::VectorXd y;
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
-    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    SPQR_set_threads(B_qr.get(), Base::threads_.get());
 
-    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(u, K_uu_ldlt, get_R(B_qr), B_qr.colsPermutation().indices(),
-                   v, B_qr.rank());
+    return FitType(u, K_uu_ldlt, get_R(*B_qr),
+                   B_qr->colsPermutation().indices(), v, B_qr->rank());
   }
 
   template <typename FeatureType>
   auto fit_from_prediction(const std::vector<FeatureType> &new_inducing_points,
                            const JointDistribution &prediction_) const {
-
     FitModel<SparseGaussianProcessRegression, Fit<SparseGPFit<FeatureType>>>
         output(*this, Fit<SparseGPFit<FeatureType>>());
     Fit<SparseGPFit<FeatureType>> &new_fit = output.get_fit();
@@ -440,11 +452,12 @@ public:
     // as we do in a normal fit.
     const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
-    const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
+    const SparseMatrix sigma_inv_sqrt_sparse = sigma_inv_sqrt.sparseView();
+    const auto B_qr = SPQR_create(sigma_inv_sqrt_sparse);
 
-    new_fit.permutation_indices = B_qr.colsPermutation().indices();
-    new_fit.sigma_R = get_R(B_qr);
-    new_fit.numerical_rank = B_qr.rank();
+    new_fit.permutation_indices = B_qr->colsPermutation().indices();
+    new_fit.sigma_R = get_R(*B_qr);
+    new_fit.numerical_rank = B_qr->rank();
 
     return output;
   }
@@ -454,10 +467,10 @@ public:
   using Base::_predict_impl;
 
   template <typename FeatureType, typename FitFeaturetype>
-  Eigen::VectorXd
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<Eigen::VectorXd> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -467,10 +480,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  MarginalDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -499,10 +512,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  JointDistribution
-  _predict_impl(const std::vector<FeatureType> &features,
-                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-                PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution _predict_impl(
+      const std::vector<FeatureType> &features,
+      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+      PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
@@ -563,7 +576,7 @@ public:
     const double log_det_a = A_ldlt.log_determinant();
 
     const double log_det_r =
-        B_qr.matrixR().diagonal().array().cwiseAbs().log().sum();
+        B_qr->matrixR().diagonal().array().cwiseAbs().log().sum();
     const double log_det_K_uu = K_uu_ldlt.log_determinant();
     const double log_det = log_det_a + 2 * log_det_r - log_det_K_uu;
 
@@ -579,7 +592,7 @@ public:
     const Eigen::VectorXd y_a = A_ldlt.solve(y);
 
     Eigen::VectorXd y_b = K_fu.transpose() * y_a;
-    y_b = sqrt_solve(B_qr, y_b);
+    y_b = sqrt_solve(*B_qr, y_b);
 
     double log_quadratic = y.transpose() * y_a;
     log_quadratic -= y_b.transpose() * y_b;
