@@ -297,9 +297,9 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 
   auto compute_sigma = [](const auto &fit_model) -> Eigen::MatrixXd {
     const Eigen::Index n = fit_model.get_fit().sigma_R.cols();
-    Eigen::MatrixXd sigma = sqrt_solve(fit_model.get_fit().sigma_R,
-                                       fit_model.get_fit().permutation_indices,
-                                       Eigen::MatrixXd::Identity(n, n));
+    Eigen::MatrixXd sigma = sqrt_solve(
+        fit_model.get_fit().sigma_R, fit_model.get_fit().permutation_indices,
+        Eigen::MatrixXd::Identity(n, n), fit_model.get_fit().numerical_rank);
     return sigma.transpose() * sigma;
   };
 

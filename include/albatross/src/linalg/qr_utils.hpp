@@ -31,13 +31,20 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
 template <typename MatrixType>
 inline Eigen::MatrixXd sqrt_solve(const Eigen::MatrixXd &R,
                                   const Eigen::VectorXi &permutation_indices,
-                                  const MatrixType &rhs) {
+                                  const MatrixType &rhs, Eigen::Index rank) {
 
   Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
   for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {
     sqrt.row(i) = rhs.row(permutation_indices.coeff(i));
   }
-  sqrt = R.template triangularView<Eigen::Upper>().transpose().solve(sqrt);
+  if (rank != rhs.rows() && rank > 0) {
+    sqrt = R.leftCols(rank)
+               .template triangularView<Eigen::Upper>()
+               .transpose()
+               .solve(sqrt.topRows(rank));
+  } else {
+    sqrt = R.template triangularView<Eigen::Upper>().transpose().solve(sqrt);
+  }
   return sqrt;
 }
 
@@ -46,7 +53,7 @@ inline Eigen::MatrixXd
 sqrt_solve(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr,
            const MatrixType &rhs) {
   const Eigen::MatrixXd R = get_R(qr);
-  return sqrt_solve(R, qr.colsPermutation().indices(), rhs);
+  return sqrt_solve(R, qr.colsPermutation().indices(), rhs, qr.rank());
 }
 
 } // namespace albatross

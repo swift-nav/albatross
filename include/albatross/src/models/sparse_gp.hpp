@@ -489,8 +489,9 @@ public:
         Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
     marginal_variance -= Q_diag;
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices,
+                   cross_cov, sparse_gp_fit.numerical_rank);
     const Eigen::VectorXd S_diag =
         S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
     marginal_variance += S_diag;
@@ -507,8 +508,9 @@ public:
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices,
+                   cross_cov, sparse_gp_fit.numerical_rank);
 
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
