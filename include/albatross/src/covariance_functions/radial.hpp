@@ -15,6 +15,7 @@
 
 constexpr double default_length_scale = 100000.;
 constexpr double default_radial_sigma = 10.;
+constexpr double default_scale_mixture = 1.;
 
 namespace albatross {
 
@@ -227,6 +228,60 @@ public:
     double distance = this->distance_metric_(x, y);
     return matern_52_covariance(distance, matern_52_length_scale.value,
                                 sigma_matern_52.value);
+  }
+
+  DistanceMetricType distance_metric_;
+};
+
+inline double rational_quadratic_covariance(double distance,
+                                            double length_scale,
+                                            double sigma = 1.,
+                                            double alpha = 1.) {
+  if (length_scale <= 0.) {
+    return 0.;
+  }
+  return sigma * sigma *
+         std::pow(1 + distance * distance /
+                          (2 * alpha * length_scale * length_scale),
+                  -alpha);
+}
+
+template <class DistanceMetricType>
+class RationalQuadratic
+    : public CovarianceFunction<RationalQuadratic<DistanceMetricType>> {
+ public:
+  // I don't know whether the rational-quadratic function is positive
+  // definite when the distance is an angular (or great circle)
+  // distance.
+  static_assert(
+      !std::is_base_of<AngularDistance, DistanceMetricType>::value,
+      "RationalQuadratic covariance with AngularDistance is not PSD.");
+
+  ALBATROSS_DECLARE_PARAMS(rational_quadratic_length_scale,
+                           sigma_rational_quadratic, alpha_rational_quadratic);
+
+  RationalQuadratic(double length_scale_ = default_length_scale,
+                    double sigma_rational_quadratic_ = default_radial_sigma,
+                    double alpha_rational_quadratic_ = default_scale_mixture)
+      : distance_metric_() {
+    rational_quadratic_length_scale = {length_scale_, PositivePrior()};
+    sigma_rational_quadratic = {sigma_rational_quadratic_, NonNegativePrior()};
+    alpha_rational_quadratic = {alpha_rational_quadratic_, PositivePrior()};
+  };
+
+  std::string name() const {
+    return "rational_quadratic[" + this->distance_metric_.get_name() + "]";
+  }
+
+  template <typename X,
+            typename std::enable_if<
+                has_call_operator<DistanceMetricType, X &, X &>::value,
+                int>::type = 0>
+  double _call_impl(const X &x, const X &y) const {
+    double distance = this->distance_metric_(x, y);
+    return rational_quadratic_covariance(
+        distance, rational_quadratic_length_scale.value,
+        sigma_rational_quadratic.value, alpha_rational_quadratic.value);
   }
 
   DistanceMetricType distance_metric_;
