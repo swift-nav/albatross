@@ -15,6 +15,7 @@
 
 constexpr double default_length_scale = 100000.;
 constexpr double default_radial_sigma = 10.;
+constexpr double default_nu_matern = 2.5;
 
 namespace albatross {
 
@@ -232,5 +233,54 @@ public:
   DistanceMetricType distance_metric_;
 };
 
+inline double matern_covariance(double distance, double length_scale, double nu,
+                                double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return 0;
+  }
+  if (distance == 0.) {
+    return sigma * sigma;
+  }
+  assert(nu >= 0);
+  const double m = 2 * std::sqrt(nu) * distance / length_scale;
+  return sigma * sigma * std::pow(2, 1 - nu) / std::tgamma(nu) *
+         std::pow(m, nu) * boost::math::cyl_bessel_k<double>(nu, m);
+}
+
+template <class DistanceMetricType>
+class Matern : public CovarianceFunction<Matern<DistanceMetricType>> {
+ public:
+  // The Matern nu = 5/2 radial function is not positive definite
+  // when the distance is an angular (or great circle) distance.
+  static_assert(!std::is_base_of<AngularDistance, DistanceMetricType>::value,
+                "Matern covariance with AngularDistance is not PSD.");
+
+  ALBATROSS_DECLARE_PARAMS(matern_length_scale, sigma_matern, nu_matern);
+
+  Matern(double length_scale_ = default_length_scale,
+         double sigma_matern_ = default_radial_sigma,
+         double nu_matern_ = default_nu_matern)
+      : distance_metric_() {
+    matern_length_scale = {length_scale_, PositivePrior()};
+    sigma_matern = {sigma_matern_, NonNegativePrior()};
+    nu_matern = {nu_matern_, PositivePrior()};
+  };
+
+  std::string name() const {
+    return "matern[" + this->distance_metric_.get_name() + "]";
+  }
+
+  template <typename X,
+            typename std::enable_if<
+                has_call_operator<DistanceMetricType, X &, X &>::value,
+                int>::type = 0>
+  double _call_impl(const X &x, const X &y) const {
+    double distance = this->distance_metric_(x, y);
+    return matern_covariance(distance, matern_length_scale.value,
+                             sigma_matern.value);
+  }
+
+  DistanceMetricType distance_metric_;
+};
 } // namespace albatross
 #endif
