@@ -1,5 +1,11 @@
 load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
 load("//:copts.bzl", "COPTS")
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+
+refresh_compile_commands(
+    name = "gen_compile_commands",
+    visibility = ["//visibility:public"],
+)
 
 cc_library(
     name = "albatross",
