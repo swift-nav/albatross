@@ -458,95 +458,23 @@ protected:
   std::string model_name_;
 };
 
-template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, JointDistribution>
+template <typename GroupKey, typename FeatureType, typename GPType,
+          typename PredictType>
+inline std::map<GroupKey, PredictType>
 gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
                                const GroupIndexer<GroupKey> &group_indexer,
                                const GPType &model,
-                               PredictTypeIdentity<JointDistribution>) {
-
+                               PredictTypeIdentity<PredictType> predict_type) {
   const auto fit_model = model.fit(dataset);
   const auto gp_fit = fit_model.get_fit();
-
-  const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
-
-  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
-
-  Eigen::VectorXd zero_mean(dataset.targets.mean);
-  model.get_mean().remove_from(dataset.features, &zero_mean);
-
-  std::map<GroupKey, JointDistribution> output;
-  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-    const Eigen::VectorXd yi = subset(zero_mean, indices[i]);
-    const Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-    const auto features_i = subset(dataset.features, indices[i]);
-    const auto A_inv = inverse_blocks[i].inverse();
-    Eigen::VectorXd mean_i = yi - A_inv * vi;
-    model.get_mean().add_to(features_i, &mean_i);
-    output[group_keys[i]] = JointDistribution(mean_i, A_inv);
-  }
-  return output;
-}
-
-template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, MarginalDistribution>
-gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                               const GroupIndexer<GroupKey> &group_indexer,
-                               const GPType &model,
-                               PredictTypeIdentity<MarginalDistribution>) {
-
-  const auto fit_model = model.fit(dataset);
-  const auto gp_fit = fit_model.get_fit();
-
-  const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
-  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
-
-  Eigen::VectorXd zero_mean(dataset.targets.mean);
-  model.get_mean().remove_from(dataset.features, &zero_mean);
-
-  std::map<GroupKey, MarginalDistribution> output;
-  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-    const Eigen::VectorXd yi = subset(zero_mean, indices[i]);
-    const Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-    const auto features_i = subset(dataset.features, indices[i]);
-    const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-
-    Eigen::VectorXd mean_i = yi - A_ldlt.solve(vi);
-    model.get_mean().add_to(features_i, &mean_i);
-    output[group_keys[i]] =
-        MarginalDistribution(mean_i, A_ldlt.inverse_diagonal());
-  }
-  return output;
-}
-
-template <typename FeatureType, typename GPType, typename GroupKey>
-std::map<GroupKey, Eigen::VectorXd>
-gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                               const GroupIndexer<GroupKey> &group_indexer,
-                               const GPType &model,
-                               PredictTypeIdentity<Eigen::VectorXd>) {
-  const auto fit_model = model.fit(dataset);
-  const auto gp_fit = fit_model.get_fit();
-  const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
-  const auto inverse_blocks = gp_fit.train_covariance.inverse_blocks(indices);
-
-  Eigen::VectorXd zero_mean(dataset.targets.mean);
-  model.get_mean().remove_from(dataset.features, &zero_mean);
-
-  std::map<GroupKey, Eigen::VectorXd> output;
-  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-    const Eigen::VectorXd yi = subset(zero_mean, indices[i]);
-    const Eigen::VectorXd vi = subset(gp_fit.information, indices[i]);
-    const auto features_i = subset(dataset.features, indices[i]);
-    const auto A_ldlt = Eigen::SerializableLDLT(inverse_blocks[i].ldlt());
-    Eigen::VectorXd mean_i = yi - A_ldlt.solve(vi);
-    model.get_mean().add_to(features_i, &mean_i);
-    output[group_keys[i]] = mean_i;
-  }
-  return output;
+  // Note: it might look like we forgot to apply the mean function here,
+  // but we don't actually need to use it, the information vector will
+  // have been formed by taking the mean function into account and the
+  // held out predictions will use that to derive deltas from the truth
+  // so removing the mean, then adding it back later is unneccesary
+  return details::held_out_predictions(gp_fit.train_covariance,
+                                       dataset.targets.mean, gp_fit.information,
+                                       group_indexer, predict_type);
 }
 
 /*
