@@ -180,7 +180,6 @@ TEST(test_crossvalidation, test_leave_one_out_conditional) {
 
   const auto meas = as_measurements(dataset.features);
   Eigen::MatrixXd cov = model.get_covariance()(meas, meas);
-
   JointDistribution prior(Eigen::VectorXd::Zero(cov.rows()), cov);
   const auto actual = leave_one_out_conditional(prior, dataset.targets);
 
@@ -198,6 +197,71 @@ TEST(test_crossvalidation, test_leave_one_out_conditional) {
       leave_one_out_conditional(prior, perturbed_dataset.targets);
   EXPECT_NEAR(perturbed_conditional.mean[0], actual.mean[0], 1e-6);
   EXPECT_GT((perturbed_conditional.mean - actual.mean).norm(), 1.);
+}
+
+TEST(test_crossvalidation, test_leave_one_out_equivalences) {
+  // Make sure that brute force leave one group out computations
+  // match both the model based, model.cross_validate(), approach
+  // and the leave_one_group_out_conditional_* free functions
+
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto indexers = dataset.group_by(group_by_interval<double>).indexers();
+  const auto prior = model.prior(dataset.features);
+
+  ConditionalGaussian conditional_model(prior, dataset.targets);
+  auto brute_force_loo = [&](const auto &group_inds) {
+    const auto train_inds = indices_complement(group_inds, prior.size());
+    return conditional_model.fit(train_inds).predict(group_inds).joint();
+  };
+
+  const auto expected_joints = indexers.apply(brute_force_loo);
+  const auto cv_means = model.cross_validate()
+                            .predict(dataset, group_by_interval<double>)
+                            .means();
+  const auto cv_marginals = model.cross_validate()
+                                .predict(dataset, group_by_interval<double>)
+                                .marginals();
+  const auto cv_joints = model.cross_validate()
+                             .predict(dataset, group_by_interval<double>)
+                             .joints();
+
+  const auto loo_means =
+      leave_one_group_out_conditional_means(prior, dataset.targets, indexers);
+  const auto loo_marginals = leave_one_group_out_conditional_marginals(
+      prior, dataset.targets, indexers);
+  const auto loo_joints =
+      leave_one_group_out_conditional_joints(prior, dataset.targets, indexers);
+
+  auto mean_near = [](const auto &x, const auto &y) {
+    EXPECT_LE((x - y).norm(), 1e-6);
+  };
+
+  auto marginal_near = [](const auto &x, const auto &y) {
+    EXPECT_LE((x.mean - y.mean).norm(), 1e-6);
+    EXPECT_LE((x.covariance.diagonal() - y.covariance.diagonal()).norm(), 1e-6);
+  };
+
+  auto joint_near = [](const auto &x, const auto &y) {
+    std::cout << x << std::endl;
+    std::cout << y << std::endl;
+    EXPECT_LE((x.mean - y.mean).norm(), 1e-6);
+    EXPECT_LE((x.covariance - y.covariance).norm(), 1e-6);
+  };
+
+  for (const auto &pair : expected_joints) {
+    const auto &key = pair.first;
+    const auto &expected = pair.second;
+    mean_near(expected.mean, cv_means.at(key));
+    mean_near(expected.mean, loo_means.at(key));
+
+    marginal_near(expected.marginal(), cv_marginals.at(key));
+    marginal_near(expected.marginal(), loo_marginals.at(key));
+
+    joint_near(expected, cv_joints.at(key));
+    joint_near(expected, loo_joints.at(key));
+  }
 }
 
 class MakeLargeGaussianProcess {
