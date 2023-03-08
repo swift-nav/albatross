@@ -19,7 +19,7 @@ namespace albatross {
  */
 inline std::vector<std::size_t>
 randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
-                            std::default_random_engine &gen) {
+                            std::mt19937 &gen) {
   std::size_t n_choices = high - low + 1;
   if (n > n_choices) {
     std::cout << "ERROR: n (" << n << ") is larger than n_choices ("
@@ -60,7 +60,7 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
 template <typename X>
 inline std::vector<X>
 random_without_replacement(const std::vector<X> &xs, std::size_t n,
-                           std::default_random_engine &gen) {
+                           std::mt19937 &gen) {
   std::vector<X> random_sample;
   for (const auto &i : randint_without_replacement(n, 0, xs.size() - 1, gen)) {
     random_sample.emplace_back(xs[i]);

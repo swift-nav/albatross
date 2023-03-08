@@ -189,7 +189,7 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
     return output;
   }
 
-  std::default_random_engine gen;
+  std::mt19937 gen;
 
   std::size_t i = 0;
   std::size_t failed_candidates = 0;
