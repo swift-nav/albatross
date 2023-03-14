@@ -251,6 +251,55 @@ TEST(test_covariance_functions, test_state_space_representation) {
       std::is_same<decltype(xs_and_ys), std::vector<variant<X, Y>>>::value));
 }
 
+struct IntEquivalent {
+  int value;
+
+  bool operator<(const IntEquivalent &other) const {
+    return value < other.value;
+  }
+};
+
+class HasEquivalent : public CovarianceFunction<HasEquivalent> {
+public:
+  double _call_impl(const int &x, const int &y) const {
+    return 1.0 * (x == y);
+  };
+
+  double _call_impl(const IntEquivalent &x, const int &y) const {
+    return this->_call_impl(x.value, y);
+  }
+
+  double _call_impl(const IntEquivalent &x, const IntEquivalent &y) const {
+    return this->_call_impl(x.value, y.value);
+  }
+};
+
+TEST(test_covariance_functions, test_covariance_utils) {
+  HasEquivalent cov;
+
+  std::vector<int> features = {0, 1, 2, 3, 3, 2, 1, 5};
+
+  auto to_equivalent = [](const int &x) { return IntEquivalent{x}; };
+
+  expect_converted_feature_equivalence(cov, features, to_equivalent);
+
+  std::set<IntEquivalent> unique_equivalents;
+  for (const auto &f : features) {
+    unique_equivalents.emplace(IntEquivalent{f});
+  }
+  std::vector<IntEquivalent> inducing_points(unique_equivalents.begin(),
+                                             unique_equivalents.end());
+
+  auto int_grouper = [](const int &x) { return x; };
+
+  expect_inducing_points_capture_cross_correlation(
+      cov, features, inducing_points, int_grouper);
+
+  expect_zero_covariance_across_groups(cov, features, int_grouper);
+
+  expect_non_zero_covariance_within_groups(cov, features, int_grouper);
+}
+
 TEST(test_covariance_functions, test_nugget) {
 
   struct Foo {
