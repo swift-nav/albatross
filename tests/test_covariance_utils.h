@@ -234,15 +234,16 @@ inline void expect_inducing_points_capture_cross_correlation(
     const std::vector<InducingFeatureType> &inducing_points, Grouper grouper) {
   const auto groups = albatross::group_by(features, grouper).groups();
 
+  constexpr double kAcceptableBetweenGroupCorrelation = 0.005;
+
   auto between_group_cross_correlation_captured =
       [&](const auto &key, const auto &group_features) {
         for (const auto &pair : groups) {
           if (pair.first != key) {
             const Eigen::MatrixXd cond_dep = conditional_dependence(
                 covariance, group_features, pair.second, inducing_points);
-            const double acceptable_correlation = 0.005;
             EXPECT_LT(cond_dep.array().abs().maxCoeff(),
-                      acceptable_correlation);
+                      kAcceptableBetweenGroupCorrelation);
           }
         }
       };
