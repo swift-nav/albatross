@@ -141,7 +141,8 @@ TEST(test_block_utils, test_block_symmetric) {
 
   // And again using a pre computed S
   const Eigen::MatrixXd S = C - B.transpose() * A.ldlt().solve(B);
-  const auto block_direct = build_block_symmetric(A.ldlt(), B, S.ldlt());
+  const Eigen::SerializableLDLT S_ldlt = S.ldlt();
+  const auto block_direct = build_block_symmetric(A.ldlt(), B, S_ldlt);
   const Eigen::MatrixXd actual_direct = block_direct.solve(rhs);
   EXPECT_TRUE(actual_direct.isApprox(expected));
 }

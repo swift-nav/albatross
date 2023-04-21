@@ -389,7 +389,7 @@ public:
 
     Eigen::VectorXd delta = targets.mean - pred.mean;
     pred.covariance += targets.covariance;
-    const auto S_ldlt = pred.covariance.ldlt();
+    const Eigen::SerializableLDLT S_ldlt = pred.covariance.ldlt();
 
     const Eigen::MatrixXd cross =
         covariance_function_(fit_.train_features, features);
