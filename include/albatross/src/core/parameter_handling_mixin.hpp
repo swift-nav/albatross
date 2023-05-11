@@ -48,6 +48,18 @@ template <typename ParameterHandler,
 inline void unchecked_set_param(const ParameterKey &name,
                                 const Parameter &param,
                                 ParameterHandler *param_handler) {
+  // Empty parameter names have accidentally been encountered, often
+  // the root cause has to do with global definitions along the lines
+  // of:
+  //
+  //     const std::string my_param_key = "foo";
+  //
+  // which can mysteriously not get initialized. Best practice is to
+  // define such keys as:
+  //
+  //     constexpr char my_param_key[] = "foo";
+  //
+  assert(name.size() > 0 && "parameter names must be non-empty");
   param_handler->set_param(name, param);
 }
 
