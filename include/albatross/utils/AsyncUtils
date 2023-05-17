@@ -18,6 +18,10 @@
 
 #include <ThreadPool.h>
 
+#ifdef EIGEN_USE_MKL_ALL
+#include <mkl.h>
+#endif
+
 #include "../Common"
 #include "../src/utils/async_utils.hpp"
 

@@ -210,7 +210,21 @@ make_shared_thread_pool(std::size_t threads = 0) {
     threads = get_default_thread_count();
   }
 
-  return std::make_shared<ThreadPool>(threads);
+#if defined(EIGEN_USE_MKL_ALL) || defined(EIGEN_USE_MKL_VML)
+  const auto init = []() { mkl_set_num_threads_local(1); };
+#else  // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+  const auto init = []() {};
+#endif // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+
+  return std::make_shared<ThreadPool>(threads, init);
+}
+
+inline std::size_t get_thread_count(const std::shared_ptr<ThreadPool> &pool) {
+  if (nullptr == pool) {
+    return 1;
+  }
+
+  return pool->thread_count();
 }
 
 } // namespace albatross
