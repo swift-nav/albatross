@@ -4,8 +4,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    strip_prefix = "rules_swiftnav-26426be6b89a5b9f0489158098599b9fcd973ed4",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/26426be6b89a5b9f0489158098599b9fcd973ed4.tar.gz",
+    strip_prefix = "rules_swiftnav-e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d.tar.gz",
 )
 
 # Rules for integrating with cmake builds
@@ -18,6 +18,25 @@ http_archive(
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 
 rules_foreign_cc_dependencies()
+
+http_archive(
+    name = "mkl_headers",
+    build_file = "@rules_swiftnav//third_party:mkl_headers.BUILD",
+    sha256 = "b24d12a8e18ba23de5c659a33fb184a7ac6019d4b159e78f628d7c8de225f77a",
+    urls = [
+        "https://anaconda.org/intel/mkl-include/2023.1.0/download/linux-64/mkl-include-2023.1.0-intel_46342.tar.bz2",
+    ],
+)
+
+http_archive(
+    name = "mkl",
+    build_file = "@rules_swiftnav//third_party:mkl.BUILD",
+    sha256 = "c63adbfdbdc7c4992384a2d89cd62211e4a9f8061e3e841af1a269699531cb02",
+    strip_prefix = "lib",
+    urls = [
+        "https://anaconda.org/intel/mkl-static/2023.1.0/download/linux-64/mkl-static-2023.1.0-intel_46342.tar.bz2",
+    ],
+)
 
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor

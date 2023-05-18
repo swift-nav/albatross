@@ -1,5 +1,10 @@
 build --repo_env=BAZEL_CXXOPTS="-std=c++14"
 
+# Build with mkl
+common:mkl -c opt
+common:mkl --@rules_swiftnav//third_party:enable_mkl=true
+common:mkl --platform_suffix=mkl
+
 build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
 build:clang-format-check --output_groups=report
 
