@@ -21,6 +21,7 @@ swift_setup_clang_format()
 include(SanitizeTargets)
 
 option(ENABLE_STACK_ANALYSIS "Enable stack analysis. Requires gcc." OFF)
+option(ENABLE_MKL "Enable Intel MKL Optimizations" OFF)
 
 if(albatross_BUILD_EXAMPLES)
   find_package(GFlags REQUIRED)
@@ -49,6 +50,12 @@ target_link_libraries(albatross
     variant
     ThreadPool
     )
+if(ENABLE_MKL)
+  find_package(MKL)
+  if (MKL_FOUND)
+    target_link_libraries(albatross INTERFACE MKL::MKL)
+  endif()
+endif()
 
 set(albatross_COMPILE_OPTIONS
   -Werror
