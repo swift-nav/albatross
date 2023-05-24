@@ -36,17 +36,12 @@ namespace albatross {
 
 namespace details {
 
-template <typename X> inline auto diagonal_wrapper(X &x) {
-  return Eigen::DiagonalWrapper<X>(x);
-}
-
 template <typename MatrixType, typename DiagType>
 inline Eigen::MatrixXd
 product_sqrt(const Eigen::MatrixBase<MatrixType> &matrix,
              const Eigen::DiagonalBase<DiagType> &diag_matrix) {
-
   return matrix.derived() *
-         diagonal_wrapper(diag_matrix.diagonal().array().sqrt().eval());
+         diag_matrix.diagonal().array().sqrt().matrix().asDiagonal();
 }
 
 template <typename Lhs, typename Rhs>
@@ -61,7 +56,7 @@ inline Eigen::MatrixXd
 product_sqrt(const Eigen::SparseMatrixBase<MatrixType> &matrix,
              const Eigen::DiagonalBase<DiagType> &diag_matrix) {
   return matrix.derived() *
-         diagonal_wrapper(diag_matrix.diagonal().array().sqrt().eval());
+         diag_matrix.diagonal().array().sqrt().matrix().asDiagonal();
 }
 
 template <typename SparseType, typename MatrixType>
