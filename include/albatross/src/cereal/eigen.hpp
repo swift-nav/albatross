@@ -21,14 +21,8 @@ inline void save(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const &m,
   Eigen::Index rows = m.rows();
   Eigen::Index cols = m.cols();
   std::size_t size = albatross::cast::to_size(rows * cols);
-  std::size_t size_in_bytes = size * sizeof(_Scalar);
 
-  // Turn the Eigen::Matrix in to an array of characters
-  std::vector<_Scalar> data(size);
-  Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data.data(), rows, cols) = m;
-  char *char_data = reinterpret_cast<char *>(data.data());
-
-  std::string payload = gzip::compress(char_data, size_in_bytes);
+  std::string payload = albatross::zstd::compress(m.data(), size);
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload =
@@ -53,36 +47,26 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   ar(CEREAL_NVP(payload));
 
   std::size_t size = albatross::cast::to_size(rows * cols);
-  std::size_t size_in_bytes = size * sizeof(_Scalar);
+
+  if (size == 0) {
+    m = Eigen::Matrix<_Scalar, _Rows, _Cols>(rows, cols);
+    return;
+  }
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload = base64::decode(payload);
   }
 
-  const std::string decompressed =
-      gzip::decompress(payload.data(), payload.size());
-
-  ALBATROSS_ASSERT(size_in_bytes == decompressed.size());
-
-  if (size_in_bytes == 0) {
-    m = Eigen::Matrix<_Scalar, _Rows, _Cols>(rows, cols);
-    return;
-  }
-
-  std::vector<_Scalar> decoded_data(size);
-  std::memcpy(decoded_data.data(), decompressed.data(), size_in_bytes);
-
-  m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(decoded_data.data(),
-                                                       rows, cols);
+  m.resize(rows, cols);
+  albatross::zstd::decompress(payload, m.data(), size);
 }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void
-save(Archive &archive,
-     const Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                 _StorageIndex> &v,
-     const std::uint32_t) {
+inline void save(Archive &archive,
+                 const Eigen::Transpositions<
+                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
+                 const std::uint32_t) {
   archive(cereal::make_nvp("indices", v.indices()));
 }
 
@@ -123,7 +107,6 @@ inline void save_lower_triangle(Archive &archive,
 template <class Archive, typename _Scalar, int _Rows, int _Cols>
 inline void load_lower_triangle(Archive &archive,
                                 Eigen::Matrix<_Scalar, _Rows, _Cols> &v) {
-
   Eigen::VectorXd data;
   archive(cereal::make_nvp("lower_triangle", data));
   // We assume the matrix is square and compute the number of rows from the
@@ -147,6 +130,6 @@ inline void load_lower_triangle(Archive &archive,
   }
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif

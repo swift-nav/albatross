@@ -15,6 +15,7 @@
 
 #include <gzip/compress.hpp>
 #include <gzip/decompress.hpp>
+#include <zstd.h>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -31,6 +32,7 @@
 #include <vector>
 #include <numeric>
 #include <random>
+#include <string>
 
 #include "ForwardDeclarations"
 
@@ -42,5 +44,6 @@
 
 #include <albatross/src/utils/vector_utils.hpp>
 #include <albatross/src/utils/map_utils.hpp>
+#include <albatross/src/utils/compress.hpp>
 
 #endif

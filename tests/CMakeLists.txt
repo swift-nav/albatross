@@ -15,6 +15,7 @@ swift_add_tool(albatross_unit_tests
   test_block_utils.cc
   test_call_trace.cc
   test_callers.cc
+  test_compression.cc
   test_conditional_gaussian.cc
   test_concatenate.cc
   test_core_dataset.cc
@@ -80,6 +81,7 @@ target_link_libraries(albatross_unit_tests
   gflags
   nlopt
   z
+  zstd
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 
