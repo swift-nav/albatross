@@ -2,6 +2,7 @@ include(SwiftTargets)
 
 swift_add_tool(albatross_unit_tests
   SOURCES
+  main.cc
   test_apply.cc
   test_async_utils.cc
   test_block_utils.cc
@@ -72,6 +73,9 @@ target_link_libraries(albatross_unit_tests
   gflags
   nlopt
   z
+  zstd
+  zfp
+  blosc2
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 

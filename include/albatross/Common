@@ -42,5 +42,6 @@
 
 #include <albatross/src/utils/vector_utils.hpp>
 #include <albatross/src/utils/map_utils.hpp>
+#include <albatross/src/utils/compress.hpp>
 
 #endif

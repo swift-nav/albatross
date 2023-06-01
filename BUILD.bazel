@@ -128,6 +128,7 @@ cc_library(
         "include/albatross/src/tune/tune.hpp",
         "include/albatross/src/tune/tuning_metrics.hpp",
         "include/albatross/src/utils/async_utils.hpp",
+        "include/albatross/src/utils/compress.hpp",
         "include/albatross/src/utils/csv_utils.hpp",
         "include/albatross/src/utils/eigen_utils.hpp",
         "include/albatross/src/utils/map_utils.hpp",

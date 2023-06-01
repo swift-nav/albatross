@@ -15,20 +15,23 @@
 
 namespace cereal {
 
+constexpr int kMatrixDataCompressionLevel = 9;
+
 template <class Archive, class _Scalar, int _Rows, int _Cols>
 inline void save(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const &m,
                  const std::uint32_t) {
   Eigen::Index rows = m.rows();
   Eigen::Index cols = m.cols();
-  std::size_t size = albatross::cast::to_size(rows * cols);
-  std::size_t size_in_bytes = size * sizeof(_Scalar);
+  const std::size_t size = albatross::cast::to_size(rows * cols);
+  ar(CEREAL_NVP(rows));
+  ar(CEREAL_NVP(cols));
 
-  // Turn the Eigen::Matrix in to an array of characters
-  std::vector<_Scalar> data(size);
-  Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(data.data(), rows, cols) = m;
-  char *char_data = reinterpret_cast<char *>(data.data());
-
-  std::string payload = gzip::compress(char_data, size_in_bytes);
+  std::string payload{};
+  if (size != 0) {
+    payload =
+        albatross::blosc::compress(m.data(), albatross::cast::to_size(rows),
+                                    albatross::cast::to_size(cols), 4);
+  }
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload =
@@ -36,8 +39,6 @@ inline void save(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> const &m,
                        payload.size());
   }
 
-  ar(CEREAL_NVP(rows));
-  ar(CEREAL_NVP(cols));
   ar(CEREAL_NVP(payload));
 }
 
@@ -53,36 +54,28 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   ar(CEREAL_NVP(payload));
 
   std::size_t size = albatross::cast::to_size(rows * cols);
-  std::size_t size_in_bytes = size * sizeof(_Scalar);
 
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload = base64::decode(payload);
   }
 
-  const std::string decompressed =
-      gzip::decompress(payload.data(), payload.size());
-
-  ALBATROSS_ASSERT(size_in_bytes == decompressed.size());
-
-  if (size_in_bytes == 0) {
+  if (size == 0) {
     m = Eigen::Matrix<_Scalar, _Rows, _Cols>(rows, cols);
     return;
   }
 
-  std::vector<_Scalar> decoded_data(size);
-  std::memcpy(decoded_data.data(), decompressed.data(), size_in_bytes);
-
-  m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(decoded_data.data(),
-                                                       rows, cols);
+  m.resize(rows, cols);
+  albatross::blosc::decompress(payload, m.data(),
+                                albatross::cast::to_size(rows),
+                                albatross::cast::to_size(cols));
 }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void
-save(Archive &archive,
-     const Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                 _StorageIndex> &v,
-     const std::uint32_t) {
+inline void save(Archive &archive,
+                 const Eigen::Transpositions<
+                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
+                 const std::uint32_t) {
   archive(cereal::make_nvp("indices", v.indices()));
 }
 
