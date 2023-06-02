@@ -2,6 +2,7 @@ include(SwiftTargets)
 
 swift_add_tool(albatross_unit_tests
   SOURCES
+  main.cc
   test_apply.cc
   test_async_utils.cc
   test_block_utils.cc
@@ -67,11 +68,11 @@ target_compile_options(albatross_unit_tests PRIVATE
 target_link_libraries(albatross_unit_tests
   albatross
   gtest
-  gtest_main
   pthread
   gflags
   nlopt
   z
+  blosc2
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 

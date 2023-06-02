@@ -49,6 +49,7 @@ target_link_libraries(albatross
     gzip-hpp
     variant
     ThreadPool
+    blosc2
     )
 if(ENABLE_MKL)
   find_package(MKL)
