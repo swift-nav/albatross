@@ -47,6 +47,7 @@ target_link_libraries(albatross
     cereal
     fast-csv
     gzip-hpp
+    zfp
     variant
     ThreadPool
     )
