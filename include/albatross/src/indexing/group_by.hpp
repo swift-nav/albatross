@@ -111,6 +111,12 @@ public:
 
   ValueType first_value() const { return map_.begin()->second; }
 
+  ValueType last_value() const { 
+    auto back = map_.end();
+    back--;
+    return back->second; 
+  }
+
   // The min entry based on the values
   auto min() const {
     const auto value_compare = [](const auto &x, const auto &y) {
