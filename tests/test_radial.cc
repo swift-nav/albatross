@@ -38,6 +38,108 @@ inline auto random_spherical_dataset(std::vector<Eigen::VectorXd> points,
   return RegressionDataset<Eigen::VectorXd>(points, targets);
 }
 
+template <typename T> class RadialCovarianceTester : public ::testing::Test {
+public:
+  T test_case;
+};
+
+using RadialTestCases =
+    ::testing::Types<Exponential<EuclideanDistance>,
+                     SquaredExponential<EuclideanDistance>,
+                     Matern32<EuclideanDistance>, Matern52<EuclideanDistance>>;
+TYPED_TEST_SUITE(RadialCovarianceTester, RadialTestCases);
+
+TYPED_TEST(RadialCovarianceTester, test_edge_cases) {
+  double sigma = NAN;
+  for (const auto &pair : this->test_case.get_params()) {
+    if (pair.first.find("sigma") != std::string::npos) {
+      sigma = pair.second.value;
+    }
+  }
+  // the same points should be fully correlated
+  EXPECT_EQ(this->test_case(M_PI, M_PI), sigma * sigma);
+  // extremely close points should be almost perfectly correlated
+  EXPECT_NEAR(this->test_case(M_PI, M_PI + 1e-16), this->test_case(M_PI, M_PI),
+              1e-8);
+  // extremely distant points should be independent
+  EXPECT_EQ(this->test_case(0., 1e32), 0.);
+}
+
+TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
+
+  auto set_sigma_length_scale = [&](double sigma, double length_scale) {
+    for (const auto &pair : this->test_case.get_params()) {
+      if (pair.first.find("length_scale") != std::string::npos) {
+        albatross::set_param_value(pair.first, length_scale, &this->test_case);
+      } else if (pair.first.find("sigma") != std::string::npos) {
+        albatross::set_param_value(pair.first, sigma, &this->test_case);
+      } else {
+        assert(false && "unexpected radial parameter");
+      }
+    }
+  };
+
+  auto std_increase = [&](double dist, double sigma, double length_scale) {
+    set_sigma_length_scale(sigma, length_scale);
+    const double cov = this->test_case(0., dist);
+    return std::sqrt(sigma * sigma - std::pow(cov / sigma, 2));
+  };
+
+  auto test_equivalence = [&](double dist, double sigma,
+                              double desired_sd_increase) {
+    double expected_sd_increase = desired_sd_increase;
+
+    // We can only expect out solver to get the length scale within
+    // the values achievable with the min/max length scale ratios
+    const double min_length_scale = dist * MIN_LENGTH_SCALE_RATIO;
+    const double max_increase = std_increase(dist, sigma, min_length_scale);
+    if (max_increase <= expected_sd_increase) {
+      expected_sd_increase = max_increase;
+    }
+    const double max_length_scale = dist * MAX_LENGTH_SCALE_RATIO;
+    const double min_increase = std_increase(dist, sigma, max_length_scale);
+    if (min_increase >= expected_sd_increase) {
+      expected_sd_increase = min_increase;
+    }
+
+    const double length_scale =
+        this->test_case.derive_length_scale(dist, sigma, expected_sd_increase);
+    const double actual_sd_increase = std_increase(dist, sigma, length_scale);
+
+    const double relative_sd_error =
+        fabs(expected_sd_increase - actual_sd_increase) / sigma;
+    const double absolute_sd_error =
+        fabs(expected_sd_increase - actual_sd_increase);
+    const bool success =
+        (absolute_sd_error <= 1e-8 || relative_sd_error <= 1e-8);
+    EXPECT_TRUE(success);
+    if (!success) {
+      std::cerr << "TEST WITH dist : " << dist << "  sigma: " << sigma
+                << "  increase: " << desired_sd_increase
+                << " expected: " << expected_sd_increase << std::endl;
+      std::cerr << "FAIL: absolute_sd error: " << absolute_sd_error
+                << " relative_sd_error: " << relative_sd_error << std::endl;
+    }
+    return relative_sd_error <= 1e-3;
+  };
+
+  // large sigmas are likely lead to numerical instabilities
+  // in matrix inversions, so that seems like a reasonable limit;
+  std::vector<double> sigmas = {1e-6, 1e-4, 1e-2, 1, 1e2, 1e4, 1e6};
+  std::vector<double> distances = {1e-8, 1e-4,  1e-2, 1.,  10.,
+                                   100., 1000., 1e8,  1e12};
+  std::vector<double> proportion_increases = {
+      0, 1e-8, 1e-4, 1e-2, 0.1, 0.5, 0.9, 0.99, 0.9999, 0.99999999, 1.};
+  for (const auto &dist : distances) {
+    for (const auto &inc : proportion_increases) {
+      for (const auto &sigma : sigmas) {
+        const double increase = sigma * inc;
+        test_equivalence(dist, sigma, increase);
+      }
+    }
+  }
+}
+
 TEST(test_radial, test_is_positive_definite) {
   const auto points = random_spherical_points(100);
 
