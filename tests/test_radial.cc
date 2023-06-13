@@ -67,7 +67,7 @@ TYPED_TEST(RadialCovarianceTester, test_edge_cases) {
 
 TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
 
-  auto set_sigma_length_scale = [&](double sigma, double length_scale) {
+  auto set_sigma_length_scale = [this](double sigma, double length_scale) {
     for (const auto &pair : this->test_case.get_params()) {
       if (pair.first.find("length_scale") != std::string::npos) {
         albatross::set_param_value(pair.first, length_scale, &this->test_case);
@@ -125,10 +125,10 @@ TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
 
   // large sigmas are likely lead to numerical instabilities
   // in matrix inversions, so that seems like a reasonable limit;
-  std::vector<double> sigmas = {1e-6, 1e-4, 1e-2, 1, 1e2, 1e4, 1e6};
-  std::vector<double> distances = {1e-8, 1e-4,  1e-2, 1.,  10.,
-                                   100., 1000., 1e8,  1e12};
-  std::vector<double> proportion_increases = {
+  const std::vector<double> sigmas = {1e-6, 1e-4, 1e-2, 1, 1e2, 1e4, 1e6};
+  const std::vector<double> distances = {1e-8, 1e-4,  1e-2, 1.,  10.,
+                                         100., 1000., 1e8,  1e12};
+  const std::vector<double> proportion_increases = {
       0, 1e-8, 1e-4, 1e-2, 0.1, 0.5, 0.9, 0.99, 0.9999, 0.99999999, 1.};
   for (const auto &dist : distances) {
     for (const auto &inc : proportion_increases) {
