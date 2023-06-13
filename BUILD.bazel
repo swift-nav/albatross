@@ -169,6 +169,7 @@ cc_library(
         "@gzip",
         "@nlopt",
         "@variant",
+        "@zstd",
     ],
 )
 
