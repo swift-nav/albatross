@@ -4,8 +4,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    strip_prefix = "rules_swiftnav-e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d.tar.gz",
+    strip_prefix = "rules_swiftnav-bf7a7dff255d95e8cd9f9a5e2a7347477a16564b",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/bf7a7dff255d95e8cd9f9a5e2a7347477a16564b.tar.gz",
 )
 
 # Rules for integrating with cmake builds
@@ -56,7 +56,7 @@ http_archive(
     sha256 = "9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4",
     strip_prefix = "zstd-1.5.5",
     url = "https://github.com/facebook/zstd/releases/download/v1.5.5/zstd-1.5.5.tar.gz",
-    build_file = "@//:zstd.BUILD"
+    build_file = "@rules_swiftnav//third_party:zstd.BUILD"
 )
 
 local_repository(
