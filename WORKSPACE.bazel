@@ -62,7 +62,7 @@ http_archive(
     sha256 = "9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4",
     strip_prefix = "zstd-1.5.5",
     url = "https://github.com/facebook/zstd/releases/download/v1.5.5/zstd-1.5.5.tar.gz",
-    build_file = "@//:zstd.BUILD"
+    build_file = "@rules_swiftnav//third_party:zstd.BUILD"
 )
 
 local_repository(
