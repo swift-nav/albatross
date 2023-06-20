@@ -81,8 +81,8 @@ TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
 
   auto std_increase = [&](double dist, double sigma, double length_scale) {
     set_sigma_length_scale(sigma, length_scale);
-    const double cov = this->test_case(0., dist);
-    return std::sqrt(sigma * sigma - std::pow(cov / sigma, 2));
+    auto eval = [this](double x) { return this->test_case(0., x); };
+    return process_noise_equivalent(eval, dist);
   };
 
   auto test_equivalence = [&](double dist, double sigma,
