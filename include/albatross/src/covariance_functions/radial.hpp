@@ -32,6 +32,22 @@ inline double squared_exponential_covariance(double distance,
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
+template <typename RadialFunction>
+inline double process_noise_equivalent(RadialFunction func, double distance) {
+  // to get the increase in standard deviation over a given distance we can
+  // ask for the predictive variance for one point given another point
+  // separated by a distance `d`.
+  //
+  //   [f_0,      ~ N(|0 , |k(0), k(d)| )
+  //    f_d]          |0   |k(d), k(0)|
+  //
+  //   VAR[f_d|f_0] = k(0) - k(d) k(d) / k(0)
+  //   STD[f_d|f_0] = sqrt(k(0) - k(d)^2/ k(0))
+  const double k0 = func(0);
+  const double kd = func(distance);
+  return sqrt(k0 - kd * kd / k0);
+}
+
 namespace detail {
 
 inline bool valid_args_for_derive_length_scale(double reference_distance,
@@ -80,16 +96,7 @@ inline double derive_squared_exponential_length_scale(double reference_distance,
     return detail::fallback_length_scale_for_invalid_args(
         reference_distance, prior_sigma, std_dev_increase);
   }
-
-  // to get the increase in standard deviation over a given distance we can
-  // ask for the predictive variance for one point given another point
-  // separated by a distance `d`.
-  //
-  //   [f_0,      ~ N(|0 , |k(0), k(d)| )
-  //    f_d]          |0   |k(d), k(0)|
-  //
-  //   VAR[f_d|f_0] = k(0) - k(d) k(d) / k(0)
-  //   STD[f_d|f_0] = sqrt(k(0) - k(d)^2/ k(0))
+  // See process_noise_equivalent for an intro.
   //
   // for the squared exponential function this means an increase in
   // standard deviation, d_sd, can be written:
@@ -198,7 +205,8 @@ inline double derive_exponential_length_scale(double reference_distance,
     return detail::fallback_length_scale_for_invalid_args(
         reference_distance, prior_sigma, std_dev_increase);
   }
-  // See derive_squared_exponential_length_scale for an introduction.
+  // See process_noise_equivalent for an intro
+  //
   // For the exponential function the equations vary slightly,
   //
   //   d_sd = sqrt(sigma^2 - sigma^2 exp[-|distance / length_scale|]^2)
