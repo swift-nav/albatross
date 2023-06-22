@@ -276,7 +276,8 @@ struct LinearCombo : public SerializableType<LinearCombination<double>> {
 };
 
 REGISTER_TYPED_TEST_SUITE_P(SerializeTest, test_roundtrip_serialize_json,
-                            test_roundtrip_serialize_binary);
+                            test_roundtrip_serialize_binary,
+                            test_roundtrip_serialize_portable_binary);
 
 typedef ::testing::Types<LDLT, ExplainedCovarianceRepresentation, EigenMatrix3d,
                          SerializableType<Eigen::Matrix2i>, EmptyEigenVectorXd,
@@ -380,8 +381,36 @@ TYPED_TEST_P(RegressionModelTester, test_fit_model_serializes) {
                                 SerializableFitModelType<TypeParam>>();
 }
 
+TYPED_TEST_P(RegressionModelTester, test_model_serializes_binary) {
+  expect_roundtrip_serializable<cereal::BinaryInputArchive,
+                                cereal::BinaryOutputArchive,
+                                SerializableModelType<TypeParam>>();
+}
+
+TYPED_TEST_P(RegressionModelTester, test_fit_model_serializes_binary) {
+  expect_roundtrip_serializable<cereal::BinaryInputArchive,
+                                cereal::BinaryOutputArchive,
+                                SerializableFitModelType<TypeParam>>();
+}
+
+TYPED_TEST_P(RegressionModelTester, test_model_serializes_portable_binary) {
+  expect_roundtrip_serializable<cereal::PortableBinaryInputArchive,
+                                cereal::PortableBinaryOutputArchive,
+                                SerializableModelType<TypeParam>>();
+}
+
+TYPED_TEST_P(RegressionModelTester, test_fit_model_serializes_portable_binary) {
+  expect_roundtrip_serializable<cereal::PortableBinaryInputArchive,
+                                cereal::PortableBinaryOutputArchive,
+                                SerializableFitModelType<TypeParam>>();
+}
+
 REGISTER_TYPED_TEST_SUITE_P(RegressionModelTester, test_model_serializes,
-                            test_fit_model_serializes);
+                            test_fit_model_serializes,
+                            test_model_serializes_binary,
+                            test_fit_model_serializes_binary,
+                            test_model_serializes_portable_binary,
+                            test_fit_model_serializes_portable_binary);
 
 INSTANTIATE_TYPED_TEST_SUITE_P(test_serialize, RegressionModelTester,
                                ExampleModels);

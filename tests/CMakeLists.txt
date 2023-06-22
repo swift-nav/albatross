@@ -1,5 +1,13 @@
 include(SwiftTargets)
 
+# Ensure tests are always built with assertions enabled
+string(REPLACE "-DNDEBUG" ""
+  CMAKE_CXX_FLAGS_RELEASE
+  "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-DNDEBUG" ""
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+
 swift_add_tool(albatross_unit_tests
   SOURCES
   test_apply.cc

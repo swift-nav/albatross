@@ -18,6 +18,10 @@ constexpr double default_radial_sigma = 10.;
 
 namespace albatross {
 
+constexpr std::size_t MAX_NEWTON_ITERATIONS = 50;
+constexpr double MAX_LENGTH_SCALE_RATIO = 1e7;
+constexpr double MIN_LENGTH_SCALE_RATIO = 1e-7;
+
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
@@ -26,6 +30,98 @@ inline double squared_exponential_covariance(double distance,
   }
   ALBATROSS_ASSERT(distance >= 0.);
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
+}
+
+template <typename RadialFunction>
+inline double process_noise_equivalent(RadialFunction func, double distance) {
+  // to get the increase in standard deviation over a given distance we can
+  // ask for the predictive variance for one point given another point
+  // separated by a distance `d`.
+  //
+  //   [f_0,      ~ N(|0 , |k(0), k(d)| )
+  //    f_d]          |0   |k(d), k(0)|
+  //
+  //   VAR[f_d|f_0] = k(0) - k(d) k(d) / k(0)
+  //   STD[f_d|f_0] = sqrt(k(0) - k(d)^2/ k(0))
+  const double k0 = func(0);
+  const double kd = func(distance);
+  return sqrt(k0 - kd * kd / k0);
+}
+
+namespace detail {
+
+inline bool valid_args_for_derive_length_scale(double reference_distance,
+                                               double prior_sigma,
+                                               double std_dev_increase) {
+  assert(reference_distance > 0.);
+  return (std_dev_increase > 0. && prior_sigma > 0. &&
+          std_dev_increase < prior_sigma);
+}
+
+inline double fallback_length_scale_for_invalid_args(double reference_distance,
+                                                     double prior_sigma,
+                                                     double std_dev_increase) {
+  if (std_dev_increase <= 0.) {
+    // an increase of 0. means an extremely large length scale and would
+    // lead to a divide by zero below, so we early return.
+    return MAX_LENGTH_SCALE_RATIO * reference_distance;
+  }
+  if (prior_sigma <= 0.) {
+    // with values of zero it doesn't matter what the length scale is.
+    return MAX_LENGTH_SCALE_RATIO * reference_distance;
+  }
+  const double ratio = std_dev_increase / prior_sigma;
+  assert(ratio > 0.);
+  if (ratio >= 1.) {
+    // there's no way for the std deviation to exceed the prior std dev if
+    // this is specified just assume a tiny length scale;
+    return MIN_LENGTH_SCALE_RATIO * reference_distance;
+  }
+  if (ratio <= 0.) {
+    // in order to keep the standard deviation from increasing we need
+    // the longest length scale possible.
+    return MAX_LENGTH_SCALE_RATIO * reference_distance;
+  }
+  // all edge cases should have been handled
+  assert(false);
+  return NAN;
+}
+} // namespace detail
+
+inline double derive_squared_exponential_length_scale(double reference_distance,
+                                                      double prior_sigma,
+                                                      double std_dev_increase) {
+  if (!detail::valid_args_for_derive_length_scale(
+          reference_distance, prior_sigma, std_dev_increase)) {
+    return detail::fallback_length_scale_for_invalid_args(
+        reference_distance, prior_sigma, std_dev_increase);
+  }
+  // See process_noise_equivalent for an intro.
+  //
+  // for the squared exponential function this means an increase in
+  // standard deviation, d_sd, can be written:
+  //
+  //   d_sd = sqrt(sigma^2 - sigma^2 exp[-(d / length_scale)^2]^2)
+  //        = sigma * sqrt(1 - exp[-(d / length_scale)^2]^2)
+  //        = sigma * sqrt(1 - exp[-2 * (d / length_scale)^2])
+  //
+  // solving for length_scale gives us
+  //
+  //   d_sd / sigma = sqrt(1 - exp[-2 * (d / length_scale)^2])
+  //
+  //   (d_sd / sigma)^2 = 1 - exp[-2 * (d / length_scale)^2]
+  //
+  //   exp[-2 * (d / length_scale)^2] = 1 - (d_sd / sigma)^2
+  //
+  //   -2 (d / length_scale)^2 = log[1 - (d_sd / sigma)^2]
+  //
+  //   (d / length_scale) = sqrt(-1/2 log[1 - (d_sd / sigma)^2])
+  //
+  //   length_scale = d / sqrt(-1/2 log[1 - (d_sd / sigma)^2])
+  const double ratio = std_dev_increase / prior_sigma;
+  assert(ratio > 0.);
+  assert(ratio < 1.);
+  return sqrt(2.0) * reference_distance / sqrt(-log(1. - ratio * ratio));
 }
 
 /*
@@ -71,6 +167,12 @@ public:
     return linspace(min, max, safe_cast_to_size_t(n));
   }
 
+  double derive_length_scale(double reference_distance, double sigma,
+                             double std_dev_increase) const {
+    return derive_squared_exponential_length_scale(reference_distance, sigma,
+                                                   std_dev_increase);
+  }
+
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<
@@ -93,6 +195,41 @@ inline double exponential_covariance(double distance, double length_scale,
   }
   ALBATROSS_ASSERT(distance >= 0.);
   return sigma * sigma * exp(-fabs(distance / length_scale));
+}
+
+inline double derive_exponential_length_scale(double reference_distance,
+                                              double prior_sigma,
+                                              double std_dev_increase) {
+  if (!detail::valid_args_for_derive_length_scale(
+          reference_distance, prior_sigma, std_dev_increase)) {
+    return detail::fallback_length_scale_for_invalid_args(
+        reference_distance, prior_sigma, std_dev_increase);
+  }
+  // See process_noise_equivalent for an intro
+  //
+  // For the exponential function the equations vary slightly,
+  //
+  //   d_sd = sqrt(sigma^2 - sigma^2 exp[-|distance / length_scale|]^2)
+  //        = sigma * sqrt(1 - exp[-|distance / length_scale|]^2)
+  //        = sigma * sqrt(1 - exp[-2 * |distance / length_scale|])
+  //
+  // solving for length_scale gives us
+  //
+  //   d_sd / sigma = sqrt(1 - exp[-2 * |distance / length_scale|])
+  //
+  //   (d_sd / sigma)^2 = 1 - exp[-2 * |distance / length_scale|]
+  //
+  //   exp[-2 * |distance / length_scale|] = 1 - (d_sd / sigma)^2
+  //
+  //   -2 |distance / length_scale| = log[1 - (d_sd / sigma)^2]
+  //
+  //   |distance / length_scale| = -1/2 log[1 - (d_sd / sigma)^2]
+  //
+  //   length_scale = -2 * distance / log[1 - (d_sd / sigma)^2]
+  const double ratio = std_dev_increase / prior_sigma;
+  assert(ratio > 0.);
+  assert(ratio < 1.);
+  return -2.0 * reference_distance / log(1. - ratio * ratio);
 }
 
 /*
@@ -129,6 +266,12 @@ public:
     return linspace(min, max, safe_cast_to_size_t(n));
   }
 
+  double derive_length_scale(double reference_distance, double sigma,
+                             double std_dev_increase) const {
+    return derive_exponential_length_scale(reference_distance, sigma,
+                                           std_dev_increase);
+  }
+
   // This operator is only defined when the distance metric is also defined.
   template <typename X,
             typename std::enable_if<
@@ -149,8 +292,130 @@ inline double matern_32_covariance(double distance, double length_scale,
     return 0.;
   }
   assert(distance >= 0.);
-  const double sqrt_3_d = std::sqrt(3.) * distance / length_scale;
+  const double sqrt_3_d = sqrt(3.) * distance / length_scale;
   return sigma * sigma * (1 + sqrt_3_d) * exp(-sqrt_3_d);
+}
+
+namespace detail {
+
+template <typename Func, typename Grad>
+inline double newton_solve(double guess, double target, Func func, Grad grad,
+                           double lower_bound, double upper_bound,
+                           double tolerance = 1e-12) {
+  // NB: While technically this could be a generalized solver, it hasn't been
+  // tested beyond the use case of solving for length scales, reuse with
+  // caution.
+  for (std::size_t i = 0; i < MAX_NEWTON_ITERATIONS; ++i) {
+    const double f_i = func(guess);
+    const double error = target - f_i;
+    if (!std::isfinite(error)) {
+      break;
+    }
+    const double delta = error / grad(guess);
+
+    if (fabs(error) < tolerance) {
+      break;
+    }
+
+    if (guess - delta <= lower_bound) {
+      guess = 0.5 * (guess + lower_bound);
+    } else if (guess - delta >= upper_bound) {
+      guess = 0.5 * (guess + upper_bound);
+    } else {
+      guess -= delta;
+    }
+    guess = std::min(upper_bound, std::max(lower_bound, guess));
+  }
+  return guess;
+}
+
+template <typename Func, typename Grad>
+inline double derive_length_scale(double reference_distance, double prior_sigma,
+                                  double std_dev_increase, Func func,
+                                  Grad grad) {
+  if (!detail::valid_args_for_derive_length_scale(
+          reference_distance, prior_sigma, std_dev_increase)) {
+    return detail::fallback_length_scale_for_invalid_args(
+        reference_distance, prior_sigma, std_dev_increase);
+  }
+  // func and grad should accept a single argument "ratio" which is the
+  // length scale expressed as multiples of the reference distance.
+  //
+  //    ratio = length_scale / reference_distance
+  //
+  // The goal behind the reformulation is to be able to keep the solver
+  // stable. For example, a length scale of 1e-16 meters might
+  // be perfectly reasonable on an atomic scale, while 1e32 meters might
+  // be reasonable on an astronmical scale, so working directly with
+  // length scale could require exploring a very large range. Instead
+  // using the ratio allows a user to pick a reasonable reference
+  // distance and keep the domain searched by this back solver smaller.
+  static_assert(is_invocable_with_result<Func, double, double>::value,
+                "func should take a single double and return the covariance");
+  static_assert(is_invocable_with_result<Grad, double, double>::value,
+                "grad should take a single double and return the covariance");
+
+  // We run the newton solver using the log increase in standard
+  // deviation to improve numerical stability.
+  auto log_f_eval = [&func, &prior_sigma](double ratio) {
+    // with ratio = ell / reference_distance
+    // here we assume func(ratio) == cov(reference_distance, ell)
+    const double cov = func(ratio);
+    if (cov * cov >= 1) {
+      return log(1e-16);
+    }
+    const double log_f = log(prior_sigma) + 0.5 * log(1 - cov * cov);
+    return log_f;
+  };
+
+  auto log_g_eval = [&func, &grad](double ratio) {
+    const double cov = func(ratio);
+    const double denom = (1 - cov * cov);
+    assert(denom > 0);
+    return grad(ratio) * cov / denom;
+  };
+
+  const double log_target = log(std_dev_increase);
+  const double max_increase = log_f_eval(MIN_LENGTH_SCALE_RATIO);
+  if (max_increase <= log_target) {
+    return MIN_LENGTH_SCALE_RATIO * reference_distance;
+  }
+  const double min_increase = log_f_eval(MAX_LENGTH_SCALE_RATIO);
+  if (min_increase >= log_target) {
+    return MAX_LENGTH_SCALE_RATIO * reference_distance;
+  }
+
+  // linearly interpolate between log of scales as a coarse guess
+  const double alpha =
+      (max_increase - log_target) / (max_increase - min_increase);
+  const double guess =
+      exp(log(MIN_LENGTH_SCALE_RATIO) +
+          alpha * (log(MAX_LENGTH_SCALE_RATIO) - log(MIN_LENGTH_SCALE_RATIO)));
+
+  const double solution =
+      newton_solve(guess, log_target, log_f_eval, log_g_eval,
+                   MIN_LENGTH_SCALE_RATIO, MAX_LENGTH_SCALE_RATIO);
+  return solution * reference_distance;
+}
+
+} // namespace detail
+
+inline double derive_matern_32_length_scale(double reference_distance,
+                                            double prior_sigma,
+                                            double std_dev_increase) {
+  // Note that an alternative method would be to write the solution
+  // in terms of the LambertW function and then use an implementation
+  // like this one: https://github.com/DarkoVeberic/LambertW
+  auto func = [](double ratio) { return matern_32_covariance(1., ratio, 1.); };
+
+  auto grad = [](double ratio) {
+    return sqrt(3) * (1 + sqrt(3) / ratio) * exp(-sqrt(3) / ratio) /
+               pow(ratio, 2) -
+           sqrt(3) * exp(-sqrt(3) / ratio) / pow(ratio, 2);
+  };
+
+  return detail::derive_length_scale(reference_distance, prior_sigma,
+                                     std_dev_increase, func, grad);
 }
 
 template <class DistanceMetricType>
@@ -174,6 +439,12 @@ public:
     return "matern_32[" + this->distance_metric_.get_name() + "]";
   }
 
+  double derive_length_scale(double reference_distance, double sigma,
+                             double std_dev_increase) const {
+    return derive_matern_32_length_scale(reference_distance, sigma,
+                                         std_dev_increase);
+  }
+
   template <typename X,
             typename std::enable_if<
                 has_call_operator<DistanceMetricType, X &, X &>::value,
@@ -193,9 +464,28 @@ inline double matern_52_covariance(double distance, double length_scale,
     return 0.;
   }
   assert(distance >= 0.);
-  const double sqrt_5_d = std::sqrt(5.) * distance / length_scale;
+  const double sqrt_5_d = sqrt(5.) * distance / length_scale;
   return sigma * sigma * (1 + sqrt_5_d + sqrt_5_d * sqrt_5_d / 3.) *
          exp(-sqrt_5_d);
+}
+
+inline double derive_matern_52_length_scale(double reference_distance,
+                                            double prior_sigma,
+                                            double std_dev_increase) {
+  // Note that an alternative method would be to write the solution
+  // in terms of the LambertW function and then use an implementation
+  // like this one: https://github.com/DarkoVeberic/LambertW
+  auto func = [](double ratio) { return matern_52_covariance(1., ratio, 1.); };
+
+  auto grad = [](double ratio) {
+    return (-sqrt(5) / pow(ratio, 2) - 10. / 3. / pow(ratio, 3)) *
+               exp(-sqrt(5) / ratio) +
+           sqrt(5) * (1 + sqrt(5) / ratio + 10. / 6. / pow(ratio, 2)) *
+               exp(-sqrt(5) / ratio) / pow(ratio, 2);
+  };
+
+  return detail::derive_length_scale(reference_distance, prior_sigma,
+                                     std_dev_increase, func, grad);
 }
 
 template <class DistanceMetricType>
@@ -217,6 +507,12 @@ public:
 
   std::string name() const {
     return "matern_52[" + this->distance_metric_.get_name() + "]";
+  }
+
+  double derive_length_scale(double reference_distance, double sigma,
+                             double std_dev_increase) const {
+    return derive_matern_52_length_scale(reference_distance, sigma,
+                                         std_dev_increase);
   }
 
   template <typename X,
