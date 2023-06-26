@@ -13,6 +13,8 @@
 #include <albatross/Indexing>
 #include <gtest/gtest.h>
 #include <string.h>
+#include <algorithm>
+#include <iterator>
 
 namespace albatross {
 
@@ -383,7 +385,7 @@ double mean(const std::vector<double> &xs) {
   return mean / cast::to_double(xs.size());
 }
 
-long int number_of_digits(double x) { return lround(ceil(log10(x))); }
+long int number_of_digits(double x) { return (long int) floorl(log10(x) + 1.);}
 
 std::vector<double>
 direct_remove_less_than_mean(const std::vector<double> &xs) {
@@ -469,6 +471,33 @@ TEST(test_groupby, test_group_by_first_group) {
   const auto groups = grouped.groups();
   EXPECT_EQ(groups.first_group(), first_group);
   EXPECT_EQ(groups.first_value(), first_group.second);
+}
+
+TEST(test_groupby, test_group_by_first_last_value) {
+
+  const auto fib = fibonacci(20);
+
+  const auto grouped_indexers = group_by(fib, number_of_digits).indexers();
+  const auto smallest_number_of_digits_inds = grouped_indexers.first_value();
+  const auto largest_number_of_digits_inds = grouped_indexers.last_value();
+  auto it_min = std::distance(fib.begin(), std::min_element(fib.begin(), fib.end()));
+  auto it_max = std::distance(fib.begin(), std::max_element(fib.begin(), fib.end()));
+  unsigned long it_min_u_l = (unsigned long)it_min;
+  unsigned long it_max_u_l = (unsigned long)it_max;
+
+  EXPECT_EQ(number_of_digits(1.), 1);
+  EXPECT_EQ(number_of_digits(fib[it_min_u_l]), number_of_digits(fib[smallest_number_of_digits_inds[0]]));
+  EXPECT_EQ(number_of_digits(fib[it_max_u_l]), number_of_digits(fib[largest_number_of_digits_inds[0]])); 
+
+
+  for (unsigned long i = 0; i < fib.size(); i++) {
+    if (number_of_digits(fib[i]) == number_of_digits(fib[it_min_u_l])){
+      EXPECT_TRUE(std::find(smallest_number_of_digits_inds.begin(), smallest_number_of_digits_inds.end(), (long int) i) != smallest_number_of_digits_inds.end());
+    }
+    else if (number_of_digits(fib[i]) == number_of_digits(fib[it_max_u_l])){
+       EXPECT_TRUE(std::find(largest_number_of_digits_inds.begin(), largest_number_of_digits_inds.end(), (long int) i) != largest_number_of_digits_inds.end());
+    }
+  }
 }
 
 TEST(test_groupby, test_group_by_get_group) {
