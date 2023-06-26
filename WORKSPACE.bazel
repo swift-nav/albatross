@@ -4,9 +4,15 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    strip_prefix = "rules_swiftnav-e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/e4156cba9de98b2ce75f10a98ed0bf3f78f5b62d.tar.gz",
+    strip_prefix = "rules_swiftnav-e79fa5d8d8cbb19974877397bf045822af9a5125",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/e79fa5d8d8cbb19974877397bf045822af9a5125.tar.gz",
 )
+
+load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
+
+swift_cc_toolchain()
+
+register_swift_cc_toolchains()
 
 # Rules for integrating with cmake builds
 http_archive(
