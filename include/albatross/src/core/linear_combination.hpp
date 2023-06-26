@@ -74,6 +74,11 @@ inline auto difference(const X &x, const Y &y) {
   return difference(vx, vy);
 }
 
+template <typename ValueType, typename BoolFunction>
+inline bool all(const LinearCombination<ValueType> &xs, BoolFunction &&f) {
+  return all(xs.values, std::forward<BoolFunction>(f));
+}
+
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const std::vector<X> &features) {
