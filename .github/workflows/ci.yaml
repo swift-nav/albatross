@@ -128,14 +128,17 @@ jobs:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-      - name: Install gcc-6
-        run: |
-          sudo apt-get update
-          sudo apt-get install gcc-11 g++-11 -y
-          gcc -v
-      - name: Run build
-        run: |
-          bazel test //...
+      - name: Install bazelisk
+        uses: bazelbuild/setup-bazelisk@v2
+
+      - name: Mount bazel cache
+        uses: actions/cache@v1
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+
+      - name: Build and test
+        run: bazel test //...
 
   osx-clang:
     runs-on: macOS-latest

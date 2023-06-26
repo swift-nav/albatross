@@ -6,14 +6,17 @@ build --incompatible_strict_action_env
 # to avoid cache poisening
 build --remote_upload_local_results=false
 
-# Avoid detecting generic Bazel cpp toolchain
-build --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN="1"
-
 # Uses the default cc toolchain config even if xcode is installed
 build --repo_env=BAZEL_USE_CPP_ONLY_TOOLCHAIN="1"
 
 # Sets the c++ standard if we are using the system toolchain
 build --repo_env=BAZEL_CXXOPTS="-std=c++14"
+
+# Enables using implementation_deps attribute of cc rules
+build --experimental_cc_implementation_deps
+
+# Causes the build to default to the custom toolchain
+build --incompatible_enable_cc_toolchain_resolution
 
 # Build with mkl
 common:mkl -c opt
@@ -22,7 +25,6 @@ common:mkl --platform_suffix=mkl
 
 # Overrides our custom toolchain and uses the system
 build:system --noincompatible_enable_cc_toolchain_resolution
-build:system --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN="0"
 build:system --platform_suffix=system
 
 # Clang format config
