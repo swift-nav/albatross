@@ -1,12 +1,40 @@
+# Don't let environment variables pollute the build
+# PATH is part of the action input and can lead to massive cache misses
+build --incompatible_strict_action_env
+
+# Sets read only permission to the remote cache
+# to avoid cache poisening
+build --remote_upload_local_results=false
+
+# Uses the default cc toolchain config even if xcode is installed
+build --repo_env=BAZEL_USE_CPP_ONLY_TOOLCHAIN="1"
+
+# Sets the c++ standard if we are using the system toolchain
 build --repo_env=BAZEL_CXXOPTS="-std=c++14"
+
+# Enables using implementation_deps attribute of cc rules
+build --experimental_cc_implementation_deps
+
+# Causes the build to default to the custom toolchain
+build --incompatible_enable_cc_toolchain_resolution
 
 # Build with mkl
 common:mkl -c opt
 common:mkl --@rules_swiftnav//third_party:enable_mkl=true
 common:mkl --platform_suffix=mkl
 
+# Overrides our custom toolchain and uses the system
+build:system --noincompatible_enable_cc_toolchain_resolution
+build:system --platform_suffix=system
+
+# Clang format config
 build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
+build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
 build:clang-format-check --output_groups=report
 
+# Clang tidy config
 build:clang-tidy --aspects @rules_swiftnav//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
 build:clang-tidy --output_groups=report
+#
+# Try to load a personal bazelrc
+try-import %workspace%/.bazelrc.user
