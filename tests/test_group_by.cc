@@ -385,7 +385,9 @@ double mean(const std::vector<double> &xs) {
   return mean / cast::to_double(xs.size());
 }
 
-long int number_of_digits(double x) { return static_cast<long int> (floorl(log10(x) + 1.)); }
+long int number_of_digits(double x) {
+  return static_cast<long int>(floorl(log10(x) + 1.));
+}
 
 std::vector<double>
 direct_remove_less_than_mean(const std::vector<double> &xs) {
@@ -506,17 +508,12 @@ TEST(test_groupby, test_group_by_first_last_value) {
     }
   }
 
-  std::map<int, std::string> example = { 
-  {1, "one"},
-  {2, "two"},
-  {0, "zero"}
-  };
+  std::map<int, std::string> example = {{1, "one"}, {2, "two"}, {0, "zero"}};
 
   albatross::Grouped<int, std::string> grouped(example);
 
   EXPECT_EQ(grouped.first_value(), "zero");
   EXPECT_EQ(grouped.last_value(), "two");
-
 }
 
 TEST(test_groupby, test_group_by_get_group) {
