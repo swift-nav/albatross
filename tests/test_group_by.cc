@@ -11,10 +11,10 @@
  */
 
 #include <albatross/Indexing>
-#include <gtest/gtest.h>
-#include <string.h>
 #include <algorithm>
+#include <gtest/gtest.h>
 #include <iterator>
+#include <string.h>
 
 namespace albatross {
 
@@ -480,22 +480,29 @@ TEST(test_groupby, test_group_by_first_last_value) {
   const auto grouped_indexers = group_by(fib, number_of_digits).indexers();
   const auto smallest_number_of_digits_inds = grouped_indexers.first_value();
   const auto largest_number_of_digits_inds = grouped_indexers.last_value();
-  auto it_min = std::distance(fib.begin(), std::min_element(fib.begin(), fib.end()));
-  auto it_max = std::distance(fib.begin(), std::max_element(fib.begin(), fib.end()));
+  auto it_min =
+      std::distance(fib.begin(), std::min_element(fib.begin(), fib.end()));
+  auto it_max =
+      std::distance(fib.begin(), std::max_element(fib.begin(), fib.end()));
   unsigned long it_min_u_l = (unsigned long)it_min;
   unsigned long it_max_u_l = (unsigned long)it_max;
 
   EXPECT_EQ(number_of_digits(1.), 1);
-  EXPECT_EQ(number_of_digits(fib[it_min_u_l]), number_of_digits(fib[smallest_number_of_digits_inds[0]]));
-  EXPECT_EQ(number_of_digits(fib[it_max_u_l]), number_of_digits(fib[largest_number_of_digits_inds[0]])); 
-
+  EXPECT_EQ(number_of_digits(fib[it_min_u_l]),
+            number_of_digits(fib[smallest_number_of_digits_inds[0]]));
+  EXPECT_EQ(number_of_digits(fib[it_max_u_l]),
+            number_of_digits(fib[largest_number_of_digits_inds[0]]));
 
   for (unsigned long i = 0; i < fib.size(); i++) {
-    if (number_of_digits(fib[i]) == number_of_digits(fib[it_min_u_l])){
-      EXPECT_TRUE(std::find(smallest_number_of_digits_inds.begin(), smallest_number_of_digits_inds.end(), (long int) i) != smallest_number_of_digits_inds.end());
-    }
-    else if (number_of_digits(fib[i]) == number_of_digits(fib[it_max_u_l])){
-       EXPECT_TRUE(std::find(largest_number_of_digits_inds.begin(), largest_number_of_digits_inds.end(), (long int) i) != largest_number_of_digits_inds.end());
+    if (number_of_digits(fib[i]) == number_of_digits(fib[it_min_u_l])) {
+      EXPECT_TRUE(std::find(smallest_number_of_digits_inds.begin(),
+                            smallest_number_of_digits_inds.end(),
+                            (long int)i) !=
+                  smallest_number_of_digits_inds.end());
+    } else if (number_of_digits(fib[i]) == number_of_digits(fib[it_max_u_l])) {
+      EXPECT_TRUE(std::find(largest_number_of_digits_inds.begin(),
+                            largest_number_of_digits_inds.end(), (long int)i) !=
+                  largest_number_of_digits_inds.end());
     }
   }
 
