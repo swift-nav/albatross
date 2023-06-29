@@ -109,7 +109,7 @@ public:
 
   std::pair<KeyType, ValueType> first_group() const { return *map_.begin(); }
 
-  //returns the value associated with the maximum key
+  //returns the value associated with the miminmum key
   ValueType first_value() const { return map_.begin()->second; }
 
   //returns the value associated with the maximum key
