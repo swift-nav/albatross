@@ -189,10 +189,21 @@ inline auto apply(const Grouped<KeyType, ValueType> &map, ApplyFunction &&f,
 
 // Returns the number of threads that the hardware supports cores, or
 // 1 if there was a problem calculating that..
+//
+// Under the assumptions that we are running on intel machines with 2
+// threads per core and that the thread pool will primarily be used
+// for matrix maths, which typically suffer from hyperthreading, we
+// try to return the actual number of hardware cores, not the number
+// of hardware threads.
 inline std::size_t get_default_thread_count() {
   // This standard function is not guaranteed to return nonzero.
   return std::max(std::size_t{1},
-                  std::size_t{std::thread::hardware_concurrency()});
+#if defined(EIGEN_USE_MKL_ALL) || defined(EIGEN_USE_MKL_VML)
+                  std::size_t{mkl_get_max_threads()}
+#else  // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+                  std::size_t{std::thread::hardware_concurrency()} / 2
+#endif // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+  );
 }
 
 // A thread pool object that performs normal serial evaluation.

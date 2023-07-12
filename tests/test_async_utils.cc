@@ -101,7 +101,9 @@ TEST(test_async_utils, test_async_apply_map_key_value_function) {
 }
 
 TEST(test_async_utils, test_async_apply_speedup_vector) {
-  ThreadPool pool{get_default_thread_count()};
+  const std::size_t num_threads =
+      std::max(std::size_t{2}, get_default_thread_count());
+  ThreadPool pool{num_threads};
   auto slow_process = [&](const int i) {
     const auto start = std::chrono::system_clock::now();
     std::chrono::seconds delay(1);
@@ -130,7 +132,9 @@ TEST(test_async_utils, test_async_apply_speedup_vector) {
 }
 
 TEST(test_async_utils, test_async_apply_speedup_value_only_function) {
-  ThreadPool pool{get_default_thread_count()};
+  const std::size_t num_threads =
+      std::max(std::size_t{2}, get_default_thread_count());
+  ThreadPool pool{num_threads};
   auto slow_square = [&](const int i) {
     const auto start = std::chrono::system_clock::now();
     std::chrono::seconds delay(1);
@@ -158,7 +162,9 @@ TEST(test_async_utils, test_async_apply_speedup_value_only_function) {
 }
 
 TEST(test_async_utils, test_async_apply_speedup_key_value_function) {
-  ThreadPool pool{get_default_thread_count()};
+  const std::size_t num_threads =
+      std::max(std::size_t{2}, get_default_thread_count());
+  ThreadPool pool{num_threads};
   auto slow_square = [&](const double key, const int i) {
     const auto start = std::chrono::system_clock::now();
     std::chrono::seconds delay(1);
