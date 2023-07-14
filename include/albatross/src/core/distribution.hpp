@@ -100,7 +100,28 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
   }
 
   bool operator==(const MarginalDistribution &other) const {
-    return (mean == other.mean && covariance == other.covariance);
+    const double epsilon = 0.1;
+
+    if (mean.size() != other.mean.size()) {
+      return false;
+    }
+    for (int i = 0; i < mean.size(); i++) {
+      if (fabs(mean[i] - other.mean[i]) > epsilon) {
+        return false;
+      }
+    }
+
+    if (covariance.diagonal().size() != other.covariance.diagonal().size()) {
+      return false;
+    }
+    for (int i = 0; i < covariance.diagonal().size(); i++) {
+      if (fabs(covariance.diagonal()[i] - other.covariance.diagonal()[i]) >
+          epsilon) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   MarginalDistribution operator+(const MarginalDistribution &other) const {
