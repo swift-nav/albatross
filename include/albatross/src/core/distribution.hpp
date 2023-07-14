@@ -99,29 +99,17 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     return covariance.diagonal()[i];
   }
 
+  bool approximately_equal(const MarginalDistribution &other,
+                           const double epsilon = 1e-3) const {
+    const bool mean_approx_equal = mean.isApprox(other.mean, epsilon);
+    const bool cov_approx_equal =
+        covariance.diagonal().isApprox(other.covariance.diagonal(), epsilon);
+    return mean_approx_equal && cov_approx_equal;
+  }
+
   bool operator==(const MarginalDistribution &other) const {
-    const double epsilon = 0.1;
-
-    if (mean.size() != other.mean.size()) {
-      return false;
-    }
-    for (int i = 0; i < mean.size(); i++) {
-      if (fabs(mean[i] - other.mean[i]) > epsilon) {
-        return false;
-      }
-    }
-
-    if (covariance.diagonal().size() != other.covariance.diagonal().size()) {
-      return false;
-    }
-    for (int i = 0; i < covariance.diagonal().size(); i++) {
-      if (fabs(covariance.diagonal()[i] - other.covariance.diagonal()[i]) >
-          epsilon) {
-        return false;
-      }
-    }
-
-    return true;
+    // Use the smallest possible value to approximate
+    return approximately_equal(other, std::numeric_limits<double>::epsilon());
   }
 
   MarginalDistribution operator+(const MarginalDistribution &other) const {

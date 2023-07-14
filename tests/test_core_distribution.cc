@@ -140,6 +140,48 @@ TYPED_TEST_P(DistributionTest, test_multiply_by_scalar) {
   EXPECT_EQ(actual, scaled);
 };
 
+TYPED_TEST_P(DistributionTest, test_equal) {
+  const Eigen::Index n = 3;
+  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
+  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
+
+  const MarginalDistribution dist1(mean, var);
+  const MarginalDistribution dist2(mean, var);
+
+  EXPECT_TRUE(dist1 == dist2);
+};
+
+TYPED_TEST_P(DistributionTest, test_approximately_equal) {
+  const Eigen::Index n = 4;
+  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
+  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
+
+  {
+    const MarginalDistribution dist1(mean, var);
+    const MarginalDistribution dist2(mean, var);
+    EXPECT_TRUE(dist1.approximately_equal(
+        dist2, std::numeric_limits<double>::epsilon()));
+  }
+
+  {
+    const MarginalDistribution dist1(mean, var);
+    const MarginalDistribution dist2(mean + Eigen::VectorXd::Constant(n, 1e-4),
+                                     var);
+    EXPECT_FALSE(dist1.approximately_equal(
+        dist2, std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(dist1.approximately_equal(dist2, 1e-3));
+  }
+
+  {
+    const MarginalDistribution dist1(mean, var);
+    const MarginalDistribution dist2(mean + Eigen::VectorXd::Constant(n, 1e-5),
+                                     var);
+    EXPECT_FALSE(dist1.approximately_equal(
+        dist2, std::numeric_limits<double>::epsilon()));
+    EXPECT_FALSE(dist1.approximately_equal(dist2, 1e-6));
+  }
+};
+
 TYPED_TEST_P(DistributionTest, test_add) {
 
   TypeParam test_case;
@@ -173,7 +215,8 @@ REGISTER_TYPED_TEST_SUITE_P(DistributionTest, test_subset,
                             test_multiply_with_sparse_matrix_joint,
                             test_multiply_with_sparse_matrix_marginal,
                             test_multiply_with_vector, test_multiply_by_scalar,
-                            test_add, test_subtract);
+                            test_equal, test_approximately_equal, test_add,
+                            test_subtract);
 
 Eigen::VectorXd arange(Eigen::Index k = 5) {
   Eigen::VectorXd mean(k);
