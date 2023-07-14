@@ -141,44 +141,60 @@ TYPED_TEST_P(DistributionTest, test_multiply_by_scalar) {
 };
 
 TYPED_TEST_P(DistributionTest, test_equal) {
-  const Eigen::Index n = 3;
-  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
-  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
+  TypeParam test_case;
+  {
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    EXPECT_TRUE(dist == exact_copy);
+  }
 
-  const MarginalDistribution dist1(mean, var);
-  const MarginalDistribution dist2(mean, var);
-
-  EXPECT_TRUE(dist1 == dist2);
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-12);
+    EXPECT_FALSE(dist == perturbed);
+  }
 };
 
 TYPED_TEST_P(DistributionTest, test_approximately_equal) {
-  const Eigen::Index n = 4;
-  const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
-  const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
-
+  TypeParam test_case;
   {
-    const MarginalDistribution dist1(mean, var);
-    const MarginalDistribution dist2(mean, var);
-    EXPECT_TRUE(dist1.approximately_equal(
-        dist2, std::numeric_limits<double>::epsilon()));
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    // Default epsilon is 1e-3
+    EXPECT_TRUE(dist.approximately_equal(exact_copy));
   }
 
   {
-    const MarginalDistribution dist1(mean, var);
-    const MarginalDistribution dist2(mean + Eigen::VectorXd::Constant(n, 1e-4),
-                                     var);
-    EXPECT_FALSE(dist1.approximately_equal(
-        dist2, std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(dist1.approximately_equal(dist2, 1e-3));
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-4);
+    // Default epsilon is 1e-3, so this should pass
+    EXPECT_TRUE(dist.approximately_equal(perturbed));
   }
 
   {
-    const MarginalDistribution dist1(mean, var);
-    const MarginalDistribution dist2(mean + Eigen::VectorXd::Constant(n, 1e-5),
-                                     var);
-    EXPECT_FALSE(dist1.approximately_equal(
-        dist2, std::numeric_limits<double>::epsilon()));
-    EXPECT_FALSE(dist1.approximately_equal(dist2, 1e-6));
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    EXPECT_TRUE(dist.approximately_equal(exact_copy, 1e-12));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-4);
+    EXPECT_TRUE(dist.approximately_equal(perturbed, 1e-3));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-3);
+    EXPECT_FALSE(dist.approximately_equal(perturbed, 1e-4));
   }
 };
 
