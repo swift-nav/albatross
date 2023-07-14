@@ -20,6 +20,8 @@ inline bool operator==(const albatross::DiagonalMatrixXd &x,
 
 namespace albatross {
 
+constexpr double cDefaultApproximatelyEqualEpsilon = 1e-3;
+
 template <typename Derived> struct DistributionBase {
 
 private:
@@ -99,8 +101,17 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     return covariance.diagonal()[i];
   }
 
+  bool approximately_equal(
+      const MarginalDistribution &other,
+      double epsilon = cDefaultApproximatelyEqualEpsilon) const {
+    const bool mean_approx_equal = mean.isApprox(other.mean, epsilon);
+    const bool cov_approx_equal =
+        covariance.diagonal().isApprox(other.covariance.diagonal(), epsilon);
+    return mean_approx_equal && cov_approx_equal;
+  }
+
   bool operator==(const MarginalDistribution &other) const {
-    return (mean == other.mean && covariance == other.covariance);
+    return (mean == other.mean) && (covariance == other.covariance);
   }
 
   MarginalDistribution operator+(const MarginalDistribution &other) const {
@@ -165,8 +176,17 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
     return covariance.diagonal()[i];
   }
 
+  bool approximately_equal(
+      const JointDistribution &other,
+      const double epsilon = cDefaultApproximatelyEqualEpsilon) const {
+    const bool mean_approx_equal = mean.isApprox(other.mean, epsilon);
+    const bool cov_approx_equal =
+        covariance.isApprox(other.covariance, epsilon);
+    return mean_approx_equal && cov_approx_equal;
+  }
+
   bool operator==(const JointDistribution &other) const {
-    return (mean == other.mean && covariance == other.covariance);
+    return (mean == other.mean) && (covariance == other.covariance);
   }
 
   JointDistribution operator*(double scale) const {

@@ -140,6 +140,63 @@ TYPED_TEST_P(DistributionTest, test_multiply_by_scalar) {
   EXPECT_EQ(actual, scaled);
 };
 
+TYPED_TEST_P(DistributionTest, test_equal) {
+  TypeParam test_case;
+  {
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    EXPECT_TRUE(dist == exact_copy);
+  }
+
+  {
+    const auto dist = test_case.create();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(dist.mean.size(), 1e-12);
+    EXPECT_FALSE(dist == perturbed);
+  }
+};
+
+TYPED_TEST_P(DistributionTest, test_approximately_equal) {
+  TypeParam test_case;
+  {
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    // Default epsilon is 1e-3
+    EXPECT_TRUE(dist.approximately_equal(exact_copy));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-4);
+    // Default epsilon is 1e-3, so this should pass
+    EXPECT_TRUE(dist.approximately_equal(perturbed));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const auto exact_copy = dist;
+    EXPECT_TRUE(dist.approximately_equal(exact_copy, 1e-12));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-4);
+    EXPECT_TRUE(dist.approximately_equal(perturbed, 1e-3));
+  }
+
+  {
+    const auto dist = test_case.create();
+    const long size = dist.mean.size();
+    auto perturbed = dist;
+    perturbed.mean += Eigen::VectorXd::Constant(size, 1e-3);
+    EXPECT_FALSE(dist.approximately_equal(perturbed, 1e-4));
+  }
+};
+
 TYPED_TEST_P(DistributionTest, test_add) {
 
   TypeParam test_case;
@@ -173,7 +230,8 @@ REGISTER_TYPED_TEST_SUITE_P(DistributionTest, test_subset,
                             test_multiply_with_sparse_matrix_joint,
                             test_multiply_with_sparse_matrix_marginal,
                             test_multiply_with_vector, test_multiply_by_scalar,
-                            test_add, test_subtract);
+                            test_equal, test_approximately_equal, test_add,
+                            test_subtract);
 
 Eigen::VectorXd arange(Eigen::Index k = 5) {
   Eigen::VectorXd mean(k);
