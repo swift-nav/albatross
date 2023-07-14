@@ -103,7 +103,7 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
 
   bool approximately_equal(
       const MarginalDistribution &other,
-      const double epsilon = cDefaultApproximatelyEqualEpsilon) const {
+      double epsilon = cDefaultApproximatelyEqualEpsilon) const {
     const bool mean_approx_equal = mean.isApprox(other.mean, epsilon);
     const bool cov_approx_equal =
         covariance.diagonal().isApprox(other.covariance.diagonal(), epsilon);
