@@ -181,7 +181,7 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
       const double epsilon = cDefaultApproximatelyEqualEpsilon) const {
     const bool mean_approx_equal = mean.isApprox(other.mean, epsilon);
     const bool cov_approx_equal =
-        covariance.diagonal().isApprox(other.covariance.diagonal(), epsilon);
+        covariance.isApprox(other.covariance, epsilon);
     return mean_approx_equal && cov_approx_equal;
   }
 

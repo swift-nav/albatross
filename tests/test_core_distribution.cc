@@ -153,6 +153,7 @@ TYPED_TEST_P(DistributionTest, test_equal) {
     const long size = dist.mean.size();
     auto perturbed = dist;
     perturbed.mean += Eigen::VectorXd::Constant(size, 1e-12);
+    // perturbed.covariance += Eigen::MatrixXd::Constant(size, size, 1e-12);
     EXPECT_FALSE(dist == perturbed);
   }
 };
