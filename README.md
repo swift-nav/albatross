@@ -1,4 +1,4 @@
-# albatross [![Build Status](https://api.travis-ci.com/swift-nav/albatross.svg)](https://travis-ci.com/swift-nav/albatross)
+# albatross [![CI](https://github.com/swift-nav/albatross/actions/workflows/ci.yaml/badge.svg)](https://github.com/swift-nav/albatross/actions/workflows/ci.yaml)
 A framework for statistical modelling in C++, with a focus on Gaussian processes.
 
 ## Features
