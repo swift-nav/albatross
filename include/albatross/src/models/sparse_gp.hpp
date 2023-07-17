@@ -249,6 +249,7 @@ public:
         independent_group_function_(independent_group_function) {
     initialize_params();
   };
+
   SparseGaussianProcessRegression(
       CovFunc &&covariance_function, MeanFunc &&mean_function,
       GrouperFunction &&independent_group_function,
@@ -262,6 +263,7 @@ public:
   };
 
   void initialize_params() {
+    inducing_point_strategy_ = InducingPointStrategy(std::chrono::seconds(0));
     measurement_nugget_ = {
         details::DEFAULT_NUGGET,
         LogScaleUniformPrior(PARAMETER_EPSILON, PARAMETER_MAX)};
