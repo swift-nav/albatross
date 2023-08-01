@@ -15,7 +15,7 @@
 	url = https://github.com/USCiLab/cereal.git
 [submodule "third_party/gzip-hpp"]
 	path = third_party/gzip-hpp
-	url = https://github.com/mapbox/gzip-hpp.git
+	url = https://github.com/swift-nav/gzip-hpp.git
 [submodule "cmake/cmake"]
 	path = cmake/common
 	url = https://github.com/swift-nav/cmake.git
