@@ -24,11 +24,8 @@ template <typename ToKeepFunction, typename ValueType,
 inline std::vector<ValueType> filter(const std::vector<ValueType> &values,
                                      ToKeepFunction &&to_keep) {
   std::vector<ValueType> output;
-  for (const auto &v : values) {
-    if (to_keep(v)) {
-      output.emplace_back(v);
-    }
-  }
+  std::copy_if(values.begin(), values.end(), std::back_inserter(output),
+               std::forward<ToKeepFunction>(to_keep));
   return output;
 }
 
@@ -41,11 +38,9 @@ template <typename ToKeepFunction, typename ValueType,
 inline std::set<ValueType> filter(const std::set<ValueType> &values,
                                   ToKeepFunction &&to_keep) {
   std::set<ValueType> output;
-  for (const auto &v : values) {
-    if (to_keep(v)) {
-      output.emplace(v);
-    }
-  }
+  std::copy_if(values.begin(), values.end(),
+               std::inserter(output, output.begin()),
+               std::forward<ToKeepFunction>(to_keep));
   return output;
 }
 
