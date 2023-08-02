@@ -91,6 +91,10 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     assert_valid();
   };
 
+  MarginalDistribution(double mean_, double variance_)
+      : MarginalDistribution(Eigen::VectorXd::Constant(1, mean_),
+                             Eigen::VectorXd::Constant(1, variance_)) {}
+
   void assert_valid() const {
     ALBATROSS_ASSERT(mean.size() == covariance.rows());
     ALBATROSS_ASSERT(mean.size() == covariance.cols());
