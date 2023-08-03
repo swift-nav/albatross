@@ -18,6 +18,18 @@
 
 namespace albatross {
 
+TEST(test_core_distribution, create_one_dim) {
+
+  const double mean = M_PI;
+  const double var = std::log(2);
+  const MarginalDistribution one_dim(mean, var);
+  const Eigen::VectorXd mean_vec = Eigen::VectorXd::Constant(1, mean);
+  const Eigen::VectorXd var_vec = Eigen::VectorXd::Constant(1, var);
+
+  const MarginalDistribution from_vectors(mean_vec, var_vec);
+  EXPECT_EQ(one_dim, from_vectors);
+}
+
 TYPED_TEST_P(DistributionTest, test_subset) {
 
   TypeParam test_case;
