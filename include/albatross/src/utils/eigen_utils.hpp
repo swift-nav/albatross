@@ -84,6 +84,25 @@ inline auto truncated_psd_solve(
   return output;
 }
 
+template <typename _Scalar, int _Rows, int _Cols>
+inline void eigen_to_cpp_code(const Eigen::Matrix<_Scalar, _Rows, _Cols> &x,
+                              const std::string &variable_name = "x") {
+  const auto m = x.rows();
+  const auto n = x.cols();
+  std::cout << "Eigen::MatrixXd " << variable_name << "(" << m << "," << n
+            << ");" << std::endl;
+  for (Eigen::Index i = 0; i < m; ++i) {
+    std::cout << variable_name << ".row(" << i << ") << ";
+    for (Eigen::Index j = 0; j < n; ++j) {
+      if (j != 0) {
+        std::cout << ", ";
+      }
+      std::cout << x(i, j);
+    }
+    std::cout << std::endl;
+  }
+}
+
 } // namespace albatross
 
 #endif
