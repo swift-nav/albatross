@@ -30,16 +30,18 @@ TEST(test_map_utils, test_map_contains) {
   EXPECT_FALSE(map_contains(test_map, 3));
 }
 
-TEST(test_map_utils, map_get_or_construct) {
+TEST(test_map_utils, map_at_or) {
   std::map<int, int> test_map = {{1, 2}, {2, 3}, {3, 4}, {6, 7}};
 
   // If a key already exists, the corresponding value should be
   // returned.
   for (const auto &pair : test_map) {
-    EXPECT_EQ(map_get_or_construct(test_map, pair.first), pair.second);
+    EXPECT_EQ(map_at_or(test_map, pair.first, -1), pair.second);
   }
   // For a missing key it should return the default int.
-  EXPECT_EQ(map_get_or_construct(test_map, -1), 0);
+  EXPECT_EQ(map_at_or(test_map, -1), 0);
+  // If a third argument is present it should use that
+  EXPECT_EQ(map_at_or(test_map, -1, 2), 2);
   // For a missing key it should not have modified the original.
   EXPECT_FALSE(map_contains(test_map, -1));
 }
