@@ -25,6 +25,19 @@ bool map_contains(const Map<K, V> &m, const K &k) {
 }
 
 /*
+ * Convenience function which returns m.at(k) unless k is not in
+ * the map in which case it uses the default value.
+ */
+template <template <typename...> class Map, typename K, typename V>
+V map_at_or_default(const Map<K, V> &m, const K &k, const V &default_value) {
+  const auto iter = m.find(k);
+  if (iter == m.end()) {
+    return default_value;
+  }
+  return iter->second;
+}
+
+/*
  * A function which makes a standard library map function
  * like a default map.  In particular this looks for a key
  * in the map and returns the value if that key exists.
