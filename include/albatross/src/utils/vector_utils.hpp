@@ -49,7 +49,7 @@ inline bool all(const std::vector<bool> &xs) {
 }
 
 inline bool any(const std::vector<bool> &xs) {
-  // The thinking on having any({}) return false comes from interpreting "amy"
+  // The thinking on having any({}) return false comes from interpreting "any"
   // as "is there at least one true"
   if (xs.size() == 0) {
     return false;
@@ -62,6 +62,11 @@ inline bool any(const std::vector<bool> &xs) {
     }
   }
   return false;
+}
+
+template <typename X>
+inline bool vector_contains(const std::vector<X> &vector, const X &x) {
+  return std::find(vector.begin(), vector.end(), x) != vector.end();
 }
 
 } // namespace albatross

@@ -236,6 +236,7 @@ swift_cc_test(
         "tests/test_tune.cc",
         "tests/test_utils.h",
         "tests/test_variant_utils.cc",
+        "tests/test_vector_utils.cc",
     ],
     copts = COPTS,
     includes = ["tests"],

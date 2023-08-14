@@ -53,7 +53,7 @@ template <typename FitType, typename GroupKey> struct RansacFunctions {
 template <typename GroupKey>
 inline bool contains_group(const std::vector<GroupKey> &vect,
                            const GroupKey &group) {
-  return std::find(vect.begin(), vect.end(), group) != vect.end();
+  return vector_contains(vect, group);
 }
 
 typedef enum ransac_return_code_e {
