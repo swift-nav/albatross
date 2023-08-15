@@ -20,31 +20,30 @@ namespace albatross {
  * method of determining if a key exists in a map.
  */
 template <template <typename...> class Map, typename K, typename V>
-bool map_contains(const Map<K, V> &m, const K &k) {
+inline bool map_contains(const Map<K, V> &m, const K &k) {
   return m.find(k) != m.end();
 }
 
 /*
- * A function which makes a standard library map function
- * like a default map.  In particular this looks for a key
- * in the map and returns the value if that key exists.
- * If the key doesn't exist a new object of the value type
- * is inserted into the map, then returned.
+ * Convenience function which returns m.at(k) unless k is not in
+ * the map in which case it uses either the default constructor
+ * or the provided alternate value.
  */
 template <template <typename...> class Map, typename K, typename V>
-V map_get_or_construct(const Map<K, V> &m, const K &k) {
-  if (!map_contains(m, k)) {
-    V default_value = V();
-    return default_value;
+inline V map_at_or(const Map<K, V> &m, const K &k,
+                   const V &value_if_missing = V()) {
+  const auto iter = m.find(k);
+  if (iter == m.end()) {
+    return value_if_missing;
   }
-  return m.at(k);
+  return iter->second;
 }
 
 /*
  * Returns a vector consisting of all the keys in a map.
  */
 template <template <typename...> class Map, typename K, typename V>
-std::vector<K> map_keys(const Map<K, V> &m) {
+inline std::vector<K> map_keys(const Map<K, V> &m) {
   std::vector<K> keys;
   for (const auto &pair : m) {
     keys.push_back(pair.first);
@@ -56,7 +55,7 @@ std::vector<K> map_keys(const Map<K, V> &m) {
  * Returns a vector consisting of all the values in a map.
  */
 template <template <typename...> class Map, typename K, typename V>
-std::vector<V> map_values(const Map<K, V> &m) {
+inline std::vector<V> map_values(const Map<K, V> &m) {
   std::vector<V> values;
   for (const auto &pair : m) {
     values.push_back(pair.second);
@@ -65,7 +64,7 @@ std::vector<V> map_values(const Map<K, V> &m) {
 }
 
 template <template <typename...> class Map, typename K, typename V>
-Map<K, V> map_join(const Map<K, V> &m, const Map<K, V> &other) {
+inline Map<K, V> map_join(const Map<K, V> &m, const Map<K, V> &other) {
   Map<K, V> join(other);
   // Note the order here is reversed since insert will not insert if a key
   // already exists, in this case we want the result to contain all elements of
@@ -75,7 +74,7 @@ Map<K, V> map_join(const Map<K, V> &m, const Map<K, V> &other) {
 }
 
 template <template <typename...> class Map, typename K, typename V>
-Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
+inline Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
   Map<K, V> join(other);
   // Note the order here is reversed since insert will not insert if a key
   // already exists, in this case we want the result to contain all elements of
