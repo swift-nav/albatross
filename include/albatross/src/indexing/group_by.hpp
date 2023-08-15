@@ -368,7 +368,7 @@ template <typename GrouperFunction> struct IndexerBuilder {
       // Get the existing indices if we've already encountered this group_name
       // otherwise initialize a new one.
       GroupIndices indices;
-      if (output.find(group_key) == output.end()) {
+      if (!map_contains(output, group_key)) {
         output[group_key] = GroupIndices();
       }
       // Add the current index.
