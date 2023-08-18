@@ -276,10 +276,11 @@ public:
 
   // If the implementing class defines a _fit_impl method these will be
   // hidden, so they deal with the default case.
-  template <
-      typename FeatureType,
-      std::enable_if_t<
-          has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
+  template <typename FeatureType,
+            std::enable_if_t<
+                has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+                    has_call_operator<MeanFunc, FeatureType>::value,
+                int> = 0>
   CholeskyFit<FeatureType>
   _fit_impl(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
@@ -293,11 +294,33 @@ public:
   // If the covariance is NOT defined.
   template <typename FeatureType,
             typename std::enable_if<
-                !has_call_operator<CovFunc, FeatureType, FeatureType>::value,
+                !has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+                    has_call_operator<MeanFunc, FeatureType>::value,
                 int>::type = 0>
   void _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
                  const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(FeatureType, "CovFunc is not defined for FeatureType");
+
+  // If the mean function is NOT defined.
+  template <typename FeatureType,
+            typename std::enable_if<
+                has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+                    !has_call_operator<MeanFunc, FeatureType>::value,
+                int>::type = 0>
+  void _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+                 const MarginalDistribution &targets ALBATROSS_UNUSED) const
+      ALBATROSS_FAIL(FeatureType, "MeanFunc is not defined for FeatureType");
+
+  // If neither are defined.
+  template <typename FeatureType,
+            typename std::enable_if<
+                !has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+                    !has_call_operator<MeanFunc, FeatureType>::value,
+                int>::type = 0>
+  void _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+                 const MarginalDistribution &targets ALBATROSS_UNUSED) const
+      ALBATROSS_FAIL(FeatureType,
+                     "CovFunc and MeanFunc are not defined for FeatureType");
 
   template <
       typename FeatureType, typename FitFeaturetype,
@@ -365,8 +388,9 @@ public:
       typename FeatureType, typename FitFeatureType, typename PredictType,
       typename CovarianceRepresentation,
       typename std::enable_if<
-          !has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
-              !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value,
+          (!has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
+           !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value) &&
+              has_call_operator<MeanFunc, FeatureType>::value,
           int>::type = 0>
   PredictType _predict_impl(
       const std::vector<FeatureType> &features ALBATROSS_UNUSED,
@@ -376,6 +400,37 @@ public:
       ALBATROSS_FAIL(
           FeatureType,
           "CovFunc is not defined for FeatureType and FitFeatureType");
+
+  template <
+      typename FeatureType, typename FitFeatureType, typename PredictType,
+      typename CovarianceRepresentation,
+      typename std::enable_if<
+          has_call_operator<CovFunc, FeatureType, FeatureType>::value &&
+              has_call_operator<CovFunc, FeatureType, FitFeatureType>::value &&
+              !has_call_operator<MeanFunc, FeatureType>::value,
+          int>::type = 0>
+  PredictType _predict_impl(
+      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit
+          ALBATROSS_UNUSED,
+      PredictTypeIdentity<PredictType> &&) const
+      ALBATROSS_FAIL(FeatureType, "MeanFunc is not defined for FeatureType");
+
+  template <
+      typename FeatureType, typename FitFeatureType, typename PredictType,
+      typename CovarianceRepresentation,
+      typename std::enable_if<
+          (!has_call_operator<CovFunc, FeatureType, FeatureType>::value ||
+           !has_call_operator<CovFunc, FeatureType, FitFeatureType>::value) &&
+              !has_call_operator<MeanFunc, FeatureType>::value,
+          int>::type = 0>
+  PredictType _predict_impl(
+      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+      const GPFitType<CovarianceRepresentation, FitFeatureType> &gp_fit
+          ALBATROSS_UNUSED,
+      PredictTypeIdentity<PredictType> &&) const
+      ALBATROSS_FAIL(FeatureType,
+                     "CovFunc and MeanFunc are not defined for FeatureType");
 
   template <typename Solver, typename FeatureType, typename UpdateFeatureType>
   auto _update_impl(const Fit<GPFit<Solver, FeatureType>> &fit_,
