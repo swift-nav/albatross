@@ -24,8 +24,8 @@ find_library(zstd_LIBRARY
 )
 
 find_package_handle_standard_args(zstd REQUIRED_VARS
-    zstd_LIBRARY
-    zstd_INCLUDE_DIR
+  zstd_LIBRARY
+  zstd_INCLUDE_DIR
 )
 
 if (zstd_FOUND)
@@ -34,7 +34,7 @@ if (zstd_FOUND)
 
   add_library(zstd::zstd UNKNOWN IMPORTED)
   set_target_properties(zstd::zstd
-      PROPERTIES
+    PROPERTIES
       IMPORTED_LOCATION ${zstd_LIBRARY}
       INTERFACE_INCLUDE_DIRECTORIES ${zstd_INCLUDE_DIR}
   )
