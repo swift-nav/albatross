@@ -26,7 +26,7 @@ static constexpr int zstd_max_level = 20;
 TEST(Compress, StringRoundtrips) {
   std::default_random_engine generator(kSeed);
   std::uniform_int_distribution<std::size_t> size_distribution(0, kMaxInputs);
-  std::uniform_int_distribution<char> distribution('A', 'z');
+  std::uniform_int_distribution<int8_t> distribution('A', 'z');
   for (std::size_t i = 0; i < kNumIterations; ++i) {
     std::string inputs(size_distribution(generator), '\0');
     std::generate(inputs.begin(), inputs.end(), [&generator, &distribution]() {
@@ -46,7 +46,7 @@ TEST(Compress, StringRoundtrips) {
 TEST(Compress, StringRoundtripsAlternateCompressionLevels) {
   std::default_random_engine generator(kSeed);
   std::uniform_int_distribution<std::size_t> size_distribution(0, kMaxInputs);
-  std::uniform_int_distribution<char> distribution('A', 'z');
+  std::uniform_int_distribution<int8_t> distribution('A', 'z');
   for (std::size_t i = 0; i < kNumIterations; ++i) {
     for (int level = zstd_min_level; level <= zstd_max_level; ++level) {
       std::string inputs(size_distribution(generator), '\0');
