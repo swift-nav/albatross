@@ -63,10 +63,11 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void save(Archive &archive,
-                 const Eigen::Transpositions<
-                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
-                 const std::uint32_t) {
+inline void
+save(Archive &archive,
+     const Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
+                                 _StorageIndex> &v,
+     const std::uint32_t) {
   archive(cereal::make_nvp("indices", v.indices()));
 }
 
@@ -130,6 +131,6 @@ inline void load_lower_triangle(Archive &archive,
   }
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif
