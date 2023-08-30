@@ -164,6 +164,23 @@ inline void decompress(const std::string &input, Element *data,
 // Returns `true` on successful decompression, in which case `output`
 // has been populated / overwritten.  If decompression fails, `output`
 // may or may not have been modified.
+template <typename Element>
+inline bool __attribute__((warn_unused_result))
+maybe_decompress(const std::string &input, Element *output,
+                 std::size_t n_elements) {
+  const auto result = internal::maybe_decompress(
+      input, static_cast<void *>(output), sizeof(Element) * n_elements);
+
+  if (internal::failed(result)) {
+    return false;
+  }
+
+  return true;
+}
+// Decompress the `zstd`-compressed data in `input` into `output`.
+// Returns `true` on successful decompression, in which case `output`
+// has been populated / overwritten.  If decompression fails, `output`
+// may or may not have been modified.
 inline bool __attribute__((warn_unused_result))
 maybe_decompress(const std::string &input, std::string *output) {
   const auto decompressed_size = internal::get_decompressed_string_size(input);

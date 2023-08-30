@@ -58,7 +58,15 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
   }
 
   m.resize(rows, cols);
-  albatross::zstd::decompress(payload, m.data(), size);
+  if (!albatross::zstd::maybe_decompress(payload, m.data(), size)) {
+    const std::string decompressed =
+        gzip::decompress(payload.data(), payload.size());
+    ALBATROSS_ASSERT(decompressed.size() == size * sizeof(_Scalar));
+    m = Eigen::Map<Eigen::Matrix<_Scalar, _Rows, _Cols>>(
+        static_cast<_Scalar *>(
+            static_cast<void *>(const_cast<char *>(decompressed.data()))),
+        rows, cols);
+  }
 }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
