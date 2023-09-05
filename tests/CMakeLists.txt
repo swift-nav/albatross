@@ -82,6 +82,8 @@ target_link_libraries(albatross_unit_tests
   nlopt
   z
   zstd::zstd
+  suitesparse::spqr
+  suitesparse::cholmod
   )
 set_target_properties(albatross_unit_tests PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
 

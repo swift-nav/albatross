@@ -36,6 +36,7 @@ find_package(Variant REQUIRED)
 find_package(Nlopt REQUIRED)
 find_package(ThreadPool REQUIRED)
 find_package(zstd REQUIRED)
+find_package(suitesparse REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
@@ -51,6 +52,8 @@ target_link_libraries(albatross
     zstd::zstd
     variant
     ThreadPool
+    suitesparse::cholmod
+    suitesparse::spqr
     )
 if(ENABLE_MKL)
   find_package(MKL)
