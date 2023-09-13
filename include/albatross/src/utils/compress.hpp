@@ -27,11 +27,9 @@ inline std::string compress(const void *data, std::size_t size_bytes,
   compressed.resize(compressed_bound);
 
   const std::size_t compressed_size =
-      // I solemnly swear that I am up to no good.
       ZSTD_compress(
           static_cast<void *>(const_cast<char *>(compressed.data())), // NOLINT
           compressed.size(), data, size_bytes, compression_level);
-  // Mischief managed.
 
   compressed.resize(compressed_size);
   compressed.shrink_to_fit();
