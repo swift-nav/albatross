@@ -288,7 +288,7 @@ inline void load(Archive &ar, cholmod_common &cc,
                        (cc.nrow + 1) * cholmod_int_size);
   detail::decode_array(ar, "cc.Xwork", cc.Xwork, cc.xworksize * sizeof(double));
 
-  cc.Iwork = cholmod_malloc(cc.iworksize, cholmod_int_size, &cc);
+  cc.Iwork = cholmod_l_malloc(cc.iworksize, cholmod_int_size, &cc);
   ar(CEREAL_NVP(cc.itype));
   ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
