@@ -23,6 +23,8 @@ inline std::string measurement_nugget_name() { return "measurement_nugget"; }
 
 inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
+static constexpr double cSparseRNugget = 1.e-10;
+
 } // namespace details
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
@@ -338,10 +340,15 @@ public:
     y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
     const Eigen::VectorXd v = B_qr->solve(y_augmented);
 
+    Eigen::MatrixXd R = get_R(*B_qr);
+    if (B_qr->rank() < B_qr->cols()) {
+      // Inflate the diagonal of R in an attempt to avoid singularity
+      R.diagonal() +=
+          Eigen::VectorXd::Constant(B_qr->cols(), details::cSparseRNugget);
+    }
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(*B_qr), B_qr->colsPermutation().indices(), v,
-                   B_qr->rank());
+    return FitType(old_fit.train_features, old_fit.train_covariance, R,
+                   B_qr->colsPermutation().indices(), v, B_qr->rank());
   }
 
   // Here we create the QR decomposition of:
