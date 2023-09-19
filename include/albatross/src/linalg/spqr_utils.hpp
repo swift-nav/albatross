@@ -85,7 +85,8 @@ template <typename MatrixType>
 inline void SPQR_set_pivot_threshold(
     SPQR *spqr, const MatrixType &m,
     double spqr_pivot_coefficient = kSPQRPivotCoefficient) {
-  SPQR_set_pivot_threshold(spqr, m, kMinSparsePivotSize, spqr_pivot_coefficient);
+  SPQR_set_pivot_threshold(spqr, m, kMinSparsePivotSize,
+                           spqr_pivot_coefficient);
 }
 
 inline void SPQR_set_threads(SPQR *spqr, std::size_t num_threads) {

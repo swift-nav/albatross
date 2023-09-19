@@ -525,15 +525,19 @@ using SPQR = Eigen::SerializableSPQR<SparseMatrix>;
 
 TEST(test_serialize, serialize_spqr_simple) {
   Eigen::MatrixXd Adense(3, 3);
+  // clang-format off
   Adense <<
     1., 4, 2,
     2, 2, 9.1,
     4, 8, 111.2;
+  // clang-format on
   Eigen::VectorXd b(3);
+  // clang-format off
   b <<
     2,
     4,
     99;
+  // clang-format on
   SPQR spqr;
   spqr.setSPQROrdering(SPQR_ORDERING_COLAMD);
   spqr.compute(Adense.sparseView());

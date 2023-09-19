@@ -18,9 +18,10 @@ namespace Eigen {
 template <typename _MatrixType>
 class SerializableSPQR : public SPQR<_MatrixType> {
   using Base = SPQR<_MatrixType>;
+
 public:
-  using Base::rows;
   using Base::cols;
+  using Base::rows;
   using StorageIndex = typename Base::StorageIndex;
   enum { ColsAtCompileTime = Dynamic, MaxColsAtCompileTime = Dynamic };
   SerializableSPQR() : Base() {
@@ -41,6 +42,6 @@ public:
   void load(Archive &ar, const std::uint32_t version ALBATROSS_UNUSED);
 };
 
-}  // namespace Eigen
+} // namespace Eigen
 
-#endif  // ALBATROSS_EIGEN_SERIALIZABLE_SPQR_H
+#endif // ALBATROSS_EIGEN_SERIALIZABLE_SPQR_H

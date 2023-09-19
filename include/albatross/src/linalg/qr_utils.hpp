@@ -29,9 +29,10 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
  * Computes R^-T P^T rhs given R and P from a QR decomposition.
  */
 template <typename MatrixType, typename PermutationIndicesType>
-inline Eigen::MatrixXd sqrt_solve(const Eigen::MatrixXd &R,
-                                  const PermutationIndicesType &permutation_indices,
-                                  const MatrixType &rhs) {
+inline Eigen::MatrixXd
+sqrt_solve(const Eigen::MatrixXd &R,
+           const PermutationIndicesType &permutation_indices,
+           const MatrixType &rhs) {
 
   Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
   for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {

@@ -370,9 +370,10 @@ public:
   // };
 
   // TODO(@peddie) SPQR configuration
-  std::unique_ptr<Eigen::SPQR<Eigen::SparseMatrix<double>>> compute_sigma_qr(
-      const Eigen::SerializableLDLT &K_uu_ldlt, const BlockDiagonalLDLT &A_ldlt,
-      const Eigen::MatrixXd &K_fu) const {
+  std::unique_ptr<Eigen::SPQR<Eigen::SparseMatrix<double>>>
+  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
+                   const BlockDiagonalLDLT &A_ldlt,
+                   const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
@@ -472,10 +473,10 @@ public:
   using Base::_predict_impl;
 
   template <typename FeatureType, typename FitFeaturetype>
-  Eigen::VectorXd _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-      PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<Eigen::VectorXd> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -485,10 +486,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  MarginalDistribution _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-      PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<MarginalDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
@@ -517,10 +518,10 @@ public:
   }
 
   template <typename FeatureType, typename FitFeaturetype>
-  JointDistribution _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
-      PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
+                PredictTypeIdentity<JointDistribution> &&) const {
     const auto cross_cov =
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);

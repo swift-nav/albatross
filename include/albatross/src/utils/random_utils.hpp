@@ -149,11 +149,10 @@ inline Eigen::VectorXd random_multivariate_normal(const Eigen::MatrixXd &cov,
 }
 
 template <typename T>
-Eigen::SparseMatrix<T> random_sparse_matrix(Eigen::Index rows,
-                                            Eigen::Index cols, double fill,
-                                            std::default_random_engine &gen,
-                                            T min_element = -1e6,
-                                            T max_element = 1e6) {
+Eigen::SparseMatrix<T>
+random_sparse_matrix(Eigen::Index rows, Eigen::Index cols, double fill,
+                     std::default_random_engine &gen, T min_element = -1e6,
+                     T max_element = 1e6) {
   std::uniform_real_distribution<T> valdis(min_element, max_element);
   std::uniform_int_distribution<Eigen::Index> rowdis(0, rows - 1);
   std::uniform_int_distribution<Eigen::Index> coldis(0, cols - 1);
