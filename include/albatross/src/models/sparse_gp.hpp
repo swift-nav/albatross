@@ -321,8 +321,7 @@ public:
       B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    auto B_qr = SPQR_create(B.sparseView());
-    SPQR_set_threads(B_qr.get(), Base::threads_.get());
+    auto B_qr = SPQR_create(B.sparseView(), Base::threads_.get());
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -377,7 +376,7 @@ public:
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
-    return SPQR_create(B.sparseView());
+    return SPQR_create(B.sparseView(), Base::threads_.get());
   };
 
   template <
@@ -398,7 +397,6 @@ public:
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
     auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
-    SPQR_set_threads(B_qr.get(), Base::threads_.get());
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());

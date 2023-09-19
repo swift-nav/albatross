@@ -88,30 +88,30 @@ inline void SPQR_set_pivot_threshold(
   SPQR_set_pivot_threshold(spqr, m, kMinSparsePivotSize, spqr_pivot_coefficient);
 }
 
-inline std::unique_ptr<SPQR> SPQR_create() {
-  auto spqr = std::make_unique<SPQR>();
-  spqr->setSPQROrdering(SPQR_ORDERING_COLAMD);
-  return spqr;
-}
-
-inline std::unique_ptr<SPQR> SPQR_create(const SparseMatrix &A) {
-  auto spqr = SPQR_create();
-  SPQR_set_pivot_threshold(spqr.get(), A);
-  spqr->compute(A);
-  return spqr;
-}
-
 inline void SPQR_set_threads(SPQR *spqr, std::size_t num_threads) {
   spqr->cholmodCommon()->SPQR_nthreads = static_cast<int>(num_threads);
 }
 
 inline void SPQR_set_threads(SPQR *spqr, const ThreadPool *pool) {
   if (pool != nullptr) {
-    spqr->cholmodCommon()->SPQR_nthreads =
-        static_cast<int>(pool->thread_count());
+    SPQR_set_threads(spqr, pool->thread_count());
   }
 }
 
+inline std::unique_ptr<SPQR> SPQR_create(const ThreadPool *pool = nullptr) {
+  auto spqr = std::make_unique<SPQR>();
+  spqr->setSPQROrdering(SPQR_ORDERING_COLAMD);
+  SPQR_set_threads(spqr.get(), pool);
+  return spqr;
+}
+
+inline std::unique_ptr<SPQR> SPQR_create(const SparseMatrix &A,
+                                         const ThreadPool *pool = nullptr) {
+  auto spqr = SPQR_create(pool);
+  SPQR_set_pivot_threshold(spqr.get(), A);
+  spqr->compute(A);
+  return spqr;
+}
 
 } // namespace albatross
 
