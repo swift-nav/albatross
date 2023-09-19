@@ -17,6 +17,8 @@ namespace albatross {
 
 namespace detail {
 
+static constexpr std::size_t cDefaultStackSize{8 * 1024 * 1024};
+
 inline bool should_serial_apply(ThreadPool *pool) {
   return (nullptr == pool) || (pool->thread_count() <= 1);
 }
@@ -216,7 +218,7 @@ make_shared_thread_pool(std::size_t threads = 0) {
   const auto init = []() {};
 #endif // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
 
-  return std::make_shared<ThreadPool>(threads, init);
+  return std::make_shared<ThreadPool>(threads, init, detail::cDefaultStackSize);
 }
 
 inline std::size_t get_thread_count(const std::shared_ptr<ThreadPool> &pool) {
