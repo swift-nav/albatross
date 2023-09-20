@@ -144,6 +144,9 @@ inline void save(Archive &ar, cholmod_common const &cc,
   ar(CEREAL_NVP(cc.metis_memory));
   ar(CEREAL_NVP(cc.metis_dswitch));
   ar(CEREAL_NVP(cc.metis_nswitch));
+  // This and the "worksize" variables are serialised under different
+  // names so that we can deserialise them to stack variables and
+  // calculate things with them in `load()`.
   ar(::cereal::make_nvp("nrow", cc.nrow));
   ar(CEREAL_NVP(cc.mark));
   ar(::cereal::make_nvp("iworksize", cc.iworksize));
@@ -159,7 +162,11 @@ inline void save(Archive &ar, cholmod_common const &cc,
                        (cc.nrow + 1) * cholmod_int_size);
   detail::encode_array(ar, "cc.Xwork", cc.Xwork, cc.xworksize * sizeof(double));
 
-  // Iwork omitted; must reinitialize
+  // It is safe to discard the CHOLMOD workspace in between calls to
+  // the solver, so rather than serialize these temporary arrays, we
+  // just leave them out and reinitialize them properly when we
+  // deserialize the object (see below how `load()` fills in
+  // `cc.Iwork`).
   ar(CEREAL_NVP(cc.itype));
   ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));

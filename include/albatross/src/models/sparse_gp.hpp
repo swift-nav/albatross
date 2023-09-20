@@ -358,18 +358,6 @@ public:
   // which corresponds to the inverse square root of Sigma
   //
   //   Sigma = (B^T B)^-1
-  //
-  // Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
-  // compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
-  //                  const BlockDiagonalLDLT &A_ldlt,
-  //                  const Eigen::MatrixXd &K_fu) const {
-  //   Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
-  //   B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
-  //   B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
-  //   return B.colPivHouseholderQr();
-  // };
-
-  // TODO(@peddie) SPQR configuration
   std::unique_ptr<Eigen::SPQR<Eigen::SparseMatrix<double>>>
   compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
                    const BlockDiagonalLDLT &A_ldlt,
