@@ -201,13 +201,14 @@ static constexpr std::nullptr_t serial_thread_pool = nullptr;
 // Returns a thread pool.  By default, the thread pool has
 // `get_default_thread_count()` threads.
 inline std::shared_ptr<ThreadPool>
-make_shared_thread_pool(std::size_t threads = 0) {
-  if (threads == 1) {
+make_shared_thread_pool(std::size_t num_threads = 0,
+                        std::size_t stack_size = 0) {
+  if (num_threads == 1) {
     return serial_thread_pool;
   }
 
-  if (threads < 1) {
-    threads = get_default_thread_count();
+  if (num_threads < 1) {
+    num_threads = get_default_thread_count();
   }
 
 #if defined(EIGEN_USE_MKL_ALL) || defined(EIGEN_USE_MKL_VML)
@@ -216,7 +217,7 @@ make_shared_thread_pool(std::size_t threads = 0) {
   const auto init = []() {};
 #endif // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
 
-  return std::make_shared<ThreadPool>(threads, init);
+  return std::make_shared<ThreadPool>(num_threads, init, stack_size);
 }
 
 inline std::size_t get_thread_count(const std::shared_ptr<ThreadPool> &pool) {
