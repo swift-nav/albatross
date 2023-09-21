@@ -371,17 +371,23 @@ template <class Matrix> inline std::size_t get_num_x_elements(const Matrix &m) {
 
 template <class Matrix>
 inline std::size_t get_p_element_size_bytes(const Matrix &m) {
+  assert((m.itype == CHOLMOD_INT || m.itype == CHOLMOD_LONG) &&
+         "we only support int and long indices");
   return m.itype == CHOLMOD_INT ? sizeof(int) : sizeof(SuiteSparse_long);
 }
 
 template <class Matrix>
 inline std::size_t get_integer_size_bytes(const Matrix &m) {
+  assert((m.itype == CHOLMOD_INT || m.itype == CHOLMOD_LONG) &&
+         "we only support int and long indices");
   return m.itype == CHOLMOD_LONG ? sizeof(SuiteSparse_long) : sizeof(int);
 }
 
 template <class Archive>
 inline void save(Archive &ar, cholmod_sparse const &m,
                  std::uint32_t version ALBATROSS_UNUSED) {
+  assert((m.itype == CHOLMOD_INT || m.itype == CHOLMOD_LONG) &&
+         "we only support int and long indices");
   ar(CEREAL_NVP(m.nrow));
   ar(CEREAL_NVP(m.ncol));
   ar(CEREAL_NVP(m.nzmax));
