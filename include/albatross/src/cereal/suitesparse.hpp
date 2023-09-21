@@ -144,29 +144,13 @@ inline void save(Archive &ar, cholmod_common const &cc,
   ar(CEREAL_NVP(cc.metis_memory));
   ar(CEREAL_NVP(cc.metis_dswitch));
   ar(CEREAL_NVP(cc.metis_nswitch));
-  // This and the "worksize" variables are serialised under different
-  // names so that we can deserialise them to stack variables and
-  // calculate things with them in `load()`.
-  ar(::cereal::make_nvp("nrow", cc.nrow));
   ar(CEREAL_NVP(cc.mark));
-  ar(::cereal::make_nvp("iworksize", cc.iworksize));
-  // The comments in `cholmod_core.h` define this as a size in bytes.
-  // The code, however, considers it to be a number of elements.
-  ar(::cereal::make_nvp("xworksize", cc.xworksize));
-
-  const std::size_t cholmod_int_size =
-      cc.itype == CHOLMOD_LONG ? sizeof(SuiteSparse_long) : sizeof(int);
-
-  detail::encode_array(ar, "cc.Flag", cc.Flag, cc.nrow * cholmod_int_size);
-  detail::encode_array(ar, "cc.Head", cc.Head,
-                       (cc.nrow + 1) * cholmod_int_size);
-  detail::encode_array(ar, "cc.Xwork", cc.Xwork, cc.xworksize * sizeof(double));
-
   // It is safe to discard the CHOLMOD workspace in between calls to
   // the solver, so rather than serialize these temporary arrays, we
-  // just leave them out and reinitialize them properly when we
-  // deserialize the object (see below how `load()` fills in
-  // `cc.Iwork`).
+  // just leave them out.  Our only usecase is SPQR, and in tests that
+  // seems to have no problem reconstructing the appropriate
+  // workspace, so we don't even do anything special when we
+  // deserialize.
   ar(CEREAL_NVP(cc.itype));
   ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
@@ -277,24 +261,8 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.metis_memory));
   ar(CEREAL_NVP(cc.metis_dswitch));
   ar(CEREAL_NVP(cc.metis_nswitch));
-  std::size_t nrow = 0;
-  std::size_t iworksize = 0;
-  std::size_t xworksize = 0;
-  ar(CEREAL_NVP(nrow));
   ar(CEREAL_NVP(cc.mark));
-  ar(CEREAL_NVP(iworksize));
-  ar(CEREAL_NVP(xworksize));
-  const std::size_t cholmod_int_size =
-      cc.itype == CHOLMOD_LONG ? sizeof(SuiteSparse_long) : sizeof(int);
   ALBATROSS_ASSERT(cholmod_l_free_work(&cc) == 1);
-  ALBATROSS_ASSERT(cholmod_l_allocate_work(nrow, iworksize, xworksize, &cc) ==
-                   1);
-  detail::decode_array(ar, "cc.Flag", cc.Flag, cc.nrow * cholmod_int_size);
-  detail::decode_array(ar, "cc.Head", cc.Head,
-                       (cc.nrow + 1) * cholmod_int_size);
-  detail::decode_array(ar, "cc.Xwork", cc.Xwork, cc.xworksize * sizeof(double));
-
-  cc.Iwork = cholmod_l_malloc(cc.iworksize, cholmod_int_size, &cc);
   ar(CEREAL_NVP(cc.itype));
   ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
