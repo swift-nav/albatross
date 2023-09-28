@@ -106,11 +106,11 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
-      Eigen::MatrixXd &&sigma_R_, PermutationIndices &&permutation_indices_,
+      const Eigen::MatrixXd &sigma_R_,
+      PermutationIndices &&permutation_indices_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
       : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(std::move(sigma_R_)),
-        permutation_indices(std::move(permutation_indices_)),
+        sigma_R(sigma_R_), permutation_indices(std::move(permutation_indices_)),
         information(information_), numerical_rank(numerical_rank_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
@@ -366,7 +366,7 @@ public:
     }
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
     return FitType(
-        old_fit.train_features, old_fit.train_covariance, std::move(R),
+        old_fit.train_features, old_fit.train_covariance, R,
         B_qr->colsPermutation().indices().template cast<Eigen::Index>(), v,
         B_qr->rank());
   }
