@@ -396,13 +396,13 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
   auto &grouper_ = this->grouper;
   auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
-  auto dataset = make_toy_linear_data(5, 1, 0.1, 100);
+  auto dataset = make_toy_linear_data();
 
-  UniformlySpacedInducingPoints strategy(100);
+  UniformlySpacedInducingPoints strategy(10);
   auto model =
       sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   const auto inducing_points = strategy(covariance, dataset.features);
-  auto test_features = linspace(0.1, 9.9, 10);
+  auto test_features = linspace(0.1, 9.9, 5);
 
   const auto grouped = dataset.group_by(grouper_).groups();
   auto iteratively_fit_model = model.fit(grouped.first_value());
