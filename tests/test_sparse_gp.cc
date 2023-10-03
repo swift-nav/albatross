@@ -428,8 +428,8 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
   const auto iter_pred = iteratively_fit_model.predict(test_features).joint();
   const auto direct_pred = direct_fit_model.predict(test_features).joint();
 
-  EXPECT_LT((direct_pred.mean - iter_pred.mean).norm(), 2e-2);
-  EXPECT_LT((direct_pred.covariance - iter_pred.covariance).norm(), 2e-3);
+  EXPECT_LT((direct_pred.mean - iter_pred.mean).norm(), 1e-5);
+  EXPECT_LT((direct_pred.covariance - iter_pred.covariance).norm(), 2e-5);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
