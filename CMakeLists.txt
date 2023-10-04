@@ -35,6 +35,7 @@ find_package(Gzip-Hpp REQUIRED)
 find_package(Variant REQUIRED)
 find_package(Nlopt REQUIRED)
 find_package(ThreadPool REQUIRED)
+find_package(zstd REQUIRED)
 
 add_library(albatross INTERFACE)
 target_include_directories(albatross INTERFACE
@@ -47,6 +48,7 @@ target_link_libraries(albatross
     cereal
     fast-csv
     gzip-hpp
+    zstd::zstd
     variant
     ThreadPool
     )

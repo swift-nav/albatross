@@ -139,6 +139,7 @@ cc_library(
         "include/albatross/src/tune/tune.hpp",
         "include/albatross/src/tune/tuning_metrics.hpp",
         "include/albatross/src/utils/async_utils.hpp",
+        "include/albatross/src/utils/compress.hpp",
         "include/albatross/src/utils/csv_utils.hpp",
         "include/albatross/src/utils/eigen_utils.hpp",
         "include/albatross/src/utils/map_utils.hpp",
@@ -168,6 +169,7 @@ cc_library(
         "@gzip",
         "@nlopt",
         "@variant",
+        "@zstd",
     ],
 )
 
@@ -190,6 +192,7 @@ swift_cc_test(
         "tests/test_block_utils.cc",
         "tests/test_call_trace.cc",
         "tests/test_callers.cc",
+        "tests/test_compression.cc",
         "tests/test_concatenate.cc",
         "tests/test_conditional_gaussian.cc",
         "tests/test_core_dataset.cc",

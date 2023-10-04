@@ -4,8 +4,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    strip_prefix = "rules_swiftnav-e79fa5d8d8cbb19974877397bf045822af9a5125",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/e79fa5d8d8cbb19974877397bf045822af9a5125.tar.gz",
+    strip_prefix = "rules_swiftnav-970f6c003a8b99d2fb6cf3487eca34425faf93d3",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/970f6c003a8b99d2fb6cf3487eca34425faf93d3.tar.gz",
 )
 
 load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
@@ -56,6 +56,25 @@ http_archive(
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 hedron_compile_commands_setup()
+
+http_archive(
+    name = "zlib",
+    build_file = "@rules_swiftnav//third_party:zlib.BUILD",
+    sha256 = "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
+    strip_prefix = "zlib-1.2.13",
+    urls = [
+        "https://zlib.net/zlib-1.2.13.tar.gz",
+        "https://www.zlib.net/fossils/zlib-1.2.13.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "zstd",
+    sha256 = "9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4",
+    strip_prefix = "zstd-1.5.5",
+    url = "https://github.com/facebook/zstd/releases/download/v1.5.5/zstd-1.5.5.tar.gz",
+    build_file = "@rules_swiftnav//third_party:zstd.BUILD"
+)
 
 local_repository(
     name = "gflags",
