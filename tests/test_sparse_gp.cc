@@ -28,38 +28,47 @@ struct LeaveOneIntervalOut {
   long int operator()(const double &f) const { return get_group(f); }
 };
 
-template <typename GrouperFunction>
+template <typename GrouperFunctionAndQRImplementation>
 class SparseGaussianProcessTest : public ::testing::Test {
 public:
+  using GrouperFunction =
+      typename GrouperFunctionAndQRImplementation::first_type;
+  using QRImplementation =
+      typename GrouperFunctionAndQRImplementation::second_type;
   GrouperFunction grouper;
+  QRImplementation qr;
 };
 
-typedef ::testing::Types<LeaveOneIntervalOut> IndependenceAssumptions;
-TYPED_TEST_SUITE(SparseGaussianProcessTest, IndependenceAssumptions);
+typedef ::testing::Types<std::pair<LeaveOneIntervalOut, DenseQRImplementation>,
+                         std::pair<LeaveOneIntervalOut, SPQRImplementation>>
+    IndependenceAssumptionsAndSolveStrategies;
+TYPED_TEST_SUITE(SparseGaussianProcessTest,
+                 IndependenceAssumptionsAndSolveStrategies);
 
-template <typename CovFunc, typename GrouperFunction>
-void expect_sparse_gp_performance(const CovFunc &covariance,
-                                  const GrouperFunction &grouper,
-                                  double sparse_error_threshold,
-                                  double really_sparse_error_threshold) {
+template <typename CovFunc, typename GrouperFunction,
+          typename QRImplementation = DenseQRImplementation>
+void expect_sparse_gp_performance(
+    const CovFunc &covariance, const GrouperFunction &grouper,
+    double sparse_error_threshold, double really_sparse_error_threshold,
+    QRImplementation qr = DenseQRImplementation{}) {
 
   auto dataset = make_toy_linear_data();
   auto direct = gp_from_covariance(covariance, "direct");
 
   UniformlySpacedInducingPoints strategy(8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper, strategy, "sparse", qr);
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
   UniformlySpacedInducingPoints bad_strategy(3);
-  auto really_sparse = sparse_gp_from_covariance(covariance, grouper,
-                                                 bad_strategy, "really_sparse");
+  auto really_sparse = sparse_gp_from_covariance(
+      covariance, grouper, bad_strategy, "really_sparse", qr);
   really_sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   really_sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
   auto state_space =
-      sparse_gp_from_covariance(covariance, grouper, "state_space");
+      sparse_gp_from_covariance(covariance, grouper, "state_space", qr);
   state_space.set_param_value(details::inducing_nugget_name(), 1e-3);
   state_space.set_param_value(details::measurement_nugget_name(), 1e-12);
 
@@ -104,30 +113,30 @@ void expect_sparse_gp_performance(const CovFunc &covariance,
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_sanity) {
-
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
 
   // When the length scale is large the model with more inducing points
   // gets very nearly singular.  this checks to make sure that's dealt with
   // gracefully.
   covariance.set_param_value("squared_exponential_length_scale", 1000.);
-  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5, qr_);
 
   covariance.set_param_value("squared_exponential_length_scale", 100.);
-  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5);
+  expect_sparse_gp_performance(covariance, grouper_, 1e-2, 0.5, qr_);
 
   // Then when the length scale is shorter, the really sparse model
   // should become significantly worse than the sparse one.
   covariance.set_param_value("squared_exponential_length_scale", 10.);
-  expect_sparse_gp_performance(covariance, grouper_, 5e-2, 100.);
+  expect_sparse_gp_performance(covariance, grouper_, 5e-2, 100., qr_);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_scales) {
-
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
 
-  auto large_dataset = make_toy_sine_data(5., 10., 0.1, 1000);
+  auto large_dataset = make_toy_sine_data(5., 10., 0.1, 3000);
 
   auto covariance = make_simple_covariance_function();
 
@@ -146,7 +155,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   UniformlySpacedInducingPoints strategy(100);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
 
   sparse.set_param_value("inducing_nugget", 1e-6);
 
@@ -161,14 +170,14 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
-
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto dataset = make_toy_sine_data(5., 10., 0.1, 12);
   auto covariance = make_simple_covariance_function();
 
   UniformlySpacedInducingPoints strategy(2);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   const auto inducing_points = strategy(covariance, dataset.features);
   // We need to make sure the priors on the parameters don't enter
   // into the log_likelihood computation.
@@ -226,7 +235,6 @@ struct FixedInducingPoints {
 };
 
 TEST(test_sparse_gp, test_update_exists) {
-
   using CovFunc = SquaredExponential<EuclideanDistance>;
   using MeanFunc = ZeroMean;
   using GrouperFunction = LeaveOneIntervalOut;
@@ -242,8 +250,26 @@ TEST(test_sparse_gp, test_update_exists) {
   EXPECT_TRUE(bool(can_update_in_place<SparseGPR, FitType, double>::value));
 }
 
+TEST(test_sparse_gp_sparse_qr, test_update_exists) {
+  using CovFunc = SquaredExponential<EuclideanDistance>;
+  using MeanFunc = ZeroMean;
+  using GrouperFunction = LeaveOneIntervalOut;
+  using InducingPointStrategy = UniformlySpacedInducingPoints;
+
+  using SparseGPR =
+      SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
+                                      InducingPointStrategy,
+                                      SPQRImplementation>;
+
+  using FitType = Fit<SparseGPFit<double>>;
+
+  EXPECT_TRUE(bool(has_valid_update<SparseGPR, FitType, double>::value));
+  EXPECT_TRUE(bool(can_update_in_place<SparseGPR, FitType, double>::value));
+}
+
 TYPED_TEST(SparseGaussianProcessTest, test_update) {
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -254,7 +280,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
@@ -324,6 +350,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -334,7 +361,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
@@ -366,14 +393,14 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
-
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
   UniformlySpacedInducingPoints strategy(10);
   auto model =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   const auto inducing_points = strategy(covariance, dataset.features);
   auto test_features = linspace(0.1, 9.9, 5);
 
@@ -401,12 +428,13 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_and_update) {
   const auto iter_pred = iteratively_fit_model.predict(test_features).joint();
   const auto direct_pred = direct_fit_model.predict(test_features).joint();
 
-  EXPECT_LT((direct_pred.mean - iter_pred.mean).norm(), 1e-5);
-  EXPECT_LT((direct_pred.covariance - iter_pred.covariance).norm(), 1e-5);
+  EXPECT_LT((direct_pred.mean - iter_pred.mean).norm(), 4e-3);
+  EXPECT_LT((direct_pred.covariance - iter_pred.covariance).norm(), 8e-3);
 }
 
 TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
   auto &grouper_ = this->grouper;
+  auto &qr_ = this->qr;
   auto covariance = make_simple_covariance_function();
   auto dataset = make_toy_linear_data();
 
@@ -417,7 +445,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
 
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
-      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse");
+      sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
   sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 

@@ -25,9 +25,14 @@
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
+#include <cholmod.h>
+#include <SuiteSparseQR.hpp>
+#include <Eigen/SPQRSupport>
+#include <Eigen/SparseCore>
 
 #include "../src/cereal/traits.hpp"
 #include "../src/cereal/eigen.hpp"
 #include "../src/cereal/ThreadPool.hpp"
+#include "../src/cereal/suitesparse.hpp"
 
 #endif

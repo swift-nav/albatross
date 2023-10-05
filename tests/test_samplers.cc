@@ -145,7 +145,18 @@ struct LeaveOneIntervalOut {
   long int operator()(const double &f) const { return get_group(f); }
 };
 
-TEST(test_samplers, test_samplers_sparse_gp) {
+template <typename QRImplementation>
+class SparseGaussianProcessSamplerTest : public ::testing::Test {
+public:
+  QRImplementation qr;
+};
+
+typedef ::testing::Types<DenseQRImplementation, SPQRImplementation>
+    SolveStrategies;
+TYPED_TEST_SUITE(SparseGaussianProcessSamplerTest, SolveStrategies);
+
+TYPED_TEST(SparseGaussianProcessSamplerTest, test_samplers_sparse_gp) {
+  auto &qr_ = this->qr;
   const double a = 3.14;
   const double b = sqrt(2.);
   const double meas_noise_sd = 1.;
@@ -164,7 +175,7 @@ TEST(test_samplers, test_samplers_sparse_gp) {
   UniformlySpacedInducingPoints strategy(5);
 
   auto model = sparse_gp_from_covariance_and_mean(meas_noise, linear, grouper,
-                                                  strategy, "test");
+                                                  strategy, "test", qr_);
   model.set_prior("inducing_nugget", FixedPrior());
   model.set_prior("measurement_nugget", FixedPrior());
 

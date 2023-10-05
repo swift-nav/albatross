@@ -23,10 +23,12 @@ inline std::string measurement_nugget_name() { return "measurement_nugget"; }
 
 inline std::string inducing_nugget_name() { return "inducing_nugget"; }
 
+static constexpr double cSparseRNugget = 1.e-10;
+
 } // namespace details
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
-          typename InducingPointStrategy>
+          typename InducingPointStrategy, typename QRImplementation>
 class SparseGaussianProcessRegression;
 
 struct UniformlySpacedInducingPoints {
@@ -69,14 +71,34 @@ struct StateSpaceInducingPointStrategy {
           "be sure _ssr_impl has been defined for the types concerned");
 };
 
+struct SPQRImplementation {
+  using QRType = Eigen::SPQR<Eigen::SparseMatrix<double>>;
+
+  static std::unique_ptr<QRType> compute(const Eigen::MatrixXd &m,
+                                         ThreadPool *threads) {
+    return SPQR_create(m.sparseView(), threads);
+  }
+};
+
+struct DenseQRImplementation {
+  using QRType = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>;
+
+  static std::unique_ptr<QRType> compute(const Eigen::MatrixXd &m,
+                                         ThreadPool *threads
+                                         __attribute__((unused))) {
+    return std::make_unique<QRType>(m);
+  }
+};
+
 template <typename FeatureType> struct SparseGPFit {};
 
 template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
+  using PermutationIndices = Eigen::Matrix<Eigen::Index, Eigen::Dynamic, 1>;
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_covariance;
   Eigen::MatrixXd sigma_R;
-  Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices;
+  PermutationIndices permutation_indices;
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
 
@@ -84,11 +106,11 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
-      const Eigen::MatrixXd sigma_R_,
-      const Eigen::Matrix<int, Eigen::Dynamic, 1> permutation_indices_,
+      const Eigen::MatrixXd &sigma_R_,
+      PermutationIndices &&permutation_indices_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
       : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(sigma_R_), permutation_indices(permutation_indices_),
+        sigma_R(sigma_R_), permutation_indices(std::move(permutation_indices_)),
         information(information_), numerical_rank(numerical_rank_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
@@ -213,18 +235,19 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
  *                = S_sqrt^T S_sqrt
  */
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
-          typename InducingPointStrategy>
+          typename InducingPointStrategy,
+          typename QRImplementation = DenseQRImplementation>
 class SparseGaussianProcessRegression
-    : public GaussianProcessBase<
-          CovFunc, MeanFunc,
-          SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
-                                          InducingPointStrategy>> {
+    : public GaussianProcessBase<CovFunc, MeanFunc,
+                                 SparseGaussianProcessRegression<
+                                     CovFunc, MeanFunc, GrouperFunction,
+                                     InducingPointStrategy, QRImplementation>> {
 
 public:
   using Base = GaussianProcessBase<
       CovFunc, MeanFunc,
       SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
-                                      InducingPointStrategy>>;
+                                      InducingPointStrategy, QRImplementation>>;
 
   SparseGaussianProcessRegression() : Base() { initialize_params(); };
 
@@ -317,7 +340,7 @@ public:
       B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
     }
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    const auto B_qr = B.colPivHouseholderQr();
+    const auto B_qr = QRImplementation::compute(B, Base::threads_.get());
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -333,12 +356,19 @@ public:
         y_augmented.topRows(n_old);
 
     y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
 
+    Eigen::MatrixXd R = get_R(*B_qr);
+    if (B_qr->rank() < B_qr->cols()) {
+      // Inflate the diagonal of R in an attempt to avoid singularity
+      R.diagonal() +=
+          Eigen::VectorXd::Constant(B_qr->cols(), details::cSparseRNugget);
+    }
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(old_fit.train_features, old_fit.train_covariance,
-                   get_R(B_qr), B_qr.colsPermutation().indices(), v,
-                   B_qr.rank());
+    return FitType(
+        old_fit.train_features, old_fit.train_covariance, R,
+        B_qr->colsPermutation().indices().template cast<Eigen::Index>(), v,
+        B_qr->rank());
   }
 
   // Here we create the QR decomposition of:
@@ -349,15 +379,14 @@ public:
   // which corresponds to the inverse square root of Sigma
   //
   //   Sigma = (B^T B)^-1
-  //
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd>
+  std::unique_ptr<typename QRImplementation::QRType>
   compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
                    const BlockDiagonalLDLT &A_ldlt,
                    const Eigen::MatrixXd &K_fu) const {
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
-    return B.colPivHouseholderQr();
+    return QRImplementation::compute(B, Base::threads_.get());
   };
 
   template <
@@ -366,7 +395,6 @@ public:
           has_call_operator<CovFunc, FeatureType, FeatureType>::value, int> = 0>
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
-
     // Determine the set of inducing points, u.
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
@@ -378,23 +406,24 @@ public:
     Eigen::VectorXd y;
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
-    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
-    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr.matrixR().rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr.solve(y_augmented);
+    const Eigen::VectorXd v = B_qr->solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(u, K_uu_ldlt, get_R(B_qr), B_qr.colsPermutation().indices(),
-                   v, B_qr.rank());
+    return FitType(
+        u, K_uu_ldlt, get_R(*B_qr),
+        B_qr->colsPermutation().indices().template cast<Eigen::Index>(), v,
+        B_qr->rank());
   }
 
   template <typename FeatureType>
   auto fit_from_prediction(const std::vector<FeatureType> &new_inducing_points,
                            const JointDistribution &prediction_) const {
-
     FitModel<SparseGaussianProcessRegression, Fit<SparseGPFit<FeatureType>>>
         output(*this, Fit<SparseGPFit<FeatureType>>());
     Fit<SparseGPFit<FeatureType>> &new_fit = output.get_fit();
@@ -440,11 +469,12 @@ public:
     // as we do in a normal fit.
     const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
-    const auto B_qr = sigma_inv_sqrt.colPivHouseholderQr();
+    const auto B_qr = QRImplementation::compute(sigma_inv_sqrt, nullptr);
 
-    new_fit.permutation_indices = B_qr.colsPermutation().indices();
-    new_fit.sigma_R = get_R(B_qr);
-    new_fit.numerical_rank = B_qr.rank();
+    new_fit.permutation_indices =
+        B_qr->colsPermutation().indices().template cast<Eigen::Index>();
+    new_fit.sigma_R = get_R(*B_qr);
+    new_fit.numerical_rank = B_qr->rank();
 
     return output;
   }
@@ -563,7 +593,7 @@ public:
     const double log_det_a = A_ldlt.log_determinant();
 
     const double log_det_r =
-        B_qr.matrixR().diagonal().array().cwiseAbs().log().sum();
+        B_qr->matrixR().diagonal().array().cwiseAbs().log().sum();
     const double log_det_K_uu = K_uu_ldlt.log_determinant();
     const double log_det = log_det_a + 2 * log_det_r - log_det_K_uu;
 
@@ -579,7 +609,7 @@ public:
     const Eigen::VectorXd y_a = A_ldlt.solve(y);
 
     Eigen::VectorXd y_b = K_fu.transpose() * y_a;
-    y_b = sqrt_solve(B_qr, y_b);
+    y_b = sqrt_solve(*B_qr, y_b);
 
     double log_quadratic = y.transpose() * y_a;
     log_quadratic -= y_b.transpose() * y_b;
@@ -701,53 +731,70 @@ auto rebase_inducing_points(
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
-auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
-                                        MeanFunc &&mean_function,
-                                        GrouperFunction &&grouper_function,
-                                        InducingPointStrategy &&strategy,
-                                        const std::string &model_name) {
+using SparseQRSparseGaussianProcessRegression =
+    SparseGaussianProcessRegression<CovFunc, GrouperFunction,
+                                    InducingPointStrategy, SPQRImplementation>;
+
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
+          typename InducingPointStrategy,
+          typename QRImplementation = DenseQRImplementation>
+auto sparse_gp_from_covariance_and_mean(
+    CovFunc &&covariance_function, MeanFunc &&mean_function,
+    GrouperFunction &&grouper_function, InducingPointStrategy &&strategy,
+    const std::string &model_name,
+    QRImplementation qr __attribute__((unused)) = DenseQRImplementation{}) {
   return SparseGaussianProcessRegression<
       typename std::decay<CovFunc>::type, typename std::decay<MeanFunc>::type,
       typename std::decay<GrouperFunction>::type,
-      typename std::decay<InducingPointStrategy>::type>(
+      typename std::decay<InducingPointStrategy>::type,
+      typename std::decay<QRImplementation>::type>(
       std::forward<CovFunc>(covariance_function),
       std::forward<MeanFunc>(mean_function),
       std::forward<GrouperFunction>(grouper_function),
       std::forward<InducingPointStrategy>(strategy), model_name);
 };
 
-template <typename CovFunc, typename MeanFunc, typename GrouperFunction>
-auto sparse_gp_from_covariance_and_mean(CovFunc &&covariance_function,
-                                        MeanFunc &&mean_function,
-                                        GrouperFunction &&grouper_function,
-                                        const std::string &model_name) {
+template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
+          typename QRImplementation = DenseQRImplementation>
+auto sparse_gp_from_covariance_and_mean(
+    CovFunc &&covariance_function, MeanFunc &&mean_function,
+    GrouperFunction &&grouper_function, const std::string &model_name,
+    QRImplementation qr = DenseQRImplementation{}) {
   return sparse_gp_from_covariance_and_mean(
       std::forward<CovFunc>(covariance_function),
       std::forward<MeanFunc>(mean_function),
       std::forward<GrouperFunction>(grouper_function),
-      StateSpaceInducingPointStrategy(), model_name);
+      StateSpaceInducingPointStrategy(), model_name, qr);
 };
 
 template <typename CovFunc, typename GrouperFunction,
-          typename InducingPointStrategy>
+          typename InducingPointStrategy,
+          typename QRImplementation = DenseQRImplementation>
 auto sparse_gp_from_covariance(CovFunc &&covariance_function,
                                GrouperFunction &&grouper_function,
                                InducingPointStrategy &&strategy,
-                               const std::string &model_name) {
-  return sparse_gp_from_covariance_and_mean(
-      std::forward<CovFunc>(covariance_function), ZeroMean(),
-      std::forward<GrouperFunction>(grouper_function),
-      std::forward<InducingPointStrategy>(strategy), model_name);
+                               const std::string &model_name,
+                               QRImplementation qr = DenseQRImplementation{}) {
+  return sparse_gp_from_covariance_and_mean<
+      CovFunc, decltype(ZeroMean()), GrouperFunction, InducingPointStrategy,
+      QRImplementation>(std::forward<CovFunc>(covariance_function), ZeroMean(),
+                        std::forward<GrouperFunction>(grouper_function),
+                        std::forward<InducingPointStrategy>(strategy),
+                        model_name, qr);
 };
 
-template <typename CovFunc, typename GrouperFunction>
+template <typename CovFunc, typename GrouperFunction,
+          typename QRImplementation = DenseQRImplementation>
 auto sparse_gp_from_covariance(CovFunc covariance_function,
                                GrouperFunction grouper_function,
-                               const std::string &model_name) {
-  return sparse_gp_from_covariance_and_mean(
+                               const std::string &model_name,
+                               QRImplementation qr = DenseQRImplementation{}) {
+  return sparse_gp_from_covariance_and_mean<
+      CovFunc, decltype(ZeroMean()), GrouperFunction,
+      decltype(StateSpaceInducingPointStrategy()), QRImplementation>(
       std::forward<CovFunc>(covariance_function), ZeroMean(),
       std::forward<GrouperFunction>(grouper_function),
-      StateSpaceInducingPointStrategy(), model_name);
+      StateSpaceInducingPointStrategy(), model_name, qr);
 };
 
 } // namespace albatross

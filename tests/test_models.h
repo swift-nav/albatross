@@ -53,6 +53,22 @@ public:
   auto get_dataset() const { return make_toy_linear_data(); }
 };
 
+class MakeSparseQRSparseGaussianProcess {
+public:
+  MakeSparseQRSparseGaussianProcess(){};
+
+  auto get_model() const {
+    LeaveOneOutGrouper loo;
+    UniformlySpacedInducingPoints strategy(25);
+
+    auto covariance = make_simple_covariance_function();
+    return sparse_gp_from_covariance(covariance, loo, strategy, "example",
+                                     SPQRImplementation{});
+  }
+
+  auto get_dataset() const { return make_toy_linear_data(); }
+};
+
 class MakeGaussianProcessWithMean {
   const double a = 5.;
   const double b = 1.;
@@ -287,6 +303,7 @@ public:
 
 typedef ::testing::Types<MakeLinearRegression, MakeGaussianProcess,
                          MakeGaussianProcessWithMean, MakeSparseGaussianProcess,
+                         MakeSparseQRSparseGaussianProcess,
                          MakeAdaptedGaussianProcess, MakeRansacGaussianProcess,
                          MakeRansacChiSquaredGaussianProcess,
                          MakeRansacChiSquaredGaussianProcessWithMean,

@@ -21,7 +21,7 @@ jobs:
       - name: Install gcc-11
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential software-properties-common -y
+          sudo apt-get install build-essential software-properties-common libsuitesparse-dev -y
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
           sudo apt-get install gcc-11 g++-11 -y
@@ -49,10 +49,10 @@ jobs:
       - name: Install clang-14
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential software-properties-common -y
+          sudo apt-get install build-essential software-properties-common libsuitesparse-dev -y
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
-          sudo apt-get install clang-14
+          sudo apt-get install clang-14 -y
           gcc -v
       - name: Run build
         env:
@@ -82,10 +82,10 @@ jobs:
       - name: Install clang-14
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential software-properties-common -y
+          sudo apt-get install build-essential software-properties-common libsuitesparse-dev -y
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
-          sudo apt-get install clang-14
+          sudo apt-get install clang-14 -y
           clang -v
       - name: Run (${{ matrix.test.name }}) sanitizer tests
         env:
@@ -153,6 +153,9 @@ jobs:
       - name: check clang
         run: |
           clang --version
+      - name: install suite-sparse
+        run: |
+          brew install suite-sparse
       - name: Run build
         env:
           CC: clang

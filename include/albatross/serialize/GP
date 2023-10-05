@@ -20,5 +20,6 @@
 #include "../src/cereal/serializable_ldlt.hpp"
 #include "../src/cereal/gp.hpp"
 #include "../src/cereal/representations.hpp"
+#include "../src/cereal/serializable_spqr.hpp"
 
 #endif
