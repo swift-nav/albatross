@@ -56,10 +56,10 @@ inline void serialize(Archive &ar, cholmod_common::cholmod_method_struct &cms,
 namespace detail {
 
 template <class Archive>
-inline void encode_array(Archive &ar, const char *name, void *source,
+inline void encode_array(Archive &ar, const char *name, const void *source,
                          std::size_t size_bytes) {
-  std::string payload =
-      gzip::compress(reinterpret_cast<const char *>(source), size_bytes);
+  std::string payload = albatross::zstd::internal::compress(
+      source, size_bytes, albatross::zstd::kDefaultCompressionLevel);
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload =
         base64::encode(reinterpret_cast<const unsigned char *>(payload.data()),
@@ -77,10 +77,7 @@ inline void decode_array(Archive &ar, const char *name, void *destination,
   if (::cereal::traits::is_text_archive<Archive>::value) {
     payload = base64::decode(payload);
   }
-  const std::string decompressed =
-      gzip::decompress(payload.data(), payload.size());
-  ALBATROSS_ASSERT(decompressed.size() == expected_bytes);
-  std::memcpy(destination, decompressed.data(), decompressed.size());
+  albatross::zstd::internal::decompress(payload, destination, expected_bytes);
 }
 
 // This exists because 1) the suitesparse memory functions require a
@@ -408,6 +405,8 @@ inline void load(Archive &ar, cholmod_sparse &m,
   }
   detail::suitesparse_cereal_realloc(&m.x, m.nzmax, element_size_bytes);
 
+  std::cout << "m.p size: " << p_size_bytes << " bytes" << std::endl;
+  std::cout << "m.ncol + 1: " << m.ncol + 1 << std::endl;
   detail::decode_array(ar, "m.p", m.p, (m.ncol + 1) * p_size_bytes);
   detail::decode_array(ar, "m.i", m.i, m.nzmax * integer_size_bytes);
   if (!m.packed) {
