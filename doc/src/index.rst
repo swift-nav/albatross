@@ -88,11 +88,12 @@ and plot the results (though this'll require a numerical python environment),
 .. toctree::
     :maxdepth: 1
 
+    foo
     1d-example
     temperature-example
     datasets
     split-apply-combine
-    gp
+    gp-albatross
     custom-models
     crossvalidation
     tuning

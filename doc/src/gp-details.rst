@@ -14,6 +14,13 @@ There are a number of excellent introductions to Gaussian processes (see our :re
 Notation
 ----------------
 
+For the most part the notation below tries to stay as close as possible to the notation used in `Gaussian Processes for Machine Learning`_, but there are a few departures.
+
+In general a bold font variable such as :math:`\rv{y}` indicates a random variable and the non bold font equivalent, $y$, indicates a realization of that variable. Note that this differs from the popular notation of using bold font for vectors, for most of what follows we assume that whether something is a scalar or a vector needs to be inferred from context. As an example, if $\mathbf{y} \sim \mathcal{N}(0, 1)$ then one measurement, $y$, from the distribution $\mathbf{y}$ might be $0.83$. To be explcit that a sample came from a distribution we'd write $y \leftarrow \mathbf{y}$.
+
+Conditional distributions are written with the $|$ symbol so, for example, the random variable $\rv{z}$ given knowledge that $\rv{y}$ is $y$ would be written,  $\rv{z}|\rv{y}=y$.  Often this is shortened to $\rv{z} | y$.  If we really want to be clear about something being a random variable we'll write $\mbox{p}(\rv{z}|y)$.
+
+
 We (mostly) borrow the notation from Gaussian Process for Machine Learning. A process (or function) is written :math:`f(x)` where :math:`x` is some location. In ``albatross`` we call :math:`x` a feature (see :ref:`datasets`). We use bold font, :math:`\mathbf{x}` to represent a vector (or arbitrary number) of some variable. Lower case :math:`x` is used for a single variable and upper case :math:`X` to represent a matrix.
 
 Actual measurements :math:`y` of some process :math:`f` at some location :math:`x` can be written
