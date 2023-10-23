@@ -170,6 +170,8 @@ template <typename CovFunc, typename MeanFunc, typename ImplType>
 class GaussianProcessBase : public ModelBase<ImplType> {
 
 protected:
+  using Base = ModelBase<ImplType>;
+
   template <typename CovarianceRepresentation, typename FitFeatureType>
   using GPFitType = Fit<GPFit<CovarianceRepresentation, FitFeatureType>>;
 
@@ -284,7 +286,8 @@ public:
   _fit_impl(const std::vector<FeatureType> &features,
             const MarginalDistribution &targets) const {
     const auto measurement_features = as_measurements(features);
-    Eigen::MatrixXd cov = covariance_function_(measurement_features);
+    Eigen::MatrixXd cov =
+        covariance_function_(measurement_features, Base::threads_.get());
     MarginalDistribution zero_mean_targets(targets);
     mean_function_.remove_from(measurement_features, &zero_mean_targets.mean);
     return CholeskyFit<FeatureType>(features, cov, zero_mean_targets);
