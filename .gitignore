@@ -46,6 +46,8 @@ cmake-build*/
 .settings/
 .idea/
 /Debug/
+__pycache__/
+.ipynb_checkpoints/
 
 .bazelrc.user
 

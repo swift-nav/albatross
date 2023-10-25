@@ -12,6 +12,7 @@ dependencies:
 - pyproj
 - basemap
 - sphinx
+- line_profiler
 - pip:
   - emcee
   - sphinx-autobuild
