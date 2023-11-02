@@ -1,13 +1,8 @@
 =====================================
 albatross
 =====================================
-|Build Status|
 
 A framework for statistical modelling in C++, with a focus on Gaussian processes.
-
-.. _`albatross`: https://travis-ci.com/swift-nav/albatross
-
-.. |Build Status| image:: https://api.travis-ci.com/swift-nav/albatross.svg
 
 ***********
 Features
@@ -88,17 +83,18 @@ and plot the results (though this'll require a numerical python environment),
 .. toctree::
     :maxdepth: 1
 
+    quickstart
     1d-example
     temperature-example
     datasets
     split-apply-combine
-    gp
-    custom-models
+    gp-background
+    gp-albatross
     crossvalidation
     tuning
     mcmc
-    gp-details
     sparse-gp-details
+    custom-models
     references
 
 

@@ -6,34 +6,6 @@ Gaussian Processess In Albatross
 
 Here we describe how to build and work with Gaussian processes in ``albatross``, this assumes a basic understanding of what Gaussian processes are.  The python package `scikit learn`_ has a good practical introduction and for a complete theoretical explanation the book `Gaussian Process Regression`_ is an excellent resource.  It could also be worth going through the :ref:`1d example<1d-example>` and the :ref:`temperature example <temperature-example>` to get a general idea of how Gaussian processes can be applied.  In this section we'll focus on how to build a Gaussian process in ``albatross``, in particular how to create covariance functions, build a GP from them and how to use the model to make predictions.
 
----------------
-Basic Workflow
----------------
-
-TLDR; Here is an example work flow in which we create a GP, tune its parameters to maximize the leave one out cross validated likelihood, then fit the model and use it to make predictions of unobserved data.
-
-.. code-block:: c
-
-  RegressionDataset<double> training_data = make_training_data();
-  RegressionDataset<double> evaluation_data = make_evaluation_data();
-
-  const IndependentNoise<double> independent_noise;
-  const SquaredExponential<EuclideanDistance> squared_exponential;
-  const auto covariance = squared_exponential + independent_noise;
-  auto gp = gp_from_covariance(covariance);
-
-  albatross::LeaveOneOutLikelihood<> loo_nll;
-  const auto tuned_params = get_tuner(gp, loo_nll, training_data).tune();
-  gp.set_params(tuned_params);
-
-  const auto fit_model = gp.fit(training_data);
-  const Eigen::VectorXd prediction = fit_model.predict(evaluation_data.features).mean();  
-  
-  const double rmse = root_mean_square_error(prediction, evaluation_data.targets);
-
-  std::cout << "Evaluation RMSE: " << rmse << std::endl;
-
-
 .. _`scikit learn`: https://scikit-learn.org/stable/modules/gaussian_process.html
 .. _`Gaussian Process Regression`: http://www.gaussianprocess.org/gpml/chapters/RW2.pdf
 

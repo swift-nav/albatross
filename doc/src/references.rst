@@ -13,6 +13,8 @@ The most comprehensive description of Gaussian processes can be found in
 
 which is available free online. The chapter on Gaussian Process Regression is particularly relevant to albatross.
 
+The `scikit learn documentation <https://scikit-learn.org/stable/modules/gaussian_process.html>`_ is good place to look for a high level overview.
+
 --------------------------
 Sparse Gaussian Processes
 --------------------------
@@ -26,4 +28,5 @@ Though the code uses notation closer to that used in this (excellent) overview o
    [3] A Unifying View of Sparse Approximate Gaussian Process Regression
    Joaquin Quinonero-Candela, Carl Edward Rasmussen
    http://www.jmlr.org/papers/volume6/quinonero-candela05a/quinonero-candela05a.pdf
+
 
