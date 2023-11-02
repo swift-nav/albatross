@@ -1,0 +1,11 @@
+emcee
+jupyter
+line_profiler
+matplotlib
+numpy
+pandas
+pyproj
+scipy
+seaborn
+sphinx
+xarray

@@ -1,6 +1,7 @@
 name: albatross
 dependencies:
 - python>=3.8
+- emcee
 - numpy
 - scipy
 - matplotlib
@@ -11,6 +12,8 @@ dependencies:
 - pyproj
 - basemap
 - sphinx
+- line_profiler
 - pip:
+  - emcee
   - sphinx-autobuild
   - sphinx_rtd_theme
