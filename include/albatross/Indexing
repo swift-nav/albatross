@@ -19,6 +19,7 @@
 #include <albatross/src/indexing/subset.hpp>
 #include <albatross/src/indexing/filter.hpp>
 #include <albatross/src/indexing/apply.hpp>
+#include <albatross/src/indexing/unique.hpp>
 
 #include "utils/AsyncUtils"
 
