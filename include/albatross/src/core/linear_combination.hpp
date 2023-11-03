@@ -42,6 +42,8 @@ template <typename X> struct LinearCombination {
   Eigen::VectorXd coefficients;
 };
 
+namespace linear_combination {
+
 template <typename X> inline auto sum(const X &x, const X &y) {
   Eigen::Vector2d coefs;
   coefs << 1., 1.;
@@ -73,6 +75,16 @@ inline auto difference(const X &x, const Y &y) {
   variant<X, Y> vy = y;
   return difference(vx, vy);
 }
+
+template <typename X> inline auto to_linear_combination(const X &x) {
+  return LinearCombination<X>({x}, Eigen::VectorXd::Ones(1));
+}
+
+template <typename X>
+inline auto to_linear_combination(const LinearCombination<X> &x) {
+  return x;
+}
+} // namespace linear_combination
 
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
