@@ -27,7 +27,8 @@ template <typename ValueType, typename ApplyFunction,
                                       ApplyFunction, ValueType>::value &&
                                       !std::is_same<void, ApplyType>::value,
                                   int>::type = 0>
-inline std::set<ApplyType> unique_values(const std::vector<ValueType> &xs, ApplyFunction &&f) {
+inline std::set<ApplyType> unique_values(const std::vector<ValueType> &xs,
+                                         ApplyFunction &&f) {
   std::set<ApplyType> output;
   for (const auto &v : xs) {
     output.emplace(f(v));
@@ -41,7 +42,7 @@ inline std::set<ApplyType> unique_values(const std::vector<ValueType> &xs, Apply
 
 template <typename ValueType>
 inline ValueType unique_value(const std::set<ValueType> &values) {
-  assert(values.size() == 1);
+  assert(values.size() == 1 && "expected a single unique value");
   return *values.begin();
 }
 
