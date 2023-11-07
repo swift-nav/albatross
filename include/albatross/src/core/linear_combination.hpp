@@ -76,6 +76,10 @@ inline auto difference(const X &x, const Y &y) {
   return difference(vx, vy);
 }
 
+// to_linear_combination(x) lets you construct a LinearCombination
+// without explicitly knowing the type of x. If x is already a
+// LinearCombination it gets returned without modification.
+
 template <typename X> inline auto to_linear_combination(const X &x) {
   return LinearCombination<X>({x}, Eigen::VectorXd::Ones(1));
 }
