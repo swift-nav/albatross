@@ -219,6 +219,7 @@ swift_cc_test(
         "tests/test_group_by.cc",
         "tests/test_indexing.cc",
         "tests/test_linalg_utils.cc",
+        "tests/test_linear_combination.cc",
         "tests/test_map_utils.cc",
         "tests/test_minimum_spanning_tree.cc",
         "tests/test_model_adapter.cc",

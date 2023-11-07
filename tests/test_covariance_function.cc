@@ -230,20 +230,20 @@ TEST(test_covariance_function, test_linear_combinations) {
   const auto one_x = cov_func(x, x);
   const auto one_xy = cov_func(y, x);
 
-  const auto sum_x = sum(x, x);
+  const auto sum_x = linear_combination::sum(x, x);
   EXPECT_EQ(cov_func(sum_x, x), 2. * one_x);
   EXPECT_EQ(cov_func(x, sum_x), 2. * one_x);
   EXPECT_EQ(cov_func(sum_x, sum_x), 4. * one_x);
-  const auto sum_xy = sum(x, y);
+  const auto sum_xy = linear_combination::sum(x, y);
   EXPECT_EQ(cov_func(x, sum_xy), one_x + one_xy);
 
-  const auto diff_y = difference(y, y);
+  const auto diff_y = linear_combination::difference(y, y);
   EXPECT_EQ(cov_func(diff_y, diff_y), 0.);
-  const auto diff_xy = difference(x, y);
+  const auto diff_xy = linear_combination::difference(x, y);
   EXPECT_EQ(cov_func(x, diff_xy), one_x - one_xy);
 
   std::vector<X> xs = {X(), X()};
-  const auto mean_x = mean(xs);
+  const auto mean_x = linear_combination::mean(xs);
   EXPECT_EQ(cov_func(mean_x, mean_x), 0.25 * cov_func(sum_x, sum_x));
 }
 
