@@ -15,5 +15,7 @@ dependencies:
 - line_profiler
 - pip:
   - emcee
+  - scikit-learn
+  - gpflow
   - sphinx-autobuild
   - sphinx_rtd_theme

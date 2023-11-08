@@ -9,3 +9,5 @@ scipy
 seaborn
 sphinx
 xarray
+scikit-learn
+gpflow
