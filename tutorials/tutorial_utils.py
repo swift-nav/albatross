@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from scipy.stats import ks_1samp, norm
 from functools import partial
+from inspect import signature, Parameter
 
 EXAMPLE_SLOPE_VALUE = np.sqrt(2.0)
 EXAMPLE_CONSTANT_VALUE = 3.14159
@@ -20,6 +21,7 @@ MEAS_NOISE = 0.5
 CHEAT = False
 
 x_gridded = np.linspace(LOWEST, HIGHEST, 301)
+
 
 def reshape_inputs(x):
     if x.ndim == 1:
@@ -45,7 +47,7 @@ def sinc(xs):
 
 
 def truth(xs):
-    return (EXAMPLE_SCALE_VALUE * sinc(xs - EXAMPLE_TRANSLATION_VALUE))
+    return EXAMPLE_SCALE_VALUE * sinc(xs - EXAMPLE_TRANSLATION_VALUE)
 
 
 def generate_training_data(n=N):
@@ -131,30 +133,43 @@ def example_fit_and_predict(cov_func, X, y, x_star, meas_noise):
 
 
 def sinc(xs):
-    return np.where(xs == 0, np.ones(xs.size), np.sin(xs) / xs)
+    non_zero = np.nonzero(xs)[0]
+    output = np.ones(xs.shape)
+    output[non_zero] = np.sin(xs[non_zero]) / xs[non_zero]
+    return output
 
 
 def truth(xs):
-    return (EXAMPLE_SCALE_VALUE * sinc(xs - EXAMPLE_TRANSLATION_VALUE))
+    return EXAMPLE_SCALE_VALUE * sinc(xs - EXAMPLE_TRANSLATION_VALUE)
 
 
 def plot_truth(xs):
-    plt.plot(xs, truth(xs),
-             lw=5,
-             color="firebrick", label="truth")
+    plt.plot(xs, truth(xs), lw=5, color="firebrick", label="truth")
 
 
-def plot_measurements(xs, ys):
-    plt.scatter(xs, ys, s=50, color='black', label="measurements")
+def plot_measurements(xs, ys, color="black", label="measurements"):
+    plt.scatter(xs, ys, s=50, color=color, label=label)
 
 
-def plot_spread(xs, mean, variances):
+def plot_spread(xs, mean, variances, ax=None):
+    if ax is None:
+        ax = plt.gca()
+    xs = np.reshape(xs, -1)
+    mean = np.reshape(mean, -1)
+    variances = np.reshape(variances, -1)
     sd = np.sqrt(variances)
-    plt.plot(xs, mean, lw=5, color='steelblue', label="prediction")
-    plt.fill_between(xs, mean + 2*sd, mean - 2*sd,
-                     color='steelblue', alpha=0.2, label="uncertainty")
-    plt.fill_between(xs, mean + sd, mean - sd,
-                     color='steelblue', alpha=0.5, label="uncertainty")
+    ax.plot(xs, mean, lw=5, color="steelblue", label="prediction")
+    ax.fill_between(
+        xs,
+        mean + 2 * sd,
+        mean - 2 * sd,
+        color="steelblue",
+        alpha=0.2,
+        label="uncertainty",
+    )
+    ax.fill_between(
+        xs, mean + sd, mean - sd, color="steelblue", alpha=0.5, label="uncertainty"
+    )
 
 
 def TEST_FIT_AND_PREDICT(f):
@@ -183,15 +198,13 @@ def TEST_FIT_AND_PREDICT(f):
             f"Incorrect covariance [.\n Expected: f{expected_cov} \n Actual: f{actual_cov}"
         )
 
+
 def example_fit(cov_func, X, y, meas_noise):
     K_yy = cov_func(X, X) + meas_noise * meas_noise * np.eye(y.size)
     L = np.linalg.cholesky(K_yy)
     v = scipy.linalg.cho_solve((L, True), y)
-    
-    return {"train_locations": X,
-            "information": v,
-            "cholesky": L,
-            "cov_func": cov_func}
+
+    return {"train_locations": X, "information": v, "cholesky": L, "cov_func": cov_func}
 
 
 def example_predict(fit_model, x_star):
