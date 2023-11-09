@@ -68,7 +68,9 @@ def plot_smooth_examples(x):
 
 def example_squared_exponential(x_i, x_j, sigma=1.0, ell=1.0):
     return (
-        sigma * sigma * np.exp(-np.square(distance_matrix(x_i, x_j)) / np.square(ell))
+        sigma
+        * sigma
+        * np.exp(-0.5 * np.square(distance_matrix(x_i, x_j)) / np.square(ell))
     )
 
 
@@ -227,3 +229,182 @@ def TEST_FIT_THEN_PREDICT(fit, pred):
         return pred(fit(cov_func, X, y, meas_noise), x_star)
 
     TEST_FIT_AND_PREDICT(combined)
+
+
+def assert_functions_close(reference, candidate, *args, threshold=1e-4):
+    expected = reference(*args)
+    actual = candidate(*args)
+    abs_diff = np.abs(expected - actual)
+    if abs_diff > threshold:
+        raise ValueError(f"Expected: {expected} but got {actual}")
+    print("Good Job!")
+    return abs_diff <= threshold
+
+
+def example_compute_independent_likelihood(dist, data):
+    return np.prod(dist.pdf(data))
+
+
+def TEST_COMPUTE_INDEPENDENT_LIKELIHOOD(f):
+    dist = scipy.stats.norm(loc=1.1, scale=2.1)
+    assert_functions_close(
+        example_compute_independent_likelihood, f, dist, dist.rvs(size=10)
+    )
+
+
+def example_compute_independent_log_likelihood(dist, data):
+    return np.sum(dist.logpdf(data))
+
+
+def TEST_COMPUTE_INDEPENDENT_LOG_LIKELIHOOD(f):
+    dist = scipy.stats.norm(loc=1.1, scale=2.1)
+    assert_functions_close(
+        example_compute_independent_log_likelihood, f, dist, dist.rvs(size=10)
+    )
+
+
+def example_compute_independent_negative_log_likelihood(params, ys):
+    mu, sigma = params
+    return -example_compute_independent_log_likelihood(
+        scipy.stats.norm(loc=mu, scale=sigma), ys
+    )
+
+
+def TEST_COMPUTE_INDEPENDENT_NEGATIVE_LOG_LIKELIHOOD(f):
+    y = np.array(
+        [
+            -0.02415509423853975,
+            -2.0601745974286185,
+            -0.6431114465594998,
+            -0.21516292936011427,
+            -1.6847658704470119,
+        ]
+    )
+    params = [-1.1, 2.1]
+
+    assert_functions_close(
+        example_compute_independent_negative_log_likelihood, f, params, y
+    )
+
+
+def example_compute_mvn_log_likelihood(S, y):
+    L = np.linalg.cholesky(S + 1e-12 * np.eye(y.size))
+    _, sqrt_log_det = np.linalg.slogdet(L)
+    Li_y = scipy.linalg.solve_triangular(L, y, lower=True)
+    decorrelated_ll = 0.5 * Li_y.T @ Li_y
+    constant = y.size * 0.5 * np.log(2 * np.pi)
+    return -decorrelated_ll - sqrt_log_det - constant
+
+
+def TEST_COMPUTE_MVN_LOG_LIKELIHOOD(f):
+    S = np.array(
+        [
+            [
+                1.3856753684810348,
+                -0.948119667263291,
+                0.07339153686581486,
+                -1.346752085609235,
+                1.0588760336946892,
+            ],
+            [
+                -0.948119667263291,
+                4.118596313893358,
+                -2.1950866239854387,
+                1.3713638488445923,
+                -0.8986971493288571,
+            ],
+            [
+                0.07339153686581486,
+                -2.1950866239854387,
+                6.107252930579301,
+                1.114190291633452,
+                -1.0165191212603695,
+            ],
+            [
+                -1.346752085609235,
+                1.3713638488445923,
+                1.114190291633452,
+                4.778341927916547,
+                -1.8550052285982568,
+            ],
+            [
+                1.0588760336946892,
+                -0.8986971493288571,
+                -1.0165191212603695,
+                -1.8550052285982568,
+                1.9683792410128251,
+            ],
+        ]
+    )
+    S = 0.5 * (S + S.T)
+
+    mvn_dist = scipy.stats.multivariate_normal(mean=np.zeros(S.shape[0]), cov=S)
+    samp = np.array(
+        [
+            -0.02415509423853975,
+            -2.0601745974286185,
+            -0.6431114465594998,
+            -0.21516292936011427,
+            -1.6847658704470119,
+        ]
+    )
+
+    ll = f(S, samp)
+    expected = mvn_dist.logpdf(samp)
+    abs_diff = np.abs(expected - ll)
+
+    if np.abs(expected + ll) <= 1e-4:
+        raise ValueError("You forgot the negative sign(s)!")
+
+    ll_without_errors = 3.9992009800530663
+    if np.abs(abs_diff - ll_without_errors) <= 1e-4:
+        raise ValueError(
+            f"It appears you've left out the squared error term:\n\n -0.5 * y.T S^-1 y\n\n"
+        )
+
+    ll_without_log_deg = 1.994231445949179
+    if np.abs(abs_diff - ll_without_log_deg) <= 1e-4:
+        raise ValueError(
+            f"It appears you've left out the log det term:\n\n -0.5 * log(det(S))\n\n"
+        )
+
+    ll_without_constant = 4.594692666023871
+    if np.abs(abs_diff - ll_without_constant) <= 1e-4:
+        print(
+            f"It appears you've left out the constant term:\n\n -n/2 log(2 pi)\n\n"
+            "...which is actually OK! Just about anything you'd want to do "
+            "with a likelihood can be down up to a constant."
+        )
+    elif abs_diff > 1e-4:
+        print(f"Expected LL: {ll}  Actual {expected}")
+        raise ValueError(
+            "Ooops, your likelihood for an example doesn't match expectations"
+        )
+
+    if abs_diff == 0.0:
+        print(f"You used scipy's multivariate_normal didn't you :)")
+
+
+def example_compute_sqr_exp_negative_log_likelihood(params, X, y):
+    sigma, ell, meas_noise = params
+    cov_func = partial(example_squared_exponential, sigma=sigma, ell=ell)
+    S = cov_func(X, X) + np.square(meas_noise + 1e-8) * np.eye(y.size)
+    return -example_compute_mvn_log_likelihood(S, y)
+
+
+def TEST_COMPUTE_SQR_EXP_NLL(f):
+    X = np.arange(5)
+    y = np.array(
+        [
+            -0.02415509423853975,
+            -2.0601745974286185,
+            -0.6431114465594998,
+            -0.21516292936011427,
+            -1.6847658704470119,
+        ]
+    )
+    params = [-1.1, 2.1, 0.3]
+
+    assert_functions_close(
+        example_compute_sqr_exp_negative_log_likelihood, f, params, X, y
+    )
