@@ -69,4 +69,27 @@ TEST(test_unique, unique_values_function_mixed) {
   EXPECT_EQ(unique_values(values, foo), expected);
 }
 
+// With sets
+
+TEST(test_unique, unique_values_set_function_empty) {
+  std::set<int> values = {};
+  auto foo = [](const auto &) -> double { return 4.; };
+  std::set<double> expected = {};
+  EXPECT_EQ(unique_values(values, foo), expected);
+}
+
+TEST(test_unique, unique_values_set_function) {
+  std::set<int> values = {3, 1, 5, 2};
+  auto foo = [](const auto &) -> double { return 4.; };
+  std::set<double> expected = {4.};
+  EXPECT_EQ(unique_values(values, foo), expected);
+}
+
+TEST(test_unique, unique_values_set_function_non_trival) {
+  std::set<int> values = {0, 1, 2, 3, 4, 5, 6, 7};
+  auto foo = [](const auto &x) -> double { return x % 2; };
+  std::set<double> expected = {0, 1};
+  EXPECT_EQ(unique_values(values, foo), expected);
+}
+
 } // namespace albatross
