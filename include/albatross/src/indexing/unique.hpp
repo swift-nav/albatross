@@ -30,9 +30,23 @@ template <typename ValueType, typename ApplyFunction,
 inline std::set<ApplyType> unique_values(const std::vector<ValueType> &xs,
                                          ApplyFunction &&f) {
   std::set<ApplyType> output;
-  for (const auto &v : xs) {
-    output.emplace(f(v));
-  }
+  std::transform(xs.begin(), xs.end(), std::inserter(output, output.begin()),
+                 std::forward<ApplyFunction>(f));
+  return output;
+}
+
+template <typename ValueType, typename ApplyFunction,
+          typename ApplyType = typename details::value_only_apply_result<
+              ApplyFunction, ValueType>::type,
+          typename std::enable_if<details::is_valid_value_only_apply_function<
+                                      ApplyFunction, ValueType>::value &&
+                                      !std::is_same<void, ApplyType>::value,
+                                  int>::type = 0>
+inline std::set<ApplyType> unique_values(const std::set<ValueType> &xs,
+                                         ApplyFunction &&f) {
+  std::set<ApplyType> output;
+  std::transform(xs.begin(), xs.end(), std::inserter(output, output.begin()),
+                 std::forward<ApplyFunction>(f));
   return output;
 }
 
