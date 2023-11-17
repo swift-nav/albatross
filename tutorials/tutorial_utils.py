@@ -1,6 +1,7 @@
 import scipy
 import numpy as np
 import matplotlib.pyplot as plt
+import timeit
 
 from scipy.stats import ks_1samp, norm
 from functools import partial
@@ -24,11 +25,14 @@ x_gridded = np.linspace(LOWEST, HIGHEST, 301)
 
 
 def reshape_inputs(x):
+    x = np.array(x)
+    if x.ndim == 0:
+        return np.atleast_2d(x)
     if x.ndim == 1:
         return x[:, None]
     if x.ndim == 2:
         return x
-    raise ValueError("Unexpected shape")
+    raise ValueError("Unexpected shape", x.shape)
 
 
 def distance_matrix(x_i, x_j):
@@ -145,33 +149,34 @@ def truth(xs):
     return EXAMPLE_SCALE_VALUE * sinc(xs - EXAMPLE_TRANSLATION_VALUE)
 
 
-def plot_truth(xs):
-    plt.plot(xs, truth(xs), lw=5, color="firebrick", label="truth")
+def plot_truth(xs, **kwdargs):
+    return plt.plot(xs, truth(xs), lw=5, color="firebrick", label="truth", **kwdargs)[0]
 
 
-def plot_measurements(xs, ys, color="black", label="measurements"):
-    plt.scatter(xs, ys, s=50, color=color, label=label)
+def plot_measurements(xs, ys, color="black", label="measurements", **kwdargs):
+    plt.scatter(xs, ys, s=50, color=color, label=label, **kwdargs)
 
 
-def plot_spread(xs, mean, variances, ax=None):
+def plot_spread(xs, mean, variances, ax=None, color="steelblue"):
     if ax is None:
         ax = plt.gca()
     xs = np.reshape(xs, -1)
     mean = np.reshape(mean, -1)
     variances = np.reshape(variances, -1)
     sd = np.sqrt(variances)
-    ax.plot(xs, mean, lw=5, color="steelblue", label="prediction")
+    line = ax.plot(xs, mean, lw=5, color=color, label="prediction")
     ax.fill_between(
         xs,
         mean + 2 * sd,
         mean - 2 * sd,
-        color="steelblue",
+        color=color,
         alpha=0.2,
         label="uncertainty",
     )
     ax.fill_between(
-        xs, mean + sd, mean - sd, color="steelblue", alpha=0.5, label="uncertainty"
+        xs, mean + sd, mean - sd, color=color, alpha=0.5, label="uncertainty"
     )
+    return line[0]
 
 
 def TEST_FIT_AND_PREDICT(f):
@@ -234,7 +239,10 @@ def TEST_FIT_THEN_PREDICT(fit, pred):
 def assert_functions_close(reference, candidate, *args, threshold=1e-4):
     expected = reference(*args)
     actual = candidate(*args)
-    abs_diff = np.abs(expected - actual)
+    if isinstance(expected, tuple):
+        abs_diff = max(np.max(np.abs(a - b)) for a, b in zip(expected, actual))
+    else:
+        abs_diff = np.abs(expected - actual)
     if abs_diff > threshold:
         raise ValueError(f"Expected: {expected} but got {actual}")
     print("Good Job!")
@@ -408,3 +416,165 @@ def TEST_COMPUTE_SQR_EXP_NLL(f):
     assert_functions_close(
         example_compute_sqr_exp_negative_log_likelihood, f, params, X, y
     )
+
+
+def generate_timings(f):
+    N = 6
+    MIN_MEASUREMENTS = 1000
+    MAX_MEASUREMENTS = 5000
+
+    cov_func = example_squared_exponential
+    for n in np.linspace(MIN_MEASUREMENTS, MAX_MEASUREMENTS, N):
+        n = round(n)
+        X, y = generate_training_data(n)
+        start_time = timeit.default_timer()
+        count = 0
+        while timeit.default_timer() - start_time < 1.0 or count < 3:
+            count = count + 1
+            f(cov_func, X, y, np.array([4]), meas_noise=0.1)
+        timing = (timeit.default_timer() - start_time) / count
+        print(f"Timing with {n} measurements: {timing}")
+        yield n, timing
+
+
+def example_constant_covariance(x_i, x_j, sigma_constant=10.0):
+    m = np.atleast_1d(x_i).shape[0]
+    n = np.atleast_1d(x_j).shape[0]
+    return sigma_constant * sigma_constant * np.ones((m, n))
+
+
+def example_direct_fit_predict_constant(X, y, sigma_constant, meas_noise):
+    var_constant = sigma_constant * sigma_constant
+    inv_var_constant = 1.0 / var_constant
+    var_noise = meas_noise * meas_noise
+    inv_var_noise = 1.0 / var_noise
+    n = y.size
+
+    gamma = inv_var_noise / (inv_var_constant + n * inv_var_noise)
+    ratio = var_constant / var_noise
+    return ratio * np.sum(y - gamma * np.sum(y))
+
+
+def TEST_DIRECT_FIT_PREDICT(f):
+    X = np.arange(5)
+    y = np.array(
+        [
+            -0.02415509423853975,
+            -2.0601745974286185,
+            -0.6431114465594998,
+            -0.21516292936011427,
+            -1.6847658704470119,
+        ]
+    )
+    x_star = [0.0, 1.0]
+
+    assert_functions_close(
+        example_direct_fit_predict_constant, f, X, y, np.pi, np.log(2)
+    )
+
+
+# A helper to solve D^-1 b when D is a vector representing diagonal elements
+def diagonal_solve(D, b):
+    b = np.array(b)
+    if b.ndim == 1:
+        return b / D
+    else:
+        return b / D[:, None]
+
+
+# A helper to evaluate a covariance function to obtain only the
+# diagonal elements of a covariance matrix.
+#
+# diagonal_covariance(cov_func, X) == np.diag(cov_func(X, X))
+def diagonal_variance(cov_func, X):
+    return np.array([cov_func(X[i], X[i])[0, 0] for i in range(X.shape[0])])
+
+
+def example_sparse_fit_and_predict(cov_func, X, y, u, x_star, meas_noise):
+    K_uu = cov_func(u, u)
+    K_uf = cov_func(u, X)
+    K_ff_diag = diagonal_variance(cov_func, X)
+    K_su = cov_func(x_star, u)
+    K_ss = cov_func(x_star, x_star)
+
+    Q_ff_diag = np.diag(K_uf.T @ np.linalg.solve(K_uu, K_uf))
+    D = K_ff_diag - Q_ff_diag + meas_noise * meas_noise
+    S = K_uu + K_uf @ diagonal_solve(D, K_uf.T)
+
+    print(diagonal_solve(D, y).shape)
+    mean = K_su @ np.linalg.solve(S, K_uf) @ diagonal_solve(D, y)
+    cov = (
+        K_ss - K_su @ np.linalg.solve(K_uu, K_su.T) + K_su @ np.linalg.solve(S, K_su.T)
+    )
+    return mean, cov
+
+
+def TEST_SPARSE_FIT_AND_PREDICT(f):
+    X = np.arange(5)
+    y = np.array(
+        [
+            -0.02415509423853975,
+            -2.0601745974286185,
+            -0.6431114465594998,
+            -0.21516292936011427,
+            -1.6847658704470119,
+        ]
+    )
+    U = np.array([0.0])
+    x_star = np.array([0.0, 1.0])
+
+    assert_functions_close(
+        example_sparse_fit_and_predict,
+        f,
+        example_constant_covariance,
+        X,
+        y,
+        U,
+        x_star,
+        MEAS_NOISE,
+    )
+
+
+def example_sparse_fit(cov_func, X, y, U, meas_noise):
+    meas_var = meas_noise * meas_noise
+
+    nugget = 1e-10
+    K_yu = cov_func(X, U)
+    K_uu = cov_func(U, U) + nugget * np.eye(U.shape[0])
+    S = K_uu + (1.0 / meas_var) * np.dot(K_yu.T, K_yu)
+    S = 0.5 * (S + S.T) + nugget * np.eye(S.shape[0])
+
+    L_uu = np.linalg.cholesky(K_uu)
+    L_s = np.linalg.cholesky(S)
+    v = scipy.linalg.cho_solve((L_s, True), np.dot(K_yu.T, y) / meas_var)
+
+    return {
+        "train_locations": U,
+        "information": v,
+        "cholesky_S": L_s,
+        "cholesky_uu": L_uu,
+        "cov_func": cov_func,
+    }
+
+
+def example_sparse_predict(fit_model, x_star):
+    cov_func = fit_model["cov_func"]
+    v = fit_model["information"]
+    L_s = fit_model["cholesky_S"]
+    L_uu = fit_model["cholesky_uu"]
+    U = fit_model["train_locations"]
+
+    K_su = cov_func(x_star, U)
+    K_ss = cov_func(x_star, x_star)
+    mean = np.dot(K_su, v)
+
+    V_ys = scipy.linalg.solve_triangular(L_uu, K_su.T, lower=True)
+    Si_K_us = scipy.linalg.cho_solve((L_s, True), K_su.T)
+    K_su_Si_K_us = np.dot(K_su, Si_K_us)
+    cov = K_ss - np.dot(V_ys.T, V_ys) + K_su_Si_K_us
+    return mean, cov
+
+
+def example_sparse_fit_and_predict(cov_func, X, y, U, x_test, meas_noise):
+    fit_model = example_sparse_fit(cov_func, X, y, U, meas_noise)
+    return example_sparse_predict(fit_model, x_test)
