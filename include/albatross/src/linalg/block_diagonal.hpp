@@ -54,6 +54,11 @@ struct BlockDiagonalLDLT {
 struct BlockDiagonal {
   std::vector<Eigen::MatrixXd> blocks;
 
+  BlockDiagonal(){};
+
+  BlockDiagonal(const std::vector<Eigen::MatrixXd> &&blocks_)
+      : blocks(blocks_) {}
+
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;

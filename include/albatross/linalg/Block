@@ -17,5 +17,6 @@
 #include "../src/linalg/block_utils.hpp"
 #include "../src/linalg/block_diagonal.hpp"
 #include "../src/linalg/block_symmetric.hpp"
+#include "../src/linalg/block_arrow.hpp"
 
 #endif
