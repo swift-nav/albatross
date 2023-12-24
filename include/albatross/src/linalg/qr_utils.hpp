@@ -32,7 +32,14 @@ get_P(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
 }
 
 /*
- * Computes R^-T P^T rhs given R and P from a QR decomposition.
+ * Given a QR decompositoin of a matrix A,
+ *
+ *   A P = Q R
+ *
+ * This computes the square root solve fo the system, A^T A
+ *
+ *   (A^T A)^-1 = (P R^-T R P^T)^-1
+ *              = P R^-1 R^-T P^T
  */
 template <typename MatrixType, typename PermutationScalar>
 inline Eigen::MatrixXd

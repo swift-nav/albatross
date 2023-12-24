@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Swift Navigation Inc.
+ * Copyright (C) 2023 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -72,5 +72,150 @@ TEST(test_linalg_utils, test_block_arrow_ldlt) {
 
   EXPECT_LT((expected - actual).norm(), 1e-8);
 }
+
+TEST(test_linalg_utils, test_cod_reconstruction) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(m, n);
+  A.col(0) = A.col(1);
+  Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> cod(A);
+  std::cout << A << std::endl;
+  
+  std::cout << "rank: " << cod.rank() << std::endl;
+  std::cout << "Q: " << std::endl;
+  const Eigen::MatrixXd Q_full = cod.matrixQ();
+  const Eigen::MatrixXd Q = Q_full.leftCols(cod.rank());
+  std::cout << Q << std::endl;
+  std::cout << "T: " << std::endl;
+  const Eigen::MatrixXd T = cod.matrixT().topLeftCorner(cod.rank(), cod.rank()).triangularView<Eigen::Upper>();
+  std::cout << T << std::endl;
+  const Eigen::MatrixXd Z = cod.matrixZ().topRows(cod.rank());
+  const Eigen::MatrixXd PZt = (cod.colsPermutation() * Z.transpose());
+  const Eigen::MatrixXd ZPt = PZt.transpose();
+  std::cout << "Z: " << std::endl;
+  std::cout << Z << std::endl;
+  std::cout << "ZP.T: " << std::endl;
+  std::cout << ZPt << std::endl;
+
+  const Eigen::MatrixXd recon = Q * T * ZPt;
+  std::cout << "recon:" << std::endl;
+  std::cout << recon << std::endl;
+
+  EXPECT_LT((recon - A).norm(), 1e-6);
+
+  const Eigen::MatrixXd ZZT = Z * Z.transpose();
+  const Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(cod.rank(), cod.rank());
+  std::cout << ZZT << std::endl;
+  EXPECT_LT((ZZT - eye).norm(), 1e-6);
+  const Eigen::MatrixXd QTQ = Q.transpose() * Q;
+  EXPECT_LT((QTQ - eye).norm(), 1e-6);
+
+  const Eigen::MatrixXd Z_null = cod.matrixZ().bottomRows(n - cod.rank());
+  const Eigen::MatrixXd N = (cod.colsPermutation() * Z_null.transpose());
+
+  EXPECT_LT((A * N).norm(), 1e-6);
+}
+
+TEST(test_linalg_utils, test_col_pivot_reconstruction) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(m, n);
+  A.col(0) = A.col(1);
+  std::cout << A << std::endl;
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(A);
+  const Eigen::MatrixXd Q = qr.matrixQ();
+  std::cout << Q << std::endl;
+
+  const Eigen::MatrixXd eye = Q * Q.transpose();
+  std::cout << eye << std::endl;
+  
+  const Eigen::MatrixXd R = get_R(qr);
+  std::cout << "R:" << std::endl;
+  std::cout << R << std::endl;
+
+  //const Eigen::Matrix<int, Eigen::Dynamic, 1> P = qr.colsPermutation().indices();
+
+  const Eigen::MatrixXd RPt = R * qr.colsPermutation().transpose();
+  const Eigen::MatrixXd recon = Q.leftCols(R.rows()) * RPt;
+  std::cout << recon << std::endl;
+  EXPECT_LT((recon - A).norm(), 1e-6);
+}
+
+TEST(test_linalg_utils, test_block_structured_qr) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  const Eigen::Index k = 2;
+  Eigen::MatrixXd A_0 = Eigen::MatrixXd::Random(m, n);
+  //A_0.col(0) = A_0.col(1);
+
+  Eigen::MatrixXd A_1 = Eigen::MatrixXd::Random(m - 1, n);
+
+  BlockDiagonal A({A_0, A_1});
+  Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(A_0.rows() + A_1.rows() + k,
+                                                k);
+  Eigen::MatrixXd dense = Eigen::MatrixXd::Zero(A_0.rows() + A_1.rows() + k,
+                                                A_0.cols() + A_1.cols() + k);
+
+  dense.block(0, 0, A_0.rows(), A_0.cols()) = A_0;
+  dense.block(A_0.rows(), A_0.cols(), A_1.rows(), A_1.cols()) = A_1;
+  dense.rightCols(k) = rhs;
+
+  std::cout << "DENSE ==============" << std::endl;
+  std::cout << dense << std::endl;
+
+  const auto structured_R = create_structured_R(A, rhs);
+
+  const Eigen::MatrixXd actual = dense.transpose() * dense;
+
+  const Eigen::Index block_rows = structured_R.upper_left.rows();
+
+  Eigen::MatrixXd recon = Eigen::MatrixXd::Zero(actual.rows(), actual.cols());
+  Eigen::Index offset = 0;
+  for (const auto &block : structured_R.upper_left.blocks) {
+    Eigen::MatrixXd RP = block.R;
+    std::cout << "----" << std::endl;
+    for (Eigen::Index i = 0; i < block.P.size(); ++i) {
+      std::cout << i << "  " << block.P.coeff(i) << std::endl;
+      RP.col(block.P.coeff(i)) = block.R.col(i);
+    }
+    recon.block(offset, offset, RP.rows(), RP.cols()) = RP.transpose() * RP;
+    const Eigen::MatrixXd cross = structured_R.upper_right.block(offset, 0,
+                                                    RP.rows(), structured_R.upper_right.cols());
+    recon.block(block_rows, offset, cross.cols(), RP.rows()) = cross.transpose() * RP;
+    recon.block(offset, block_rows, RP.rows(), cross.cols()) = recon.block(block_rows, offset, cross.cols(), RP.rows()).transpose();
+    offset += RP.rows();
+  }
+  const DenseR &corner = structured_R.lower_right;
+  const Eigen::Index common_rows = corner.R.rows();
+  Eigen::MatrixXd RP = corner.R;
+  for (Eigen::Index i = 0; i < corner.P.size(); ++i) {
+    RP.col(i) = corner.R.col(corner.P.coeff(i));
+  }
+
+  std::cout << RP << std::endl;
+  const Eigen::MatrixXd D = RP.transpose() * RP;
+  const Eigen::MatrixXd Z = structured_R.upper_right.transpose() * structured_R.upper_right;
+  recon.bottomRightCorner(common_rows, common_rows) = D + Z;
+
+  std::cout << "ACTUAL ==============" << std::endl;
+  std::cout << actual << std::endl;
+  std::cout << "RECON =============" << std::endl;
+  std::cout << recon << std::endl;
+
+  const Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(dense.cols(), dense.cols());
+  const auto sqrt_inv = sqrt_solve(structured_R, eye);
+  std::cout << "SQRT INV =============" << std::endl;
+  std::cout << sqrt_inv << std::endl;
+  const Eigen::MatrixXd inv = sqrt_inv.transpose() * sqrt_inv;
+
+  const Eigen::MatrixXd actual_inv = actual.inverse();
+
+  std::cout << "INV =============" << std::endl;
+  std::cout << inv << std::endl;
+  std::cout << "ACTUAL INV =============" << std::endl;
+  std::cout << actual_inv << std::endl;
+  
+}
+
 
 } // namespace albatross

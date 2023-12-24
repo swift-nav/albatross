@@ -120,6 +120,7 @@ cc_library(
         "include/albatross/src/linalg/block_arrow.hpp",
         "include/albatross/src/linalg/block_diagonal.hpp",
         "include/albatross/src/linalg/block_symmetric.hpp",
+        "include/albatross/src/linalg/block_structured.hpp",
         "include/albatross/src/linalg/block_utils.hpp",
         "include/albatross/src/linalg/print_eigen_directions.hpp",
         "include/albatross/src/linalg/qr_utils.hpp",
@@ -131,6 +132,7 @@ cc_library(
         "include/albatross/src/models/ransac.hpp",
         "include/albatross/src/models/ransac_gp.hpp",
         "include/albatross/src/models/sparse_gp.hpp",
+        "include/albatross/src/models/sparse_structured_gp.hpp",
         "include/albatross/src/samplers/callbacks.hpp",
         "include/albatross/src/samplers/ensemble.hpp",
         "include/albatross/src/samplers/initialization.hpp",
@@ -194,7 +196,9 @@ swift_cc_test_library(
 swift_cc_test(
     name = "albatross-test",
     srcs = [
+        "tests/test_models.h",
         "tests/test_block_arrow.cc",
+        #"tests/test_sparse_structured_gp.cc"
     ],
     copts = COPTS,
     includes = ["tests"],

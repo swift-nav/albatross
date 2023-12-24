@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Swift Navigation Inc.
+ * Copyright (C) 2023 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
  *
  * This source is subject to the license found in the file 'LICENSE' which must
@@ -16,11 +16,6 @@
 namespace albatross {
 
 using PermutationIndices = Eigen::Matrix<Eigen::Index, Eigen::Dynamic, 1>;
-
-struct DenseQR {
-  Eigen::MatrixXd R;
-  PermutationIndices permutation_indices;
-};
 
 struct BlockSymmetricArrowLDLT {
   BlockDiagonalLDLT upper_left;
@@ -72,12 +67,6 @@ block_symmetric_arrow_ldlt(const BlockDiagonal &upper_left,
       lower_right - output.lower_left * output.lower_left.transpose());
   return output;
 }
-
-struct BlockSymmetricArrowSqrt {
-  std::vector<DenseQR> upper_left;
-  Eigen::MatrixXd upper_right;
-  DenseQR lower_right;
-};
 
 } // namespace albatross
 

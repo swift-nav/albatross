@@ -15,23 +15,17 @@
 
 namespace albatross {
 
-namespace details {
-
-constexpr double DEFAULT_NUGGET = 1e-8;
-
-inline std::string measurement_nugget_name() { return "measurement_nugget"; }
-
-inline std::string inducing_nugget_name() { return "inducing_nugget"; }
-
-static constexpr double cSparseRNugget = 1.e-10;
-
-} // namespace details
-
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
-          typename InducingPointStrategy, typename QRImplementation>
+          typename InducingPointStrategy>
 class SparseStructuredGaussianProcessRegression;
 
-template <typename FeatureType> struct SparseStructuredGPFit {};
+template <typename Key, typename FeatureType>
+struct LocalGlobalInducingPoints {
+  std::vector<FeatureType> global;
+  std::map<Key, std::vector<FeatureType> local;
+}
+
+template <typename GroupKey, typename FeatureType> struct SparseStructuredGPFit {};
 
 template <typename GroupKey, typename FeatureType>
 struct Fit<SparseStructuredGPFit<GroupKey, FeatureType>> {
@@ -40,7 +34,7 @@ struct Fit<SparseStructuredGPFit<GroupKey, FeatureType>> {
   GroupKey common_key;
 
   BlockSymmetricArrowLDLT train_covariance;
-  BlockSymmetricArrowSqrt sigma_R;
+  StructuredR sigma_R;
 
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
@@ -67,19 +61,15 @@ struct Fit<SparseStructuredGPFit<GroupKey, FeatureType>> {
 };
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
-          typename InducingPointStrategy,
-          typename QRImplementation = DenseQRImplementation>
+          typename InducingPointStrategy>
 class SparseStructuredGaussianProcessRegression
     : public ModelBase<SparseStructuredGaussianProcessRegression<
                                      CovFunc, MeanFunc, GrouperFunction,
-                                     InducingPointStrategy, QRImplementation>> {
+  InducingPointStrategy>> {
 
 protected:
-  /*
-   * CRTP Helpers
-   */
-  ImplType &impl() { return *static_cast<ImplType *>(this); }
-  const ImplType &impl() const { return *static_cast<const ImplType *>(this); }
+  template <typename CovarianceRepresentation, typename FitFeatureType>
+  using GPFitType = Fit<GPFit<CovarianceRepresentation, FitFeatureType>>;
 
   CovFunc covariance_function_;
   MeanFunc mean_function_;
@@ -88,7 +78,7 @@ protected:
   GrouperFunction independent_group_function_;
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  
+
 public:
 
   SparseStructuredGaussianProcessRegression() : covariance_function_(),
@@ -192,6 +182,7 @@ public:
   //       B_qr->rank());
   // }
 
+
   // Here we create the QR decomposition of:
   //
   //   B = |A^-1/2 K_fu| = |Q_1| R P^T
@@ -200,10 +191,13 @@ public:
   // which corresponds to the inverse square root of Sigma
   //
   //   Sigma = (B^T B)^-1
-  std::unique_ptr<typename QRImplementation::QRType>
+  std::unique_ptr<StructuredR>
   compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
                    const BlockDiagonalLDLT &A_ldlt,
                    const Eigen::MatrixXd &K_fu) const {
+
+    
+    
     Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
     B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
     B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
@@ -217,17 +211,37 @@ public:
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
     // Determine the set of inducing points, u.
-    const auto u =
-        inducing_point_strategy_(this->covariance_function_, features);
-    ALBATROSS_ASSERT(u.size() > 0 && "Empty inducing points!");
 
+    const auto u = inducing_point_strategy_(this->covariance_function_, features);
+
+    ALBATROSS_ASSERT(u.global.size() > 0 && "Empty global inducing points!");
+    ALBATROSS_ASSERT(u.local.size() > 0 && "Empty local inducing points!");
+
+    auto build_block = [&](const auto &, const auto &u_i) -> Eigen::MatrixXd {
+      return covariance_function_(u_i);
+    };
+
+    auto K_ll_blocks = albatross::apply(u.local, build_block);
+    std::size_t i = 0;
+    std::map<KeyType, std::size_t> key_to_index;
+    for (const auto &pair : K_ll_blocks) {
+      key_to_index[pair.first] = i;
+      ++i;
+    };
+
+    const auto K_ll = BlockDiagonal{K_ll_blocks.values()};
+    const auto K_gg = covariance_function_(u.global);
+    const Eigen::MatrixXd K_gc = Eigen::MatrixXd::Zeros(K_ll.rows(), u.global.size());
+
+    const auto K_uu_ldlt = block_symmetric_arrow_ldlt(K_ll, K_lg, K_gg);
+
+    
     BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
-    Eigen::MatrixXd K_fu;
+    BlockSymmetricArrowLDLT K_uu_ldlt;
+    StructuredR sigma_R;
     Eigen::VectorXd y;
-    compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
-                                &K_fu, &y);
-    auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    compute_internal_components(u_g, u_c, features, targets, &A_ldlt, &K_uu_ldlt,
+                                &sigma_R, &y);
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
@@ -453,13 +467,15 @@ private:
   // in the form K_ff = A_ff + Q_ff where Q_ff = K_fu K_uu^-1 K_uf and
   // A_ff is block diagonal and is formed by subtracting Q_ff from K_ff.
   //
-  template <typename InducingFeatureType, typename FeatureType>
+  template <typename Key, typename InducingFeatureType, typename FeatureType>
   void compute_internal_components(
-      const std::vector<InducingFeatureType> &inducing_features,
+                                   const LocalGlobalInducingPoints<Key, InducingFeatureType> &inducing_points,
       const std::vector<FeatureType> &out_of_order_features,
       const MarginalDistribution &out_of_order_targets,
-      BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
-      Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
+      BlockDiagonalLDLT *A_ldlt,
+      BlockSymmetricArrowLDLT *K_uu_ldlt,
+      StructuredR *sigma_R,
+      Eigen::VectorXd *y) const {
 
     ALBATROSS_ASSERT(A_ldlt != nullptr);
     ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
@@ -468,6 +484,14 @@ private:
 
     const auto indexer =
         group_by(out_of_order_features, independent_group_function_).indexers();
+
+    static_assert(std::is_same<decltype(indexer)::key_t, Key>::value);
+    for (const auto &pair : indexer) {
+      if (!map_contains(inducing_points.local, pair.first)) {
+        std::cerr << "Observations had a group " << pair.first << " which does not exist in the inducing points";
+        assert(false && "observations had a group which does not exist in inducing points");
+      }
+    }
 
     const auto out_of_order_measurement_features =
         as_measurements(out_of_order_features);
@@ -493,6 +517,8 @@ private:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
+    
+    
     *K_fu = this->covariance_function_(features, inducing_features,
                                        Base::threads_.get());
 

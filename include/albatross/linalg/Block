@@ -18,5 +18,7 @@
 #include "../src/linalg/block_diagonal.hpp"
 #include "../src/linalg/block_symmetric.hpp"
 #include "../src/linalg/block_arrow.hpp"
+#include "../src/linalg/qr_utils.hpp"
+#include "../src/linalg/block_structured.hpp"
 
 #endif
