@@ -22,8 +22,8 @@ class SparseStructuredGaussianProcessRegression;
 template <typename Key, typename FeatureType>
 struct LocalGlobalInducingPoints {
   std::vector<FeatureType> global;
-  std::map<Key, std::vector<FeatureType> local;
-}
+  std::map<Key, std::vector<FeatureType>> local;
+};
 
 template <typename GroupKey, typename FeatureType> struct SparseStructuredGPFit {};
 
@@ -95,10 +95,10 @@ public:
         inducing_point_strategy_(inducing_point_strategy),
         independent_group_function_(independent_group_function),
         measurement_nugget_(
-            {details::DEFAULT_NUGGET,
+            {details::cDefaultNugget,
              LogScaleUniformPrior(PARAMETER_EPSILON, PARAMETER_MAX)}),
         inducing_nugget_(
-            {details::DEFAULT_NUGGET,
+            {details::cDefaultNugget,
              LogScaleUniformPrior(PARAMETER_EPSILON, PARAMETER_MAX)}){};
 
   ParameterStore get_params() const override {
@@ -182,28 +182,6 @@ public:
   //       B_qr->rank());
   // }
 
-
-  // Here we create the QR decomposition of:
-  //
-  //   B = |A^-1/2 K_fu| = |Q_1| R P^T
-  //       |K_uu^{T/2} |   |Q_2|
-  //
-  // which corresponds to the inverse square root of Sigma
-  //
-  //   Sigma = (B^T B)^-1
-  std::unique_ptr<StructuredR>
-  compute_sigma_qr(const Eigen::SerializableLDLT &K_uu_ldlt,
-                   const BlockDiagonalLDLT &A_ldlt,
-                   const Eigen::MatrixXd &K_fu) const {
-
-    
-    
-    Eigen::MatrixXd B(A_ldlt.rows() + K_uu_ldlt.rows(), K_uu_ldlt.rows());
-    B.topRows(A_ldlt.rows()) = A_ldlt.sqrt_solve(K_fu);
-    B.bottomRows(K_uu_ldlt.rows()) = K_uu_ldlt.sqrt_transpose();
-    return QRImplementation::compute(B, Base::threads_.get());
-  };
-
   template <
       typename FeatureType,
       std::enable_if_t<
@@ -223,6 +201,8 @@ public:
 
     auto K_ll_blocks = albatross::apply(u.local, build_block);
     std::size_t i = 0;
+
+    using KeyType = typename decltype(u.local)::key_t;
     std::map<KeyType, std::size_t> key_to_index;
     for (const auto &pair : K_ll_blocks) {
       key_to_index[pair.first] = i;
@@ -231,21 +211,18 @@ public:
 
     const auto K_ll = BlockDiagonal{K_ll_blocks.values()};
     const auto K_gg = covariance_function_(u.global);
-    const Eigen::MatrixXd K_gc = Eigen::MatrixXd::Zeros(K_ll.rows(), u.global.size());
-
+    const Eigen::MatrixXd K_lg = Eigen::MatrixXd::Zero(K_ll.rows(), u.global.size());
     const auto K_uu_ldlt = block_symmetric_arrow_ldlt(K_ll, K_lg, K_gg);
 
-    
     BlockDiagonalLDLT A_ldlt;
-    BlockSymmetricArrowLDLT K_uu_ldlt;
-    StructuredR sigma_R;
+    StructuredQR sigma_qr;
     Eigen::VectorXd y;
-    compute_internal_components(u_g, u_c, features, targets, &A_ldlt, &K_uu_ldlt,
-                                &sigma_R, &y);
+    compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
+                                &sigma_qr, &y);
 
-    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
+    Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(sigma_R.rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr->solve(y_augmented);
+    const Eigen::VectorXd v = sigma_qr->solve(y_augmented);
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
@@ -313,10 +290,6 @@ public:
 
     return output;
   }
-
-  // This is included to allow the SparseGP to be compatible with fits
-  // generated using a standard GP.
-  using Base::_predict_impl;
 
   template <typename FeatureType, typename FitFeaturetype>
   Eigen::VectorXd
@@ -474,7 +447,7 @@ private:
       const MarginalDistribution &out_of_order_targets,
       BlockDiagonalLDLT *A_ldlt,
       BlockSymmetricArrowLDLT *K_uu_ldlt,
-      StructuredR *sigma_R,
+      StructuredQR *sigma_qr,
       Eigen::VectorXd *y) const {
 
     ALBATROSS_ASSERT(A_ldlt != nullptr);
@@ -517,8 +490,6 @@ private:
     this->mean_function_.remove_from(
         subset(out_of_order_features, reordered_inds), &targets.mean);
 
-    
-    
     *K_fu = this->covariance_function_(features, inducing_features,
                                        Base::threads_.get());
 
@@ -556,11 +527,6 @@ private:
 
     *A_ldlt = A.ldlt();
   }
-
-  Parameter measurement_nugget_;
-  Parameter inducing_nugget_;
-  InducingPointStrategy inducing_point_strategy_;
-  GrouperFunction independent_group_function_;
 };
 
 // rebase_inducing_points takes a Sparse GP which was fit using some set of
@@ -575,12 +541,6 @@ auto rebase_inducing_points(
   return fit_model.get_model().fit_from_prediction(
       new_inducing_points, fit_model.predict(new_inducing_points).joint());
 }
-
-template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
-          typename InducingPointStrategy>
-using SparseQRSparseStructuredGaussianProcessRegression =
-    SparseStructuredGaussianProcessRegression<CovFunc, GrouperFunction,
-                                    InducingPointStrategy, SPQRImplementation>;
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy,

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2023 Swift Navigation Inc.
  * Contact: Swift Navigation <dev@swiftnav.com>
@@ -27,6 +28,12 @@ struct DenseR {
     assert(P.size() == R.rows());
     return R.rows();
   }
+
+  Eigen::Index cols() const {
+    assert(R.rows() == R.cols());
+    assert(P.size() == R.rows());
+    return R.cols();
+  }
 };
 
 struct BlockR {
@@ -39,35 +46,61 @@ struct BlockR {
     }
     return output;
   }
+
+  Eigen::Index cols() const {
+    Eigen::Index output = 0;
+    for (const auto &block : blocks) {
+      output += block.cols();
+    }
+    return output;
+  }
 };
 
+/*
+ * Represents a product of two orthogonal matrices
+ *
+ * |Q_0   0    0   N_0   0 | |I  0 |
+ * | 0   Q_1   0    0   N_1| |0 Q_n|
+ * | 0    0    I    0    0 |
+ *
+ */
 struct StructuredQ {
-  BlockDiagonal upper_left;
-  Eigen::MatrixXd lower_right;
+  std::vector<Eigen::MatrixXd> Q_blocks;
+  std::vector<Eigen::MatrixXd> N_blocks;
+  Eigen::MatrixXd corner;
+
+  Eigen::Index rows() const {
+    Eigen::Index output = corner.rows();
+    for (std::size_t i = 0; i < Q_blocks.size(); ++i) {
+      assert(Q_blocks[i].rows() == N_blocks[i].rows());
+      output += Q_blocks[i].rows();
+      output -= N_blocks[i].cols();
+    }
+    return output;
+  }
+
+  Eigen::Index cols() const {
+    return this->rows();
+  }
 };
 
 struct StructuredR {
   BlockR upper_left;
   Eigen::MatrixXd upper_right;
   DenseR lower_right;
+
+  Eigen::Index rows() const {
+    return upper_left.rows() + lower_right.rows();
+  }
+  Eigen::Index cols() const {
+    return upper_left.cols() + upper_right.cols();
+  }
 };
 
 struct StructuredQR {
   StructuredQ Q;
   StructuredR R;
-}
-
-// static
-// Eigen::MatrixXd get_Q(const Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> &cod) {
-//   const Eigen::MatrixXd Q_full = cod.matrixQ();
-//   return Q_full.leftCols(cod.rank());
-// }
-
-// static
-// Eigen::MatrixXd nullspace(const Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> &cod) {
-//   const Eigen::MatrixXd Z_null = cod.matrixZ().bottomRows(cod.cols() - cod.rank());
-//   return (cod.colsPermutation() * Z_null.transpose());
-// }
+};
 
 namespace detail {
 
@@ -77,7 +110,7 @@ namespace detail {
  *
  *   A_i = [B_i C_i]
  *
- * this holds,
+ * this holds, Q and,
  *
  *   |R_i U_i|
  *   | 0  L_i|
@@ -92,12 +125,10 @@ namespace detail {
  *   cross = |U_i|
  *           |L_i|
  */
-struct IndependentQR {
-  Eigen::MatrixXd Q;
-  DenseR R;
+struct PartialQR {
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr;
   Eigen::MatrixXd cross;
 };
-
 }
 
 /* Given:
@@ -111,9 +142,8 @@ struct IndependentQR {
  *  A = Q R Z P^T
  *
  */
-static
-StructuredR create_structured_R(const BlockDiagonal &left,
-                                const Eigen::MatrixXd &right) {
+static StructuredQR create_structured_qr(const BlockDiagonal &left,
+                                         const Eigen::MatrixXd &right) {
   const auto n_blocks = left.blocks.size();
   const auto common_cols = right.cols();
   assert(right.rows() == left.rows() + common_cols);
@@ -127,23 +157,23 @@ StructuredR create_structured_R(const BlockDiagonal &left,
     offset += left.blocks[i].rows();
   }
 
-  auto precompute_one_block = [&](const auto &i) {
+  auto compute_partial_qr = [&](const auto &i) {
     // TODO: Avoid copying in here?
-    const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(left.blocks[i]);
-    assert(qr.rank() == left.blocks[i].cols());
-    const Eigen::MatrixXd Q = qr.matrixQ();
-    const Eigen::MatrixXd cross = Q.transpose() * right.block(offsets[i], 0, left.blocks[i].rows(), common_cols);
-    DenseR dense;
-    dense.R = get_R(qr);
-    dense.P = qr.colsPermutation();
-    return detail::IndependentQR{Q, dense, cross};
+    detail::PartialQR partial;
+    partial.qr = left.blocks[i].colPivHouseholderQr();
+    assert(partial.qr.rank() == left.blocks[i].cols());
+    partial.cross =
+        partial.qr.matrixQ().transpose() *
+        right.block(offsets[i], 0, left.blocks[i].rows(), common_cols);
+    return partial;
   };
 
   // TODO: async
-  const auto precomputed = apply(inds, precompute_one_block);
+  const auto partial_qrs = apply(inds, compute_partial_qr);
 
-  StructuredR output;
-  output.upper_right = Eigen::MatrixXd::Zero(left.cols(), common_cols);
+  StructuredQ Q;
+  StructuredR R;
+  R.upper_right = Eigen::MatrixXd::Zero(left.cols(), common_cols);
   Eigen::Index augmented_rows = common_cols + left.rows() - left.cols();
   Eigen::MatrixXd X(augmented_rows, common_cols);
   // Fill in C_X
@@ -151,22 +181,33 @@ StructuredR create_structured_R(const BlockDiagonal &left,
   Eigen::Index upper_offset = 0;
   Eigen::Index X_offset = common_cols;
   for (std::size_t i = 0; i < n_blocks; ++i) {
-    const Eigen::Index rows_i = precomputed[i].R.R.rows();
-    output.upper_right.block(upper_offset, 0, rows_i, common_cols) = precomputed[i].cross.topRows(rows_i);
-    upper_offset += rows_i;
+    // TODO: actually use rank? but that might require a switch to COD?
+    const Eigen::Index rank = partial_qrs[i].qr.rank();
+    assert(rank == partial_qrs[i].qr.cols());
+    const Eigen::Index null_rank = partial_qrs[i].qr.rows() - rank;
 
-    const Eigen::Index remaining_rows = precomputed[i].cross.rows() - rows_i;
-    X.block(X_offset, 0, remaining_rows, common_cols) = precomputed[i].cross.bottomRows(remaining_rows);
-    X_offset += remaining_rows;
+    R.upper_right.block(upper_offset, 0, rank, common_cols) =
+        partial_qrs[i].cross.topRows(rank);
+    upper_offset += rank;
 
-    output.upper_left.blocks.emplace_back(std::move(precomputed[i].R));
+    X.block(X_offset, 0, null_rank, common_cols) =
+        partial_qrs[i].cross.bottomRows(null_rank);
+    X_offset += null_rank;
+
+    // TODO: avoid copying to Q?
+    Eigen::MatrixXd Qi = partial_qrs[i].qr.matrixQ();
+    Q.Q_blocks.emplace_back(Qi.leftCols(rank));
+    Q.N_blocks.emplace_back(Qi.rightCols(null_rank));
+    R.upper_left.blocks.emplace_back(
+        DenseR{get_R(partial_qrs[i].qr), partial_qrs[i].qr.colsPermutation()});
   }
 
-  const Eigen::MatrixXd UR = output.upper_right.transpose() * output.upper_right;
+  // const Eigen::MatrixXd UR = R.upper_right.transpose() * R.upper_right;
   const Eigen::MatrixXd XX = X.transpose() * X;
   const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(X);
-  output.lower_right = DenseR{get_R(qr), qr.colsPermutation().indices()};
-  return output;
+  Q.corner = qr.matrixQ();
+  R.lower_right = DenseR{get_R(qr), qr.colsPermutation()};
+  return StructuredQR{Q, R};
 }
 
 /*
@@ -184,22 +225,16 @@ sqrt_solve(const BlockR &block_R,
 
   Eigen::MatrixXd sqrt = Eigen::MatrixXd::Zero(rhs.rows(), rhs.cols());
   assert(rhs.rows() == block_R.rows());
-
+  std::cout << "RHS:" << std::endl;
+  std::cout << rhs << std::endl;
   Eigen::Index offset = 0;
   for (const auto &block : block_R.blocks) {
-    for (Eigen::Index i = 0; i < block.P.size(); ++i) {
-      sqrt.row(offset + i) = rhs.row(offset + block.P.coeff(i));
-    }
-
-    const Eigen::MatrixXd foo = sqrt.block(offset, 0, block.R.rows(), rhs.cols());
-    const Eigen::MatrixXd Rti_foo = block.R.template triangularView<Eigen::Upper>().transpose().solve(foo);
-    // std::cout << "R : " << std::endl;
-    // std::cout << R << std::endl;
-    // std::cout << "FOO : " << std::endl;
-    // std::cout << foo << std::endl;
-    // std::cout << "Rti_foo : " << std::endl;
-    // std::cout << Rti_foo << std::endl;
-    sqrt.block(offset, 0, block.R.rows(), rhs.cols()) = Rti_foo;
+    const auto rhs_i = rhs.block(offset, 0, block.R.rows(), rhs.cols());
+    assert(block.P.rows() == rhs_i.rows());
+    const auto R_i = block.R.template triangularView<Eigen::Upper>();
+    const auto &P_i = block.P;
+    auto sqrt_i = sqrt.block(offset, 0, block.R.rows(), rhs.cols());
+    sqrt_i = R_i.transpose().solve(P_i.transpose() * rhs_i);
     offset += block.R.rows();
   }
   return sqrt;
@@ -230,7 +265,8 @@ sqrt_solve(const StructuredR &structured,
   Eigen::MatrixXd sqrt = Eigen::MatrixXd::Zero(rhs.rows(), rhs.cols());
   const auto block_rows = structured.upper_left.rows();
   auto x = sqrt.topRows(block_rows);
-  x = sqrt_solve(structured.upper_left, rhs.topRows(block_rows));
+  auto rhs_a = rhs.topRows(block_rows);
+  x = sqrt_solve(structured.upper_left, rhs_a);
 
   // At this point we've inverted the block diagonal upper section, so we know
   // x and need y.
@@ -242,18 +278,156 @@ sqrt_solve(const StructuredR &structured,
   //
   //   P R^T y = rhs_b - C x
   //   y = R^-T P^T (rhs_b - C x)
-
-  Eigen::MatrixXd corner = rhs.bottomRows(structured.lower_right.R.rows());
-  corner = corner - structured.upper_right.transpose() * x;
+  auto rhs_b = rhs.bottomRows(structured.lower_right.R.rows());
+  Eigen::MatrixXd corner = rhs_b - structured.upper_right.transpose() * x;
 
   const Eigen::Index offset = structured.upper_left.rows();
-  for (Eigen::Index i = 0; i < structured.lower_right.P.size(); ++i) {
-    sqrt.row(offset + i) = corner.row(structured.lower_right.P.coeff(i));
-  }
+  const Eigen::Index rows = corner.rows();
 
-  sqrt.bottomRows(corner.rows()) = structured.lower_right.R.template triangularView<Eigen::Upper>().transpose().solve(sqrt.bottomRows(structured.lower_right.R.rows()));
+  auto y = sqrt.bottomRows(rows);
+
+  const auto R = structured.lower_right.R.template triangularView<Eigen::Upper>();
+  const auto P = structured.lower_right.P;
+  y = R.transpose().solve(P.transpose() * corner);
 
   return sqrt;
+}
+
+template <typename RhsType>
+inline Eigen::MatrixXd
+solve(const DenseR &RP,
+      const RhsType &rhs) {
+  const auto R = RP.R.template triangularView<Eigen::Upper>();
+  return RP.P * R.solve(rhs);
+}
+
+/*
+ * Computes x such that,
+ *
+ *   x = R^-1 rhs
+ */
+template <typename MatrixType>
+inline Eigen::MatrixXd
+solve(const BlockR &block_R,
+      const MatrixType &rhs) {
+  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rhs.rows(), rhs.cols());
+  assert(rhs.rows() == block_R.rows());
+  Eigen::Index offset = 0;
+  for (const auto &block : block_R.blocks) {
+    const auto rhs_i = rhs.block(offset, 0, block.R.rows(), rhs.cols());
+    auto solve_i = output.block(offset, 0, block.R.rows(), rhs.cols());
+    solve_i = solve(block, rhs_i);
+    offset += block.R.rows();
+  }
+  return output;
+}
+
+template <typename MatrixType>
+inline Eigen::MatrixXd
+solve(const StructuredR &R,
+      const MatrixType &rhs) {
+  assert(R.rows() == R.cols());
+  assert(R.cols() == rhs.rows());
+  // We're trying to invert the following for x, y
+  //   |D C| |x = |rhs_a
+  //   |0 B| |y   |rhs_b
+  //
+  // Which can be broken into two operations,
+  //
+  //   D x + C y = rhs_a
+  //   B y = rhs_b
+  //
+  // First we solve for y:
+  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(R.rows(), rhs.cols());
+  auto y = output.bottomRows(R.lower_right.rows());
+  const Eigen::MatrixXd rhs_b = rhs.bottomRows(R.lower_right.rows());
+  y = solve(R.lower_right, rhs_b);
+
+  // At this point we've inverted the block diagonal upper section, so we know
+  // y and need x.
+  //
+  //   D x + C y = rhs_a
+  //   D x = rhs_a - C y
+  //   x = D^-1 (rhs_a - C y)
+  const auto block_rows = R.upper_left.rows();
+  auto x = output.topRows(block_rows);
+  auto rhs_a = rhs.topRows(block_rows);
+  const Eigen::MatrixXd tmp = rhs_a - R.upper_right * y;
+  x = solve(R.upper_left, tmp);
+
+  return output;
+}
+
+template <typename MatrixType>
+inline
+Eigen::MatrixXd dot_transpose(const StructuredQ &Q, const MatrixType &rhs) {
+  assert(Q.rows() == rhs.rows());
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(Q.cols(), rhs.cols());
+  /*
+   * Q^T = Q_1^T Q_0^T
+   *
+   * First we do the Q_0^T step
+   *
+   *  |Q_0^T rhs_0|   |Q_0^T   0      0| |rhs_0|
+   *  |Q_1^T rhs_1|   | 0     Q_1^T   0| |rhs_1|
+   *  |      rhs_k| = | 0      0      I| |rhs_k|
+   *  |N_0^T rhs_0|   |N_0^T   0      0|
+   *  |N_1^T rhs_1|   | 0    N_1^T    0|
+   */
+  Eigen::Index row = 0;
+  Eigen::Index col = 0;
+  for (const auto &Q_block : Q.Q_blocks) {
+    output.block(row, 0, Q_block.cols(), rhs.cols()) = Q_block.transpose() * rhs.block(col, 0, Q_block.rows(), rhs.cols());
+    row += Q_block.cols();
+    col += Q_block.rows();
+  }
+  const Eigen::Index remaining = Q.rows() - col;
+  output.block(row, 0, remaining, rhs.cols()) = rhs.bottomRows(remaining);
+  row += remaining;
+
+  col = 0;
+  for (const auto &N_block : Q.N_blocks) {
+    output.block(row, 0, N_block.cols(), rhs.cols()) = N_block.transpose() * rhs.block(col, 0, N_block.rows(), rhs.cols());
+    row += N_block.cols();
+    col += N_block.rows();
+  }
+
+  /*
+   * Then we follow with the Q_1^T step
+   *
+   *
+   *  |Q_0^T rhs_0|    |I  0   | |Q_0^T rhs_0|
+   *  |Q_1^T rhs_1| =  |0 Q_c^T| |Q_1^T rhs_1|
+   *  |Q_k^T rhs_k|              |Q_k^T rhs_k|
+   *  |N_0^T rhs_0|              |N_0^T rhs_0|
+   *  |N_1^T rhs_1|              |N_1^T rhs_1|
+   */
+  // TODO: avoid copying here
+  const Eigen::MatrixXd tmp = output.bottomRows(Q.corner.rows());
+  output.bottomRows(Q.corner.cols()) = Q.corner.transpose() * tmp;
+  return output;
+}
+
+/*
+ * A P = QR
+ * A = Q R P^T
+ *
+ * A x = b
+ * (A^T A) x = A^T b
+ * x = (A^T A)^-1 A^T b
+ *   = (P R^T R P^T)^-1 P R^T Q^T b
+ *   = P R^-1 R^-T P^T P R^T Q^T b
+ *   = P R^-1 R^-T R^T Q^T b
+ *   = P R^-1 Q^T b
+ */
+template <typename MatrixType>
+inline Eigen::MatrixXd
+solve(const StructuredQR &structured,
+      const MatrixType &rhs) {
+  // TODO: only compute the top rows, instead of computing them all and chopping
+  Eigen::MatrixXd tmp = dot_transpose(structured.Q, rhs).topRows(structured.R.cols());
+  return solve(structured.R, tmp);
 }
 
 }

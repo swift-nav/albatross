@@ -141,7 +141,7 @@ TEST(test_linalg_utils, test_col_pivot_reconstruction) {
   EXPECT_LT((recon - A).norm(), 1e-6);
 }
 
-TEST(test_linalg_utils, test_block_structured_qr) {
+TEST(test_linalg_utils, test_block_structured_qr_reconstruct_square) {
   const Eigen::Index m = 5;
   const Eigen::Index n = 3;
   const Eigen::Index k = 2;
@@ -163,47 +163,129 @@ TEST(test_linalg_utils, test_block_structured_qr) {
   std::cout << "DENSE ==============" << std::endl;
   std::cout << dense << std::endl;
 
-  const auto structured_R = create_structured_R(A, rhs);
+  const auto structured_qr = create_structured_qr(A, rhs);
 
   const Eigen::MatrixXd actual = dense.transpose() * dense;
 
-  const Eigen::Index block_rows = structured_R.upper_left.rows();
+  const Eigen::Index block_rows = structured_qr.R.upper_left.rows();
 
   Eigen::MatrixXd recon = Eigen::MatrixXd::Zero(actual.rows(), actual.cols());
   Eigen::Index offset = 0;
-  for (const auto &block : structured_R.upper_left.blocks) {
-    Eigen::MatrixXd RP = block.R;
+  for (const auto &block : structured_qr.R.upper_left.blocks) {
+    Eigen::MatrixXd RPt = block.R * block.P.transpose();
     std::cout << "----" << std::endl;
-    for (Eigen::Index i = 0; i < block.P.size(); ++i) {
-      std::cout << i << "  " << block.P.coeff(i) << std::endl;
-      RP.col(block.P.coeff(i)) = block.R.col(i);
-    }
-    recon.block(offset, offset, RP.rows(), RP.cols()) = RP.transpose() * RP;
-    const Eigen::MatrixXd cross = structured_R.upper_right.block(offset, 0,
-                                                    RP.rows(), structured_R.upper_right.cols());
-    recon.block(block_rows, offset, cross.cols(), RP.rows()) = cross.transpose() * RP;
-    recon.block(offset, block_rows, RP.rows(), cross.cols()) = recon.block(block_rows, offset, cross.cols(), RP.rows()).transpose();
-    offset += RP.rows();
+    recon.block(offset, offset, RPt.rows(), RPt.cols()) = RPt.transpose() * RPt;
+    const Eigen::MatrixXd cross = structured_qr.R.upper_right.block(
+        offset, 0, RPt.rows(), structured_qr.R.upper_right.cols());
+    recon.block(block_rows, offset, cross.cols(), RPt.rows()) =
+        cross.transpose() * RPt;
+    recon.block(offset, block_rows, RPt.rows(), cross.cols()) =
+        recon.block(block_rows, offset, cross.cols(), RPt.rows()).transpose();
+    offset += RPt.rows();
   }
-  const DenseR &corner = structured_R.lower_right;
+  const DenseR &corner = structured_qr.R.lower_right;
   const Eigen::Index common_rows = corner.R.rows();
-  Eigen::MatrixXd RP = corner.R;
-  for (Eigen::Index i = 0; i < corner.P.size(); ++i) {
-    RP.col(i) = corner.R.col(corner.P.coeff(i));
-  }
+  Eigen::MatrixXd RPt = corner.R * corner.P.transpose();
 
-  std::cout << RP << std::endl;
-  const Eigen::MatrixXd D = RP.transpose() * RP;
-  const Eigen::MatrixXd Z = structured_R.upper_right.transpose() * structured_R.upper_right;
+  std::cout << RPt << std::endl;
+  const Eigen::MatrixXd D = RPt.transpose() * RPt;
+  const Eigen::MatrixXd Z =
+      structured_qr.R.upper_right.transpose() * structured_qr.R.upper_right;
   recon.bottomRightCorner(common_rows, common_rows) = D + Z;
 
   std::cout << "ACTUAL ==============" << std::endl;
   std::cout << actual << std::endl;
   std::cout << "RECON =============" << std::endl;
   std::cout << recon << std::endl;
+  EXPECT_LT((actual - recon).norm(), 1e-8);
+}
+
+TEST(test_linalg_utils, test_block_structured_qr_reconstruct) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  const Eigen::Index k = 2;
+  Eigen::MatrixXd A_0 = Eigen::MatrixXd::Random(m, n);
+  //A_0.col(0) = A_0.col(1);
+
+  Eigen::MatrixXd A_1 = Eigen::MatrixXd::Random(m - 1, n);
+
+  BlockDiagonal A({A_0, A_1});
+  Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(A_0.rows() + A_1.rows() + k,
+                                                k);
+  Eigen::MatrixXd dense = Eigen::MatrixXd::Zero(A_0.rows() + A_1.rows() + k,
+                                                A_0.cols() + A_1.cols() + k);
+
+  dense.block(0, 0, A_0.rows(), A_0.cols()) = A_0;
+  dense.block(A_0.rows(), A_0.cols(), A_1.rows(), A_1.cols()) = A_1;
+  dense.rightCols(k) = rhs;
+
+  std::cout << "DENSE ==============" << std::endl;
+  std::cout << dense << std::endl;
+
+  const auto structured_qr = create_structured_qr(A, rhs);
+
+  const Eigen::MatrixXd actual = dense.transpose() * dense;
+
+  const Eigen::Index block_rows = structured_qr.R.upper_left.rows();
+
+  Eigen::MatrixXd recon = Eigen::MatrixXd::Zero(actual.rows(), actual.cols());
+  Eigen::Index offset = 0;
+  for (const auto &block : structured_qr.R.upper_left.blocks) {
+    Eigen::MatrixXd RPt = block.R * block.P.transpose();
+    std::cout << "----" << std::endl;
+    recon.block(offset, offset, RPt.rows(), RPt.cols()) = RPt.transpose() * RPt;
+    const Eigen::MatrixXd cross = structured_qr.R.upper_right.block(
+        offset, 0, RPt.rows(), structured_qr.R.upper_right.cols());
+    recon.block(block_rows, offset, cross.cols(), RPt.rows()) =
+        cross.transpose() * RPt;
+    recon.block(offset, block_rows, RPt.rows(), cross.cols()) =
+        recon.block(block_rows, offset, cross.cols(), RPt.rows()).transpose();
+    offset += RPt.rows();
+  }
+  const DenseR &corner = structured_qr.R.lower_right;
+  const Eigen::Index common_rows = corner.R.rows();
+  Eigen::MatrixXd RPt = corner.R * corner.P.transpose();
+
+  std::cout << RPt << std::endl;
+  const Eigen::MatrixXd D = RPt.transpose() * RPt;
+  const Eigen::MatrixXd Z =
+      structured_qr.R.upper_right.transpose() * structured_qr.R.upper_right;
+  recon.bottomRightCorner(common_rows, common_rows) = D + Z;
+
+  std::cout << "ACTUAL ==============" << std::endl;
+  std::cout << actual << std::endl;
+  std::cout << "RECON =============" << std::endl;
+  std::cout << recon << std::endl;
+  EXPECT_LT((actual - recon).norm(), 1e-8);
+}
+
+TEST(test_linalg_utils, test_block_structured_qr_sqrt_solve) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  const Eigen::Index k = 2;
+  Eigen::MatrixXd A_0 = Eigen::MatrixXd::Random(m, n);
+  // A_0.col(0) = A_0.col(1);
+
+  Eigen::MatrixXd A_1 = Eigen::MatrixXd::Random(m - 1, n);
+
+  BlockDiagonal A({A_0, A_1});
+  Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(A_0.rows() + A_1.rows() + k, k);
+  Eigen::MatrixXd dense = Eigen::MatrixXd::Zero(A_0.rows() + A_1.rows() + k,
+                                                A_0.cols() + A_1.cols() + k);
+
+  dense.block(0, 0, A_0.rows(), A_0.cols()) = A_0;
+  dense.block(A_0.rows(), A_0.cols(), A_1.rows(), A_1.cols()) = A_1;
+  dense.rightCols(k) = rhs;
+
+  std::cout << "DENSE ==============" << std::endl;
+  std::cout << dense << std::endl;
+
+  const auto structured_qr = create_structured_qr(A, rhs);
+
+  const Eigen::MatrixXd actual = dense.transpose() * dense;
 
   const Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(dense.cols(), dense.cols());
-  const auto sqrt_inv = sqrt_solve(structured_R, eye);
+  const auto sqrt_inv = sqrt_solve(structured_qr.R, eye);
   std::cout << "SQRT INV =============" << std::endl;
   std::cout << sqrt_inv << std::endl;
   const Eigen::MatrixXd inv = sqrt_inv.transpose() * sqrt_inv;
@@ -214,8 +296,74 @@ TEST(test_linalg_utils, test_block_structured_qr) {
   std::cout << inv << std::endl;
   std::cout << "ACTUAL INV =============" << std::endl;
   std::cout << actual_inv << std::endl;
-  
+  EXPECT_LT((inv - actual_inv).norm(), 1e-8);
 }
+
+TEST(test_linalg_utils, test_block_structured_q_transpose) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  const Eigen::Index k = 2;
+  Eigen::MatrixXd A_0 = Eigen::MatrixXd::Random(m, n);
+  // A_0.col(0) = A_0.col(1);
+
+  Eigen::MatrixXd A_1 = Eigen::MatrixXd::Random(m - 1, n);
+
+  BlockDiagonal A({A_0, A_1});
+  Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(A_0.rows() + A_1.rows() + k, k);
+  Eigen::MatrixXd dense = Eigen::MatrixXd::Zero(A_0.rows() + A_1.rows() + k,
+                                                A_0.cols() + A_1.cols() + k);
+
+  dense.block(0, 0, A_0.rows(), A_0.cols()) = A_0;
+  dense.block(A_0.rows(), A_0.cols(), A_1.rows(), A_1.cols()) = A_1;
+  dense.rightCols(k) = rhs;
+
+  std::cout << "DENSE ==============" << std::endl;
+  std::cout << dense << std::endl;
+
+  const auto structured_qr = create_structured_qr(A, rhs);
+
+  Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(dense.rows(), dense.rows());
+  const Eigen::MatrixXd Qt = dot_transpose(structured_qr.Q, eye);
+
+  // Q^T Q = I
+  EXPECT_LT((Qt * Qt.transpose() - eye).norm(), 1e-8);
+  // Q^T Q, but with dot_transpose()
+  const auto hopefully_eye = dot_transpose(structured_qr.Q, Qt.transpose());
+  EXPECT_LT((hopefully_eye - eye).norm(), 1e-8);
+}
+
+TEST(test_linalg_utils, test_block_structured_qr_solve) {
+  const Eigen::Index m = 5;
+  const Eigen::Index n = 3;
+  const Eigen::Index k = 2;
+  Eigen::MatrixXd A_0 = Eigen::MatrixXd::Random(m, n);
+  // A_0.col(0) = A_0.col(1);
+
+  Eigen::MatrixXd A_1 = Eigen::MatrixXd::Random(m - 1, n);
+
+  BlockDiagonal A({A_0, A_1});
+  Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(A_0.rows() + A_1.rows() + k, k);
+  Eigen::MatrixXd dense = Eigen::MatrixXd::Zero(A_0.rows() + A_1.rows() + k,
+                                                A_0.cols() + A_1.cols() + k);
+
+  dense.block(0, 0, A_0.rows(), A_0.cols()) = A_0;
+  dense.block(A_0.rows(), A_0.cols(), A_1.rows(), A_1.cols()) = A_1;
+  dense.rightCols(k) = rhs;
+
+  const auto structured_qr = create_structured_qr(A, rhs);
+
+  const Eigen::MatrixXd x = Eigen::MatrixXd::Random(dense.cols(), 1);
+  const Eigen::MatrixXd b = dense * x;
+
+  const auto qr = dense.colPivHouseholderQr();
+  const Eigen::MatrixXd direct = qr.solve(b);
+
+  EXPECT_LT((direct - x).norm(), 1e-8);
+
+  const auto soln = solve(structured_qr, b);
+  EXPECT_LT((soln - x).norm(), 1e-8);
+}
+
 
 
 } // namespace albatross
