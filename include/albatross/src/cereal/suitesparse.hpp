@@ -149,7 +149,6 @@ inline void save(Archive &ar, cholmod_common const &cc,
   // workspace, so we don't even do anything special when we
   // deserialize.
   ar(CEREAL_NVP(cc.itype));
-  ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
   ar(CEREAL_NVP(cc.status));
   ar(CEREAL_NVP(cc.fl));
@@ -177,7 +176,7 @@ inline void save(Archive &ar, cholmod_common const &cc,
   ar(CEREAL_NVP(cc.SPQR_flopcount_bound));
   ar(CEREAL_NVP(cc.SPQR_tol_used));
   ar(CEREAL_NVP(cc.SPQR_norm_E_fro));
-  static_assert(sizeof(cc.SPQR_istat) == 10 * sizeof(SuiteSparse_long),
+  static_assert(sizeof(cc.SPQR_istat) == 8 * sizeof(SuiteSparse_long),
                 "cholmod_common.SPQR_istat expected to have 10 elements.");
   ar(::cereal::make_nvp("cc.SPQR_istat0", cc.SPQR_istat[0]));
   ar(::cereal::make_nvp("cc.SPQR_istat1", cc.SPQR_istat[1]));
@@ -261,7 +260,6 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.mark));
   ALBATROSS_ASSERT(cholmod_l_free_work(&cc) == 1);
   ar(CEREAL_NVP(cc.itype));
-  ar(CEREAL_NVP(cc.dtype));
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
   ar(CEREAL_NVP(cc.status));
   ar(CEREAL_NVP(cc.fl));
@@ -289,7 +287,7 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.SPQR_flopcount_bound));
   ar(CEREAL_NVP(cc.SPQR_tol_used));
   ar(CEREAL_NVP(cc.SPQR_norm_E_fro));
-  static_assert(sizeof(cc.SPQR_istat) == 10 * sizeof(SuiteSparse_long),
+  static_assert(sizeof(cc.SPQR_istat) == 8 * sizeof(SuiteSparse_long),
                 "cholmod_common.SPQR_istat expected to have 10 elements.");
   ar(::cereal::make_nvp("cc.SPQR_istat0", cc.SPQR_istat[0]));
   ar(::cereal::make_nvp("cc.SPQR_istat1", cc.SPQR_istat[1]));
