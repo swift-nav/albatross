@@ -15,9 +15,8 @@
 
 namespace cereal {
 
-static_assert(CHOLMOD_VERSION >= CHOLMOD_VER_CODE(5, 0),
-              "Suitesparse including at least version 5.0 of CHOLMOD is "
-              "required. E.g. suitesparse 7.4");
+static_assert(SUITESPARSE_VERSION >= SUITESPARSE_VER_CODE(7, 4),
+              "Suitesparse version 7.4 or greater is required.");
 
 template <class Archive>
 inline void serialize(Archive &ar, cholmod_common::cholmod_method_struct &cms,
