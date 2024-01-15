@@ -80,10 +80,10 @@ http_archive(
 http_archive(
     name = "suitesparse",
     build_file = "@rules_swiftnav//third_party:suitesparse.BUILD",
-    sha256 = "f9a5cc2316a967198463198f7bf10fb8c4332de6189b0e405419a7092bc921b7",
-    strip_prefix = "SuiteSparse-7.4.0",
+    sha256 = "dccfb5f75aa83fe2edb4eb2462fc984a086c82bad8433f63c31048d84b565d74",
+    strip_prefix = "SuiteSparse-7.5.1",
     urls = [
-        "https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/refs/tags/v7.4.0.tar.gz",
+        "https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/refs/tags/v7.5.1.tar.gz",
     ],
 )
 
