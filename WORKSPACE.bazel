@@ -6,7 +6,7 @@ http_archive(
     name = "rules_swiftnav",
     sha256 = "807ad0cd61f8c0d7b98499a25c6bab7fee9bf17bc977e5e142cd6fccc463eb9d",
     strip_prefix = "rules_swiftnav-rules_swiftnav-58f1d96472b43afe7995f9a17873365e15989f78",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/rules_swiftnav-58f1d96472b43afe7995f9a17873365e15989f78.tar.gz",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/58f1d96472b43afe7995f9a17873365e15989f78.tar.gz",
 )
 
 load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
