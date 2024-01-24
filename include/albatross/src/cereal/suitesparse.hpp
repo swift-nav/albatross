@@ -15,9 +15,6 @@
 
 namespace cereal {
 
-static_assert(SUITESPARSE_VERSION >= SUITESPARSE_VER_CODE(7, 5),
-              "Suitesparse version 7.5 or greater is required.");
-
 template <class Archive>
 inline void serialize(Archive &ar, cholmod_common::cholmod_method_struct &cms,
                       std::uint32_t version ALBATROSS_UNUSED) {
@@ -152,6 +149,11 @@ inline void save(Archive &ar, cholmod_common const &cc,
   // workspace, so we don't even do anything special when we
   // deserialize.
   ar(CEREAL_NVP(cc.itype));
+
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  ar(CEREAL_NVP(cc.dtype));
+#endif
+
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
   ar(CEREAL_NVP(cc.status));
   ar(CEREAL_NVP(cc.fl));
@@ -180,8 +182,15 @@ inline void save(Archive &ar, cholmod_common const &cc,
   ar(CEREAL_NVP(cc.SPQR_tol_used));
   ar(CEREAL_NVP(cc.SPQR_norm_E_fro));
 
+  // The number of elements was size 10 in CHOLMOD v4.2; reduced to 8 in CHOLMOD
+  // v5:
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  constexpr size_t cNumSPQRElements = 10;
+#else
+  constexpr size_t cNumSPQRElements = 8;
+#endif
   static_assert(
-      sizeof(cc.SPQR_istat) == 8 * sizeof(SuiteSparse_long),
+      sizeof(cc.SPQR_istat) == cNumSPQRElements * sizeof(SuiteSparse_long),
       "cholmod_common.SPQR_istat expected to have certain number of elements.");
 
   ar(::cereal::make_nvp("cc.SPQR_istat0", cc.SPQR_istat[0]));
@@ -192,6 +201,11 @@ inline void save(Archive &ar, cholmod_common const &cc,
   ar(::cereal::make_nvp("cc.SPQR_istat5", cc.SPQR_istat[5]));
   ar(::cereal::make_nvp("cc.SPQR_istat6", cc.SPQR_istat[6]));
   ar(::cereal::make_nvp("cc.SPQR_istat7", cc.SPQR_istat[7]));
+
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  ar(::cereal::make_nvp("cc.SPQR_istat8", cc.SPQR_istat[8]));
+  ar(::cereal::make_nvp("cc.SPQR_istat9", cc.SPQR_istat[9]));
+#endif
 
   // Completely ignore all the GPU stuff.
 #ifdef GPU_BLAS
@@ -264,6 +278,11 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.mark));
   ALBATROSS_ASSERT(cholmod_l_free_work(&cc) == 1);
   ar(CEREAL_NVP(cc.itype));
+
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  ar(CEREAL_NVP(cc.dtype));
+#endif
+
   ar(CEREAL_NVP(cc.no_workspace_reallocate));
   ar(CEREAL_NVP(cc.status));
   ar(CEREAL_NVP(cc.fl));
@@ -292,10 +311,17 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.SPQR_tol_used));
   ar(CEREAL_NVP(cc.SPQR_norm_E_fro));
 
-  static_assert(
-      sizeof(cc.SPQR_istat) == 8 * sizeof(SuiteSparse_long),
-      "cholmod_common.SPQR_istat expected to have certain number of elements.");
+// The number of elements was size 10 in CHOLMOD v4.2; reduced to 8 in CHOLMOD
+// v5:
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  constexpr size_t cNumSPQRElements = 10;
+#else
+  constexpr size_t cNumSPQRElements = 8;
+#endif
 
+  static_assert(
+      sizeof(cc.SPQR_istat) == cNumSPQRElements * sizeof(SuiteSparse_long),
+      "cholmod_common.SPQR_istat expected to have certain number of elements.");
   ar(::cereal::make_nvp("cc.SPQR_istat0", cc.SPQR_istat[0]));
   ar(::cereal::make_nvp("cc.SPQR_istat1", cc.SPQR_istat[1]));
   ar(::cereal::make_nvp("cc.SPQR_istat2", cc.SPQR_istat[2]));
@@ -304,6 +330,11 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(::cereal::make_nvp("cc.SPQR_istat5", cc.SPQR_istat[5]));
   ar(::cereal::make_nvp("cc.SPQR_istat6", cc.SPQR_istat[6]));
   ar(::cereal::make_nvp("cc.SPQR_istat7", cc.SPQR_istat[7]));
+
+#if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
+  ar(::cereal::make_nvp("cc.SPQR_istat8", cc.SPQR_istat[8]));
+  ar(::cereal::make_nvp("cc.SPQR_istat9", cc.SPQR_istat[9]));
+#endif
 
   // Completely ignore all the GPU stuff.
 #ifdef GPU_BLAS
