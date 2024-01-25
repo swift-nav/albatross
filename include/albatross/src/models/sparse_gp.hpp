@@ -725,8 +725,14 @@ template <typename ModelType, typename FeatureType, typename NewFeatureType>
 auto rebase_inducing_points(
     const FitModel<ModelType, Fit<SparseGPFit<FeatureType>>> &fit_model,
     const std::vector<NewFeatureType> &new_inducing_points) {
-  return fit_model.get_model().fit_from_prediction(
-      new_inducing_points, fit_model.predict(new_inducing_points).joint());
+  auto pred = fit_model.predict(new_inducing_points).joint();
+  pred.covariance.diagonal() +=
+    details::DEFAULT_NUGGET * Eigen::VectorXd::Ones(pred.size());
+    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ev(pred.covariance);
+    // const Eigen::VectorXd values = ev.eigenvalues().real();
+    // std::cout << "REBASE MIN: " << std::scientific << values.minCoeff() << std::endl;
+    // std::cout << "REBASE MAX: " << std::scientific << values.maxCoeff() << std::endl;
+  return fit_model.get_model().fit_from_prediction(new_inducing_points, pred);
 }
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
