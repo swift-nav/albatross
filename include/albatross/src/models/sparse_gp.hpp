@@ -107,10 +107,10 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
       const Eigen::MatrixXd &sigma_R_,
-      PermutationIndices &&permutation_indices_,
+      const PermutationIndices &permutation_indices_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
       : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(sigma_R_), permutation_indices(std::move(permutation_indices_)),
+        sigma_R(sigma_R_), permutation_indices(permutation_indices_),
         information(information_), numerical_rank(numerical_rank_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {

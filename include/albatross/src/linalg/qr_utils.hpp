@@ -33,13 +33,8 @@ inline Eigen::MatrixXd
 sqrt_solve(const Eigen::MatrixXd &R,
            const PermutationIndicesType &permutation_indices,
            const MatrixType &rhs) {
-
-  Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
-  for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {
-    sqrt.row(i) = rhs.row(permutation_indices.coeff(i));
-  }
-  sqrt = R.template triangularView<Eigen::Upper>().transpose().solve(sqrt);
-  return sqrt;
+  return R.template triangularView<Eigen::Upper>().transpose().solve(
+      permute::transpose_from_left(permutation_indices, rhs));
 }
 
 template <typename MatrixType>
