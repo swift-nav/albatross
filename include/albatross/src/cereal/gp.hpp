@@ -41,8 +41,8 @@ inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_covariance", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
-  archive(cereal::make_nvp("sigma_R", fit.sigma_R));
-  archive(cereal::make_nvp("permutation_indices", fit.permutation_indices));
+  archive(cereal::make_nvp("R", fit.R));
+  archive(cereal::make_nvp("P", fit.P));
   if (version > 1) {
     archive(cereal::make_nvp("numerical_rank", fit.numerical_rank));
   } else {
@@ -53,9 +53,9 @@ inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
 
 template <typename Archive, typename CovFunc, typename MeanFunc,
           typename ImplType>
-void save(Archive &archive,
-          const GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
-          const std::uint32_t) {
+inline void save(Archive &archive,
+                 const GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
+                 const std::uint32_t) {
   archive(cereal::make_nvp("name", gp.get_name()));
   archive(cereal::make_nvp("params", gp.get_params()));
   archive(cereal::make_nvp("insights", gp.insights));
@@ -63,9 +63,9 @@ void save(Archive &archive,
 
 template <typename Archive, typename CovFunc, typename MeanFunc,
           typename ImplType>
-void load(Archive &archive,
-          GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
-          const std::uint32_t version) {
+inline void load(Archive &archive,
+                 GaussianProcessBase<CovFunc, MeanFunc, ImplType> &gp,
+                 const std::uint32_t version) {
   if (version > 0) {
     std::string model_name;
     archive(cereal::make_nvp("name", model_name));

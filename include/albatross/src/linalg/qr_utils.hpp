@@ -25,21 +25,23 @@ get_R(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
       .template triangularView<Eigen::Upper>();
 }
 
+inline Eigen::PermutationMatrixX
+get_P(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr) {
+  return Eigen::PermutationMatrixX(
+      qr.colsPermutation().indices().template cast<Eigen::Index>());
+}
+
 /*
  * Computes R^-T P^T rhs given R and P from a QR decomposition.
  */
-template <typename MatrixType, typename PermutationIndicesType>
+template <typename MatrixType, typename PermutationScalar>
 inline Eigen::MatrixXd
 sqrt_solve(const Eigen::MatrixXd &R,
-           const PermutationIndicesType &permutation_indices,
+           const Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic,
+                                          PermutationScalar> &P,
            const MatrixType &rhs) {
-
-  Eigen::MatrixXd sqrt(rhs.rows(), rhs.cols());
-  for (Eigen::Index i = 0; i < permutation_indices.size(); ++i) {
-    sqrt.row(i) = rhs.row(permutation_indices.coeff(i));
-  }
-  sqrt = R.template triangularView<Eigen::Upper>().transpose().solve(sqrt);
-  return sqrt;
+  return R.template triangularView<Eigen::Upper>().transpose().solve(
+      P.transpose() * rhs);
 }
 
 template <typename MatrixType>
@@ -47,7 +49,7 @@ inline Eigen::MatrixXd
 sqrt_solve(const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> &qr,
            const MatrixType &rhs) {
   const Eigen::MatrixXd R = get_R(qr);
-  return sqrt_solve(R, qr.colsPermutation().indices(), rhs);
+  return sqrt_solve(R, qr.colsPermutation(), rhs);
 }
 
 } // namespace albatross

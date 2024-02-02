@@ -19,19 +19,20 @@ using SparseMatrix = Eigen::SparseMatrix<double>;
 
 using SPQR = Eigen::SPQR<SparseMatrix>;
 
-using SparsePermutationMatrix =
-    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic,
-                             SPQR::StorageIndex>;
-
 inline Eigen::MatrixXd get_R(const SPQR &qr) {
   return qr.matrixR()
       .topLeftCorner(qr.cols(), qr.cols())
       .template triangularView<Eigen::Upper>();
 }
 
+inline Eigen::PermutationMatrixX get_P(const SPQR &qr) {
+  return Eigen::PermutationMatrixX(
+      qr.colsPermutation().indices().template cast<Eigen::Index>());
+}
+
 template <typename MatrixType>
 inline Eigen::MatrixXd sqrt_solve(const SPQR &qr, const MatrixType &rhs) {
-  return sqrt_solve(get_R(qr), qr.colsPermutation().indices(), rhs);
+  return sqrt_solve(get_R(qr), get_P(qr), rhs);
 }
 
 // Matrices with any dimension smaller than this will use a special

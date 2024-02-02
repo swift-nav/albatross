@@ -97,8 +97,8 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   std::vector<FeatureType> train_features;
   Eigen::SerializableLDLT train_covariance;
-  Eigen::MatrixXd sigma_R;
-  PermutationIndices permutation_indices;
+  Eigen::MatrixXd R;
+  Eigen::PermutationMatrixX P;
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
 
@@ -106,12 +106,10 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
-      const Eigen::MatrixXd &sigma_R_,
-      PermutationIndices &&permutation_indices_,
+      const Eigen::MatrixXd &R_, const Eigen::PermutationMatrixX &P_,
       const Eigen::VectorXd &information_, Eigen::Index numerical_rank_)
-      : train_features(features_), train_covariance(train_covariance_),
-        sigma_R(sigma_R_), permutation_indices(std::move(permutation_indices_)),
-        information(information_), numerical_rank(numerical_rank_) {}
+      : train_features(features_), train_covariance(train_covariance_), R(R_),
+        P(P_), information(information_), numerical_rank(numerical_rank_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
     ALBATROSS_ASSERT(mean_shift.size() == information.size());
@@ -120,9 +118,8 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
 
   bool operator==(const Fit<SparseGPFit<FeatureType>> &other) const {
     return (train_features == other.train_features &&
-            train_covariance == other.train_covariance &&
-            sigma_R == other.sigma_R &&
-            permutation_indices == other.permutation_indices &&
+            train_covariance == other.train_covariance && R == other.R &&
+            P.indices() == other.P.indices() &&
             information == other.information &&
             numerical_rank == other.numerical_rank);
   }
@@ -325,9 +322,9 @@ public:
     compute_internal_components(old_fit.train_features, features, targets,
                                 &A_ldlt, &K_uu_ldlt, &K_fu, &y);
 
-    const Eigen::Index n_old = old_fit.sigma_R.rows();
+    const Eigen::Index n_old = old_fit.R.rows();
     const Eigen::Index n_new = A_ldlt.rows();
-    const Eigen::Index k = old_fit.sigma_R.cols();
+    const Eigen::Index k = old_fit.R.cols();
     Eigen::MatrixXd B = Eigen::MatrixXd::Zero(n_old + n_new, k);
 
     ALBATROSS_ASSERT(n_old == k);
@@ -335,10 +332,7 @@ public:
     // Form:
     //   B = |R_old P_old^T| = |Q_1| R P^T
     //       |A^{-1/2} K_fu|   |Q_2|
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
-      const Eigen::Index &pi = old_fit.permutation_indices.coeff(i);
-      B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
-    }
+    B.topRows(old_fit.P.rows()) = old_fit.R * old_fit.P.transpose();
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
     const auto B_qr = QRImplementation::compute(B, Base::threads_.get());
 
@@ -347,13 +341,9 @@ public:
     //           |A^{-1/2} y         |
     ALBATROSS_ASSERT(old_fit.information.size() == n_old);
     Eigen::VectorXd y_augmented(n_old + n_new);
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
-      y_augmented[i] =
-          old_fit.information[old_fit.permutation_indices.coeff(i)];
-    }
     y_augmented.topRows(n_old) =
-        old_fit.sigma_R.template triangularView<Eigen::Upper>() *
-        y_augmented.topRows(n_old);
+        old_fit.R.template triangularView<Eigen::Upper>() *
+        (old_fit.P.transpose() * old_fit.information);
 
     y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
     const Eigen::VectorXd v = B_qr->solve(y_augmented);
@@ -365,10 +355,9 @@ public:
           Eigen::VectorXd::Constant(B_qr->cols(), details::cSparseRNugget);
     }
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(
-        old_fit.train_features, old_fit.train_covariance, R,
-        B_qr->colsPermutation().indices().template cast<Eigen::Index>(), v,
-        B_qr->rank());
+
+    return FitType(old_fit.train_features, old_fit.train_covariance, R,
+                   get_P(*B_qr), v, B_qr->rank());
   }
 
   // Here we create the QR decomposition of:
@@ -415,10 +404,7 @@ public:
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
     using FitType = Fit<SparseGPFit<InducingPointFeatureType>>;
-    return FitType(
-        u, K_uu_ldlt, get_R(*B_qr),
-        B_qr->colsPermutation().indices().template cast<Eigen::Index>(), v,
-        B_qr->rank());
+    return FitType(u, K_uu_ldlt, get_R(*B_qr), get_P(*B_qr), v, B_qr->rank());
   }
 
   template <typename FeatureType>
@@ -471,9 +457,8 @@ public:
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
     const auto B_qr = QRImplementation::compute(sigma_inv_sqrt, nullptr);
 
-    new_fit.permutation_indices =
-        B_qr->colsPermutation().indices().template cast<Eigen::Index>();
-    new_fit.sigma_R = get_R(*B_qr);
+    new_fit.P = get_P(*B_qr);
+    new_fit.R = get_R(*B_qr);
     new_fit.numerical_rank = B_qr->rank();
 
     return output;
@@ -519,8 +504,8 @@ public:
         Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
     marginal_variance -= Q_diag;
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+        sqrt_solve(sparse_gp_fit.R, sparse_gp_fit.P, cross_cov);
     const Eigen::VectorXd S_diag =
         S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
     marginal_variance += S_diag;
@@ -537,8 +522,8 @@ public:
         this->covariance_function_(sparse_gp_fit.train_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+        sqrt_solve(sparse_gp_fit.R, sparse_gp_fit.P, cross_cov);
 
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);

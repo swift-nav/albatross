@@ -91,6 +91,29 @@ inline void load(Archive &archive,
   v.indices() = indices;
 }
 
+template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
+          typename _StorageIndex>
+inline void
+save(Archive &archive,
+     const Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
+                                    _StorageIndex> &v,
+     const std::uint32_t) {
+  archive(cereal::make_nvp("indices", v.indices()));
+}
+
+template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
+          typename _StorageIndex>
+inline void
+load(Archive &archive,
+     Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
+                              _StorageIndex> &v,
+     const std::uint32_t) {
+  typename Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
+                                    _StorageIndex>::IndicesType indices;
+  archive(cereal::make_nvp("indices", indices));
+  v.indices() = indices;
+}
+
 template <typename Archive, typename _Scalar, int SizeAtCompileTime>
 inline void serialize(Archive &archive,
                       Eigen::DiagonalMatrix<_Scalar, SizeAtCompileTime> &matrix,
