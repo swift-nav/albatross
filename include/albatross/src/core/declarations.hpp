@@ -21,6 +21,13 @@ template <typename... Ts> class variant;
 
 using mapbox::util::variant;
 
+/*
+ * Permutations
+ */
+namespace Eigen {
+using PermutationMatrixX = PermutationMatrix<Dynamic, Dynamic, Index>;
+}
+
 namespace albatross {
 
 /*

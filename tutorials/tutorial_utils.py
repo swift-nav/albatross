@@ -157,24 +157,23 @@ def plot_measurements(xs, ys, color="black", label="measurements", **kwdargs):
     plt.scatter(xs, ys, s=50, color=color, label=label, **kwdargs)
 
 
-def plot_spread(xs, mean, variances, ax=None, color="steelblue"):
+def plot_spread(xs, mean, variances, ax=None, color="steelblue", label="prediction"):
     if ax is None:
         ax = plt.gca()
     xs = np.reshape(xs, -1)
     mean = np.reshape(mean, -1)
     variances = np.reshape(variances, -1)
     sd = np.sqrt(variances)
-    line = ax.plot(xs, mean, lw=5, color=color, label="prediction")
+    line = ax.plot(xs, mean, lw=5, color=color, label=label)
     ax.fill_between(
         xs,
         mean + 2 * sd,
         mean - 2 * sd,
         color=color,
         alpha=0.2,
-        label="uncertainty",
     )
     ax.fill_between(
-        xs, mean + sd, mean - sd, color=color, alpha=0.5, label="uncertainty"
+        xs, mean + sd, mean - sd, color=color, alpha=0.5
     )
     return line[0]
 
@@ -578,3 +577,32 @@ def example_sparse_predict(fit_model, x_star):
 def example_sparse_fit_and_predict(cov_func, X, y, U, x_test, meas_noise):
     fit_model = example_sparse_fit(cov_func, X, y, U, meas_noise)
     return example_sparse_predict(fit_model, x_test)
+
+
+def example_kf_equivalent_params(cov_func):
+    cov_0 = cov_func(0., 0.)[0, 0]
+    cov_dt = cov_func(0., 1.)[0, 0]
+    return {"process_noise": cov_0 - (cov_dt * cov_dt) / cov_0,
+            "initial_variance": cov_0,
+            "process_model": cov_dt / cov_0}
+
+def TEST_KF_EQUILVALENT_PARAMS(f):
+    def test(x_i, x_j):
+        return example_exponential(x_i, x_j, sigma=5.3, ell=11.2)
+    actual = f(test)
+    if actual is None:
+        raise NotImplementedError("None was returned, you need to implement the missing parts (and return a dict)")
+    expected = example_kf_equivalent_params(test)
+    assert(actual["process_noise"] == expected["process_noise"])
+    assert(actual["initial_variance"] == expected["initial_variance"])
+    if "process_model" in actual:
+      assert(actual["process_model"] == expected["process_model"])
+
+
+def example_exponential(x_i, x_j, sigma, ell):
+    return (
+        sigma
+        * sigma
+        * np.exp(-np.abs(distance_matrix(x_i, x_j)) / ell)
+    )
+

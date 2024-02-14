@@ -322,10 +322,10 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
       (updated_in_place_pred.covariance - full_pred.covariance).norm();
 
   auto compute_sigma = [](const auto &fit_model) -> Eigen::MatrixXd {
-    const Eigen::Index n = fit_model.get_fit().sigma_R.cols();
-    Eigen::MatrixXd sigma = sqrt_solve(fit_model.get_fit().sigma_R,
-                                       fit_model.get_fit().permutation_indices,
-                                       Eigen::MatrixXd::Identity(n, n));
+    const Eigen::Index n = fit_model.get_fit().R.cols();
+    Eigen::MatrixXd sigma =
+        sqrt_solve(fit_model.get_fit().R, fit_model.get_fit().P,
+                   Eigen::MatrixXd::Identity(n, n));
     return sigma.transpose() * sigma;
   };
 
