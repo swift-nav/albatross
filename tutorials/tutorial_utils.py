@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 
+from scipy import stats
 from scipy.stats import ks_1samp, norm
 from functools import partial
 from inspect import signature, Parameter
@@ -172,9 +173,7 @@ def plot_spread(xs, mean, variances, ax=None, color="steelblue", label="predicti
         color=color,
         alpha=0.2,
     )
-    ax.fill_between(
-        xs, mean + sd, mean - sd, color=color, alpha=0.5
-    )
+    ax.fill_between(xs, mean + sd, mean - sd, color=color, alpha=0.5)
     return line[0]
 
 
@@ -580,29 +579,102 @@ def example_sparse_fit_and_predict(cov_func, X, y, U, x_test, meas_noise):
 
 
 def example_kf_equivalent_params(cov_func):
-    cov_0 = cov_func(0., 0.)[0, 0]
-    cov_dt = cov_func(0., 1.)[0, 0]
-    return {"process_noise": cov_0 - (cov_dt * cov_dt) / cov_0,
-            "initial_variance": cov_0,
-            "process_model": cov_dt / cov_0}
+    cov_0 = cov_func(0.0, 0.0)[0, 0]
+    cov_dt = cov_func(0.0, 1.0)[0, 0]
+    return {
+        "process_noise": cov_0 - (cov_dt * cov_dt) / cov_0,
+        "initial_variance": cov_0,
+        "process_model": cov_dt / cov_0,
+    }
+
 
 def TEST_KF_EQUILVALENT_PARAMS(f):
     def test(x_i, x_j):
         return example_exponential(x_i, x_j, sigma=5.3, ell=11.2)
+
     actual = f(test)
     if actual is None:
-        raise NotImplementedError("None was returned, you need to implement the missing parts (and return a dict)")
+        raise NotImplementedError(
+            "None was returned, you need to implement the missing parts (and return a dict)"
+        )
     expected = example_kf_equivalent_params(test)
-    assert(actual["process_noise"] == expected["process_noise"])
-    assert(actual["initial_variance"] == expected["initial_variance"])
+    assert actual["process_noise"] == expected["process_noise"]
+    assert actual["initial_variance"] == expected["initial_variance"]
     if "process_model" in actual:
-      assert(actual["process_model"] == expected["process_model"])
+        assert actual["process_model"] == expected["process_model"]
 
 
 def example_exponential(x_i, x_j, sigma, ell):
-    return (
-        sigma
-        * sigma
-        * np.exp(-np.abs(distance_matrix(x_i, x_j)) / ell)
-    )
+    return sigma * sigma * np.exp(-np.abs(distance_matrix(x_i, x_j)) / ell)
 
+
+def reliability_diagram(samps, cdf, ax=None):
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+    precentiles = cdf(samps)
+    _ = ax.hist(precentiles, bins=np.linspace(0.0, 1.0, 51), density=True)
+    ax.plot([0, 1], [1, 1], color="black", lw=5)
+    ax.set_xlim([0, 1])
+    ax.set_xlabel("percentile")
+    ax.set_ylabel("density")
+    ax.set_title("CDF(samples)")
+
+
+def plot_samples_and_reliability(samps, dist):
+    lo = dist.ppf(0.001)
+    hi = dist.ppf(0.999)
+    xlim = [lo, hi]
+    x_grid = np.linspace(lo, hi, 101)
+    fig, axes = plt.subplots(1, 2, figsize=(24, 12))
+    axes[0].hist(samps, bins=51, density=True, label="samples")
+    axes[0].set_title("Random Samples")
+    axes[0].plot(x_grid, dist.pdf(x_grid), color="black", lw=5, label="Expected")
+    axes[0].set_ylabel("density")
+    axes[0].legend()
+
+    reliability_diagram(samps, dist.cdf, axes[1])
+
+
+def chi_squared_cdf(residuals, cov, df=None):
+    if df is None:
+        df = cov.shape[0]
+    # in case cov is near singular, add a nugget
+    chol = scipy.linalg.cholesky(cov + 1e-12 * np.eye(cov.shape[0]), lower=True)
+    normalized = np.linalg.solve(chol, residuals)
+    chi2_samples = np.sum(np.square(normalized), axis=0)
+    return stats.chi2(df=df).cdf(chi2_samples)
+
+
+def get_mvn_cdf(cov, df=None):
+    def cdf(x):
+        return chi_squared_cdf(x, cov, df=df)
+
+    return cdf
+
+
+def random_samples(cov, k=1000):
+    # returns an (n, k) matrix with random samples such that each
+    # column is a sample from N(0, cov)
+    return np.random.multivariate_normal(np.zeros(cov.shape[0]), cov, size=k).T
+
+
+def random_covariance(n, meas_noise):
+    # make a random orthonormal matrix
+    Q, _ = np.linalg.qr(np.random.normal(size=(n, n)))
+    # then random "eigen values"
+    V = np.random.gamma(shape=1.0, size=n)
+    # and add a little bit of measurement noise,
+    noise = meas_noise * meas_noise * np.eye(n)
+    return Q @ np.diag(V) @ Q.T + noise
+
+
+def generate_tutorial_5_example_model_data():
+    np.random.seed(2012)
+
+    def one_sample():
+        n = np.random.randint(3, 10)
+        S = random_covariance(n=n, meas_noise=0.01)
+        sample = random_samples(S, k=1)
+        return sample, S
+
+    return [one_sample() for i in range(100)]
