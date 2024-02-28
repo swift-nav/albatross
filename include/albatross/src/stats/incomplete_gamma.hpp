@@ -35,7 +35,12 @@ constexpr double INCOMPLETE_GAMMA_EQUALITY_TRESHOLD = 1e-12;
 
 inline double incomplete_gamma_quadrature_inp_vals(double lb, double ub,
                                                    std::size_t counter) {
-  ALBATROSS_ASSERT(counter < gauss_legendre_50_points.size());
+  if (counter >= gauss_legendre_50_points.size()) {
+    std::cerr << "ERROR: Counter value " << counter
+              << " is higher than gauss_legendre_50_points size "
+              << gauss_legendre_50_points.size() << std::endl;
+    ALBATROSS_ASSERT(false);
+  }
   return (ub - lb) * 0.5 * gauss_legendre_50_points[counter] + 0.5 * (ub + lb);
 }
 
