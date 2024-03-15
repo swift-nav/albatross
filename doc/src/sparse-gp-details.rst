@@ -338,3 +338,82 @@ However, we found that while the posterior mean predictions were numerically sta
 
 You should be able to find this implementation and details using git history.
 
+--------------------
+PIC
+--------------------
+
+The way I started partitioning the covariance term into blocks is as follows:
+
+.. math::
+
+            (\sigma_*^2)^{PIC} &= K_* - \tilde{\mathbf{K}}^{PIC}_{*f} \left[ \tilde{\mathbf{K}}^{PITC}_{ff} \right]^{-1} \tilde{\mathbf{K}}^{PIC}_{f*} + \sigma^2 \\
+            &= K_* - \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B} \end{bmatrix} \left(\mathbf{Q}_{ff} - \mathtt{blkdiag}(\mathbf{K}_{ff} - \mathbf{Q}_{ff})\right)^{-1} \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *} \end{bmatrix} \\
+            &= K_* - \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B} \end{bmatrix} \left(\mathbf{K}_{fu} \mathbf{K}_{uu}^{-1} \mathbf{K}_{uf} + \mathbf{\Lambda} \right)^{-1} \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *} \end{bmatrix} 
+
+The problem with doing this for PIC covariance (vs. PIC mean and PITC) is that we can't left-multiply the whole thing by :math:`\mathbf{K}_{uu}^{-1} \mathbf{K}_{uf}` (which in those instances leads to applying Woodbury's lemma to reduce the inverse to the size of the number of inducing points :math:`M`) because :math:`\mathbf{K}_{*B}` is not a low-rank approximation using the inducing points.  We can instead break up the inverse term into blocks:
+
+.. math::
+            \newcommand{VV}{\mathbf{V}} 
+            (\sigma_*^2)^{PIC} &= K_* -
+            \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B}\end{bmatrix}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *}\end{bmatrix}
+
+If we substitute :math:`\mathbf{K}_{* B} = \mathbf{Q}_{* B} + \VV_{* B}` as with the mean, it doesn't work out nicely:
+            
+.. math::
+            (\sigma_*^2)^{PIC} &= K_* - 
+            \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{Q}_{* B} + \VV_{* B} \end{bmatrix}
+            \underbrace{\begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1}}_{\mathbf{S}^{-1}}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{Q}_{B *} + \VV_{B *}\end{bmatrix} \\
+            &= K_* - \mathbf{Q}_{**}^{PITC} - \underbrace{\mathbf{Q}_{* \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B} \VV_{B *}}_{\mathbf{U}} - \mathbf{U}^T - \mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}
+
+Now we have 3 correction terms to apply to the posterior PITC covariance.  The best thing I can think of is to apply Woodbury's lemma, but in the opposite direction to usual:
+
+.. math::
+            \newcommand{Lam}{\mathbf{\Lambda}}
+            \newcommand{Kuu}{\mathbf{K}_{uu}}
+            \newcommand{Kuf}{\mathbf{K}_{uf}}
+            \newcommand{Kfu}{\mathbf{K}_{fu}}
+            \mathbf{S}^{-1} &= \left(\Kfu \Kuu^{-1} \Kuf + \Lam\right)^{-1} \\
+            &= \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1}
+
+which involves decomposing the block-diagonal matrix :math:`\Lam` with blocks of size :math:`|B|` and a matrix the size :math:`M` of the inducing point set.  In practice after we precompute terms, we have a sequence of triangular factors that we can subset as needed to pick out :math:`B` and :math:`\cancel{B}`.  (Confusingly, one of these useful decompositions is the QR decomposition of the unrelated matrix :math:`B` in the PITC derivation above.)  
+
+.. math::
+            \mathbf{U} &= \mathbf{Q}_{* \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B} \VV_{B *} \\
+            &= \mathbf{Q}_{* \cancel{B}} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{\cancel{B} B} \VV_{B *}
+
+:math:`\Lam^{-1}_{\cancel{B} B}` is zero by the definition of a block-diagonal matrix.
+
+.. math::
+            \mathbf{U} &= - \mathbf{Q}_{* \cancel{B}} \left(\Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{\cancel{B} B} \VV_{B *} \\
+
+This looks appealingly like we could just keep combining instances of the QR decomposition of :math:`B`, but that would leave out the :math:`\mathbf{K}_{uu}` part.
+
+The open question is how to efficiently distill this into various correction terms for each group that don't require operations that scale with :math:`\cancel{B}`, since the paper promises :math:`O((|B| + M)^2)` for predictive covariances after precomputation.  In principle, using sparse vectors / matrices for the :math:`*` target components, combined with Eigen's expression templates, should bring the complexity of some of these repeated solves for mostly empty vectors (for :math:`B`) down to :math:`O(|B|)`, and likewise for inducing points.
+
+At this point, our cross-terms are preceded by :math:`Q_{*\cancel{B}}`, which expands to :math:`K_{*u} K_{uu}^{-1} K_{u\cancel{B}}`.  So actually we should be able to precompute everything except :math:`K_{*u}`, leaving prediction-time computations to scale with :math:`M`!
+
+So for the variance, we must precompute:
+
+ - :math:`P^TLDL^TP = \Lam`
+ - :math:`\Lam^{-1} \Kfu`
+ - :math:`L_{uu} L_{uu}^T = \Kuu`
+ - :math:`QRP^T = B = \begin{bmatrix}\Lam^{-\frac{1}{2}}\Kfu \\ L_{uu} \end{bmatrix}` such that :math:`\mathbf{S}^{-1} = \left(B^T B\right)^{-1}`, and blocks :math:`\mathbf{S}^{-1}_{a b}` can be got by choosing the right rows / columns with which to do permutations and back-substitutions.
+
+then for each group :math:`B`:
+
+ - :math:`\mathbf{W}_B = \Kuu^{-1} \mathbf{K}_{u \cancel{B}} \mathbf{S}_{\cancel{B} B}^{-1}`
+ - :math:`\mathbf{Y}_B = \Kuu^{-1} \mathbf{K}_{u B}`
+
+and at prediction time, we must compute:
+
+ - :math:`\mathbf{K}_{* B}`, :math:`O(|B|)`
+ - :math:`\mathbf{K}_{* u}`, :math:`O(M)`
+ - :math:`\mathbf{Q}_{* B} = \mathbf{K}_{* u} \mathbf{Y}_B`, :math:`O(M^2)` with the existing decomposition
+ - :math:`\mathbf{V}_{* B} = \mathbf{K}_{* B} - \mathbf{Q}_{* B}`, :math:`O(|B|^2)`
+ - :math:`\mathbf{Q}_{**}^{PITC}` as with PITC
+ - :math:`\mathbf{U} = \mathbf{K}_{* u} \mathbf{W}_B \mathbf{V}_{B *}`, :math:`O(M + |B|)`?
+ - :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, :math:`O(|B|^2)`
+   
