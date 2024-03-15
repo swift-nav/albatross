@@ -10,17 +10,18 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_SERIALIZE_GP_H
-#define ALBATROSS_SERIALIZE_GP_H
+#ifndef ALBATROSS_SRC_CEREAL_BLOCK_DIAGONAL_HPP_
+#define ALBATROSS_SRC_CEREAL_BLOCK_DIAGONAL_HPP_
 
-#include "Core"
-#include <albatross/SparseGP>
+namespace cereal {
 
-#include "../src/cereal/block_utils.hpp"
-#include "../src/cereal/serializable_ldlt.hpp"
-#include "../src/cereal/block_diagonal.hpp"
-#include "../src/cereal/gp.hpp"
-#include "../src/cereal/representations.hpp"
-#include "../src/cereal/serializable_spqr.hpp"
+template <typename Archive>
+inline void serialize(Archive &archive,
+                      const albatross::BlockDiagonalLDLT &ldlt,
+                      const std::uint32_t version) {
+  archive(cereal::make_nvp("blocks", ldlt.blocks));
+}
 
-#endif
+} // namespace cereal
+
+#endif /* ALBATROSS_SRC_CEREAL_BLOCK_DIAGONAL_HPP_ */

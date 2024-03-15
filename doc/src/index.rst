@@ -97,6 +97,8 @@ and plot the results (though this'll require a numerical python environment),
     custom-models
     references
 
+    crappy-pic
+
 
 #########
 Credit
