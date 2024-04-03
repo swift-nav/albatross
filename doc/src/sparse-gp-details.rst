@@ -398,22 +398,58 @@ At this point, our cross-terms are preceded by :math:`Q_{*\cancel{B}}`, which ex
 So for the variance, we must precompute:
 
  - :math:`P^TLDL^TP = \Lam`
- - :math:`\Lam^{-1} \Kfu`
+ - :math:`\mathbf{G} = \Lam^{-1} \Kfu`
  - :math:`L_{uu} L_{uu}^T = \Kuu`
- - :math:`QRP^T = B = \begin{bmatrix}\Lam^{-\frac{1}{2}}\Kfu \\ L_{uu} \end{bmatrix}` such that :math:`\mathbf{S}^{-1} = \left(B^T B\right)^{-1}`, and blocks :math:`\mathbf{S}^{-1}_{a b}` can be got by choosing the right rows / columns with which to do permutations and back-substitutions.
+ - :math:`QRP^T = B = \begin{bmatrix}\Lam^{-\frac{1}{2}}\Kfu \\ L_{uu} \end{bmatrix}` such that :math:`\mathbf{S}^{-1} = \Lam^{-1} - \mathbf{G} \left(B^T B\right)^{-1} \mathbf{G}^T`, and blocks :math:`\mathbf{S}^{-1}_{a b}` can be got by choosing the right rows / columns with which to do permutations and back-substitutions.
+
+For the mean, we compute the information vector :math:`v` as in PITC.   
 
 then for each group :math:`B`:
 
  - :math:`\mathbf{W}_B = \Kuu^{-1} \mathbf{K}_{u \cancel{B}} \mathbf{S}_{\cancel{B} B}^{-1}`
  - :math:`\mathbf{Y}_B = \Kuu^{-1} \mathbf{K}_{u B}`
+ - :math:`v_b = \Lam_{B B}^{-1} \left( y_B - \mathbf{K}_{B u} v \right)`
 
-and at prediction time, we must compute:
+Given that we have already computed :math:`\Kfu`, we can use :math:`\mathbf{K}_{u B}` and :math:`\mathbf{K}_{u \cancel{B}}` efficiently in Eigen using sparse matrices with a single entry per nonzero row or column to be used.
+   
+Then at prediction time, we must compute:
 
  - :math:`\mathbf{K}_{* B}`, :math:`O(|B|)`
  - :math:`\mathbf{K}_{* u}`, :math:`O(M)`
  - :math:`\mathbf{Q}_{* B} = \mathbf{K}_{* u} \mathbf{Y}_B`, :math:`O(M^2)` with the existing decomposition
- - :math:`\mathbf{V}_{* B} = \mathbf{K}_{* B} - \mathbf{Q}_{* B}`, :math:`O(|B|^2)`
+ - :math:`\VV_{* B} = \mathbf{K}_{* B} - \mathbf{Q}_{* B}`, :math:`O(|B|^2)`
  - :math:`\mathbf{Q}_{**}^{PITC}` as with PITC
- - :math:`\mathbf{U} = \mathbf{K}_{* u} \mathbf{W}_B \mathbf{V}_{B *}`, :math:`O(M + |B|)`?
- - :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, :math:`O(|B|^2)`
+ - :math:`\mathbf{U} = \mathbf{K}_{* u} \mathbf{W}_B \VV_{B *}`, :math:`O(M + |B|)`?
+ - :math:`\VV_{* B} \mathbf{S}^{-1}_{B B} \VV_{B *}`, :math:`O(|B|^2)`
    
+To compute :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, we form a (mostly zero) column of :math:`\mathbf{V}` for each feature, break the two terms of :math:`\mathbf{S}^{-1}` into symmetric parts, multiply by :math:`\mathbf{V}` and subtract, here in excruciating notational detail:
+
+.. math::
+           \VV_{* B} \mathbf{S}^{-1} \VV_{B *} &= \VV_{* B} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{B B} \VV_{B *} \\
+           &= \VV_{* B}  \left( \left(P_\Lam L_\Lam^{-T} D_\Lam^{-\frac{1}{2}}\right) \underbrace{\left(D_\Lam^{-\frac{1}{2}} L_\Lam^{-1} P_\Lam^T\right)}_{Z_\Lam} - \mathbf{G}^T (B^T B)^{-1} \mathbf{G} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{G}^T (P_u R_u^{-1} R_u^{-T} P_u^T) \mathbf{G} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{G}^T (P_u R_u^{-1}) \underbrace{(R_u^{-T} P_u^T) \mathbf{G}}_{\mathbf{Z}_u} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{Z}_u^T \mathbf{Z}_u \right) \VV_{B *} \\
+           &= \VV_{* B} \mathbf{Z}_\Lam^T \underbrace{\mathbf{Z}_\Lam \VV_{B *}}_{\mathbf{\xi}_\Lam} - \VV_{* B} \mathbf{Z}_u^T \underbrace{\mathbf{Z}_u \VV_{B *}}_{\mathbf{\xi}_u} \\
+           &= \mathbf{\xi}_\Lam^T \mathbf{\xi}_\Lam - \mathbf{\xi}_u^T \mathbf{\xi}_u \\
+
+Note that the left-hand (subscript :math:`\Lam`) term is the decomposition of a block-diagonal matrix, so it will only contain cross-terms between features corresponding to the same local block.  This calculation can be done blockwise.  The right-hand (subscript :math:`u`) term projects the features through the local block of the training dataset and then through the inducing points, so the cross-terms are not in general sparse, and this calculation involves a lot more careful indexing.
+
+---------------------------------------
+Joint predictive distributions with PIC
+---------------------------------------
+
+This confused me mightily on several occasions, though it seems simple in retrospect, so I'm adding a note here.
+
+When you want to predict a multivariate distribution for a set of features :math:`* \in \mathbb{R}^{p}` where :math:`p > 1` and not all features are in the same local group, what happens with block indexing and cross-covariance?
+
+To compute :math:`\mathbf{U}`, on the right, the PIC covariance corrections are multiplied by :math:`\VV_{B *} \in \mathbb{R}^{N \times p}`, with only the rows in the local group nonzero.  This means you have :math:`p` columns, which are identical within groups and do not overlap nonzero rows with columns from other groups.  Computing :math:`\mathbf{W}_B = \Kuu^{-1} \mathbf{K}_{u \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B}` puzzled me because for different groups :math:`D`, :math:`E` corresponding to the features to be predicted :math:`*_{d}`, :math:`*_{e}`, the nonzero columns (rows) of :math:`\mathbf{K}_{u \cancel{D}}` (:math:`\mathbf{S}^{-1}_{\cancel{D} D}`) overlap with those of :math:`\mathbf{K}_{u \cancel{E}}` (:math:`\mathbf{S}^{-1}_{\cancel{E} E}`).  Can we actually compute this joint predictive distribution using the independent :math:`\mathbf{W}_B` blocks we precomputed, or do we have to account for this overlap somehow?
+
+I think you don't -- you just end up with :math:`p` columns, each from a different prediction feature, and each of these gets projected through the inducing points in its own :math:`\mathbf{W}_B` to all of the prediction points (rows) on the left-hand :math:`\mathbf{K}_{* u}`.  The approach is to stack up columns for :math:`*_d` and :math:`*_e`:
+
+.. math::
+   \mathbf{U} \in \mathbb{R}^{p \times p} &= \mathbf{K}_{* u} \underbrace{\begin{bmatrix} \overbrace{\mathbf{W}_D \VV_{D, *_{d}}}^{\in \mathbb{R}^{M \times |d|}} & \overbrace{\mathbf{W}_E \VV_{E, *_{e}}}^{\in \mathbb{R}^{M \times |e|}} \end{bmatrix}}_{\in \mathbb{R}^{M \times p}} \\
+
+or more generally, just produce one column for each feature with the appropriate :math:`\mathbf{W}` and :math:`\VV` terms.
+
+In the case of the symmetric component :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, the same confusion does not arise because the nonlocal data (:math:`\cancel{B}`) doesn't enter the equation; there is no overlap in nonzero rows between columns for different local blocks.
