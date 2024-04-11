@@ -18,11 +18,14 @@
 #include <Eigen/SPQRSupport>
 
 #include "GP"
+// #include "Common"
 #include "linalg/Utils"
 
 #include <albatross/src/eigen/serializable_spqr.hpp>
 #include <albatross/src/linalg/block_utils.hpp>
 #include <albatross/src/utils/eigen_utils.hpp>
+#include <albatross/src/models/sparse_common.hpp>
 #include <albatross/src/models/sparse_gp.hpp>
+#include <albatross/src/models/pic_gp.hpp>
 
 #endif
