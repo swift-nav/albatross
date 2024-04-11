@@ -366,7 +366,7 @@ If we substitute :math:`\mathbf{K}_{* B} = \mathbf{Q}_{* B} + \VV_{* B}` as with
             \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{Q}_{* B} + \VV_{* B} \end{bmatrix}
             \underbrace{\begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1}}_{\mathbf{S}^{-1}}
             \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{Q}_{B *} + \VV_{B *}\end{bmatrix} \\
-            &= K_* - \mathbf{Q}_{**}^{PITC} - \underbrace{\mathbf{Q}_{* \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B} \VV_{B *}}_{\mathbf{U}} - \mathbf{U}^T - \mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}
+            &= K_* - \mathbf{Q}_{**}^{PITC} - \underbrace{\mathbf{Q}_{* f} \mathbf{S}^{-1}_{f B} \VV_{B *}}_{\mathbf{U}} - \mathbf{U}^T - \mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}
 
 Now we have 3 correction terms to apply to the posterior PITC covariance.  The best thing I can think of is to apply Woodbury's lemma, but in the opposite direction to usual:
 
@@ -381,19 +381,14 @@ Now we have 3 correction terms to apply to the posterior PITC covariance.  The b
 which involves decomposing the block-diagonal matrix :math:`\Lam` with blocks of size :math:`|B|` and a matrix the size :math:`M` of the inducing point set.  In practice after we precompute terms, we have a sequence of triangular factors that we can subset as needed to pick out :math:`B` and :math:`\cancel{B}`.  (Confusingly, one of these useful decompositions is the QR decomposition of the unrelated matrix :math:`B` in the PITC derivation above.)  
 
 .. math::
-            \mathbf{U} &= \mathbf{Q}_{* \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B} \VV_{B *} \\
-            &= \mathbf{Q}_{* \cancel{B}} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{\cancel{B} B} \VV_{B *}
-
-:math:`\Lam^{-1}_{\cancel{B} B}` is zero by the definition of a block-diagonal matrix.
-
-.. math::
-            \mathbf{U} &= - \mathbf{Q}_{* \cancel{B}} \left(\Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{\cancel{B} B} \VV_{B *} \\
+            \mathbf{U} &= \mathbf{Q}_{* f} \mathbf{S}^{-1}_{f B} \VV_{B *} \\
+            &= \mathbf{Q}_{* f} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{f B} \VV_{B *}
 
 This looks appealingly like we could just keep combining instances of the QR decomposition of :math:`B`, but that would leave out the :math:`\mathbf{K}_{uu}` part.
 
 The open question is how to efficiently distill this into various correction terms for each group that don't require operations that scale with :math:`\cancel{B}`, since the paper promises :math:`O((|B| + M)^2)` for predictive covariances after precomputation.  In principle, using sparse vectors / matrices for the :math:`*` target components, combined with Eigen's expression templates, should bring the complexity of some of these repeated solves for mostly empty vectors (for :math:`B`) down to :math:`O(|B|)`, and likewise for inducing points.
 
-At this point, our cross-terms are preceded by :math:`Q_{*\cancel{B}}`, which expands to :math:`K_{*u} K_{uu}^{-1} K_{u\cancel{B}}`.  So actually we should be able to precompute everything except :math:`K_{*u}`, leaving prediction-time computations to scale with :math:`M`!
+At this point, our cross-terms are preceded by :math:`Q_{* f}`, which expands to :math:`K_{*u} K_{uu}^{-1} K_{u f}`.  So actually we should be able to precompute everything except :math:`K_{*u}`, leaving prediction-time computations to scale with :math:`M`!
 
 So for the variance, we must precompute:
 
@@ -401,12 +396,12 @@ So for the variance, we must precompute:
  - :math:`\mathbf{G} = \Lam^{-1} \Kfu`
  - :math:`L_{uu} L_{uu}^T = \Kuu`
  - :math:`QRP^T = B = \begin{bmatrix}\Lam^{-\frac{1}{2}}\Kfu \\ L_{uu} \end{bmatrix}` such that :math:`\mathbf{S}^{-1} = \Lam^{-1} - \mathbf{G} \left(B^T B\right)^{-1} \mathbf{G}^T`, and blocks :math:`\mathbf{S}^{-1}_{a b}` can be got by choosing the right rows / columns with which to do permutations and back-substitutions.
+ - :math:`\mathbf{W} = \Kuu^{-1} \mathbf{K}_{u f} \mathbf{S}^{-1}`
 
 For the mean, we compute the information vector :math:`v` as in PITC.   
 
 then for each group :math:`B`:
 
- - :math:`\mathbf{W}_B = \Kuu^{-1} \mathbf{K}_{u \cancel{B}} \mathbf{S}_{\cancel{B} B}^{-1}`
  - :math:`\mathbf{Y}_B = \Kuu^{-1} \mathbf{K}_{u B}`
  - :math:`v_b = \Lam_{B B}^{-1} \left( y_B - \mathbf{K}_{B u} v \right)`
 
@@ -435,21 +430,6 @@ To compute :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, we f
 
 Note that the left-hand (subscript :math:`\Lam`) term is the decomposition of a block-diagonal matrix, so it will only contain cross-terms between features corresponding to the same local block.  This calculation can be done blockwise.  The right-hand (subscript :math:`u`) term projects the features through the local block of the training dataset and then through the inducing points, so the cross-terms are not in general sparse, and this calculation involves a lot more careful indexing.
 
----------------------------------------
-Joint predictive distributions with PIC
----------------------------------------
+The same breakdown of :math:`\mathbf{S}^{-1}` can be used to compute :math:`\mathbf{W}` during the fit step.
 
-This confused me mightily on several occasions, though it seems simple in retrospect, so I'm adding a note here.
-
-When you want to predict a multivariate distribution for a set of features :math:`* \in \mathbb{R}^{p}` where :math:`p > 1` and not all features are in the same local group, what happens with block indexing and cross-covariance?
-
-To compute :math:`\mathbf{U}`, on the right, the PIC covariance corrections are multiplied by :math:`\VV_{B *} \in \mathbb{R}^{N \times p}`, with only the rows in the local group nonzero.  This means you have :math:`p` columns, which are identical within groups and do not overlap nonzero rows with columns from other groups.  Computing :math:`\mathbf{W}_B = \Kuu^{-1} \mathbf{K}_{u \cancel{B}} \mathbf{S}^{-1}_{\cancel{B} B}` puzzled me because for different groups :math:`D`, :math:`E` corresponding to the features to be predicted :math:`*_{d}`, :math:`*_{e}`, the nonzero columns (rows) of :math:`\mathbf{K}_{u \cancel{D}}` (:math:`\mathbf{S}^{-1}_{\cancel{D} D}`) overlap with those of :math:`\mathbf{K}_{u \cancel{E}}` (:math:`\mathbf{S}^{-1}_{\cancel{E} E}`).  Can we actually compute this joint predictive distribution using the independent :math:`\mathbf{W}_B` blocks we precomputed, or do we have to account for this overlap somehow?
-
-I think you don't -- you just end up with :math:`p` columns, each from a different prediction feature, and each of these gets projected through the inducing points in its own :math:`\mathbf{W}_B` to all of the prediction points (rows) on the left-hand :math:`\mathbf{K}_{* u}`.  The approach is to stack up columns for :math:`*_d` and :math:`*_e`:
-
-.. math::
-   \mathbf{U} \in \mathbb{R}^{p \times p} &= \mathbf{K}_{* u} \underbrace{\begin{bmatrix} \overbrace{\mathbf{W}_D \VV_{D, *_{d}}}^{\in \mathbb{R}^{M \times |d|}} & \overbrace{\mathbf{W}_E \VV_{E, *_{e}}}^{\in \mathbb{R}^{M \times |e|}} \end{bmatrix}}_{\in \mathbb{R}^{M \times p}} \\
-
-or more generally, just produce one column for each feature with the appropriate :math:`\mathbf{W}` and :math:`\VV` terms.
-
-In the case of the symmetric component :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, the same confusion does not arise because the nonlocal data (:math:`\cancel{B}`) doesn't enter the equation; there is no overlap in nonzero rows between columns for different local blocks.
+The notation :math:`\mathbf{W}_B` indicates that the relevant columns of :math:`\mathbf{W}` are used on the right-hand side.  This is mathematically equivalent to making :math:`\VV_{B *}` have dimension :math:`N \times p` and be zero outside block :math:`B`.  Computationally the right factor must be a sparse object to preserve the desired asymptotics.
