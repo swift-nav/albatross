@@ -110,6 +110,18 @@ MeasurementOnly<SubCovariance> measurement_only(const SubCovariance &cov) {
   return MeasurementOnly<SubCovariance>(cov);
 }
 
+  // template <typename T, typename R> R without_measurement(T &&t);
+
+template <typename T> T without_measurement(Measurement<T> &&m) {
+  return m.value;
+}
+template <typename T> const T &without_measurement(const Measurement<T> &m) {
+  return m.value;
+}
+
+template <typename T> T without_measurement(T &&t) { return t; }
+template <typename T> const T &without_measurement(const T &t) { return t; }
+
 } // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_COVARIANCE_FUNCTIONS_MEASUREMENT_HPP_ */
