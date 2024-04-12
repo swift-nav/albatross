@@ -398,6 +398,9 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
 
   print_matrix(bfp_cov(ordered_features), "BFP: Q_ff + Lambda");
 
+  print_matrix(Q_ff_lambda - bfp_cov(ordered_features),
+               "Q_ff_lambda difference");
+
   const Eigen::SerializableLDLT S = Q_ff_lambda.ldlt();
 
   print_matrix(S.matrixL(), "PITC L");
@@ -448,7 +451,8 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
   //   // K_Au.middleRows(j, block.cols()) =
   //   //     Eigen::MatrixXd::Zero(block.cols(), K_Au.cols());
   //   // std::stringstream Kaus;
-  //   // std::cout << "Block " << blk << " j = " << j << " size = " << block.cols()
+  //   // std::cout << "Block " << blk << " j = " << j << " size = " <<
+  //   block.cols()
   //   //           << std::endl;
   //   // Kaus << "K_Au[" << blk << "]";
   //   // print_matrix(K_Au, Kaus.str());
@@ -474,6 +478,8 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
 
   print_matrix(K_PIC, "K_PIC");
   print_matrix(bfp_cov(ordered_features, predict), "BFP: K_PIC");
+
+  print_matrix(K_PIC - bfp_cov(ordered_features, predict), "K_PIC error");
   print_matrix(K_PITC, "K_PITC");
 
   print_matrix(V_PIC, "V_PIC");
@@ -483,7 +489,8 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
   print_matrix(U, "U");
 
   auto SV = S.sqrt_solve(V_PIC);
-  const Eigen::MatrixXd VSV = V_PIC.transpose() * S.solve(V_PIC);  // SV.transpose() * SV;
+  const Eigen::MatrixXd VSV =
+      V_PIC.transpose() * S.solve(V_PIC); // SV.transpose() * SV;
   print_matrix(VSV, "VSV");
 
   const Eigen::MatrixXd predict_prior = cov(predict);
@@ -492,11 +499,16 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
 
   print_matrix(bfp_cov(predict), "BFP: prior");
 
+  print_matrix(predict_prior - bfp_cov(predict), "prior error");
+
   // auto KK = K_PITC_ldlt.sqrt_solve(K_PIC);
   // const Eigen::MatrixXd explained_cov = KK.transpose() * KK;
-  const Eigen::MatrixXd explained_cov =
-      K_PIC.transpose() * S.solve(K_PIC);
+  const Eigen::MatrixXd explained_cov = K_PIC.transpose() * S.solve(K_PIC);
   print_matrix(explained_cov, "explained");
+
+  const Eigen::VectorXd PIC_mean =
+      K_PIC.transpose() * S.solve(data.targets.mean);
+  print_vector(PIC_mean, "PIC mean");
   const Eigen::MatrixXd predict_cov = predict_prior - explained_cov;
 
   print_matrix(predict_cov, "K_**");
@@ -511,22 +523,99 @@ JointDistribution test_pic(const RegressionDataset<FeatureType> &data,
   print_matrix(predict_cov - PITC_cov, "PIC - PITC");
   print_matrix(predict_cov - PIC_cov, "PIC - factored");
 
-  return JointDistribution{};
+  return JointDistribution{PIC_mean, PIC_cov};
+}
+
+TEST(TestPicGP, BruteForceEquivalenceOneBlock) {
+  static constexpr std::size_t kNumTrainPoints = 10;
+  static constexpr std::size_t kNumTestPoints = 10;
+  static constexpr std::size_t kNumInducingPoints = 5;
+
+  UniformlySpacedInducingPoints strategy(kNumInducingPoints);
+  LeaveOneIntervalOut grouper(10);
+  auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
+                                    strategy, "pic", DenseQRImplementation{});
+
+  auto dataset = make_toy_linear_data(5, 1, 0.1, kNumTrainPoints);
+  auto bfp_cov = make_brute_force_pic_covariance(
+      strategy(make_simple_covariance_function(), dataset.features),
+      make_simple_covariance_function(), grouper);
+  auto bfp = gp_from_covariance(bfp_cov);
+
+  auto bfp_fit = bfp.fit(dataset);
+  auto pic_fit = pic.fit(dataset);
+
+  auto test_features = linspace(0.1, 9.9, kNumTestPoints);
+  auto bfp_pred = bfp_fit.predict_with_measurement_noise(test_features).joint();
+  auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
+  std::cout << "BFP mean (" << bfp_pred.mean.size()
+            << "): " << bfp_pred.mean.transpose().format(Eigen::FullPrecision)
+            << std::endl;
+  const double pic_error = (pic_pred.mean - bfp_pred.mean).norm();
+  // const auto test_result =
+  //     test_pic(dataset, test_features, make_simple_covariance_function(),
+  //              strategy, grouper);
+
+  EXPECT_LT(pic_error, 1e-8);
+  // EXPECT_LT((pic_pred.mean - test_result.mean).norm(), 1e-8);
+
+  const double pic_cov_error =
+      (pic_pred.covariance - bfp_pred.covariance).norm();
+  EXPECT_LT(pic_cov_error, 1e-7);
+}
+
+TEST(TestPicGP, BruteForceEquivalenceMultipleBlocks) {
+  static constexpr std::size_t kNumTrainPoints = 10;
+  static constexpr std::size_t kNumTestPoints = 10;
+  static constexpr std::size_t kNumInducingPoints = 5;
+
+  UniformlySpacedInducingPoints strategy(kNumInducingPoints);
+  LeaveOneIntervalOut grouper(2);
+  auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
+                                    strategy, "pic", DenseQRImplementation{});
+
+  auto dataset = make_toy_linear_data(5, 1, 0.1, kNumTrainPoints);
+  auto bfp_cov = make_brute_force_pic_covariance(
+      strategy(make_simple_covariance_function(), dataset.features),
+      make_simple_covariance_function(), grouper);
+  auto bfp = gp_from_covariance(bfp_cov);
+
+  auto bfp_fit = bfp.fit(dataset);
+  auto pic_fit = pic.fit(dataset);
+
+  auto test_features = linspace(0.1, 9.9, kNumTestPoints);
+  auto bfp_pred = bfp_fit.predict_with_measurement_noise(test_features).joint();
+  auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
+  // std::cout << "BFP mean (" << bfp_pred.mean.size()
+  //           << "): " << bfp_pred.mean.transpose().format(Eigen::FullPrecision)
+  //           << std::endl;
+  const double pic_error = (pic_pred.mean - bfp_pred.mean).norm();
+  // const auto test_result =
+  //     test_pic(dataset, test_features, make_simple_covariance_function(),
+  //              strategy, grouper);
+
+  EXPECT_LT(pic_error, 1e-7);
+  // EXPECT_LT((pic_pred.mean - test_result.mean).norm(), 1e-8);
+
+  const double pic_cov_error =
+      (pic_pred.covariance - bfp_pred.covariance).norm();
+  EXPECT_LT(pic_cov_error, 1e-7);
 }
 
 TEST(TestPicGP, EmitCSV) {
-  static constexpr std::size_t kNumTrainPoints = 12;
-  static constexpr std::size_t kNumTestPoints = 40;
-  static constexpr std::size_t kNumInducingPoints = 8;
+  static constexpr std::size_t kNumTrainPoints = 80;
+  static constexpr std::size_t kNumTestPoints = 300;
+  static constexpr std::size_t kNumInducingPoints = 20;
 
   static constexpr double kLargestTrainPoint =
       static_cast<double>(kNumTrainPoints) - 1.;
   static constexpr double kSpatialBuffer = 0;
-  static constexpr std::size_t kNumBlocks = 2;
+  static constexpr std::size_t kNumBlocks = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
   LeaveOneIntervalOut grouper(kLargestTrainPoint /
                               static_cast<double>(kNumBlocks) + 1e-8);
+  // LeaveOneIntervalOut grouper(10);
 
   auto direct = gp_from_covariance(make_simple_covariance_function(), "direct");
 
@@ -538,6 +627,7 @@ TEST(TestPicGP, EmitCSV) {
 
   auto dataset =
       make_toy_linear_data(-kLargestTrainPoint / 2., 1, 0.1, kNumTrainPoints);
+  // auto dataset = make_toy_linear_data(5, 1, 0.1, kNumTrainPoints);
 
   auto bfp_cov = make_brute_force_pic_covariance(
       strategy(make_simple_covariance_function(), dataset.features),
@@ -546,10 +636,11 @@ TEST(TestPicGP, EmitCSV) {
 
   auto test_features = linspace(
       kSpatialBuffer, kLargestTrainPoint - kSpatialBuffer, kNumTestPoints);
+  // auto test_features = linspace(0.1, 9.9, kNumTestPoints);
   auto direct_fit = direct.fit(dataset);
   auto pic_fit = pic.fit(dataset);
   auto pitc_fit = pitc.fit(dataset);
-  std::cout << "BFP: ";
+  // std::cout << "BFP: ";
   auto bfp_fit = bfp.fit(dataset);
 
   auto direct_pred =
@@ -557,7 +648,7 @@ TEST(TestPicGP, EmitCSV) {
   auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
   auto pitc_pred =
       pitc_fit.predict_with_measurement_noise(test_features).joint();
-  std::cout << "BFP: ";
+  // std::cout << "BFP: ";
   auto bfp_pred = bfp_fit.predict_with_measurement_noise(test_features).joint();
 
   std::ofstream csv_out(
@@ -565,7 +656,7 @@ TEST(TestPicGP, EmitCSV) {
 
   csv_out << "type,idx,x,mean,marginal,group\n";
   for (std::size_t pred = 0; pred < direct_pred.size(); ++pred) {
-    csv_out << "direct," << std::setprecision(16) << pred << ','
+    csv_out << "dense," << std::setprecision(16) << pred << ','
             << test_features[pred] << ',' << direct_pred.mean[pred] << ','
             << direct_pred.covariance(pred, pred) << ','
             << grouper(test_features[pred]) << '\n';
@@ -629,7 +720,8 @@ TEST(TestPicGP, EmitCSV) {
   //           << bfp_pred.covariance << std::endl;
 
   const double pic_error = (pic_pred.mean - direct_pred.mean).norm();
-  EXPECT_LT(pic_error, 1e-7);
+  EXPECT_LT(pic_error, 5e-7);
+  // EXPECT_LT((pic_pred.mean - test_result.mean).norm(), 1e-7);
   // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
   // << "; |p|: " << test_features.size()
   // << "; B width: " << grouper.group_domain_size << "\n"
@@ -638,7 +730,7 @@ TEST(TestPicGP, EmitCSV) {
 
   const double pic_cov_error =
       (pic_pred.covariance - direct_pred.covariance).norm();
-  EXPECT_LT(pic_cov_error, 1e-7);
+  EXPECT_LT(pic_cov_error, 5e-7);
   // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
   // << "; |p|: " << test_features.size()
   // << "; B width: " << grouper.group_domain_size

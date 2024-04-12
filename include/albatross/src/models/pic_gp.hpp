@@ -79,18 +79,13 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
       const Eigen::MatrixXd &Z_, const BlockDiagonalLDLT &A_ldlt_,
       const GroupMap &measurement_groups_, const Eigen::VectorXd &information_,
       Eigen::Index numerical_rank_,
-      const std::vector<Eigen::MatrixXd> &covariance_Ynot_,
-      const Eigen::SerializableLDLT &K_PITC_ldlt_,
-      const std::vector<Eigen::SparseMatrix<double>> cols_Bs_,
-      const std::vector<Eigen::SparseMatrix<double>> cols_Cs_)
+      const std::vector<Eigen::SparseMatrix<double>> cols_Bs_)
       : train_features(features_), inducing_features(inducing_features_),
         train_covariance(train_covariance_), sigma_R(sigma_R_), P(P_),
         mean_w(mean_w_), W(W_), covariance_Y(covariance_Y_), Z(Z_),
         A_ldlt(A_ldlt_), measurement_groups(measurement_groups_),
         information(information_), numerical_rank(numerical_rank_),
-        // debug stuff
-        covariance_Ynot(covariance_Ynot_), K_PITC_ldlt(K_PITC_ldlt_),
-        cols_Bs(cols_Bs_), cols_Cs(cols_Cs_) {}
+        cols_Bs(cols_Bs_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
     ALBATROSS_ASSERT(mean_shift.size() == information.size());
@@ -111,9 +106,7 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
             information == other.information &&
             numerical_rank == other.numerical_rank &&
             // Debug stuff
-            covariance_Ynot == other.covariance_Ynot &&
-            K_PITC_ldlt == other.K_PITC_ldlt && cols_Bs == other.cols_Bs &&
-            cols_Cs == other.cols_Cs);
+            cols_Bs == other.cols_Bs);
   }
 };
 
@@ -405,9 +398,8 @@ public:
     Eigen::MatrixXd K_fu;
     Eigen::VectorXd y;
     GroupMap<FeatureType> measurement_groups;
-    Eigen::SerializableLDLT K_PITC_ldlt;
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
-                                &K_fu, &y, &measurement_groups, &K_PITC_ldlt);
+                                &K_fu, &y, &measurement_groups);
     auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
 
     // To make a prediction, we will need to compute cross-terms with
@@ -440,23 +432,21 @@ public:
     // std::cout << "W (" << W.rows() << "x" << W.cols() << "):\n"
     //           << W.format(Eigen::FullPrecision) << std::endl;
 
-    const Eigen::MatrixXd W2 =
-        K_uu_ldlt.solve(K_PITC_ldlt.solve(K_fu).transpose());
+    // const Eigen::MatrixXd W2 =
+    //     K_uu_ldlt.solve(K_PITC_ldlt.solve(K_fu).transpose());
     // std::cout << "W2 (" << W2.rows() << "x" << W2.cols() << "):\n"
     //           << W2.format(Eigen::FullPrecision) << std::endl;
 
     // TODO(@peddie): a lot of this can be batched
-    std::vector<Eigen::MatrixXd> covariance_Ynot(measurement_groups.size());
     std::vector<Eigen::MatrixXd> covariance_Y(measurement_groups.size());
     std::vector<Eigen::VectorXd> mean_w(measurement_groups.size());
     std::vector<Eigen::SparseMatrix<double>> cols_Bs(measurement_groups.size());
-    std::vector<Eigen::SparseMatrix<double>> cols_Cs(measurement_groups.size());
     const auto block_start_indices = A_ldlt.block_to_row_map();
 
-    const auto precompute_block =
-        [this, &A_ldlt, &features, &y, &K_fu, &v, &Z, &K_uu_ldlt, &mean_w,
-         &covariance_Y, &covariance_Ynot, &cols_Bs,
-         &cols_Cs](std::size_t block_number, Eigen::Index start_row) -> void {
+    const auto precompute_block = [this, &A_ldlt, &features, &y, &K_fu, &v, &Z,
+                                   &K_uu_ldlt, &mean_w, &covariance_Y,
+                                   &cols_Bs](std::size_t block_number,
+                                             Eigen::Index start_row) -> void {
       // const std::size_t block_number = block_start.first;
       // const Eigen::Index start_row = block_start.second;
       const Eigen::Index block_size = A_ldlt.blocks[block_number].rows();
@@ -501,7 +491,6 @@ public:
       }
 
       cols_Bs[block_number] = cols_B;
-      cols_Cs[block_number] = cols_C;
 
       // std::cout << "cols_C (" << cols_C.rows() << "x" << cols_C.cols() << "):\n"
       //           << Eigen::MatrixXd(cols_C) << std::endl;
@@ -520,30 +509,30 @@ public:
       const Eigen::MatrixXd mean_w_full =
           A_ldlt.blocks[block_number].solve(ydiff_b);
 
-      if (A_ldlt.blocks.size() > 1) {
-        // std::cout << "K_fu (" << K_fu.rows() << "x" << K_fu.cols() <<
-        // "):\n"
-        //           << K_fu << std::endl;
-        const Eigen::MatrixXd KufC = K_fu.transpose() * cols_C;
-        // std::cout << "KufC (" << KufC.rows() << "x" << KufC.cols() << "):\n"
-        //           << KufC << std::endl;
-        // const Eigen::MatrixXd ZC = Z * cols_C;
-        // // std::cout << "ZC.transpose() (" << ZC.transpose().rows() << "x"
-        // //           << ZC.transpose().cols() << "):\n"
-        // //           << ZC.transpose() << std::endl;
+      // if (A_ldlt.blocks.size() > 1) {
+      //   // std::cout << "K_fu (" << K_fu.rows() << "x" << K_fu.cols() <<
+      //   // "):\n"
+      //   //           << K_fu << std::endl;
+      //   const Eigen::MatrixXd KufC = K_fu.transpose() * cols_C;
+      //   // std::cout << "KufC (" << KufC.rows() << "x" << KufC.cols() << "):\n"
+      //   //           << KufC << std::endl;
+      //   // const Eigen::MatrixXd ZC = Z * cols_C;
+      //   // // std::cout << "ZC.transpose() (" << ZC.transpose().rows() << "x"
+      //   // //           << ZC.transpose().cols() << "):\n"
+      //   // //           << ZC.transpose() << std::endl;
 
-        // const Eigen::MatrixXd KuZT = KufC * ZC.transpose();
-        // const Eigen::MatrixXd KuZTZ = KuZT * Z;
-        // const Eigen::MatrixXd KuZTZB = -KuZTZ * cols_B;
-        // covariance_W[block_number] = K_uu_ldlt.solve(KuZTZB);
-        // std::cout << "covariance_W[" << block_number << "]:\n"
-        //           << covariance_W[block_number].format(Eigen::FullPrecision)
-        //           << std::endl;
-        covariance_Ynot[block_number] = K_uu_ldlt.solve(KufC);
-        // covariance_W.emplace_back(K_uu_ldlt.solve(
-        //     (-(K_fu.transpose() * cols_C) * Z.transpose() * Z) *
-        //     cols_B));
-      }
+      //   // const Eigen::MatrixXd KuZT = KufC * ZC.transpose();
+      //   // const Eigen::MatrixXd KuZTZ = KuZT * Z;
+      //   // const Eigen::MatrixXd KuZTZB = -KuZTZ * cols_B;
+      //   // covariance_W[block_number] = K_uu_ldlt.solve(KuZTZB);
+      //   // std::cout << "covariance_W[" << block_number << "]:\n"
+      //   //           << covariance_W[block_number].format(Eigen::FullPrecision)
+      //   //           << std::endl;
+      //   covariance_Ynot[block_number] = K_uu_ldlt.solve(KufC);
+      //   // covariance_W.emplace_back(K_uu_ldlt.solve(
+      //   //     (-(K_fu.transpose() * cols_C) * Z.transpose() * Z) *
+      //   //     cols_B));
+      // }
 
       // std::cout << "mean_w_full (" << mean_w_full.rows() << "x"
       //           << mean_w_full.cols() << "):\n"
@@ -676,8 +665,7 @@ public:
         Fit<PICGPFit<GrouperFunction, InducingPointFeatureType, FeatureType>>;
     return FitType(features, u, K_uu_ldlt, get_R(*B_qr), get_P(*B_qr), mean_w,
                    W, covariance_Y, Z, A_ldlt, measurement_groups, v,
-                   B_qr->rank(), covariance_Ynot, K_PITC_ldlt, cols_Bs,
-                   cols_Cs);
+                   B_qr->rank(), cols_Bs);
   }
 
   template <typename FeatureType>
@@ -870,7 +858,10 @@ public:
     Eigen::MatrixXd WV = Eigen::MatrixXd::Zero(
         sparse_gp_fit.inducing_features.size(), features.size());
 
-    Eigen::VectorXd mean_correction(features.size());
+    Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(features.size());
+    // std::cout << "mean_correction before (" << mean_correction.size() << "): "
+    //           << mean_correction.transpose().format(Eigen::FullPrecision)
+    //           << std::endl;
     std::vector<std::size_t> feature_to_block;
     for (Eigen::Index j = 0; j < features.size(); ++j) {
       const auto group = find_group(features[j]);
@@ -881,16 +872,18 @@ public:
       //        cover " "the entire feature domain in any fit.");
       feature_to_block.push_back(
           std::distance(sparse_gp_fit.measurement_groups.begin(), group));
-      if (sparse_gp_fit.A_ldlt.blocks.size() > 1) {
+      // if (sparse_gp_fit.A_ldlt.blocks.size() > 1) {
         const std::vector<FeatureType> fvec = {features[j]};
 
         const Eigen::VectorXd features_cov =
             this->covariance_function_(group->second.dataset.features, fvec);
-        // std::cout << "Feature " << j << "(" << without_measurement(features[j])
+        // std::cout << "Feature " << j << "(" <<
+        // without_measurement(features[j])
         //           << ") in group '" << group->first << "' ("
         //           << group->second.block_size << ": "
         //           << group->second.initial_row << " -> "
-        //           << group->second.initial_row + group->second.block_size << ")"
+        //           << group->second.initial_row + group->second.block_size <<
+        //           ")"
         //           << std::endl;
         // std::cout << "inducing_points: "
         //           << sparse_gp_fit.inducing_features.size() << std::endl;
@@ -920,15 +913,30 @@ public:
             sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[j]] * Vbp;
         WV.col(j) = wvj;
 
+        // std::cout << "Vbp[" << j << "] (" << Vbp.size()
+        //           << "): " << Vbp.transpose().format(Eigen::FullPrecision)
+        //           << std::endl;
+        // std::cout << "sparse_gp_fit.mean_w[" << group->second.block_index
+        //           << "] ("
+        //           << sparse_gp_fit.mean_w[group->second.block_index].size()
+        //           << "): "
+        //           << sparse_gp_fit.mean_w[group->second.block_index]
+        //                  .transpose()
+        //                  .format(Eigen::FullPrecision)
+        //           << std::endl;
+
         // WV.col(j) =
         //     sparse_gp_fit.covariance_W[group->second.block_index] *
         //     (this->covariance_function_(group->second.dataset.features, fvec)
         //     -
         //      cross_cov.transpose() *
         //          sparse_gp_fit.covariance_Y[group->second.block_index]);
-      }
+      // }
     }
 
+    // std::cout << "mean_correction after (" << mean_correction.size() << "): "
+    //           << mean_correction.transpose().format(Eigen::FullPrecision)
+    //           << std::endl;
     // std::cout << "WV (" << WV.rows() << "x" << WV.cols() << "):\n"
     //           << WV << std::endl;
 
@@ -1169,8 +1177,7 @@ private:
       const MarginalDistribution &out_of_order_targets,
       BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y,
-      GroupMap<FeatureType> *measurement_groups,
-      Eigen::SerializableLDLT *K_PITC_ldlt) const {
+      GroupMap<FeatureType> *measurement_groups) const {
 
     ALBATROSS_ASSERT(A_ldlt != nullptr);
     ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
@@ -1259,20 +1266,20 @@ private:
 
     *A_ldlt = A.ldlt();
 
-    const Eigen::MatrixXd K_uuuf = K_uu_ldlt->sqrt_solve(K_fu->transpose());
-    Eigen::MatrixXd Kfuf = K_uuuf.transpose() * K_uuuf;
-    Eigen::Index row_offset = 0;
-    Eigen::Index col_offset = 0;
-    for (auto &b : A.blocks) {
-      Kfuf.block(row_offset, col_offset, b.rows(), b.cols()) += b;
-      row_offset += b.rows();
-      col_offset += b.cols();
-    }
+    // const Eigen::MatrixXd K_uuuf = K_uu_ldlt->sqrt_solve(K_fu->transpose());
+    // Eigen::MatrixXd Kfuf = K_uuuf.transpose() * K_uuuf;
+    // Eigen::Index row_offset = 0;
+    // Eigen::Index col_offset = 0;
+    // for (auto &b : A.blocks) {
+    //   Kfuf.block(row_offset, col_offset, b.rows(), b.cols()) += b;
+    //   row_offset += b.rows();
+    //   col_offset += b.cols();
+    // }
 
-    // std::cout << "Kfuf (" << Kfuf.rows() << "x" << Kfuf.cols() << "):\n"
-    //           << Kfuf.format(Eigen::FullPrecision) << std::endl;
+    // // std::cout << "Kfuf (" << Kfuf.rows() << "x" << Kfuf.cols() << "):\n"
+    // //           << Kfuf.format(Eigen::FullPrecision) << std::endl;
 
-    *K_PITC_ldlt = Kfuf.ldlt();
+    // *K_PITC_ldlt = Kfuf.ldlt();
   }
 
   Parameter measurement_nugget_;
