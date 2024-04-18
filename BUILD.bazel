@@ -48,6 +48,7 @@ cc_library(
         "include/albatross/serialize/Ransac",
         "include/albatross/src/cereal/ThreadPool.hpp",
         "include/albatross/src/cereal/block_utils.hpp",
+        "include/albatross/src/cereal/block_diagonal.hpp",
         "include/albatross/src/cereal/dataset.hpp",
         "include/albatross/src/cereal/distribution.hpp",
         "include/albatross/src/cereal/eigen.hpp",

@@ -17,7 +17,9 @@ using albatross::Fit;
 using albatross::GaussianProcessBase;
 using albatross::GPFit;
 using albatross::LinearCombination;
+
 using albatross::SparseGPFit;
+using albatross::PICGPFit;
 
 #ifndef GP_SERIALIZATION_VERSION
 #define GP_SERIALIZATION_VERSION 2
@@ -49,6 +51,28 @@ inline void serialize(Archive &archive, Fit<SparseGPFit<FeatureType>> &fit,
     // Use a negative number to make it clear this is not a valid value.
     fit.numerical_rank = -1;
   }
+}
+
+template <typename Archive, typename GrouperFunction,
+          typename InducingFeatureType, typename FeatureType>
+inline void
+serialize(Archive &archive,
+          Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> &fit,
+          const std::uint32_t version) {
+  archive(cereal::make_nvp("train_features", fit.train_features));
+  archive(cereal::make_nvp("inducing_features", fit.inducing_features));
+  archive(cereal::make_nvp("train_covariance", fit.train_covariance));
+  archive(cereal::make_nvp("sigma_R", fit.sigma_R));
+  archive(cereal::make_nvp("P", fit.P));
+  archive(cereal::make_nvp("mean_w", fit.mean_w));
+  archive(cereal::make_nvp("W", fit.W));
+  archive(cereal::make_nvp("covariance_Y", fit.covariance_Y));
+  archive(cereal::make_nvp("Z", fit.Z));
+  archive(cereal::make_nvp("A_ldlt", fit.A_ldlt));
+  archive(cereal::make_nvp("measurement_groups", fit.measurement_groups));
+  archive(cereal::make_nvp("information", fit.information));
+  archive(cereal::make_nvp("numerical_rank", fit.numerical_rank));
+  archive(cereal::make_nvp("cols_Bs", fit.cols_Bs));
 }
 
 template <typename Archive, typename CovFunc, typename MeanFunc,

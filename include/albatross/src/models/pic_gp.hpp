@@ -63,10 +63,10 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
   Eigen::Index numerical_rank;
 
   // debug stuff
-  std::vector<Eigen::MatrixXd> covariance_Ynot;
-  Eigen::SerializableLDLT K_PITC_ldlt;
+  // std::vector<Eigen::MatrixXd> covariance_Ynot;
+  // Eigen::SerializableLDLT K_PITC_ldlt;
   std::vector<Eigen::SparseMatrix<double>> cols_Bs;
-  std::vector<Eigen::SparseMatrix<double>> cols_Cs;
+  // std::vector<Eigen::SparseMatrix<double>> cols_Cs;
 
   Fit(){};
 
@@ -721,7 +721,7 @@ public:
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
     const auto B_qr = QRImplementation::compute(sigma_inv_sqrt, nullptr);
 
-    new_fit.permutation_indices = get_P(*B_qr);
+    new_fit.P = get_P(*B_qr);
     new_fit.sigma_R = get_R(*B_qr);
     new_fit.numerical_rank = B_qr->rank();
 
@@ -770,8 +770,8 @@ public:
         Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
     marginal_variance -= Q_diag;
 
-    const Eigen::MatrixXd S_sqrt = sqrt_solve(
-        sparse_gp_fit.sigma_R, sparse_gp_fit.permutation_indices, cross_cov);
+    const Eigen::MatrixXd S_sqrt =
+        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.P.indices(), cross_cov);
     const Eigen::VectorXd S_diag =
         S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
     marginal_variance += S_diag;
