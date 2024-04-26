@@ -61,11 +61,12 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
   GroupMap measurement_groups;
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
+  std::vector<Eigen::SparseMatrix<double>> cols_Bs;
+  GrouperFunction grouper;
 
   // debug stuff
   // std::vector<Eigen::MatrixXd> covariance_Ynot;
   // Eigen::SerializableLDLT K_PITC_ldlt;
-  std::vector<Eigen::SparseMatrix<double>> cols_Bs;
   // std::vector<Eigen::SparseMatrix<double>> cols_Cs;
 
   Fit(){};
@@ -79,13 +80,14 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
       const Eigen::MatrixXd &Z_, const BlockDiagonalLDLT &A_ldlt_,
       const GroupMap &measurement_groups_, const Eigen::VectorXd &information_,
       Eigen::Index numerical_rank_,
-      const std::vector<Eigen::SparseMatrix<double>> cols_Bs_)
+      const std::vector<Eigen::SparseMatrix<double>> cols_Bs_,
+      GrouperFunction grouper_)
       : train_features(features_), inducing_features(inducing_features_),
         train_covariance(train_covariance_), sigma_R(sigma_R_), P(P_),
         mean_w(mean_w_), W(W_), covariance_Y(covariance_Y_), Z(Z_),
         A_ldlt(A_ldlt_), measurement_groups(measurement_groups_),
         information(information_), numerical_rank(numerical_rank_),
-        cols_Bs(cols_Bs_) {}
+        cols_Bs(cols_Bs_), grouper(grouper_) {}
 
   void shift_mean(const Eigen::VectorXd &mean_shift) {
     ALBATROSS_ASSERT(mean_shift.size() == information.size());
@@ -105,7 +107,6 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
             measurement_groups == other.measurement_groups &&
             information == other.information &&
             numerical_rank == other.numerical_rank &&
-            // Debug stuff
             cols_Bs == other.cols_Bs);
   }
 };
@@ -302,12 +303,21 @@ public:
     ALBATROSS_ASSERT(success);
   }
 
+  template <typename NewGrouper = GrouperFunction,
+            typename PleaseDontChange = typename std::enable_if<
+                std::is_same<typename std::remove_reference<NewGrouper>::type,
+                             GrouperFunction>::value>::type>
+  void update_grouper_function(NewGrouper &&f) {
+    independent_group_function_ = std::forward<NewGrouper>(f);
+  }
+
   template <typename FeatureType, typename InducingPointFeatureType>
   auto
   _update_impl(const Fit<PICGPFit<GrouperFunction, InducingPointFeatureType,
                                   FeatureType>> &old_fit,
                const std::vector<FeatureType> &features,
                const MarginalDistribution &targets) const {
+    assert(false && "Cannot call update() on a PIC GP yet!");
 
     BlockDiagonalLDLT A_ldlt;
     Eigen::SerializableLDLT K_uu_ldlt;
@@ -439,14 +449,14 @@ public:
 
     // TODO(@peddie): a lot of this can be batched
     std::vector<Eigen::MatrixXd> covariance_Y(measurement_groups.size());
+    std::vector<Eigen::MatrixXd> covariance_Ynot(measurement_groups.size());
     std::vector<Eigen::VectorXd> mean_w(measurement_groups.size());
     std::vector<Eigen::SparseMatrix<double>> cols_Bs(measurement_groups.size());
+    std::vector<Eigen::SparseMatrix<double>> cols_Cs(measurement_groups.size());
     const auto block_start_indices = A_ldlt.block_to_row_map();
 
-    const auto precompute_block = [this, &A_ldlt, &features, &y, &K_fu, &v, &Z,
-                                   &K_uu_ldlt, &mean_w, &covariance_Y,
-                                   &cols_Bs](std::size_t block_number,
-                                             Eigen::Index start_row) -> void {
+    const auto precompute_block = [&, this](std::size_t block_number,
+                                            Eigen::Index start_row) -> void {
       // const std::size_t block_number = block_start.first;
       // const Eigen::Index start_row = block_start.second;
       const Eigen::Index block_size = A_ldlt.blocks[block_number].rows();
@@ -665,7 +675,7 @@ public:
         Fit<PICGPFit<GrouperFunction, InducingPointFeatureType, FeatureType>>;
     return FitType(features, u, K_uu_ldlt, get_R(*B_qr), get_P(*B_qr), mean_w,
                    W, covariance_Y, Z, A_ldlt, measurement_groups, v,
-                   B_qr->rank(), cols_Bs);
+                   B_qr->rank(), cols_Bs, independent_group_function_);
   }
 
   template <typename FeatureType>
@@ -728,35 +738,137 @@ public:
     return output;
   }
 
-  // This is included to allow the SparseGP to be compatible with fits
-  // generated using a standard GP.
+  // This is included to allow the SparseGP
+  // to be compatible with fits generated
+  // using a standard GP.
   using Base::_predict_impl;
 
-  template <typename FeatureType, typename FitFeaturetype>
+  template <typename FeatureType, typename InducingFeatureType,
+            typename FitFeatureType>
   Eigen::VectorXd _predict_impl(
       const std::vector<FeatureType> &features,
-      const Fit<PICGPFit<GrouperFunction, FitFeaturetype, FeatureType>>
+      const Fit<PICGPFit<GrouperFunction, InducingFeatureType, FitFeatureType>>
           &sparse_gp_fit,
       PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    const auto cross_cov =
-        this->covariance_function_(sparse_gp_fit.train_features, features);
+    const auto find_group = [this, &sparse_gp_fit](const auto &feature) {
+      const auto group = sparse_gp_fit.measurement_groups.find(
+          independent_group_function_(without_measurement(feature)));
+      if (group == sparse_gp_fit.measurement_groups.end()) {
+        std::cerr << "Group mapping failure for feature '"
+                  << without_measurement(feature) << "' (group index '"
+                  << independent_group_function_(without_measurement(feature))
+                  << "')!" << std::endl;
+        assert(group != sparse_gp_fit.measurement_groups.end() &&
+               "TODO(@peddie): the group function in a PIC GP model must "
+               "cover the entire feature domain in any fit.");
+      }
+      return group;
+    };
+    const Eigen::MatrixXd K_up =
+        this->covariance_function_(sparse_gp_fit.inducing_features, features);
+    Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(features.size());
+    for (Eigen::Index j = 0; j < features.size(); ++j) {
+      const auto group = find_group(features[j]);
+      const std::vector<FeatureType> fvec = {features[j]};
+
+      const Eigen::VectorXd features_cov =
+          this->covariance_function_(group->second.dataset.features, fvec);
+      const Eigen::VectorXd kpuy =
+          K_up.transpose().row(j) *
+          sparse_gp_fit.covariance_Y[group->second.block_index];
+      const Eigen::VectorXd Vbp = features_cov - kpuy;
+      mean_correction[j] =
+          Vbp.dot(sparse_gp_fit.mean_w[group->second.block_index]);
+    }
+
     Eigen::VectorXd mean =
-        gp_mean_prediction(cross_cov, sparse_gp_fit.information);
+        K_up.transpose() * sparse_gp_fit.information + mean_correction;
+
     this->mean_function_.add_to(features, &mean);
     return mean;
   }
 
-  template <typename FeatureType, typename FitFeaturetype>
+  template <typename FeatureType, typename InducingFeatureType,
+            typename FitFeatureType>
   MarginalDistribution _predict_impl(
       const std::vector<FeatureType> &features,
-      const Fit<PICGPFit<GrouperFunction, FitFeaturetype, FeatureType>>
+      const Fit<PICGPFit<GrouperFunction, InducingFeatureType, FitFeatureType>>
           &sparse_gp_fit,
       PredictTypeIdentity<MarginalDistribution> &&) const {
-    const auto cross_cov =
-        this->covariance_function_(sparse_gp_fit.train_features, features);
-    Eigen::VectorXd mean =
-        gp_mean_prediction(cross_cov, sparse_gp_fit.information);
+    // std::cout << "_predict_impl() for MarginalDistribution" << std::endl;
+    const auto K_up =
+        this->covariance_function_(sparse_gp_fit.inducing_features, features);
+    Eigen::VectorXd mean = gp_mean_prediction(K_up, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
+
+    Eigen::MatrixXd WV = Eigen::MatrixXd::Zero(
+        sparse_gp_fit.inducing_features.size(), features.size());
+
+    const auto find_group = [this, &sparse_gp_fit](const auto &feature) {
+      const auto group = sparse_gp_fit.measurement_groups.find(
+          independent_group_function_(without_measurement(feature)));
+      if (group == sparse_gp_fit.measurement_groups.end()) {
+        std::cerr << "Group mapping failure for feature '"
+                  << without_measurement(feature) << "' (group index '"
+                  << independent_group_function_(without_measurement(feature))
+                  << "')!" << std::endl;
+        assert(group != sparse_gp_fit.measurement_groups.end() &&
+               "TODO(@peddie): the group function in a PIC GP model must "
+               "cover the entire feature domain in any fit.");
+      }
+      return group;
+    };
+
+    Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(features.size());
+    std::vector<std::size_t> feature_to_block;
+    for (Eigen::Index j = 0; j < features.size(); ++j) {
+      const auto group = find_group(features[j]);
+      feature_to_block.push_back(
+          std::distance(sparse_gp_fit.measurement_groups.begin(), group));
+      const std::vector<FeatureType> fvec = {features[j]};
+
+      const Eigen::VectorXd features_cov =
+          this->covariance_function_(group->second.dataset.features, fvec);
+      const Eigen::VectorXd kpuy =
+          K_up.transpose().row(j) *
+          sparse_gp_fit.covariance_Y[group->second.block_index];
+      const Eigen::VectorXd Vbp = features_cov - kpuy;
+      mean_correction[j] =
+          Vbp.dot(sparse_gp_fit.mean_w[group->second.block_index]);
+      const Eigen::VectorXd wvj =
+          sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[j]] * Vbp;
+      WV.col(j) = wvj;
+    }
+
+    Eigen::VectorXd VSV_diag(features.size());
+
+    for (Eigen::Index row = 0; row < VSV_diag.size(); ++row) {
+      assert(row < feature_to_block.size());
+      const auto row_group = find_group(features[row]);
+      // TODO(@peddie): these are K, not V!
+      const Eigen::VectorXd Q_row_p =
+          K_up.transpose().row(row) *
+          sparse_gp_fit.covariance_Y[row_group->second.block_index];
+      const std::vector<FeatureType> row_fvec = {features[row]};
+      const Eigen::VectorXd V_row_p =
+          this->covariance_function_(row_group->second.dataset.features,
+                                     row_fvec) -
+          Q_row_p;
+
+      Eigen::VectorXd xi_a = sparse_gp_fit.A_ldlt.blocks[feature_to_block[row]]
+                                 .sqrt_solve(V_row_p)
+                                 .col(0);
+
+      Eigen::VectorXd xi_z =
+          sparse_gp_fit.Z.block(0, row_group->second.initial_row,
+                                sparse_gp_fit.Z.rows(),
+                                row_group->second.block_size) *
+          V_row_p;
+
+      VSV_diag(row) = xi_a.dot(xi_a) - xi_z.dot(xi_z);
+    }
+
+    const Eigen::VectorXd U_diag = (K_up.transpose() * WV).diagonal();
 
     Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
@@ -765,66 +877,35 @@ public:
     }
 
     const Eigen::MatrixXd Q_sqrt =
-        sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
+        sparse_gp_fit.train_covariance.sqrt_solve(K_up);
     const Eigen::VectorXd Q_diag =
         Q_sqrt.cwiseProduct(Q_sqrt).array().colwise().sum();
     marginal_variance -= Q_diag;
 
     const Eigen::MatrixXd S_sqrt =
-        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.P.indices(), cross_cov);
+        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.P, K_up);
     const Eigen::VectorXd S_diag =
         S_sqrt.cwiseProduct(S_sqrt).array().colwise().sum();
     marginal_variance += S_diag;
 
-    return MarginalDistribution(mean, marginal_variance);
+    mean += mean_correction;
+
+    return MarginalDistribution(mean,
+                                marginal_variance - (2 * U_diag + VSV_diag));
   }
-
-  // template <typename FeatureType, typename FitType>
-  // auto find_group(const FitType &fit, const FeatureType &feature) const {
-  //   const auto group = fit.measurement_groups.find(
-  //       independent_group_function_(without_measurement(feature)));
-  //   if (group == fit.measurement_groups.end()) {
-  //     std::cerr << "Group mapping failure for feature '"
-  //               << without_measurement(feature) << "' (group index '"
-  //               << independent_group_function_(without_measurement(feature))
-  //               << "')!" << std::endl;
-  //     assert(group != fit.measurement_groups.end() &&
-  //            "TODO(@peddie): the group function in a PIC GP model must cover
-  //            " "the entire feature domain in any fit.");
-  //   }
-  //   return group;
-  // }
-  // template <typename FitFeatureType>
-  // using InducingFeatureType =
-  //     typename std::decay<typename std::result_of<InducingPointStrategy(
-  //         const CovFunc &,
-  //         const std::vector<FitFeatureType> &)>::type::value_type>::type;
-
-  // typename std::decay<decltype(InducingPointStrategy>(
-  //     std::declval<CovFunc>(), std::declval<FitFeatureType>()))>::type;
-
-  // template <typename FitFeatureType>
-  // using InducingFeatureType =
-  //     typename std::decay<typename decltype(inducing_point_strategy_(
-  //         std::declval<const CovFunc &>(),
-  //         std::declval<const std::vector<FitFeatureType>
-  //         &>()))::value_type>:: type;
 
   template <typename FeatureType, typename InducingFeatureType,
             typename FitFeatureType>
   JointDistribution _predict_impl(
       const std::vector<FeatureType> &features,
-      const Fit<PICGPFit<
-          GrouperFunction,
-          InducingFeatureType, // <FitFeatureType>,
-                               // typename std::result_of<InducingPointStrategy(
-                               //     const CovFunc &, const
-                               //     std::vector<FitFeatureType> &)>::type,
-          FitFeatureType>> &sparse_gp_fit,
-      // const Fit<PICGPFit<GrouperFunction,
-      // InducingFeatureType<FitFeatureType>,
-      //                    FitFeatureType>> &sparse_gp_fit,
+      const Fit<PICGPFit<GrouperFunction, InducingFeatureType, FitFeatureType>>
+          &sparse_gp_fit,
       PredictTypeIdentity<JointDistribution> &&) const {
+    // std::cout << "features (" << features.size() << "): ";
+    // for (const auto &f : features) {
+    //   std::cout << f << "  ";
+    // }
+    // std::cout << std::endl;
 
     const auto find_group = [this, &sparse_gp_fit](const auto &feature) {
       const auto group = sparse_gp_fit.measurement_groups.find(
