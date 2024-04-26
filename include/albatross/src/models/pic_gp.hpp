@@ -54,7 +54,6 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
   Eigen::PermutationMatrixX P;
   std::vector<Eigen::VectorXd> mean_w;
   Eigen::MatrixXd W;
-  // std::vector<Eigen::MatrixXd> covariance_W;
   std::vector<Eigen::MatrixXd> covariance_Y;
   Eigen::MatrixXd Z;
   BlockDiagonalLDLT A_ldlt;
@@ -63,11 +62,6 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
   Eigen::Index numerical_rank;
   std::vector<Eigen::SparseMatrix<double>> cols_Bs;
   GrouperFunction grouper;
-
-  // debug stuff
-  // std::vector<Eigen::MatrixXd> covariance_Ynot;
-  // Eigen::SerializableLDLT K_PITC_ldlt;
-  // std::vector<Eigen::SparseMatrix<double>> cols_Cs;
 
   Fit(){};
 
@@ -106,8 +100,7 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
             A_ldlt == other.A_ldlt &&
             measurement_groups == other.measurement_groups &&
             information == other.information &&
-            numerical_rank == other.numerical_rank &&
-            cols_Bs == other.cols_Bs);
+            numerical_rank == other.numerical_rank && cols_Bs == other.cols_Bs);
   }
 };
 
@@ -225,8 +218,6 @@ class PICGaussianProcessRegression
                                  PICGaussianProcessRegression<
                                      CovFunc, MeanFunc, GrouperFunction,
                                      InducingPointStrategy, QRImplementation>> {
-  InducingPointStrategy inducing_point_strategy_;
-
 public:
   using Base = GaussianProcessBase<
       CovFunc, MeanFunc,
@@ -400,8 +391,6 @@ public:
     const auto u =
         inducing_point_strategy_(this->covariance_function_, features);
     ALBATROSS_ASSERT(u.size() > 0 && "Empty inducing points!");
-    // std::cerr << "features: " << features.size() << std::endl;
-    // std::cerr << "u: " << u.size() << std::endl;
 
     BlockDiagonalLDLT A_ldlt;
     Eigen::SerializableLDLT K_uu_ldlt;
@@ -426,10 +415,6 @@ public:
     // appropriately, and if the term is diagonal, also solve using
     // the blocks of A^-1.
     const Eigen::MatrixXd Z = sqrt_solve(*B_qr, A_ldlt.solve(K_fu).transpose());
-        // get_R(*B_qr).template triangularView<Eigen::Upper>().transpose().solve(
-        //     get_P(*B_qr).transpose() * A_ldlt.solve(K_fu).transpose());
-    // std::cout << "Z (" << Z.rows() << "x" << Z.cols() << "):\n"
-    //           << Z << std::endl;
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
@@ -437,15 +422,8 @@ public:
 
     using InducingPointFeatureType = typename std::decay<decltype(u[0])>::type;
 
-    const Eigen::MatrixXd W =
-      K_uu_ldlt.solve((A_ldlt.solve(K_fu) - Z.transpose() * Z * K_fu).transpose());
-    // std::cout << "W (" << W.rows() << "x" << W.cols() << "):\n"
-    //           << W.format(Eigen::FullPrecision) << std::endl;
-
-    // const Eigen::MatrixXd W2 =
-    //     K_uu_ldlt.solve(K_PITC_ldlt.solve(K_fu).transpose());
-    // std::cout << "W2 (" << W2.rows() << "x" << W2.cols() << "):\n"
-    //           << W2.format(Eigen::FullPrecision) << std::endl;
+    const Eigen::MatrixXd W = K_uu_ldlt.solve(
+        (A_ldlt.solve(K_fu) - Z.transpose() * Z * K_fu).transpose());
 
     // TODO(@peddie): a lot of this can be batched
     std::vector<Eigen::MatrixXd> covariance_Y(measurement_groups.size());
@@ -457,8 +435,6 @@ public:
 
     const auto precompute_block = [&, this](std::size_t block_number,
                                             Eigen::Index start_row) -> void {
-      // const std::size_t block_number = block_start.first;
-      // const Eigen::Index start_row = block_start.second;
       const Eigen::Index block_size = A_ldlt.blocks[block_number].rows();
       // K_fu is already computed, so we can form K_uB and K_uA by
       // appropriate use of sparse indexing matrices and avoid an O(N
@@ -476,11 +452,6 @@ public:
         cols_B.insert(start_row + i, i) = 1.;
       }
       cols_B.makeCompressed();
-
-      // std::cout << "block " << block_number << " -- start_row: " << start_row
-      //           << "; block_size: " << block_size << std::endl;
-      // std::cout << "cols_B (" << cols_B.rows() << "x" << cols_B.cols() << "):\n"
-      //           << Eigen::MatrixXd(cols_B) << std::endl;
 
       for (Eigen::Index i = 0, j = 0; i < features.size();) {
         if (i == start_row) {
@@ -501,173 +472,14 @@ public:
       }
 
       cols_Bs[block_number] = cols_B;
-
-      // std::cout << "cols_C (" << cols_C.rows() << "x" << cols_C.cols() << "):\n"
-      //           << Eigen::MatrixXd(cols_C) << std::endl;
       // v_b \in R^b = A_BB^-1 (y_b - K_Bu v)
       Eigen::MatrixXd ydiff_b = cols_B.transpose() * (y - K_fu * v);
-      // std::cerr << "ydiff_b: " << ydiff_b.rows() << " x " << ydiff_b.cols()
-      //           << std::endl;
-      // std::cerr << "cols_B: " << cols_B.rows() << " x " << cols_B.cols()
-      //           << std::endl;
-      // std::cerr << "A_ldlt: " << A_ldlt.rows() << " x " << A_ldlt.cols()
-      //           << " in " << A_ldlt.blocks.size() << " blocks: { ";
-      // for (const auto &block : A_ldlt.blocks) {
-      //   std::cerr << block.rows() << ", ";
-      // }
-      // std::cerr << " }" << std::endl;
       const Eigen::MatrixXd mean_w_full =
           A_ldlt.blocks[block_number].solve(ydiff_b);
-
-      // if (A_ldlt.blocks.size() > 1) {
-      //   // std::cout << "K_fu (" << K_fu.rows() << "x" << K_fu.cols() <<
-      //   // "):\n"
-      //   //           << K_fu << std::endl;
-      //   const Eigen::MatrixXd KufC = K_fu.transpose() * cols_C;
-      //   // std::cout << "KufC (" << KufC.rows() << "x" << KufC.cols() << "):\n"
-      //   //           << KufC << std::endl;
-      //   // const Eigen::MatrixXd ZC = Z * cols_C;
-      //   // // std::cout << "ZC.transpose() (" << ZC.transpose().rows() << "x"
-      //   // //           << ZC.transpose().cols() << "):\n"
-      //   // //           << ZC.transpose() << std::endl;
-
-      //   // const Eigen::MatrixXd KuZT = KufC * ZC.transpose();
-      //   // const Eigen::MatrixXd KuZTZ = KuZT * Z;
-      //   // const Eigen::MatrixXd KuZTZB = -KuZTZ * cols_B;
-      //   // covariance_W[block_number] = K_uu_ldlt.solve(KuZTZB);
-      //   // std::cout << "covariance_W[" << block_number << "]:\n"
-      //   //           << covariance_W[block_number].format(Eigen::FullPrecision)
-      //   //           << std::endl;
-      //   covariance_Ynot[block_number] = K_uu_ldlt.solve(KufC);
-      //   // covariance_W.emplace_back(K_uu_ldlt.solve(
-      //   //     (-(K_fu.transpose() * cols_C) * Z.transpose() * Z) *
-      //   //     cols_B));
-      // }
-
-      // std::cout << "mean_w_full (" << mean_w_full.rows() << "x"
-      //           << mean_w_full.cols() << "):\n"
-      //           << mean_w_full << std::endl;
-      // const Eigen::MatrixXd mean_w_block = cols_B.transpose() *
-      // mean_w_full; std::cout << "mean_w_block (" << mean_w_block.rows()
-      // << "x"
-      //           << mean_w_block.cols() << "):\n"
-      //           << mean_w_block << std::endl;
-      // mean_w.emplace_back(cols_B.transpose() *
-      //                     A_ldlt.blocks[block_number].solve(ydiff_b));
       mean_w[block_number] = mean_w_full;
       // Y \in R^(u x b) = K_uu^-1 K_uB
       covariance_Y[block_number] = K_uu_ldlt.solve(K_fu.transpose() * cols_B);
-      // std::cout << "covariance_Y[" << block_number << "]:\n"
-      //           << covariance_Y[block_number].format(Eigen::FullPrecision)
-      //           << std::endl;
-      // W \in R^(u x b) = K_uu^-1 K_uC S_CB^-1
-      //                 = K_uu^-1 K_uC (A^-1 - Z^T Z)
-      //                 [A^-1 is block diagonal; C and B are disjoint]
-      //                 = K_uu^-1 K_uC (- Z^T Z)
     };
-
-    // for (const auto &block_start : block_start_indices) {
-    //   const std::size_t block_number = block_start.first;
-    //   const Eigen::Index start_row = block_start.second;
-    //   const Eigen::Index block_size = A_ldlt.blocks[block_number].rows();
-    //   // K_fu is already computed, so we can form K_uB and K_uA by
-    //   // appropriate use of sparse indexing matrices and avoid an O(N
-    //   // M) operation.
-    //   //
-    //   // This nonsense would be a lot more straightforward with Eigen
-    //   // 3.4's slicing and indexing API.
-    //   Eigen::SparseMatrix<double> cols_B(features.size(), block_size);
-    //   cols_B.reserve(block_size);
-    //   Eigen::SparseMatrix<double> cols_C(features.size(),
-    //                                      features.size() - block_size);
-    //   cols_C.reserve(features.size() - block_size);
-
-    //   for (Eigen::Index i = 0; i < block_size; ++i) {
-    //     cols_B.insert(start_row + i, i) = 1.;
-    //   }
-    //   cols_B.makeCompressed();
-
-    //   // std::cout << "cols_B (" << cols_B.rows() << "x" << cols_B.cols() <<
-    //   "):\n"
-    //   //           << Eigen::MatrixXd(cols_B) << std::endl;
-
-    //   // std::cout << "start_row: " << start_row << "; block_size: " <<
-    //   block_size
-    //   //           << std::endl;
-    //   for (Eigen::Index i = 0, j = 0; i < features.size();) {
-    //     if (i == start_row) {
-    //       i += block_size;
-    //       continue;
-    //     }
-    //     cols_C.insert(i, j) = 1.;
-    //     i++;
-    //     j++;
-    //   }
-    //   cols_C.makeCompressed();
-
-    //   Eigen::Index col = 0;
-    //   for (Eigen::Index k = 0; k < cols_C.outerSize(); ++k) {
-    //     for (decltype(cols_C)::InnerIterator it(cols_C, k); it; ++it) {
-    //       assert(it.col() == col++);
-    //     }
-    //   }
-    //   // std::cout << "cols_C (" << cols_C.rows() << "x" << cols_C.cols() <<
-    //   "):\n"
-    //   //           << Eigen::MatrixXd(cols_C) << std::endl;
-    //   // v_b \in R^b = A_BB^-1 (y_b - K_Bu v)
-    //   Eigen::MatrixXd ydiff_b = cols_B.transpose() * (y - K_fu * v);
-    //   // std::cerr << "ydiff_b: " << ydiff_b.rows() << " x " <<
-    //   ydiff_b.cols()
-    //   //           << std::endl;
-    //   // std::cerr << "cols_B: " << cols_B.rows() << " x " << cols_B.cols()
-    //   //           << std::endl;
-    //   // std::cerr << "A_ldlt: " << A_ldlt.rows() << " x " << A_ldlt.cols()
-    //   //           << " in " << A_ldlt.blocks.size() << " blocks: { ";
-    //   // for (const auto &block : A_ldlt.blocks) {
-    //   //   std::cerr << block.rows() << ", ";
-    //   // }
-    //   // std::cerr << " }" << std::endl;
-    //   const Eigen::MatrixXd mean_w_full =
-    //       A_ldlt.blocks[block_number].solve(ydiff_b);
-    //   // std::cout << "mean_w_full (" << mean_w_full.rows() << "x"
-    //   //           << mean_w_full.cols() << "):\n"
-    //   //           << mean_w_full << std::endl;
-    //   // const Eigen::MatrixXd mean_w_block = cols_B.transpose() *
-    //   mean_w_full;
-    //   // std::cout << "mean_w_block (" << mean_w_block.rows() << "x"
-    //   //           << mean_w_block.cols() << "):\n"
-    //   //           << mean_w_block << std::endl;
-    //   // mean_w.emplace_back(cols_B.transpose() *
-    //   //                     A_ldlt.blocks[block_number].solve(ydiff_b));
-    //   mean_w.push_back(mean_w_full);
-    //   // Y \in R^(u x b) = K_uu^-1 K_uB
-    //   covariance_Y.emplace_back(K_uu_ldlt.solve(K_fu.transpose() * cols_B));
-    //   // W \in R^(u x b) = K_uu^-1 K_uC S_CB^-1
-    //   //                 = K_uu^-1 K_uC (A^-1 - Z^T Z)
-    //   //                 [A^-1 is block diagonal; C and B are disjoint]
-    //   //                 = K_uu^-1 K_uC (- Z^T Z)
-
-    //   if (A_ldlt.blocks.size() > 1) {
-    //     // std::cout << "K_fu (" << K_fu.rows() << "x" << K_fu.cols() <<
-    //     "):\n"
-    //     //           << K_fu << std::endl;
-    //     const Eigen::MatrixXd KufC = K_fu.transpose() * cols_C;
-    //     // std::cout << "KufC (" << KufC.rows() << "x" << KufC.cols() <<
-    //     "):\n"
-    //     //           << KufC << std::endl;
-    //     const Eigen::MatrixXd ZC = Z * cols_C;
-    //     // std::cout << "ZC.transpose() (" << ZC.transpose().rows() << "x"
-    //     //           << ZC.transpose().cols() << "):\n"
-    //     //           << ZC.transpose() << std::endl;
-
-    //     const Eigen::MatrixXd KuZT = KufC * ZC.transpose();
-    //     const Eigen::MatrixXd KuZTZ = KuZT * Z;
-    //     const Eigen::MatrixXd KuZTZB = -KuZTZ * cols_B;
-    //     covariance_W.emplace_back(K_uu_ldlt.solve(KuZTZB));
-    //     // covariance_W.emplace_back(K_uu_ldlt.solve(
-    //     //     (-(K_fu.transpose() * cols_C) * Z.transpose() * Z) * cols_B));
-    //   }
-    // }
 
     apply_map(block_start_indices, precompute_block, Base::threads_.get());
 
@@ -901,12 +713,6 @@ public:
       const Fit<PICGPFit<GrouperFunction, InducingFeatureType, FitFeatureType>>
           &sparse_gp_fit,
       PredictTypeIdentity<JointDistribution> &&) const {
-    // std::cout << "features (" << features.size() << "): ";
-    // for (const auto &f : features) {
-    //   std::cout << f << "  ";
-    // }
-    // std::cout << std::endl;
-
     const auto find_group = [this, &sparse_gp_fit](const auto &feature) {
       const auto group = sparse_gp_fit.measurement_groups.find(
           independent_group_function_(without_measurement(feature)));
@@ -921,18 +727,9 @@ public:
       }
       return group;
     };
-    // using CalculatedInducingFeatureType =
-    //     typename std::decay<typename std::result_of<InducingPointStrategy(
-    //         const CovFunc &,
-    //         const std::vector<FeatureType> &)>::type::value_type>::type;
-    // static_assert(
-    //     std::is_same<CalculatedInducingFeatureType,
-    //                  InducingFeatureType>::value &&
-    //     "A fitted PIC model must be able to compute the covariance between
-    //     its " "inducing point feature type and the feature type to be
-    //     predicted.");
+
     // K_up
-    const Eigen::MatrixXd cross_cov =
+    const Eigen::MatrixXd K_up =
         this->covariance_function_(sparse_gp_fit.inducing_features, features);
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
@@ -940,89 +737,25 @@ public:
         sparse_gp_fit.inducing_features.size(), features.size());
 
     Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(features.size());
-    // std::cout << "mean_correction before (" << mean_correction.size() << "): "
-    //           << mean_correction.transpose().format(Eigen::FullPrecision)
-    //           << std::endl;
     std::vector<std::size_t> feature_to_block;
     for (Eigen::Index j = 0; j < features.size(); ++j) {
       const auto group = find_group(features[j]);
-      // const auto group = sparse_gp_fit.measurement_groups.find(
-      //     independent_group_function_(without_measurement(features[j])));
-      // assert(group != sparse_gp_fit.measurement_groups.end() &&
-      //        "TODO(@peddie): the group function in a PIC GP model must
-      //        cover " "the entire feature domain in any fit.");
       feature_to_block.push_back(
           std::distance(sparse_gp_fit.measurement_groups.begin(), group));
-      // if (sparse_gp_fit.A_ldlt.blocks.size() > 1) {
-        const std::vector<FeatureType> fvec = {features[j]};
+      const std::vector<FeatureType> fvec = {features[j]};
 
-        const Eigen::VectorXd features_cov =
-            this->covariance_function_(group->second.dataset.features, fvec);
-        // std::cout << "Feature " << j << "(" <<
-        // without_measurement(features[j])
-        //           << ") in group '" << group->first << "' ("
-        //           << group->second.block_size << ": "
-        //           << group->second.initial_row << " -> "
-        //           << group->second.initial_row + group->second.block_size <<
-        //           ")"
-        //           << std::endl;
-        // std::cout << "inducing_points: "
-        //           << sparse_gp_fit.inducing_features.size() << std::endl;
-        // std::cout << "cross_cov (" << cross_cov.rows() << "x"
-        //           << cross_cov.cols() << "):\n"
-        //           << cross_cov << std::endl;
-        // std::cout << "features_cov (" << features_cov.rows() << "x"
-        //           << features_cov.cols() << "):\n"
-        //           << features_cov << std::endl;
-        // std::cout
-        //     << "sparse_gp_fit.covariance_Y[group->second.block_index] ("
-        //     << sparse_gp_fit.covariance_Y[group->second.block_index].rows()
-        //     << "x"
-        //     << sparse_gp_fit.covariance_Y[group->second.block_index].cols()
-        //     << "):\n"
-        //     << sparse_gp_fit.covariance_Y[group->second.block_index]
-        //     << std::endl;
-        const Eigen::VectorXd kpuy =
-            cross_cov.transpose().row(j) *
-            sparse_gp_fit.covariance_Y[group->second.block_index];
-        // std::cout << "kpuy (" << kpuy.rows() << "x" << kpuy.cols() << "):\n"
-        //           << kpuy << std::endl;
-        const Eigen::VectorXd Vbp = features_cov - kpuy;
-        mean_correction[j] =
-            Vbp.dot(sparse_gp_fit.mean_w[group->second.block_index]);
-        const Eigen::VectorXd wvj =
-            sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[j]] * Vbp;
-        WV.col(j) = wvj;
-
-        // std::cout << "Vbp[" << j << "] (" << Vbp.size()
-        //           << "): " << Vbp.transpose().format(Eigen::FullPrecision)
-        //           << std::endl;
-        // std::cout << "sparse_gp_fit.mean_w[" << group->second.block_index
-        //           << "] ("
-        //           << sparse_gp_fit.mean_w[group->second.block_index].size()
-        //           << "): "
-        //           << sparse_gp_fit.mean_w[group->second.block_index]
-        //                  .transpose()
-        //                  .format(Eigen::FullPrecision)
-        //           << std::endl;
-
-        // WV.col(j) =
-        //     sparse_gp_fit.covariance_W[group->second.block_index] *
-        //     (this->covariance_function_(group->second.dataset.features, fvec)
-        //     -
-        //      cross_cov.transpose() *
-        //          sparse_gp_fit.covariance_Y[group->second.block_index]);
-      // }
+      const Eigen::VectorXd features_cov =
+          this->covariance_function_(group->second.dataset.features, fvec);
+      const Eigen::VectorXd kpuy =
+          K_up.transpose().row(j) *
+          sparse_gp_fit.covariance_Y[group->second.block_index];
+      const Eigen::VectorXd Vbp = features_cov - kpuy;
+      mean_correction[j] =
+          Vbp.dot(sparse_gp_fit.mean_w[group->second.block_index]);
+      const Eigen::VectorXd wvj =
+          sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[j]] * Vbp;
+      WV.col(j) = wvj;
     }
-
-    // std::cout << "mean_correction after (" << mean_correction.size() << "): "
-    //           << mean_correction.transpose().format(Eigen::FullPrecision)
-    //           << std::endl;
-    // std::cout << "WV (" << WV.rows() << "x" << WV.cols() << "):\n"
-    //           << WV << std::endl;
-
-    // std::cout << "mean_correction (" << mean_correction.size()
-    //           << "): " << mean_correction.transpose() << std::endl;
 
     Eigen::MatrixXd VSV(features.size(), features.size());
 
@@ -1030,21 +763,9 @@ public:
       for (Eigen::Index col = 0; col <= row; ++col) {
         const auto row_group = find_group(features[row]);
         const auto column_group = find_group(features[col]);
-        // const auto row_group = sparse_gp_fit.measurement_groups.find(
-        //     independent_group_function_(without_measurement(features[row])));
-        // assert(row_group != sparse_gp_fit.measurement_groups.end() &&
-        //        "TODO(@peddie): the group function in a PIC GP model must
-        //        cover " "the entire feature domain in any fit.");
-
-        // const auto column_group = sparse_gp_fit.measurement_groups.find(
-        //     independent_group_function_(without_measurement(features[col])));
-        // assert(column_group != sparse_gp_fit.measurement_groups.end() &&
-        //        "TODO(@peddie): the group function in a PIC GP model must
-        //        cover " "the entire feature domain in any fit.");
-
         // TODO(@peddie): these are K, not V!
         const Eigen::VectorXd Q_row_p =
-            cross_cov.transpose().row(row) *
+            K_up.transpose().row(row) *
             sparse_gp_fit.covariance_Y[row_group->second.block_index];
         const std::vector<FeatureType> row_fvec = {features[row]};
         const Eigen::VectorXd V_row_p =
@@ -1052,7 +773,7 @@ public:
                                        row_fvec) -
             Q_row_p;
         const Eigen::VectorXd Q_column_p =
-            cross_cov.transpose().row(col) *
+            K_up.transpose().row(col) *
             sparse_gp_fit.covariance_Y[column_group->second.block_index];
         const std::vector<FeatureType> column_fvec = {features[col]};
         const Eigen::VectorXd V_column_p =
@@ -1072,9 +793,6 @@ public:
                   .dot(sparse_gp_fit.A_ldlt.blocks[feature_to_block[col]]
                            .sqrt_solve(V_column_p)
                            .col(0));
-          // std::cout << "VSV(" << row << ", " << col << ") same block ("
-          //           << feature_to_block[row] << "):\n"
-          //           << VSV(row, col) << std::endl;
         }
 
         const Eigen::MatrixXd rowblock = sparse_gp_fit.Z.block(
@@ -1084,36 +802,19 @@ public:
             0, column_group->second.initial_row, sparse_gp_fit.Z.rows(),
             column_group->second.block_size);
 
-        // std::cout << "VSV(" << row << ", " << col << "):\n"
-        //           << "rowblock (" << rowblock.rows() << "x" << rowblock.cols()
-        //           << "):\n"
-        //           << rowblock << "\ncolblock (" << columnblock.rows() << "x"
-        //           << columnblock.cols() << "):\n"
-        //           << columnblock << "\nV_row_p (" << V_row_p.size()
-        //           << "): " << V_row_p.transpose() << "\nV_column_p ("
-        //           << V_column_p.size() << "): " << V_column_p.transpose()
-        //           << "\nvalue: "
-        //           << (rowblock * V_row_p).dot(columnblock * V_column_p)
-        //           << std::endl;
-
         VSV(row, col) -= (rowblock * V_row_p).dot(columnblock * V_column_p);
       }
     }
 
     VSV.triangularView<Eigen::Upper>() = VSV.transpose();
 
-    // std::cout << "VSV (" << VSV.rows() << "x" << VSV.cols() << "):\n"
-    //           << VSV << std::endl;
-    const Eigen::MatrixXd U = cross_cov.transpose() * WV;
-
-    // std::cout << "U (" << U.rows() << "x" << U.cols() << "):\n"
-    //           << U << std::endl;
+    const Eigen::MatrixXd U = K_up.transpose() * WV;
 
     const Eigen::MatrixXd S_sqrt =
-        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.P, cross_cov);
+        sqrt_solve(sparse_gp_fit.sigma_R, sparse_gp_fit.P, K_up);
 
     const Eigen::MatrixXd Q_sqrt =
-        sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
+        sparse_gp_fit.train_covariance.sqrt_solve(K_up);
 
     const Eigen::MatrixXd max_explained = Q_sqrt.transpose() * Q_sqrt;
     const Eigen::MatrixXd unexplained = S_sqrt.transpose() * S_sqrt;
@@ -1121,17 +822,9 @@ public:
     const Eigen::MatrixXd pitc_covariance =
         prior_cov - max_explained + unexplained;
 
-    // std::cout << "pitc_covariance (" << pitc_covariance.rows() << "x"
-    //           << pitc_covariance.cols() << "):\n"
-    //           << pitc_covariance << std::endl;
-
     const Eigen::MatrixXd pic_correction = U + U.transpose() + VSV;
 
-    // std::cout << "pic_correction (" << pic_correction.rows() << "x"
-    //           << pic_correction.cols() << "):\n"
-    //           << pic_correction << std::endl;
-
-    JointDistribution pred(cross_cov.transpose() * sparse_gp_fit.information +
+    JointDistribution pred(K_up.transpose() * sparse_gp_fit.information +
                                mean_correction,
                            pitc_covariance - pic_correction);
 
@@ -1143,7 +836,7 @@ public:
     // features.size()); for (std::size_t i = 0; i < features.size(); ++i) {
     //   const auto group = find_group(features[i]);
     //   K_pic.col(i) = sparse_gp_fit.cols_Cs[feature_to_block[i]] *
-    //                  cross_cov.transpose() *
+    //                  K_up.transpose() *
     //                  sparse_gp_fit.covariance_Ynot[feature_to_block[i]];
     //   std::cout << "Ynot: K_pic.col(" << i << "): " <<
     //   K_pic.col(i).transpose()
@@ -1161,8 +854,7 @@ public:
 
     // const Eigen::MatrixXd K_pic_pitc =
     //     sparse_gp_fit.K_PITC_ldlt.sqrt_solve(K_pic);
-    // JointDistribution alt_pred(cross_cov.transpose() *
-    //                                sparse_gp_fit.information,
+    // JointDistribution alt_pred(K_up.transpose() * sparse_gp_fit.information,
     //                            prior_cov - K_pic_pitc.transpose() *
     //                            K_pic_pitc);
 
@@ -1365,7 +1057,7 @@ private:
 
   Parameter measurement_nugget_;
   Parameter inducing_nugget_;
-  // InducingPointStrategy inducing_point_strategy_;
+  InducingPointStrategy inducing_point_strategy_;
   GrouperFunction independent_group_function_;
 };
 
