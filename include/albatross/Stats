@@ -13,6 +13,7 @@
 #ifndef ALBATROSS_STATS_H
 #define ALBATROSS_STATS_H
 
+#include <albatross/src/details/typecast.hpp>
 #include <albatross/src/stats/gaussian.hpp>
 #include <albatross/src/stats/gauss_legendre.hpp>
 #include <albatross/src/stats/incomplete_gamma.hpp>

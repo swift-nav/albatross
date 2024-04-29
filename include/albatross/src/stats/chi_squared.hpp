@@ -26,11 +26,11 @@ namespace albatross {
 
 namespace details {
 
-inline double chi_squared_cdf_unsafe(double x, std::size_t degrees_of_freedom) {
-  return incomplete_gamma(0.5 * cast::to_double(degrees_of_freedom), 0.5 * x);
+inline double chi_squared_cdf_unsafe(double x, double degrees_of_freedom) {
+  return incomplete_gamma(0.5 * degrees_of_freedom, 0.5 * x);
 }
 
-inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
+inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
 
   if (std::isnan(x) || x < 0.) {
     return NAN;
@@ -53,7 +53,16 @@ inline double chi_squared_cdf_safe(double x, std::size_t degrees_of_freedom) {
 
 } // namespace details
 
-inline double chi_squared_cdf(double x, std::size_t degrees_of_freedom) {
+template <typename IntType,
+          typename = std::enable_if_t<std::is_integral<IntType>::value>>
+inline double chi_squared_cdf(double x, IntType degrees_of_freedom) {
+  // due to implicit argument conversions we can't directly use cast::to_double
+  // here.
+  return details::chi_squared_cdf_safe(x,
+                                       static_cast<double>(degrees_of_freedom));
+}
+
+inline double chi_squared_cdf(double x, double degrees_of_freedom) {
   return details::chi_squared_cdf_safe(x, degrees_of_freedom);
 }
 
