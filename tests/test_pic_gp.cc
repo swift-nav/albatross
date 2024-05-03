@@ -234,8 +234,8 @@ public:
     Eigen::VectorXd K_uy(inducing_points_.size());
     for (Eigen::Index i = 0;
          i < static_cast<Eigen::Index>(inducing_points_.size()); ++i) {
-      K_xu[i] = cov_(x, inducing_points_[i]);
-      K_uy[i] = cov_(inducing_points_[i], y);
+      K_xu[i] = cov_(x, inducing_points_[cast::to_size(i)]);
+      K_uy[i] = cov_(inducing_points_[cast::to_size(i)], y);
     }
     // const Eigen::VectorXd K_uy = cov_(inducing_points_, y);
     return K_xu.dot(K_uu_ldlt_.solve(K_uy));
@@ -657,29 +657,29 @@ TEST(TestPicGP, EmitCSV) {
   csv_out << "type,idx,x,mean,marginal,group\n";
   for (std::size_t pred = 0; pred < direct_pred.size(); ++pred) {
     csv_out << "dense," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << direct_pred.mean[pred] << ','
-            << direct_pred.covariance(pred, pred) << ','
+            << test_features[pred] << ',' << direct_pred.mean[cast::to_index(pred)] << ','
+            << direct_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < pitc_pred.size(); ++pred) {
     csv_out << "pitc," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << pitc_pred.mean[pred] << ','
-            << pitc_pred.covariance(pred, pred) << ','
+            << test_features[pred] << ',' << pitc_pred.mean[cast::to_index(pred)] << ','
+            << pitc_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < pic_pred.size(); ++pred) {
     csv_out << "pic," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << pic_pred.mean[pred] << ','
-            << pic_pred.covariance(pred, pred) << ','
+            << test_features[pred] << ',' << pic_pred.mean[cast::to_index(pred)] << ','
+            << pic_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < bfp_pred.size(); ++pred) {
     csv_out << "bfp," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << bfp_pred.mean[pred] << ','
-            << bfp_pred.covariance(pred, pred) << ','
+            << test_features[pred] << ',' << bfp_pred.mean[cast::to_index(pred)] << ','
+            << bfp_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
             << grouper(test_features[pred]) << '\n';
   }
 
@@ -692,7 +692,7 @@ TEST(TestPicGP, EmitCSV) {
   points_out << "type,x,y\n";
   for (std::size_t i = 0; i < dataset.size(); ++i) {
     points_out << "train," << dataset.features[i] << ','
-               << dataset.targets.mean[i] << '\n';
+               << dataset.targets.mean[cast::to_index(i)] << '\n';
   }
 
   for (const auto &f : pic_fit.get_fit().inducing_features) {

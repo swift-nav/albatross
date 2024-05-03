@@ -18,7 +18,7 @@ namespace cereal {
 template <typename Archive>
 inline void serialize(Archive &archive,
                       const albatross::BlockDiagonalLDLT &ldlt,
-                      const std::uint32_t version) {
+                      const syd::uint32_t ) {
   archive(cereal::make_nvp("blocks", ldlt.blocks));
 }
 
