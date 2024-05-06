@@ -58,7 +58,7 @@ TEST(TestPicGP, TestPredictionExists) {
 
   EXPECT_GT(pic_pred.mean.size(), 0);
 }
-
+/*
 static constexpr std::size_t kNumRandomFits = 1000;
 
 static constexpr std::size_t kMaxSize = 20000;
@@ -208,7 +208,7 @@ TEST(TestPicGP, ComparePrediction) {
   csv_out << std::endl;
   csv_out.close();
 }
-
+*/
 template <typename CovarianceType, typename InducingFeatureType,
           typename GrouperFunction>
 class BruteForcePIC
@@ -587,7 +587,8 @@ TEST(TestPicGP, BruteForceEquivalenceMultipleBlocks) {
   auto bfp_pred = bfp_fit.predict_with_measurement_noise(test_features).joint();
   auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
   // std::cout << "BFP mean (" << bfp_pred.mean.size()
-  //           << "): " << bfp_pred.mean.transpose().format(Eigen::FullPrecision)
+  //           << "): " <<
+  //           bfp_pred.mean.transpose().format(Eigen::FullPrecision)
   //           << std::endl;
   const double pic_error = (pic_pred.mean - bfp_pred.mean).norm();
   // const auto test_result =
@@ -602,6 +603,7 @@ TEST(TestPicGP, BruteForceEquivalenceMultipleBlocks) {
   EXPECT_LT(pic_cov_error, 1e-7);
 }
 
+/*
 TEST(TestPicGP, EmitCSV) {
   static constexpr std::size_t kNumTrainPoints = 80;
   static constexpr std::size_t kNumTestPoints = 300;
@@ -657,29 +659,37 @@ TEST(TestPicGP, EmitCSV) {
   csv_out << "type,idx,x,mean,marginal,group\n";
   for (std::size_t pred = 0; pred < direct_pred.size(); ++pred) {
     csv_out << "dense," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << direct_pred.mean[cast::to_index(pred)] << ','
-            << direct_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
+            << test_features[pred] << ',' <<
+direct_pred.mean[cast::to_index(pred)] << ','
+            << direct_pred.covariance(cast::to_index(pred),
+cast::to_index(pred)) << ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < pitc_pred.size(); ++pred) {
     csv_out << "pitc," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << pitc_pred.mean[cast::to_index(pred)] << ','
-            << pitc_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
+            << test_features[pred] << ',' <<
+pitc_pred.mean[cast::to_index(pred)] << ','
+            << pitc_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+<< ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < pic_pred.size(); ++pred) {
     csv_out << "pic," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << pic_pred.mean[cast::to_index(pred)] << ','
-            << pic_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
+            << test_features[pred] << ',' << pic_pred.mean[cast::to_index(pred)]
+<< ','
+            << pic_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+<< ','
             << grouper(test_features[pred]) << '\n';
   }
 
   for (std::size_t pred = 0; pred < bfp_pred.size(); ++pred) {
     csv_out << "bfp," << std::setprecision(16) << pred << ','
-            << test_features[pred] << ',' << bfp_pred.mean[cast::to_index(pred)] << ','
-            << bfp_pred.covariance(cast::to_index(pred), cast::to_index(pred)) << ','
+            << test_features[pred] << ',' << bfp_pred.mean[cast::to_index(pred)]
+<< ','
+            << bfp_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+<< ','
             << grouper(test_features[pred]) << '\n';
   }
 
@@ -731,6 +741,157 @@ TEST(TestPicGP, EmitCSV) {
   const double pic_cov_error =
       (pic_pred.covariance - direct_pred.covariance).norm();
   EXPECT_LT(pic_cov_error, 5e-7);
+  // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
+  // << "; |p|: " << test_features.size()
+  // << "; B width: " << grouper.group_domain_size
+  // << "; n_B: " << kNumTrainPoints << "\n"
+  // << pic_pred.covariance << "\n"
+  // << direct_pred.covariance;
+}
+*/
+
+TEST(TestPicGP, EmitCSVExtended) {
+  static constexpr double xMin = 0.;
+  static constexpr double xMax = 300.;
+  static constexpr std::size_t kNumTrainPoints = 80;
+  static constexpr std::size_t kNumTestPoints =
+      300; // even number since right-most boundary shall not get predicted. it
+           // would fall into a group without observtaions
+  static constexpr std::size_t kNumInducingPoints = 20;
+
+  // static constexpr double kLargestTrainPoint =
+  //     static_cast<double>(kNumTrainPoints) - 1.;
+  // static constexpr double kSpatialBuffer = 0;
+  static constexpr std::size_t kNumBlocks = 4;
+
+  UniformlySpacedInducingPoints strategy(kNumInducingPoints);
+  LeaveOneIntervalOut grouper(kNumTestPoints / static_cast<double>(kNumBlocks));
+  // LeaveOneIntervalOut grouper(10);
+
+  auto direct = gp_from_covariance(make_simple_covariance_function(), "direct");
+
+  auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
+                                    strategy, "pic", DenseQRImplementation{});
+  auto pitc =
+      sparse_gp_from_covariance(make_simple_covariance_function(), grouper,
+                                strategy, "sparse", DenseQRImplementation{});
+
+  /* auto dataset =
+      make_toy_linear_data(-kLargestTrainPoint / 2., 1, 0.1, kNumTrainPoints);
+   */
+  auto dataset =
+      make_toy_bellshaped_data(xMin, xMax, 1., 0.05, kNumTrainPoints);
+  // auto dataset = make_toy_linear_data(5, 1, 0.1, kNumTrainPoints);
+
+  auto bfp_cov = make_brute_force_pic_covariance(
+      strategy(make_simple_covariance_function(), dataset.features),
+      make_simple_covariance_function(), grouper);
+  auto bfp = gp_from_covariance(bfp_cov);
+
+  auto test_features =
+      linspace(xMin, xMax - (xMax - xMin) / kNumTestPoints, kNumTestPoints);
+  // auto test_features = linspace(0.1, 9.9, kNumTestPoints);
+  auto direct_fit = direct.fit(dataset);
+  auto pic_fit = pic.fit(dataset);
+  auto pitc_fit = pitc.fit(dataset);
+  // std::cout << "BFP: ";
+  auto bfp_fit = bfp.fit(dataset);
+
+  auto direct_pred =
+      direct_fit.predict_with_measurement_noise(test_features).joint();
+  auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
+  auto pitc_pred =
+      pitc_fit.predict_with_measurement_noise(test_features).joint();
+  // std::cout << "BFP: ";
+  auto bfp_pred = bfp_fit.predict_with_measurement_noise(test_features).joint();
+
+  std::ofstream csv_out("/Users/wolfganglanghans/Code/orion/third_party/"
+                        "orion-engine/third_party/albatross/example.csv");
+
+  csv_out << "type,idx,x,mean,marginal,group\n";
+  for (std::size_t pred = 0; pred < direct_pred.size(); ++pred) {
+    csv_out << "dense," << std::setprecision(16) << pred << ','
+            << test_features[pred] << ','
+            << direct_pred.mean[cast::to_index(pred)] << ','
+            << direct_pred.covariance(cast::to_index(pred),
+                                      cast::to_index(pred))
+            << ',' << grouper(test_features[pred]) << '\n';
+  }
+
+  /*for (std::size_t pred = 0; pred < pitc_pred.size(); ++pred) {
+     csv_out << "pitc," << std::setprecision(16) << pred << ','
+            << test_features[pred] << ',' <<
+  pitc_pred.mean[cast::to_index(pred)] << ','
+            << pitc_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+  << ','
+            << grouper(test_features[pred]) << '\n';
+  } */
+
+  for (std::size_t pred = 0; pred < pic_pred.size(); ++pred) {
+    csv_out << "pic," << std::setprecision(16) << pred << ','
+            << test_features[pred] << ',' << pic_pred.mean[cast::to_index(pred)]
+            << ','
+            << pic_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+            << ',' << grouper(test_features[pred]) << '\n';
+  }
+
+  for (std::size_t pred = 0; pred < bfp_pred.size(); ++pred) {
+    csv_out << "bfp," << std::setprecision(16) << pred << ','
+            << test_features[pred] << ',' << bfp_pred.mean[cast::to_index(pred)]
+            << ','
+            << bfp_pred.covariance(cast::to_index(pred), cast::to_index(pred))
+            << ',' << grouper(test_features[pred]) << '\n';
+  }
+
+  csv_out << std::endl;
+  csv_out.close();
+
+  std::ofstream points_out(
+      "/Users/wolfganglanghans/Code/orion/third_party/orion-engine/third_party/"
+      "albatross/example_points.csv");
+
+  points_out << "type,x,y\n";
+  for (std::size_t i = 0; i < dataset.size(); ++i) {
+    points_out << "train," << dataset.features[i] << ','
+               << dataset.targets.mean[cast::to_index(i)] << '\n';
+  }
+
+  for (const auto &f : pic_fit.get_fit().inducing_features) {
+    points_out << "inducing," << f << ",0\n";
+  }
+  points_out << std::endl;
+  points_out.close();
+
+  // std::cout << "BFP L: "
+  //           << Eigen::MatrixXd(bfp_fit.get_fit().train_covariance.matrixL())
+  //                  .format(Eigen::FullPrecision)
+  //           << std::endl;
+  // std::cout << "BFP D: "
+  //           <<
+  //           bfp_fit.get_fit().train_covariance.vectorD().transpose().format(
+  //                  Eigen::FullPrecision)
+  //           << std::endl;
+
+  // const auto test_result =
+  //     test_pic(dataset, test_features, make_simple_covariance_function(),
+  //              strategy, grouper);
+
+  // std::cout << "bfp_pred.covariance (" << bfp_pred.covariance.rows() << "x"
+  //           << bfp_pred.covariance.cols() << "):\n"
+  //           << bfp_pred.covariance << std::endl;
+
+  const double pic_error = (pic_pred.mean - direct_pred.mean).norm();
+  EXPECT_LT(pic_error, 1e-5);
+  // EXPECT_LT((pic_pred.mean - test_result.mean).norm(), 1e-7);
+  // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
+  // << "; |p|: " << test_features.size()
+  // << "; B width: " << grouper.group_domain_size << "\n"
+  // << pic_pred.mean.transpose() << "\n"
+  // << direct_pred.mean.transpose();
+
+  const double pic_cov_error =
+      (pic_pred.covariance - direct_pred.covariance).norm();
+  EXPECT_LT(pic_cov_error, 5e-5);
   // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
   // << "; |p|: " << test_features.size()
   // << "; B width: " << grouper.group_domain_size

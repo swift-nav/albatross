@@ -59,6 +59,54 @@ static inline auto make_toy_linear_data(const double a = 5.,
   return RegressionDataset<double>(features, targets);
 }
 
+static inline auto make_toy_bellshaped_data(const double a = 0.,
+                                            const double b = 4.,
+                                            const double c = 1.,
+                                            const double sigma = 0.1,
+                                            const std::size_t n = 4) {
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  gen.seed(3);
+  std::normal_distribution<> d{0., sigma};
+  std::vector<double> features;
+  Eigen::VectorXd targets(n);
+  double interval = (b - a) / cast::to_double(n);
+
+  for (std::size_t i = 0; i < n; i++) {
+    const double x = cast::to_double(i) * interval + interval / 2.;
+    features.push_back(x);
+    targets[cast::to_index(i)] = c * sin(x / (b - a) * M_PI) + d(gen);
+  }
+
+  return RegressionDataset<double>(features, targets);
+}
+
+/* struct ToyStation{
+  double valid_position;
+  int stationID;
+  ToyStation(const double valid_position_, const int stationID_)
+  : valid_position(valid_position_),
+    stationID(stationID_){};
+};
+
+static inline auto make_toy_bellshaped_data_with_receivertype(const double a =
+0., const double b = 4., const double c = 1., const double sigma = 0.1, const
+std::size_t n = 4) { std::random_device rd{}; std::mt19937 gen{rd()};
+  gen.seed(3);
+  std::normal_distribution<> d{0., sigma};
+  std::vector<double> features;
+  Eigen::VectorXd targets(n);
+  double interval = (b-a) / cast::to_double(n);
+
+  for (std::size_t i = 0; i < n; i++) {
+    const double x = cast::to_double(i) * interval + interval/2. ;
+    features.push_back(x);
+    targets[cast::to_index(i)] = c * sin(x / (b-a) * M_PI) + d(gen);
+  }
+
+  return RegressionDataset<double>(features, targets);
+}
+ */
 class MockParameterHandler : public ParameterHandlingMixin {
 public:
   MockParameterHandler(const ParameterStore &params)
