@@ -202,6 +202,7 @@ swift_cc_test(
         "tests/test_block_utils.cc",
         "tests/test_call_trace.cc",
         "tests/test_callers.cc",
+        "tests/test_chi_squared_versus_gsl.cc",
         "tests/test_compression.cc",
         "tests/test_concatenate.cc",
         "tests/test_conditional_gaussian.cc",
