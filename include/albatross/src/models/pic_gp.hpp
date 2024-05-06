@@ -741,7 +741,7 @@ public:
     for (Eigen::Index j = 0; j < cast::to_index(features.size()); ++j) {
       const auto group = find_group(features[cast::to_size(j)]);
       feature_to_block.push_back(
-          std::distance(sparse_gp_fit.measurement_groups.begin(), group));
+          cast::to_size(std::distance(sparse_gp_fit.measurement_groups.begin(), group)));
       const std::vector<FeatureType> fvec = {features[cast::to_size(j)]};
 
       const Eigen::VectorXd features_cov =
