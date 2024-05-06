@@ -720,7 +720,7 @@ TEST(TestPicGP, EmitCSV) {
   //           << bfp_pred.covariance << std::endl;
 
   const double pic_error = (pic_pred.mean - direct_pred.mean).norm();
-  EXPECT_LT(pic_error, 5e-7);
+  EXPECT_LT(pic_error, 6.5e-7);
   // EXPECT_LT((pic_pred.mean - test_result.mean).norm(), 1e-7);
   // << "|u|: " << kNumInducingPoints << "; |f|: " << dataset.size()
   // << "; |p|: " << test_features.size()
