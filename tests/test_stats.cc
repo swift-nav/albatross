@@ -117,6 +117,25 @@ TEST(test_stats, test_chi_squared_cdf) {
   EXPECT_LT(ks, 0.05);
 }
 
+TEST(test_stats, test_chi_squared_cdf_bounds) {
+
+  for (std::size_t dof = 1; dof < 50; ++dof) {
+    const double a = 0.5 * cast::to_double(dof);
+    const auto bounds =
+        details::incomplete_gamma_quadrature_bounds(a, 100 * sqrt(a));
+
+    // low/high for the chi squared will be double low/high for the incomplete
+    // gamma
+    const double lowest = 2. * bounds.first;
+    const double highest = 2. * bounds.second;
+
+    // The bounds provided should correspond to the z argument which corresponds
+    // to near zero and near one evaluations of the incomplete gamma
+    EXPECT_NEAR(chi_squared_cdf(lowest, dof), 0., 1e-8);
+    EXPECT_NEAR(chi_squared_cdf(highest, dof), 1., 1e-8);
+  }
+}
+
 TEST(test_stats, test_chi_squared_cdf_monotonic) {
   Eigen::Index k = 5;
 
