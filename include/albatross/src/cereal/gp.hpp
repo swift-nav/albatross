@@ -58,7 +58,7 @@ template <typename Archive, typename GrouperFunction,
 inline void
 serialize(Archive &archive,
           Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> &fit,
-          const std::uint32_t version) {
+          const std::uint32_t ) {
   archive(cereal::make_nvp("train_features", fit.train_features));
   archive(cereal::make_nvp("inducing_features", fit.inducing_features));
   archive(cereal::make_nvp("train_covariance", fit.train_covariance));

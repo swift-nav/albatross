@@ -75,32 +75,11 @@ inline double incomplete_gamma_quadrature_recursive(double lb, double ub,
 
 inline std::pair<double, double> incomplete_gamma_quadrature_bounds(double a,
                                                                     double z) {
-
-  if (a > 800) {
-    return std::make_pair(std::max(0., std::min(z, a) - 11 * sqrt(a)),
-                          std::min(z, a + 10 * sqrt(a)));
-  } else if (a > 300) {
-    return std::make_pair(std::max(0., std::min(z, a) - 10 * sqrt(a)),
-                          std::min(z, a + 9 * sqrt(a)));
-  } else if (a > 90) {
-    return std::make_pair(std::max(0., std::min(z, a) - 9 * sqrt(a)),
-                          std::min(z, a + 8 * sqrt(a)));
-  } else if (a > 70) {
-    return std::make_pair(std::max(0., std::min(z, a) - 8 * sqrt(a)),
-                          std::min(z, a + 7 * sqrt(a)));
-  } else if (a > 50) {
-    return std::make_pair(std::max(0., std::min(z, a) - 7 * sqrt(a)),
-                          std::min(z, a + 6 * sqrt(a)));
-  } else if (a > 40) {
-    return std::make_pair(std::max(0., std::min(z, a) - 6 * sqrt(a)),
-                          std::min(z, a + 5 * sqrt(a)));
-  } else if (a > 30) {
-    return std::make_pair(std::max(0., std::min(z, a) - 5 * sqrt(a)),
-                          std::min(z, a + 4 * sqrt(a)));
-  } else {
-    return std::make_pair(std::max(0., std::min(z, a) - 4 * sqrt(a)),
-                          std::min(z, a + 4 * sqrt(a)));
-  }
+  // NOTE: GCEM uses a large conditional block to select tighter bounds, but in
+  // practice those bounds were not tight enough, particularly on the upper
+  // bound, so we've modified this function to be more conservative
+  return std::make_pair(std::max(0., std::min(z, a) - 12 * sqrt(a)),
+                        std::min(z, a + 13 * sqrt(a + 1)));
 }
 
 inline double incomplete_gamma_quadrature(double a, double z) {

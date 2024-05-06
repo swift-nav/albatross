@@ -433,7 +433,7 @@ public:
     std::vector<Eigen::SparseMatrix<double>> cols_Cs(measurement_groups.size());
     const auto block_start_indices = A_ldlt.block_to_row_map();
 
-    const auto precompute_block = [&, this](std::size_t block_number,
+    const auto precompute_block = [&](std::size_t block_number,
                                             Eigen::Index start_row) -> void {
       const Eigen::Index block_size = A_ldlt.blocks[block_number].rows();
       // K_fu is already computed, so we can form K_uB and K_uA by
@@ -442,18 +442,18 @@ public:
       //
       // This nonsense would be a lot more straightforward with Eigen
       // 3.4's slicing and indexing API.
-      Eigen::SparseMatrix<double> cols_B(features.size(), block_size);
+      Eigen::SparseMatrix<double> cols_B(cast::to_index(features.size()), block_size);
       cols_B.reserve(block_size);
-      Eigen::SparseMatrix<double> cols_C(features.size(),
-                                         features.size() - block_size);
-      cols_C.reserve(features.size() - block_size);
+      Eigen::SparseMatrix<double> cols_C(cast::to_index(features.size()),
+                                         cast::to_index(features.size()) - block_size);
+      cols_C.reserve(cast::to_index(features.size()) - block_size);
 
       for (Eigen::Index i = 0; i < block_size; ++i) {
         cols_B.insert(start_row + i, i) = 1.;
       }
       cols_B.makeCompressed();
 
-      for (Eigen::Index i = 0, j = 0; i < features.size();) {
+      for (Eigen::Index i = 0, j = 0; i < cast::to_index(features.size());) {
         if (i == start_row) {
           i += block_size;
           continue;
@@ -734,59 +734,61 @@ public:
     const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
     Eigen::MatrixXd WV = Eigen::MatrixXd::Zero(
-        sparse_gp_fit.inducing_features.size(), features.size());
+        cast::to_index(sparse_gp_fit.inducing_features.size()), cast::to_index(features.size()));
 
-    Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(features.size());
+    Eigen::VectorXd mean_correction = Eigen::VectorXd::Zero(cast::to_index(features.size()));
     std::vector<std::size_t> feature_to_block;
-    for (Eigen::Index j = 0; j < features.size(); ++j) {
-      const auto group = find_group(features[j]);
-      feature_to_block.push_back(
-          std::distance(sparse_gp_fit.measurement_groups.begin(), group));
-      const std::vector<FeatureType> fvec = {features[j]};
+    for (Eigen::Index j = 0; j < cast::to_index(features.size()); ++j) {
+      const auto group = find_group(features[cast::to_size(j)]);
+      feature_to_block.push_back(cast::to_size(
+          std::distance(sparse_gp_fit.measurement_groups.begin(), group)));
+      const std::vector<FeatureType> fvec = {features[cast::to_size(j)]};
 
       const Eigen::VectorXd features_cov =
           this->covariance_function_(group->second.dataset.features, fvec);
       const Eigen::VectorXd kpuy =
           K_up.transpose().row(j) *
-          sparse_gp_fit.covariance_Y[group->second.block_index];
+          sparse_gp_fit.covariance_Y[cast::to_size(group->second.block_index)];
       const Eigen::VectorXd Vbp = features_cov - kpuy;
       mean_correction[j] =
-          Vbp.dot(sparse_gp_fit.mean_w[group->second.block_index]);
+          Vbp.dot(sparse_gp_fit.mean_w[cast::to_size(group->second.block_index)]);
       const Eigen::VectorXd wvj =
-          sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[j]] * Vbp;
+          sparse_gp_fit.W * sparse_gp_fit.cols_Bs[feature_to_block[cast::to_size(j)]] * Vbp;
       WV.col(j) = wvj;
     }
 
     Eigen::MatrixXd VSV(features.size(), features.size());
 
-    for (Eigen::Index row = 0; row < VSV.rows(); ++row) {
-      for (Eigen::Index col = 0; col <= row; ++col) {
+    for (std::size_t row = 0; row < features.size(); ++row) {
+      for (std::size_t col = 0; col <= row; ++col) {
+        Eigen::Index row_index = cast::to_index(row);
+        Eigen::Index col_index = cast::to_index(col);
         const auto row_group = find_group(features[row]);
         const auto column_group = find_group(features[col]);
         // TODO(@peddie): these are K, not V!
         const Eigen::VectorXd Q_row_p =
-            K_up.transpose().row(row) *
-            sparse_gp_fit.covariance_Y[row_group->second.block_index];
+            K_up.transpose().row(row_index) *
+            sparse_gp_fit.covariance_Y[cast::to_size(row_group->second.block_index)];
         const std::vector<FeatureType> row_fvec = {features[row]};
         const Eigen::VectorXd V_row_p =
             this->covariance_function_(row_group->second.dataset.features,
                                        row_fvec) -
             Q_row_p;
         const Eigen::VectorXd Q_column_p =
-            K_up.transpose().row(col) *
-            sparse_gp_fit.covariance_Y[column_group->second.block_index];
+            K_up.transpose().row(col_index) *
+            sparse_gp_fit.covariance_Y[cast::to_size(column_group->second.block_index)];
         const std::vector<FeatureType> column_fvec = {features[col]};
         const Eigen::VectorXd V_column_p =
             this->covariance_function_(column_group->second.dataset.features,
                                        column_fvec) -
             Q_column_p;
 
-        VSV(row, col) = 0.;
+        VSV(row_index, col_index) = 0.;
 
         assert(row < feature_to_block.size());
         assert(col < feature_to_block.size());
         if (feature_to_block[row] == feature_to_block[col]) {
-          VSV(row, col) =
+          VSV(row_index, col_index) =
               sparse_gp_fit.A_ldlt.blocks[feature_to_block[row]]
                   .sqrt_solve(V_row_p)
                   .col(0)
@@ -802,7 +804,7 @@ public:
             0, column_group->second.initial_row, sparse_gp_fit.Z.rows(),
             column_group->second.block_size);
 
-        VSV(row, col) -= (rowblock * V_row_p).dot(columnblock * V_column_p);
+        VSV(row_index, col_index) -= (rowblock * V_row_p).dot(columnblock * V_column_p);
       }
     }
 
