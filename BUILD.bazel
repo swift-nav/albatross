@@ -256,6 +256,7 @@ swift_cc_test(
     linkopts = ["-lz"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
+    size = "large",
     deps = [
         ":albatross",
         ":serialize-testsuite",
