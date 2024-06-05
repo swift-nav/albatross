@@ -20,6 +20,8 @@ inline bool operator==(const albatross::DiagonalMatrixXd &x,
 
 namespace albatross {
 
+struct MarginalDistribution;
+
 constexpr double cDefaultApproximatelyEqualEpsilon = 1e-3;
 
 template <typename Derived> struct DistributionBase {
@@ -47,6 +49,8 @@ public:
   double get_diagonal(Eigen::Index i) const {
     return derived().get_diagonal(i);
   }
+
+  MarginalDistribution operator[](std::size_t index) const;
 
   Eigen::VectorXd mean;
   std::map<std::string, std::string> metadata;
@@ -243,6 +247,13 @@ inline void set_subset(const DistributionBase<DistributionType> &from,
                        const std::vector<SizeType> &indices,
                        DistributionBase<DistributionType> *to) {
   to->derived().set_subset(from, indices);
+}
+
+template <typename Derived>
+MarginalDistribution
+DistributionBase<Derived>::operator[](std::size_t index) const {
+  return MarginalDistribution(mean[cast::to_index(index)],
+                              get_diagonal(cast::to_index(index)));
 }
 
 inline MarginalDistribution
