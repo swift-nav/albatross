@@ -132,6 +132,10 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
     return MarginalDistribution(scale * mean, scale * scale * covariance);
   }
 
+  MarginalDistribution operator[](std::size_t index) const {
+    return MarginalDistribution(mean[index], get_diagonal(cast::to_index(index)));
+  }
+
   template <typename SizeType>
   MarginalDistribution subset(const std::vector<SizeType> &indices) const {
     return MarginalDistribution(
