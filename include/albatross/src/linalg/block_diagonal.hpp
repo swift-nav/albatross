@@ -32,6 +32,14 @@ struct BlockDiagonalLDLT {
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
+  template <class _Scalar, int _Options, typename _StorageIndex>
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  solve(const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
+
+  template <class _Scalar, int _Options, typename _StorageIndex>
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> sqrt_solve(
+      const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
+
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
@@ -94,6 +102,38 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
+    i += b.rows();
+  }
+  return output;
+}
+
+template <class _Scalar, int _Options, typename _StorageIndex>
+inline Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+BlockDiagonalLDLT::solve(
+    const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const {
+  ALBATROSS_ASSERT(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> output(rows(),
+                                                                rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.solve(rhs_chunk);
+    i += b.rows();
+  }
+  return output;
+}
+
+template <class _Scalar, int _Options, typename _StorageIndex>
+inline Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+BlockDiagonalLDLT::sqrt_solve(
+    const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const {
+  ALBATROSS_ASSERT(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> output(rows(),
+                                                                rhs.cols());
   for (const auto &b : blocks) {
     const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
     output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
