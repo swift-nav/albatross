@@ -29,6 +29,11 @@ template <typename X> struct Measurement {
   X value;
 };
 
+template <typename X>
+std::ostream &operator<<(std::ostream &os, const Measurement<X> &m) {
+  return os << "Meas[" << m.value << "]";
+}
+
 // A simple helper function which aids the compiler with type deduction.
 template <typename FeatureType>
 Measurement<FeatureType> as_measurement(const FeatureType &f) {
