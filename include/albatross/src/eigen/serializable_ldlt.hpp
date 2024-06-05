@@ -18,6 +18,10 @@ namespace Eigen {
 // See LDLT.h in Eigen for a detailed description of the decomposition
 class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
+  using RealScalar = double;
+  using Scalar = double;
+  using MatrixType = MatrixXd;
+
   SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
 
   SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()){};
@@ -42,6 +46,11 @@ public:
   bool &mutable_is_initialized() { return this->m_isInitialized; }
 
   bool is_initialized() const { return this->m_isInitialized; }
+
+  double l1_norm() const {
+    ALBATROSS_ASSERT(is_initialized() && "Must initialize first!");
+    return this->m_l1_norm;
+  }
 
   /*
    * Computes the inverse of the square root of the diagonal, D^{-1/2}

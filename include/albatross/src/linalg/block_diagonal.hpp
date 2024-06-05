@@ -22,6 +22,9 @@ struct BlockDiagonalLDLT;
 struct BlockDiagonal;
 
 struct BlockDiagonalLDLT {
+  using RealScalar = Eigen::SerializableLDLT::RealScalar;
+  using Scalar = Eigen::SerializableLDLT::Scalar;
+  using MatrixType = Eigen::SerializableLDLT::MatrixType;
   std::vector<Eigen::SerializableLDLT> blocks;
 
   template <class _Scalar, int _Rows, int _Cols>
@@ -50,9 +53,13 @@ struct BlockDiagonalLDLT {
   sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
              ThreadPool *pool) const;
 
+  const BlockDiagonalLDLT &adjoint() const;
+
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
   double log_determinant() const;
+
+  double rcond() const;
 
   Eigen::Index rows() const;
 
@@ -197,6 +204,17 @@ inline double BlockDiagonalLDLT::log_determinant() const {
   return output;
 }
 
+inline double BlockDiagonalLDLT::rcond() const {
+  // L1 induced norm is just the maximum absolute column sum.
+  // Therefore the L1 induced norm of a block-diagonal matrix is the
+  // maximum of the L1 induced norms of the individual blocks.
+  double l1_norm = -INFINITY;
+  for (const auto &b : blocks) {
+    l1_norm = std::max(l1_norm, b.l1_norm());
+  }
+  return Eigen::internal::rcond_estimate_helper(l1_norm, *this);
+}
+
 inline Eigen::Index BlockDiagonalLDLT::rows() const {
   Eigen::Index n = 0;
   for (const auto &b : blocks) {
@@ -211,6 +229,10 @@ inline Eigen::Index BlockDiagonalLDLT::cols() const {
     n += b.cols();
   }
   return n;
+}
+
+inline const BlockDiagonalLDLT &BlockDiagonalLDLT::adjoint() const {
+  return *this;
 }
 
 /*
