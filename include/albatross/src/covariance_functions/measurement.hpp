@@ -29,6 +29,11 @@ template <typename X> struct Measurement {
   X value;
 };
 
+template <typename X>
+std::ostream &operator<<(std::ostream &os, const Measurement<X> &m) {
+  return os << "Meas[" << m.value << "]";
+}
+
 // A simple helper function which aids the compiler with type deduction.
 template <typename FeatureType>
 Measurement<FeatureType> as_measurement(const FeatureType &f) {
@@ -109,6 +114,16 @@ template <typename SubCovariance>
 MeasurementOnly<SubCovariance> measurement_only(const SubCovariance &cov) {
   return MeasurementOnly<SubCovariance>(cov);
 }
+
+template <typename T> T without_measurement(Measurement<T> &&m) {
+  return m.value;
+}
+template <typename T> const T &without_measurement(const Measurement<T> &m) {
+  return m.value;
+}
+
+template <typename T> T without_measurement(T &&t) { return t; }
+template <typename T> const T &without_measurement(const T &t) { return t; }
 
 } // namespace albatross
 
