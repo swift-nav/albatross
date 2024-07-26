@@ -10,9 +10,18 @@ Introduction
 
 This document focuses on the implementation details of some of the
 approaches used in
-`albatross <https://github.com/swift-nav/albatross>`__. For a deep dive
-in Gaussian processes you’re probably better off reading the book
-`Gaussian Processes for Machine Learning`_.
+`albatross <https://github.com/swift-nav/albatross>`__.
+
+If you're new to Gaussian processes you might consider watching these videos:
+
+`Machine Learning Lecture 26 "Gaussian Processes" Cornell CS4780 SP17 <https://www.youtube.com/watch?v=NegVuuHwa8Q>`__ (Kilian Weinberger)
+
+`Gaussian Process Basics <https://www.youtube.com/watch?v=NegVuuHwa8Q>`__ (David Mackay)
+
+And you might consider working through the `tutorials <https://github.com/swift-nav/albatross/tree/master/tutorials>`__ we've put together. These tutorials are in python notebooks (not c++) and are meant to serve as an educational tool to build intuition and introduce some of the tips and tricks you encounter when using GPs.
+
+For a deep dive in Gaussian processes, read the book `Gaussian Processes for Machine Learning <https://gaussianprocess.org/gpml/chapters/>`__.
+
 There are also a number of excellent introductions to Gaussian processes (see our :ref:`references`) here we assume some understanding of GPs and focus on describing the details of the implementations we use in `albatross`.
 
 ----------------

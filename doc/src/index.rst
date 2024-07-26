@@ -55,8 +55,10 @@ If you're using ``git`` you can run ``git submodule add https://github.com/swift
 Then make sure you've run ``git submodule update --recursive --init`` to be sure all the third party libraries required by albatross are also up to date.
 
 -----------------------
-Tests and Examples
+Tutorials, Tests, and Examples
 -----------------------
+
+We've put together a number of `tutorials <https://github.com/swift-nav/albatross/tree/master/tutorials>`__ which are meant to strengthen intuition around Gaussian processes.
 
 If you want to run the tests you can do so using ``cmake``,
 
@@ -84,11 +86,11 @@ and plot the results (though this'll require a numerical python environment),
     :maxdepth: 1
 
     quickstart
+    gp-background
     1d-example
     temperature-example
     datasets
     split-apply-combine
-    gp-background
     gp-albatross
     crossvalidation
     tuning
@@ -109,8 +111,9 @@ The ensemble sampler was inspired by `emcee`_ which itself was inspired by the p
 Like this project? Want to get paid to help us apply it to our GNSS models? `Join us`_ at `Swift Navigation`_ !
 
 
-.. image:: https://bigmemes.funnyjunk.com/gifs/Albatross_408ca5_5434150.gif
+.. image:: https://media1.tenor.com/m/6gEAYtNJbUoAAAAd/albatross-monty-python.gif
    :align: center
+   :width: 200
 
 .. _`cross validation` : https://web.stanford.edu/~hastie/ElemStatLearn/
 .. _`scikit-learn` : https://github.com/scikit-learn/scikit-learn

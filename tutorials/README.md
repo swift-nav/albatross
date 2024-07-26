@@ -1,5 +1,7 @@
 # README
 
+These tutorials were designed with the goal of building intution and introduce some of the tips and tricks you encounter when using GPs. These tutorials can be thought of as the homework for a mini course in Gaussian processes. They consist of python notebooks which intentionally include gaps in the code. Fill in the sections marked `YOUR CODE HERE`. The first few tutorials might take several hours to work through, as they progress they should take less effort to complete.
+
 ## Setting up the environment
 
 ### Setup using conda
