@@ -22,29 +22,48 @@ struct BlockDiagonalLDLT;
 struct BlockDiagonal;
 
 struct BlockDiagonalLDLT {
+  using RealScalar = Eigen::SerializableLDLT::RealScalar;
+  using Scalar = Eigen::SerializableLDLT::Scalar;
+  using MatrixType = Eigen::SerializableLDLT::MatrixType;
   std::vector<Eigen::SerializableLDLT> blocks;
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  template <typename Derived>
+  inline Eigen::MatrixXd solve(const Eigen::MatrixBase<Derived> &rhs) const;
 
-  template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  template <typename Derived>
+  inline Eigen::MatrixXd
+  sqrt_solve(const Eigen::MatrixBase<Derived> &rhs) const;
+
+  template <class _Scalar, int _Options, typename _StorageIndex>
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  solve(const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
+
+  template <class _Scalar, int _Options, typename _StorageIndex>
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> sqrt_solve(
+      const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
         ThreadPool *pool) const;
 
+  template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+  inline Eigen::MatrixXd
+  solve(const Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel> &rhs_orig)
+      const;
+
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
              ThreadPool *pool) const;
 
+  const BlockDiagonalLDLT &adjoint() const;
+
   std::map<size_t, Eigen::Index> block_to_row_map() const;
 
   double log_determinant() const;
+
+  double rcond() const;
 
   Eigen::Index rows() const;
 
@@ -74,12 +93,12 @@ struct BlockDiagonal {
 /*
  * BlockDiagonalLDLT
  */
-template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
-    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+template <typename Derived>
+inline Eigen::MatrixXd
+BlockDiagonalLDLT::solve(const Eigen::MatrixBase<Derived> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  Eigen::MatrixXd output(rows(), rhs.cols());
   for (const auto &b : blocks) {
     const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
     output.block(i, 0, b.rows(), rhs.cols()) = b.solve(rhs_chunk);
@@ -88,12 +107,53 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
   return output;
 }
 
-template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
-    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+template <typename Derived>
+inline Eigen::MatrixXd
+BlockDiagonalLDLT::sqrt_solve(const Eigen::MatrixBase<Derived> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
+  Eigen::MatrixXd output(rows(), rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
+    i += b.rows();
+  }
+  return output;
+}
+
+template <class _Scalar, int _Options, typename _StorageIndex>
+inline Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+BlockDiagonalLDLT::solve(
+    const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const {
+  ALBATROSS_ASSERT(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> output(rows(),
+                                                                rhs.cols());
+  for (const auto &b : blocks) {
+    const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
+    output.block(i, 0, b.rows(), rhs.cols()) = b.solve(rhs_chunk);
+    i += b.rows();
+  }
+  return output;
+}
+
+template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+inline Eigen::MatrixXd BlockDiagonalLDLT::solve(
+    const Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel> &rhs_orig)
+    const {
+  ALBATROSS_ASSERT(cols() == rhs_orig.rows());
+  Eigen::MatrixXd rhs{rhs_orig};
+  return solve(rhs);
+}
+
+template <class _Scalar, int _Options, typename _StorageIndex>
+inline Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
+BlockDiagonalLDLT::sqrt_solve(
+    const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const {
+  ALBATROSS_ASSERT(cols() == rhs.rows());
+  Eigen::Index i = 0;
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> output(rows(),
+                                                                rhs.cols());
   for (const auto &b : blocks) {
     const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
     output.block(i, 0, b.rows(), rhs.cols()) = b.sqrt_solve(rhs_chunk);
@@ -157,6 +217,17 @@ inline double BlockDiagonalLDLT::log_determinant() const {
   return output;
 }
 
+inline double BlockDiagonalLDLT::rcond() const {
+  // L1 induced norm is just the maximum absolute column sum.
+  // Therefore the L1 induced norm of a block-diagonal matrix is the
+  // maximum of the L1 induced norms of the individual blocks.
+  double l1_norm = -INFINITY;
+  for (const auto &b : blocks) {
+    l1_norm = std::max(l1_norm, b.l1_norm());
+  }
+  return Eigen::internal::rcond_estimate_helper(l1_norm, *this);
+}
+
 inline Eigen::Index BlockDiagonalLDLT::rows() const {
   Eigen::Index n = 0;
   for (const auto &b : blocks) {
@@ -171,6 +242,10 @@ inline Eigen::Index BlockDiagonalLDLT::cols() const {
     n += b.cols();
   }
   return n;
+}
+
+inline const BlockDiagonalLDLT &BlockDiagonalLDLT::adjoint() const {
+  return *this;
 }
 
 /*
