@@ -236,6 +236,19 @@ TYPED_TEST_P(DistributionTest, test_subtract) {
   EXPECT_EQ(actual, expected);
 };
 
+TYPED_TEST_P(DistributionTest, test_operator_indexing) {
+
+  TypeParam test_case;
+  const auto dist = test_case.create();
+
+  for (std::size_t idx = 0; idx < dist.size(); ++idx) {
+    MarginalDistribution m = dist[idx];
+
+    EXPECT_EQ(m.mean[0], dist.mean[cast::to_index(idx)]);
+    EXPECT_EQ(m.get_diagonal(0), dist.get_diagonal(cast::to_index(idx)));
+  }
+};
+
 REGISTER_TYPED_TEST_SUITE_P(DistributionTest, test_subset,
                             test_multiply_with_matrix_joint,
                             test_multiply_with_matrix_marginal,
@@ -243,7 +256,7 @@ REGISTER_TYPED_TEST_SUITE_P(DistributionTest, test_subset,
                             test_multiply_with_sparse_matrix_marginal,
                             test_multiply_with_vector, test_multiply_by_scalar,
                             test_equal, test_approximately_equal, test_add,
-                            test_subtract);
+                            test_subtract, test_operator_indexing);
 
 Eigen::VectorXd arange(Eigen::Index k = 5) {
   Eigen::VectorXd mean(k);
