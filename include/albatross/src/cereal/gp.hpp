@@ -18,8 +18,8 @@ using albatross::GaussianProcessBase;
 using albatross::GPFit;
 using albatross::LinearCombination;
 
-using albatross::SparseGPFit;
 using albatross::PICGPFit;
+using albatross::SparseGPFit;
 
 #ifndef GP_SERIALIZATION_VERSION
 #define GP_SERIALIZATION_VERSION 2

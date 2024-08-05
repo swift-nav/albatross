@@ -59,7 +59,6 @@ TEST(TestPicGP, TestPredictionExists) {
   EXPECT_GT(pic_pred.mean.size(), 0);
 }
 
-
 TEST(TestPicGP, ScalarEquivalence) {
   static constexpr std::size_t kNumTrainPoints = 3;
   static constexpr std::size_t kNumTestPoints = 1;
@@ -337,7 +336,8 @@ TEST(TestPicGP, PITCEquivalenceOutOfTraining) {
 
   auto test_features = linspace(10.1, 19.9, kNumTestPoints);
   auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
-  auto pitc_pred = pitc_fit.predict_with_measurement_noise(test_features).joint();
+  auto pitc_pred =
+      pitc_fit.predict_with_measurement_noise(test_features).joint();
 
   EXPECT_LT(distance::wasserstein_2(pic_pred, pitc_pred), 1e-12);
 }
@@ -358,7 +358,8 @@ TEST(TestPicGP, PredictMeanEquivalent) {
 
   auto test_features = linspace(0.1, 9.9, kNumTestPoints);
   auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).mean();
-  auto pic_joint_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
+  auto pic_joint_pred =
+      pic_fit.predict_with_measurement_noise(test_features).joint();
 
   const double pic_mean_error = (pic_pred - pic_joint_pred.mean).norm();
   EXPECT_LT(pic_mean_error, 1e-12);
@@ -379,8 +380,10 @@ TEST(TestPicGP, PredictMarginalEquivalent) {
   auto pic_fit = pic.fit(dataset);
 
   auto test_features = linspace(0.1, 9.9, kNumTestPoints);
-  auto pic_pred = pic_fit.predict_with_measurement_noise(test_features).marginal();
-  auto pic_joint_pred = pic_fit.predict_with_measurement_noise(test_features).joint();
+  auto pic_pred =
+      pic_fit.predict_with_measurement_noise(test_features).marginal();
+  auto pic_joint_pred =
+      pic_fit.predict_with_measurement_noise(test_features).joint();
 
   const double pic_marginal_error =
       (pic_pred.mean - pic_joint_pred.mean).norm();
@@ -399,6 +402,5 @@ TEST(TestPicGP, PredictMarginalEquivalent) {
              .transpose()
              .format(Eigen::FullPrecision);
 }
-
 
 } // namespace albatross

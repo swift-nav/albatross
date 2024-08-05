@@ -86,7 +86,6 @@ struct DenseQRImplementation {
   }
 };
 
-
 } // namespace albatross
 
-#endif  // INCLUDE_ALBATROSS_MODELS_SPARSE_COMMON_H_
+#endif // INCLUDE_ALBATROSS_MODELS_SPARSE_COMMON_H_

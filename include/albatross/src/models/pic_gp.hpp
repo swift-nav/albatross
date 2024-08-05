@@ -681,7 +681,8 @@ public:
         (xi_lambda.transpose() * xi_lambda - xi_u.transpose() * xi_u)
             .diagonal()};
 
-    const Eigen::VectorXd U_diag = (K_up.transpose() * sparse_gp_fit.W * Vp).diagonal();
+    const Eigen::VectorXd U_diag =
+        (K_up.transpose() * sparse_gp_fit.W * Vp).diagonal();
 
     Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
@@ -763,7 +764,6 @@ public:
       mean_correction[j] = Vbp.dot(sparse_gp_fit.mean_w[B.block_index]);
     }
     Vp.makeCompressed();
-
 
     Eigen::MatrixXd xi_lambda = sparse_gp_fit.A_ldlt.sqrt_solve(Vp);
     Eigen::MatrixXd xi_u = sparse_gp_fit.Z * Vp;
