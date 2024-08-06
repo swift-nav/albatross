@@ -639,15 +639,12 @@ public:
         features.size());
     Eigen::VectorXi col_alloc{Eigen::VectorXi::Zero(features.size())};
     bool all_same_group = true;
-    bool all_in_groups = true;
     for (Eigen::Index j = 0; j < features.size(); ++j) {
       groups[j] = sparse_gp_fit.measurement_groups.find(
           independent_group_function_(without_measurement(features[j])));
       if (groups[j] != sparse_gp_fit.measurement_groups.end()) {
         col_alloc(j) = groups[j]->second.block_size;
         all_same_group = all_same_group && groups[j] == groups[0];
-      } else {
-        all_in_groups = false;
       }
       feature_to_block[j] =
           std::distance(sparse_gp_fit.measurement_groups.begin(), groups[j]);
@@ -726,15 +723,12 @@ public:
         features.size());
     Eigen::VectorXi col_alloc{Eigen::VectorXi::Zero(features.size())};
     bool all_same_group = true;
-    bool all_in_groups = true;
     for (Eigen::Index j = 0; j < features.size(); ++j) {
       groups[j] = sparse_gp_fit.measurement_groups.find(
           independent_group_function_(without_measurement(features[j])));
       if (groups[j] != sparse_gp_fit.measurement_groups.end()) {
         col_alloc(j) = groups[j]->second.block_size;
         all_same_group = all_same_group && groups[j] == groups[0];
-      } else {
-        all_in_groups = false;
       }
       feature_to_block[j] =
           std::distance(sparse_gp_fit.measurement_groups.begin(), groups[j]);
