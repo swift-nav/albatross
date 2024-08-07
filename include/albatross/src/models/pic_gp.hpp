@@ -354,66 +354,6 @@ public:
     inducing_point_strategy_ = std::forward<NewStrategy>(f);
   }
 
-  template <typename FeatureType, typename InducingPointFeatureType>
-  auto
-  _update_impl(const Fit<PICGPFit<GrouperFunction, InducingPointFeatureType,
-                                  FeatureType>> &old_fit,
-               const std::vector<FeatureType> &features,
-               const MarginalDistribution &targets) const {
-    assert(false && "Cannot call update() on a PIC GP yet!");
-
-    BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
-    Eigen::MatrixXd K_fu;
-    Eigen::VectorXd y;
-    compute_internal_components(old_fit.train_features, features, targets,
-                                &A_ldlt, &K_uu_ldlt, &K_fu, &y);
-
-    const Eigen::Index n_old = old_fit.sigma_R.rows();
-    const Eigen::Index n_new = A_ldlt.rows();
-    const Eigen::Index k = old_fit.sigma_R.cols();
-    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(n_old + n_new, k);
-
-    ALBATROSS_ASSERT(n_old == k);
-
-    // Form:
-    //   B = |R_old P_old^T| = |Q_1| R P^T
-    //       |A^{-1/2} K_fu|   |Q_2|
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
-      const Eigen::Index &pi = old_fit.permutation_indices.coeff(i);
-      B.col(pi).topRows(i + 1) = old_fit.sigma_R.col(i).topRows(i + 1);
-    }
-    B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
-    const auto B_qr = QRImplementation::compute(B, Base::threads_.get());
-
-    // Form:
-    //   y_aug = |R_old P_old^T v_old|
-    //           |A^{-1/2} y         |
-    ALBATROSS_ASSERT(old_fit.information.size() == n_old);
-    Eigen::VectorXd y_augmented(n_old + n_new);
-    for (Eigen::Index i = 0; i < old_fit.permutation_indices.size(); ++i) {
-      y_augmented[i] =
-          old_fit.information[old_fit.permutation_indices.coeff(i)];
-    }
-    y_augmented.topRows(n_old) =
-        old_fit.sigma_R.template triangularView<Eigen::Upper>() *
-        y_augmented.topRows(n_old);
-
-    y_augmented.bottomRows(n_new) = A_ldlt.sqrt_solve(y, Base::threads_.get());
-    const Eigen::VectorXd v = B_qr->solve(y_augmented);
-
-    Eigen::MatrixXd R = get_R(*B_qr);
-    if (B_qr->rank() < B_qr->cols()) {
-      // Inflate the diagonal of R in an attempt to avoid singularity
-      R.diagonal() +=
-          Eigen::VectorXd::Constant(B_qr->cols(), details::cSparseRNugget);
-    }
-    using FitType =
-        Fit<PICGPFit<GrouperFunction, InducingPointFeatureType, FeatureType>>;
-    return FitType(old_fit.train_features, old_fit.train_covariance, R,
-                   get_P(*B_qr), v, B_qr->rank());
-  }
-
   // Here we create the QR decomposition of:
   //
   //   B = |A^-1/2 K_fu| = |Q_1| R P^T
@@ -516,66 +456,6 @@ public:
     return FitType(features, u, K_uu_ldlt, get_R(*B_qr), get_P(*B_qr), mean_w,
                    W, covariance_Y, Z, A_ldlt, measurement_groups, v,
                    B_qr->rank(), cols_Bs, independent_group_function_);
-  }
-
-  template <typename FeatureType>
-  auto fit_from_prediction(const std::vector<FeatureType> &new_inducing_points,
-                           const JointDistribution &prediction_) const {
-    FitModel<PICGaussianProcessRegression,
-             Fit<PICGPFit<GrouperFunction, FeatureType, FeatureType>>>
-        output(*this,
-               Fit<PICGPFit<GrouperFunction, FeatureType, FeatureType>>());
-    Fit<PICGPFit<GrouperFunction, FeatureType, FeatureType>> &new_fit =
-        output.get_fit();
-
-    new_fit.train_features = new_inducing_points;
-
-    const Eigen::MatrixXd K_zz =
-        this->covariance_function_(new_inducing_points, Base::threads_.get());
-    new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
-
-    // We're going to need to take the sqrt of the new covariance which
-    // could be extremely small, so here we add a small nugget to avoid
-    // numerical instability
-    JointDistribution prediction(prediction_);
-    prediction.covariance.diagonal() += Eigen::VectorXd::Constant(
-        cast::to_index(prediction.size()), 1, details::DEFAULT_NUGGET);
-    new_fit.information = new_fit.train_covariance.solve(prediction.mean);
-
-    // Here P is the posterior covariance at the new inducing points.  If
-    // we consider the case where we rebase and then use the resulting fit
-    // to predict the new inducing points then we see that the predictive
-    // covariance (see documentation above) would be,:
-    //
-    //    C = K_zz - Q_zz + K_zz Sigma K_zz
-    //
-    // We can use this, knowing that at the inducing points K_zz = Q_zz, to
-    // derive our updated Sigma,
-    //
-    //    C = K_zz - K_zz + K_zz Sigma K_zz
-    //    C  = K_zz Sigma K_zz
-    //    Sigma = K_zz^-1 C K_zz^-1
-    //
-    // And since we need to store Sigma in sqrt form we get,
-    //
-    //    Sigma = (B_z^T B_z)^-1
-    //          = K_zz^-1 C K_zz^-1
-    //
-    // So by setting:
-    //
-    //    B_z = C^{-1/2} K_z
-    //
-    // We can then compute and store the QR decomposition of B
-    // as we do in a normal fit.
-    const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
-    const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
-    const auto B_qr = QRImplementation::compute(sigma_inv_sqrt, nullptr);
-
-    new_fit.P = get_P(*B_qr);
-    new_fit.sigma_R = get_R(*B_qr);
-    new_fit.numerical_rank = B_qr->rank();
-
-    return output;
   }
 
   // This is included to allow the SparseGP
@@ -787,73 +667,6 @@ public:
     return pred;
   }
 
-  template <typename FeatureType>
-  double log_likelihood(const RegressionDataset<FeatureType> &dataset) const {
-    const auto u =
-        inducing_point_strategy_(this->covariance_function_, dataset.features);
-
-    BlockDiagonalLDLT A_ldlt;
-    Eigen::SerializableLDLT K_uu_ldlt;
-    Eigen::MatrixXd K_fu;
-    Eigen::VectorXd y;
-    compute_internal_components(u, dataset.features, dataset.targets, &A_ldlt,
-                                &K_uu_ldlt, &K_fu, &y);
-    const auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
-    // The log likelihood for y ~ N(0, K) is:
-    //
-    //   L = 1/2 (n log(2 pi) + log(|K|) + y^T K^-1 y)
-    //
-    // where in our case we have
-    //   K = A + Q_ff
-    // and
-    //   Q_ff = K_fu K_uu^-1 K_uf
-    //
-    // First we get the determinant, |K|:
-    //
-    //   |K| = |A + Q_ff|
-    //       = |K_uu + K_uf A^-1 K_fu| |K_uu^-1| |A|
-    //       = |P R^T Q^T Q R P^T| |K_uu^-1| |A|
-    //       = |R^T R| |K_uu^-1| |A|
-    //       = |R|^2 |A| / |K_uu|
-    //
-    // Where the first equality comes from the matrix determinant lemma.
-    // https://en.wikipedia.org/wiki/Matrix_determinant_lemma#Generalization
-    //
-    // After which we can take the log:
-    //
-    //   log(|K|) = 2 log(|R|) + log(|A|) - log(|K_uu|)
-    //
-    const double log_det_a = A_ldlt.log_determinant();
-
-    const double log_det_r =
-        B_qr->matrixR().diagonal().array().cwiseAbs().log().sum();
-    const double log_det_K_uu = K_uu_ldlt.log_determinant();
-    const double log_det = log_det_a + 2 * log_det_r - log_det_K_uu;
-
-    // q = y^T K^-1 y
-    //   = y^T (A + Q_ff)^-1 y
-    //   = y^T (A^-1 - A^-1 K_fu (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1) y
-    //   = y^T A^-1 y - y^T A^-1 K_fu (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1) y
-    //   = y^T A^-1 y - y^T A^-1 K_fu (R^T R)^-1 K_uf A^-1) y
-    //   = y^T A^-1 y - (R^-T K_uf A^-1 y)^T (R^-T K_uf A^-1 y)
-    //   = y^T y_a - y_b^T y_b
-    //
-    // with y_b = R^-T K_uf y_a
-    const Eigen::VectorXd y_a = A_ldlt.solve(y);
-
-    Eigen::VectorXd y_b = K_fu.transpose() * y_a;
-    y_b = sqrt_solve(*B_qr, y_b);
-
-    double log_quadratic = y.transpose() * y_a;
-    log_quadratic -= y_b.transpose() * y_b;
-
-    const double rank = cast::to_double(y.size());
-    const double log_dimension = rank * log(2 * M_PI);
-
-    return -0.5 * (log_det + log_quadratic + log_dimension) +
-           this->prior_log_likelihood();
-  }
-
   InducingPointStrategy get_inducing_point_strategy() const {
     return inducing_point_strategy_;
   }
@@ -958,22 +771,6 @@ private:
   InducingPointStrategy inducing_point_strategy_;
   GrouperFunction independent_group_function_;
 };
-
-// rebase_inducing_points takes a Sparse GP which was fit using some set of
-// inducing points and creates a new fit relative to new inducing points.
-// Note that this will NOT be the equivalent to having fit the model with
-// the new inducing points since some information may have been lost in
-// the process.
-template <typename ModelType, typename GrouperFunction, typename FeatureType,
-          typename NewFeatureType>
-auto rebase_inducing_points(
-    const FitModel<ModelType,
-                   Fit<PICGPFit<GrouperFunction, NewFeatureType, FeatureType>>>
-        &fit_model,
-    const std::vector<NewFeatureType> &new_inducing_points) {
-  return fit_model.get_model().fit_from_prediction(
-      new_inducing_points, fit_model.predict(new_inducing_points).joint());
-}
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
