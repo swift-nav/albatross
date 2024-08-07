@@ -130,6 +130,7 @@ cc_library(
         "include/albatross/src/models/null_model.hpp",
         "include/albatross/src/models/ransac.hpp",
         "include/albatross/src/models/ransac_gp.hpp",
+        "include/albatross/src/models/sparse_common.hpp",
         "include/albatross/src/models/sparse_gp.hpp",
         "include/albatross/src/samplers/callbacks.hpp",
         "include/albatross/src/samplers/ensemble.hpp",
