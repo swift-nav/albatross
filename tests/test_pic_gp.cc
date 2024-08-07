@@ -24,10 +24,10 @@
 
 namespace albatross {
 
-struct LeaveOneIntervalOut {
+struct GroupedLeaveOneIntervalOut {
 
-  LeaveOneIntervalOut(){};
-  explicit LeaveOneIntervalOut(double group_domain_size_)
+  GroupedLeaveOneIntervalOut(){};
+  explicit GroupedLeaveOneIntervalOut(double group_domain_size_)
       : group_domain_size(group_domain_size_){};
 
   int operator()(const double &f) const {
@@ -44,7 +44,7 @@ struct LeaveOneIntervalOut {
 TEST(TestPicGP, TestPredictionExists) {
   const auto dataset = make_toy_linear_data();
   UniformlySpacedInducingPoints strategy(8);
-  LeaveOneIntervalOut grouper;
+  GroupedLeaveOneIntervalOut grouper;
   const auto pic =
       pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                              strategy, "pic", DenseQRImplementation{});
@@ -67,7 +67,7 @@ TEST(TestPicGP, ScalarEquivalence) {
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
   // Set the grouper so that all the simple test data falls within one
   // group.
-  LeaveOneIntervalOut grouper(10);
+  GroupedLeaveOneIntervalOut grouper(10);
   auto direct = gp_from_covariance(make_simple_covariance_function(), "direct");
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
@@ -92,7 +92,7 @@ TEST(TestPicGP, SingleBlockEquivalence) {
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
   // Set the grouper so that all the simple test data falls within one
   // group.
-  LeaveOneIntervalOut grouper(10);
+  GroupedLeaveOneIntervalOut grouper(10);
   auto direct = gp_from_covariance(make_simple_covariance_function(), "direct");
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
@@ -271,7 +271,7 @@ TEST(TestPicGP, BruteForceEquivalenceOneBlock) {
   static constexpr std::size_t kNumInducingPoints = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
-  LeaveOneIntervalOut grouper(10);
+  GroupedLeaveOneIntervalOut grouper(10);
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
 
@@ -296,7 +296,7 @@ TEST(TestPicGP, BruteForceEquivalenceMultipleBlocks) {
   static constexpr std::size_t kNumInducingPoints = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
-  LeaveOneIntervalOut grouper(2);
+  GroupedLeaveOneIntervalOut grouper(2);
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
 
@@ -322,7 +322,7 @@ TEST(TestPicGP, PITCEquivalenceOutOfTraining) {
   static constexpr std::size_t kNumInducingPoints = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
-  LeaveOneIntervalOut grouper(2);
+  GroupedLeaveOneIntervalOut grouper(2);
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
 
@@ -348,7 +348,7 @@ TEST(TestPicGP, PredictMeanEquivalent) {
   static constexpr std::size_t kNumInducingPoints = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
-  LeaveOneIntervalOut grouper(2);
+  GroupedLeaveOneIntervalOut grouper(2);
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
 
@@ -371,7 +371,7 @@ TEST(TestPicGP, PredictMarginalEquivalent) {
   static constexpr std::size_t kNumInducingPoints = 5;
 
   UniformlySpacedInducingPoints strategy(kNumInducingPoints);
-  LeaveOneIntervalOut grouper(2);
+  GroupedLeaveOneIntervalOut grouper(2);
   auto pic = pic_gp_from_covariance(make_simple_covariance_function(), grouper,
                                     strategy, "pic", DenseQRImplementation{});
 
