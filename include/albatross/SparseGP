@@ -25,5 +25,6 @@
 #include <albatross/src/utils/eigen_utils.hpp>
 #include <albatross/src/models/sparse_common.hpp>
 #include <albatross/src/models/sparse_gp.hpp>
+#include <albatross/src/models/pic_gp.hpp>
 
 #endif
