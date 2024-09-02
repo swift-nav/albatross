@@ -13,8 +13,6 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
-// #include "albatross/src/eigen/serializable_ldlt.hpp"
-// #include "albatross/src/linalg/block_diagonal.hpp"
 #include "test_models.h"
 #include <albatross/Common>
 #include <chrono>

@@ -15,6 +15,20 @@
 
 namespace albatross {
 
+/*
+ * This class directly implements the PIC covariance structure:
+ * conditional on the inducing points, each group of observations is
+ * independent.  You can use it as a covariance function for a dense
+ * GP model, and it should give you the same results as the PIC
+ * approximation, but since it's implemented directly as a covariance
+ * function, it's much less efficient than modelling using the
+ * PICGaussianProcessRegression class defined below.  It is provided
+ * for debugging purposes, since it can be tricky to follow what the
+ * efficient implementation is doing.
+ *
+ * See the PIC GP model test suite for an example of how to use this
+ * class.
+ */
 template <typename CovarianceType, typename InducingFeatureType,
           typename GrouperFunction>
 class BruteForcePIC
@@ -44,7 +58,6 @@ public:
       K_xu[i] = cov_(x, inducing_points_[i]);
       K_uy[i] = cov_(inducing_points_[i], y);
     }
-    // const Eigen::VectorXd K_uy = cov_(inducing_points_, y);
     return K_xu.dot(K_uu_ldlt_.solve(K_uy));
   }
 };
@@ -149,110 +162,40 @@ struct Fit<PICGPFit<GrouperFunction, InducingFeatureType, FeatureType>> {
 };
 
 /*
- *  This class implements an approximation technique for Gaussian processes
- * which relies on an assumption that all observations are independent (or
- * groups of observations are independent) conditional on a set of inducing
- * points.  The method is based off:
+ * This class implements an approximation technique for Gaussian
+ * processes which relies on the following:
  *
- *     [1] Sparse Gaussian Processes using Pseudo-inputs
+ *  1. Observations occur in correlated groups
+ *
+ *  2. Conditional on the values of observations within the same group
+ *     and on the values of the inducing points, an observation is
+ *     independent of observations in other groups.
+ *
+ * This is known as the PIC (Partially Independent Conditional)
+ * approximation and was introduced in
+ *
+ *     [1] Local and global sparse Gaussian process approximations
  *     Edward Snelson, Zoubin Ghahramani
- *     http://www.gatsby.ucl.ac.uk/~snelson/SPGP_up.pdf
+ *     https://proceedings.mlr.press/v2/snelson07a/snelson07a.pdf
  *
- *  Though the code uses notation closer to that used in this (excellent)
- * overview of these methods:
+ * The upshot of this method is that for enough small enough groups,
+ * the fit performance scales as O(N M^2) for N observations and M
+ * inducing points (just like FITC/PITC), but fine-grained local
+ * information from correlation groups can provide better predictive
+ * performance.
  *
- *     [2] A Unifying View of Sparse Approximate Gaussian Process Regression
- *     Joaquin Quinonero-Candela, Carl Edward Rasmussen
- *     http://www.jmlr.org/papers/volume6/quinonero-candela05a/quinonero-candela05a.pdf
+ * Inducing point and group definitions are handled as in the
+ * FITC/PITC approximation class (see sparse_gp.hpp).  If a prediction
+ * point is not correlated with any of the training observations (as
+ * defined by the grouper function), the resulting predicted
+ * distribution will be computed using only the fitted inducing
+ * points.
  *
- *  Very broadly speaking this method starts with a prior over the observations,
+ * Several operations supported by other Albatross GP model classes,
+ * like "rebasing" (computing new inducing points from old ones) and
+ * reduced-complexity updating of a fit with new information, are not
+ * yet supported by the PIC approximation class.
  *
- *     [f] ~ N(0, K_ff)
- *
- *  where K_ff(i, j) = covariance_function(features[i], features[j]) and f
- * represents the function value.
- *
- *  It then uses a set of inducing points, u, and makes some assumptions about
- * the conditional distribution:
- *
- *     [f|u] ~ N(K_fu K_uu^-1 u, K_ff - Q_ff)
- *
- *  Where Q_ff = K_fu K_uu^-1 K_uf represents the variance in f that is
- * explained by u.
- *
- *  For FITC (Fully Independent Training Contitional) the assumption is that
- * K_ff - Qff is diagonal, for PITC (Partially Independent Training Conditional)
- * that it is block diagonal.  These assumptions lead to an efficient way of
- * inferring the posterior distribution for some new location f*,
- *
- *     [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
- *
- *  Where S = (K_uu + K_uf A^-1 K_fu)^-1 and A = diag(K_ff - Q_ff) and "diag"
- * may mean diagonal or block diagonal.  Regardless we end up with O(m^2n)
- * complexity instead of O(n^3) of direct Gaussian processes.  (Note that in [2]
- * S is called sigma and A is lambda.)
- *
- *  Of course, the implementation details end up somewhat more complex in order
- * to improve numerical stability.  Here we use an approach based off the QR
- * decomposition which is described in
- *
- *     Stable and Efficient Gaussian Process Calculations
- *     http://www.jmlr.org/papers/volume10/foster09a/foster09a.pdf
- *
- * A more detailed (but more likely to be out of date) description of
- * the details can be found on the albatross documentation.  A short
- * description follows.  It starts by setting up the Sparse Gaussian process
- * covariances
- *
- *   [f|u] ~ N(K_fu K_uu^-1 u, K_ff - Q_ff)
- *
- * We then set,
- *
- *   A = K_ff - Q_ff
- *     = K_ff - K_fu K_uu^-1 K_uf
- *
- * which can be thought of as the covariance in the training data which
- * is not be explained by the inducing points.  The fundamental
- * assumption in these sparse Gaussian processes is that A is sparse, in
- * this case block diagonal.
- *
- * We then build a matrix B and use its QR decomposition (with pivoting P)
- *
- *   B = |A^-1/2 K_fu| = |Q_1| R P^T
- *       |K_uu^{T/2} |   |Q_2|
- *
- * After which we can get the information vector (see _fit_impl)
- *
- *   v = (K_uu + K_uf A^-1 K_fu)^-1 K_uf A^-1 y
- *     = (B^T B) B^T A^-1/2 y
- *     = P R^-1 Q_1^T A^-1/2 y
- *
- * and can make predictions for new locations (see _predict_impl),
- *
- *   [f*|f=y] ~ N(K_*u S K_uf A^-1 y, K_** - Q_** + K_*u S K_u*)
- *            ~ N(m, C)
- *
- *  where we have
- *
- *    m = K_*u S K_uf A^-1 y
- *      = K_*u v
- *
- *  and
- *
- *    C = K_** - Q_** + K_*u S K_u*
- *
- *  using
- *
- *    Q_** = K_*u K_uu^-1 K_u*
- *         = (K_uu^{-1/2}  K_u*)^T (K_uu^{-1/2}  K_u*)
- *         = Q_sqrt^T Q_sqrt
- *  and
- *
- *    K_*u S K_u* = K_*u (K_uu + K_uf A^-1 K_fu)^-1   K_u*
- *                = K_*u (B^T B)^-1 K_u*
- *                = K_*u (P R R^T P^T)^-1 K_u*
- *                = (P R^-T K_u*)^T (P R^-T K_u*)
- *                = S_sqrt^T S_sqrt
  */
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy,
