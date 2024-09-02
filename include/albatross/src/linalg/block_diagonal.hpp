@@ -68,6 +68,8 @@ struct BlockDiagonalLDLT {
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
+
+  bool operator==(const BlockDiagonalLDLT &other) const;
 };
 
 struct BlockDiagonal {
@@ -246,6 +248,11 @@ inline Eigen::Index BlockDiagonalLDLT::cols() const {
 
 inline const BlockDiagonalLDLT &BlockDiagonalLDLT::adjoint() const {
   return *this;
+}
+
+inline bool
+BlockDiagonalLDLT::operator==(const BlockDiagonalLDLT &other) const {
+  return blocks == other.blocks;
 }
 
 /*
