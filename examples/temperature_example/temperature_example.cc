@@ -15,10 +15,10 @@
 
 #include "temperature_example_utils.h"
 
-DEFINE_string(input, "", "path to csv containing input data.");
-DEFINE_string(predict, "", "path to csv containing prediction locations.");
-DEFINE_string(output, "", "path where predictions will be written in csv.");
-DEFINE_string(thin, "1", "path where predictions will be written in csv.");
+DEFINE_string(input, "/Users/laykuan.loh/swift-nav/albatross/examples/temperature_example/gsod.csv", "path to csv containing input data.");
+DEFINE_string(predict, "/Users/laykuan.loh/swift-nav/albatross/examples/temperature_example/prediction_locations.csv", "path to csv containing prediction locations.");
+DEFINE_string(output, "", "/Users/laykuan.loh/swift-nav/albatross/examples/temperature_example/result.csv");
+DEFINE_string(thin, "1", "thin the data");
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
