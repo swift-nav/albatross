@@ -18,7 +18,7 @@
 DEFINE_string(input, "", "path to csv containing input data.");
 DEFINE_string(predict, "", "path to csv containing prediction locations.");
 DEFINE_string(output, "", "path where predictions will be written in csv.");
-DEFINE_string(thin, "1", "path where predictions will be written in csv.");
+DEFINE_string(thin, "1", "samples 1 out of every <thin> inputs");
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
