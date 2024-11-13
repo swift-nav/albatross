@@ -43,6 +43,30 @@ struct Station {
 };
 
 /*
+ * Holds the information about a single station which
+ * is used as the FeatureType for our Gaussian process.
+ */
+struct ReducedStation {
+  double lat;
+  double height;
+
+  bool operator==(const Station &rhs) const {
+    return ((abs(lat - rhs.lat) < 1e-6) && (abs(height - rhs.height) < 1e-6));
+  }
+
+  template <typename Archive> void serialize(Archive &archive) {
+    archive(cereal::make_nvp("lat", lat), cereal::make_nvp("height", height));
+  }
+};
+
+ReducedStation station2reducedstation(const Station& station) {
+  ReducedStation reduced;
+  reduced.lat = station.lat;
+  reduced.height = station.height;
+  return reduced;
+}
+
+/*
  * Provides an interface which maps the Station.ecef
  * field to an arbitrary DistanceMetric defined on Eigen
  * vectors.
@@ -120,7 +144,7 @@ inline bool file_exists(const std::string &name) {
 
 template <typename ModelType, typename FitType>
 void write_predictions(const std::string &output_path,
-                       const std::vector<Station> &features,
+                       const std::vector<ReducedStation> &features,
                        const FitModel<ModelType, FitType> &fit_model) {
 
   std::ofstream ostream;
@@ -129,7 +153,7 @@ void write_predictions(const std::string &output_path,
   Eigen::VectorXd targets =
       Eigen::VectorXd::Zero(cast::to_index(features.size()));
 
-  albatross::RegressionDataset<Station> dataset(features, targets);
+  albatross::RegressionDataset<ReducedStation> dataset(features, targets);
 
   const auto predictions = fit_model.predict(features).marginal();
   albatross::write_to_csv(ostream, dataset, predictions);

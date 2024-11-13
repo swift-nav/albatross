@@ -90,5 +90,8 @@ int main(int argc, char *argv[]) {
   auto predict_features = read_temperature_csv_input(FLAGS_predict, 1).features;
   std::cout << "Going to predict at " << predict_features.size() << " locations"
             << std::endl;
-  write_predictions(FLAGS_output, predict_features, fit_model);
+  const std::vector<ReducedStation> reduced_predict_features = apply(predict_features, [](const Station& station) {
+    return station2reducedstation(station);
+  });
+  write_predictions(FLAGS_output, reduced_predict_features, fit_model);
 }
