@@ -48,21 +48,21 @@ struct Station {
  */
 struct ReducedStation {
   double lat;
-  double height;
+  double lon;
 
   bool operator==(const Station &rhs) const {
-    return ((abs(lat - rhs.lat) < 1e-6) && (abs(height - rhs.height) < 1e-6));
+    return ((abs(lat - rhs.lat) < 1e-6) && (abs(lon - rhs.lon) < 1e-6));
   }
 
   template <typename Archive> void serialize(Archive &archive) {
-    archive(cereal::make_nvp("lat", lat), cereal::make_nvp("height", height));
+    archive(cereal::make_nvp("lat", lat), cereal::make_nvp("lon", lon));
   }
 };
 
 ReducedStation station2reducedstation(const Station& station) {
   ReducedStation reduced;
   reduced.lat = station.lat;
-  reduced.height = station.height;
+  reduced.lon = station.lon;
   return reduced;
 }
 
