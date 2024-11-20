@@ -156,8 +156,8 @@
 #define DECLARE_PARAMS(...) CALL_MACRO_X_FOR_EACH(DECLARE_PARAM, ##__VA_ARGS__)
 
 #define ALBATROSS_DECLARE_PARAMS(...)                                          \
-  DEFINE_GET_PARAMS(__VA_ARGS__);                                              \
-  DEFINE_SET_PARAM(__VA_ARGS__);                                               \
-  DECLARE_PARAMS(__VA_ARGS__);
+  DEFINE_GET_PARAMS(__VA_ARGS__)                                               \
+  DEFINE_SET_PARAM(__VA_ARGS__)                                                \
+  DECLARE_PARAMS(__VA_ARGS__)
 
 #endif
