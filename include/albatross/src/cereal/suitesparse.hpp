@@ -439,8 +439,6 @@ inline void load(Archive &ar, cholmod_sparse &m,
   }
   detail::suitesparse_cereal_realloc(&m.x, m.nzmax, element_size_bytes);
 
-  std::cout << "m.p size: " << p_size_bytes << " bytes" << std::endl;
-  std::cout << "m.ncol + 1: " << m.ncol + 1 << std::endl;
   detail::decode_array(ar, "m.p", m.p, (m.ncol + 1) * p_size_bytes);
   detail::decode_array(ar, "m.i", m.i, m.nzmax * integer_size_bytes);
   if (!m.packed) {
