@@ -38,6 +38,7 @@ cc_library(
         "include/albatross/SparseGP",
         "include/albatross/Stats",
         "include/albatross/Tune",
+        "include/albatross/Typecast",
         "include/albatross/linalg/Block",
         "include/albatross/linalg/Utils",
         "include/albatross/serialize/Common",
