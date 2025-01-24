@@ -200,20 +200,30 @@ held_out_predictions(const Eigen::SerializableLDLT &covariance,
                      const Eigen::VectorXd &target_mean,
                      const Eigen::VectorXd &information,
                      const GroupIndexer<GroupKey> &group_indexer,
-                     PredictTypeIdentity<PredictType> predict_type) {
+                     PredictTypeIdentity<PredictType> predict_type,
+                     ThreadPool *pool = serial_thread_pool) {
+  // This happens outside the threaded loop so that the internal solve
+  // happens only once (and potentially uses Eigen-internal
+  // threading).
+  const auto inverse_blocks =
+      covariance.inverse_blocks(map_values(group_indexer), pool);
 
-  const std::vector<GroupIndices> indices = map_values(group_indexer);
-  const std::vector<GroupKey> group_keys = map_keys(group_indexer);
-  const auto inverse_blocks = covariance.inverse_blocks(indices);
+  std::map<GroupKey, Eigen::MatrixXd> blocks;
+  std::transform(group_indexer.begin(), group_indexer.end(),
+                 inverse_blocks.begin(), std::inserter(blocks, blocks.end()),
+                 [](const auto &idx_kv, const auto &value) {
+                   return std::make_pair(idx_kv.first, value);
+                 });
 
-  std::map<GroupKey, PredictType> output;
-  for (std::size_t i = 0; i < inverse_blocks.size(); i++) {
-    const Eigen::VectorXd yi = subset(target_mean, indices[i]);
-    const Eigen::VectorXd vi = subset(information, indices[i]);
-    output[group_keys[i]] =
-        held_out_prediction(inverse_blocks[i], yi, vi, predict_type);
-  }
-  return output;
+  return apply(
+             group_indexer,
+             [&](const auto &key, const auto &indices) {
+               return held_out_prediction(
+                   blocks[key], subset(target_mean, indices),
+                   subset(information, indices), predict_type);
+             },
+             pool)
+      .get_map();
 }
 
 template <typename GroupKey, typename PredictType>
@@ -221,14 +231,15 @@ inline std::map<GroupKey, PredictType>
 leave_one_group_out_conditional(const JointDistribution &prior,
                                 const MarginalDistribution &truth,
                                 const GroupIndexer<GroupKey> &group_indexer,
-                                PredictTypeIdentity<PredictType> predict_type) {
+                                PredictTypeIdentity<PredictType> predict_type,
+                                ThreadPool *pool = serial_thread_pool) {
   Eigen::MatrixXd covariance = prior.covariance;
   covariance += truth.covariance;
   Eigen::SerializableLDLT ldlt(covariance);
   const Eigen::VectorXd deviation = truth.mean - prior.mean;
   const Eigen::VectorXd information = ldlt.solve(deviation);
   return held_out_predictions(covariance, truth.mean, information,
-                              group_indexer, predict_type);
+                              group_indexer, predict_type, pool);
 }
 
 } // namespace details
@@ -237,27 +248,33 @@ template <typename GroupKey>
 inline std::map<GroupKey, Eigen::VectorXd>
 leave_one_group_out_conditional_means(
     const JointDistribution &prior, const MarginalDistribution &truth,
-    const GroupIndexer<GroupKey> &group_indexer) {
+    const GroupIndexer<GroupKey> &group_indexer,
+    ThreadPool *pool = serial_thread_pool) {
   return details::leave_one_group_out_conditional(
-      prior, truth, group_indexer, PredictTypeIdentity<Eigen::VectorXd>());
+      prior, truth, group_indexer, PredictTypeIdentity<Eigen::VectorXd>(),
+      pool);
 }
 
 template <typename GroupKey>
 inline std::map<GroupKey, MarginalDistribution>
 leave_one_group_out_conditional_marginals(
     const JointDistribution &prior, const MarginalDistribution &truth,
-    const GroupIndexer<GroupKey> &group_indexer) {
+    const GroupIndexer<GroupKey> &group_indexer,
+    ThreadPool *pool = serial_thread_pool) {
   return details::leave_one_group_out_conditional(
-      prior, truth, group_indexer, PredictTypeIdentity<MarginalDistribution>());
+      prior, truth, group_indexer, PredictTypeIdentity<MarginalDistribution>(),
+      pool);
 }
 
 template <typename GroupKey>
 inline std::map<GroupKey, JointDistribution>
 leave_one_group_out_conditional_joints(
     const JointDistribution &prior, const MarginalDistribution &truth,
-    const GroupIndexer<GroupKey> &group_indexer) {
+    const GroupIndexer<GroupKey> &group_indexer,
+    ThreadPool *pool = serial_thread_pool) {
   return details::leave_one_group_out_conditional(
-      prior, truth, group_indexer, PredictTypeIdentity<JointDistribution>());
+      prior, truth, group_indexer, PredictTypeIdentity<JointDistribution>(),
+      pool);
 }
 
 } // namespace albatross
