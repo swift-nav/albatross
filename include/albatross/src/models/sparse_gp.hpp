@@ -615,7 +615,7 @@ public:
   }
 
   void set_grouper_function(GrouperFunction &&independent_grouper_function) {
-    independent_group_function_ = independent_grouper_function;
+    independent_group_function_ = std::forward<GrouperFunction>(independent_grouper_function);
   }
 
 private:
