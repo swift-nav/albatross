@@ -614,8 +614,8 @@ public:
     return independent_group_function_;
   }
 
-  GrouperFunction &get_grouper_function() {
-    return independent_group_function_;
+  void set_grouper_function(GrouperFunction &&independent_grouper_function) {
+    independent_group_function_ = independent_grouper_function;
   }
 
 private:
