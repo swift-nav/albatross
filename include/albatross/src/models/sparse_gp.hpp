@@ -610,6 +610,21 @@ public:
     return inducing_point_strategy_;
   }
 
+  void
+  set_inducing_point_strategy(InducingPointStrategy &&inducing_point_strategy) {
+    inducing_point_strategy =
+        std::forward<InducingPointStrategy>(inducing_point_strategy);
+  }
+
+  GrouperFunction get_grouper_function() const {
+    return independent_group_function_;
+  }
+
+  void set_grouper_function(GrouperFunction &&independent_grouper_function) {
+    independent_group_function_ =
+        std::forward<GrouperFunction>(independent_grouper_function);
+  }
+
 private:
   // This method takes care of a lot of the common book keeping required to
   // setup the Sparse Gaussian Process problem.  Namely, we want to get from
