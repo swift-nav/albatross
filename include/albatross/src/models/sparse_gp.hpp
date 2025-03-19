@@ -610,6 +610,14 @@ public:
     return inducing_point_strategy_;
   }
 
+  GrouperFunction get_grouper_function() const {
+    return independent_group_function_;
+  }
+
+  GrouperFunction &get_grouper_function() {
+    return independent_group_function_;
+  }
+
 private:
   // This method takes care of a lot of the common book keeping required to
   // setup the Sparse Gaussian Process problem.  Namely, we want to get from
