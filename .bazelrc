@@ -42,5 +42,8 @@ test --test_output=errors
 # Increase the byte limit to write to stdout/err
 test --experimental_ui_max_stdouterr_bytes=10048576
 
+# Default timeout of 20 minutes
+test --test_timeout=1200
+
 # Try to load a personal bazelrc
 try-import %workspace%/.bazelrc.user
