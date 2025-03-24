@@ -1,0 +1,17 @@
+# Dependabot will automatically scan dependencies in each of the
+# listed package ecosystems and will open a PR to update any outdated
+# dependency.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    reviewers:
+      - swift-nav/orion_model_reviewers
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    reviewers:
+      - swift-nav/orion_model_reviewers
