@@ -2,6 +2,8 @@ load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_lib
 load("//:copts.bzl", "COPTS")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
+subpackages(include = ["examples/**"])
+
 refresh_compile_commands(
     name = "gen_compile_commands",
     visibility = ["//visibility:public"],
@@ -100,6 +102,7 @@ cc_library(
         "include/albatross/src/details/traits.hpp",
         "include/albatross/src/details/typecast.hpp",
         "include/albatross/src/details/unused.hpp",
+        "include/albatross/src/eigen/partial_cholesky.hpp",
         "include/albatross/src/eigen/serializable_ldlt.hpp",
         "include/albatross/src/eigen/serializable_spqr.hpp",
         "include/albatross/src/evaluation/cross_validation.hpp",
@@ -232,6 +235,7 @@ swift_cc_test(
         "tests/test_models.cc",
         "tests/test_models.h",
         "tests/test_parameter_handling_mixin.cc",
+        "tests/test_partial_cholesky.cc",
         "tests/test_prediction.cc",
         "tests/test_radial.cc",
         "tests/test_random_utils.cc",
