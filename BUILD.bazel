@@ -94,6 +94,7 @@ cc_library(
         "include/albatross/src/details/traits.hpp",
         "include/albatross/src/details/typecast.hpp",
         "include/albatross/src/details/unused.hpp",
+        "include/albatross/src/eigen/partial_cholesky.hpp",
         "include/albatross/src/eigen/serializable_ldlt.hpp",
         "include/albatross/src/eigen/serializable_spqr.hpp",
         "include/albatross/src/evaluation/cross_validation.hpp",
@@ -303,6 +304,18 @@ swift_cc_test(
         "tests/test_linear_combination.cc",
         "tests/test_parameter_handling_mixin.cc",
         "tests/test_prediction.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
+    name = "albatross-test-linalg",
+    srcs = [
+        "tests/test_partial_cholesky.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
@@ -523,6 +536,7 @@ test_suite(
         ":albatross-test-async-utils",
         ":albatross-test-compression",
         ":albatross-test-thread-pool",
+        ":albatross-test-linalg",
         ":albatross-test-utils",
         ":albatross-test-evaluation",
         ":albatross-test-cross-validation",
