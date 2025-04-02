@@ -12,6 +12,20 @@
 
 namespace Eigen {
 
+// A pivoted, partial Cholesky decomposition.
+//
+// This is meant for use as a preconditioner for symmetric,
+// positive-definite problems.  The algorithm is described in:
+//
+//     On the Low-rank Approximation by the Pivoted Cholesky Decomposition
+//     H. Harbrecht, M. Peters and R. Schneider
+//     http://www.dfg-spp1324.de/download/preprints/preprint076.pdf
+//
+// In this implementation, we make the natural choice to avoid storing
+// a copy of the input matrix; we only copy its diagonal for use
+// during the decomposition.  The L matrix already stores the sequence
+// of updates to each relevant column of A, so these updates are
+// applied on demand as each pivot column is selected.
 template <typename Scalar> class PartialCholesky {
 public:
   using MatrixType = Matrix<Scalar, Dynamic, Dynamic>;
@@ -22,7 +36,7 @@ public:
 
   static constexpr const Index cDefaultOrder = 22;
 
-  static constexpr const double cDefaultNugget = 1.e-5;
+  static constexpr const double cDefaultNugget = 1.e-3;
 
   PartialCholesky() {}
 
@@ -30,6 +44,11 @@ public:
       : m_rows{A.rows()}, m_cols{A.cols()} {
     compute(A);
   }
+
+  explicit PartialCholesky(Index order) : m_order{order} {}
+
+  PartialCholesky(Index order, RealScalar nugget)
+      : m_order{order}, m_nugget{nugget} {}
 
   PartialCholesky(const MatrixType &A, Index order, RealScalar nugget)
       : m_rows{A.rows()}, m_cols{A.cols()}, m_order{order}, m_nugget{nugget} {
@@ -50,12 +69,11 @@ public:
     return *this;
   }
 
+  // Unlike the normal dense LDLT and friends, we do not want to
+  // copy the potentially quite large A.  Unlike the CG solver, we
+  // do not want to retain any reference to A's data once we have
+  // finished this function.
   PartialCholesky &compute(const MatrixType &A) {
-    // This computes a low-rank pivoted Cholesky decomposition.
-    // Unlike the normal dense LDLT and friends, we do not want to
-    // copy the potentially quite large A.  Unlike the CG solver, we
-    // do not want to retain any reference to A's data once we have
-    // finished this function.
     m_rows = A.rows();
     m_cols = A.cols();
     PermutationType transpositions(rows());
@@ -64,141 +82,98 @@ public:
     MatrixType L{MatrixType::Zero(rows(), max_rank)};
 
     // A's diagonal; needs to keep getting pivoted, shifted and
-    // searched at each step
+    // searched at each step.  We track this separately from the rest
+    // of A because we have to search each time, and for the relevant
+    // off-diagonal columns of A, we only apply the relevant updates
+    // we strictly need.
     VectorXd diag{A.diagonal()};
 
-    // debug
-    MatrixType Ashadow{A};
-    MatrixXd Lshadow{L};
-    PermutationType Pshadow{rows()};
-    Pshadow.setIdentity();
+    const auto calc_error = [&diag](Index k) {
+      return diag.tail(diag.size() - k).array().sum();
+    };
 
-    // Accumulated L column; also gets pivoted and shifted as we
-    // update, and contains the corrections to all columns of A below
-    // k.
-    VectorXd L_accum{VectorXd::Zero(rows())};
+    RealScalar error = calc_error(0);
 
     for (Index k = 0; k < max_rank; ++k) {
       Index max_index;
-      diag.tail(max_rank - k).maxCoeff(&max_index);
+      diag.tail(diag.size() - k).maxCoeff(&max_index);
       max_index += k;
+      // std::cout << "step " << k << ": found max element " << diag(max_index)
+      //           << " at position " << max_index - k << " in "
+      //           << diag.tail(diag.size() - k).transpose() << std::endl;
 
       if (max_index != k) {
-        std::cout << "Swapping '" << max_index << "' (" << diag(max_index)
-                  << ") with '" << k << "' (" << diag(k) << ")" << std::endl;
         transpositions.applyTranspositionOnTheRight(k, max_index);
         std::swap(diag(k), diag(max_index));
         L.row(k).swap(L.row(max_index));
-        std::swap(L_accum(k), L_accum(max_index));
+        // std::cout << max_index << " <-> " << k << std::endl;
       }
-
-      std::cout << "P:\n" << Eigen::MatrixXi(transpositions) << std::endl;
-
-      Index max_index_shadow;
-      Ashadow.diagonal().tail(max_rank - k).maxCoeff(&max_index_shadow);
-      max_index_shadow += k;
-
-      if (max_index_shadow != k) {
-        std::cout << "Shadow: swapping '" << max_index_shadow << "' ("
-                  << Ashadow.diagonal()(max_index_shadow) << ") with '" << k
-                  << "' (" << Ashadow.diagonal()(k) << ")" << std::endl;
-        Lshadow.row(k).swap(Lshadow.row(max_index_shadow));
-        Pshadow.applyTranspositionOnTheRight(k, max_index_shadow);
-        PermutationType t{rows()};
-        t.setIdentity();
-        t.applyTranspositionOnTheRight(k, max_index_shadow);
-        Ashadow = t.transpose() * Ashadow * t;
-      }
-
-      std::cout << "Pshadow:\n" << Eigen::MatrixXi(Pshadow) << std::endl;
 
       if (diag(k) <= 0.) {
         m_info = InvalidInput;
-        std::cerr << "Invalid value '" << diag(k)
-                  << "' in pivoted cholesky decomp!" << std::endl;
         return *this;
       }
-
-      std::cout << "L:\n" << L << "\n";
-      std::cout << "L_s:\n" << Lshadow << "\n";
-      std::cout << "A_s:\n" << Ashadow << "\n";
-      // std::cout << "L_accum: " << L_accum.transpose() << "\n";
-      std::cout << "   diag: " << diag.transpose() << '\n';
 
       const RealScalar alpha = std::sqrt(diag(k));
 
       L(k, k) = alpha;
-      Lshadow(k, k) = std::sqrt(Ashadow.diagonal()(k));
-
-      std::cout << "alpha: " << alpha << std::endl;
-      std::cout << "shadow alpha: " << Lshadow(k, k) << std::endl;
 
       const Index tail_size = rows() - k - 1;
-      std::cout << "tail_size: " << tail_size << std::endl;
-
       if (tail_size < 1) {
         break;
       }
+
       // Everything below here should be ordered appropriately -- we
-      // pivot `diag` and `L_accum` and the rows of `L` every time we do an
-      // update
-      const VectorXd Acol =
+      // pivot `diag` and the rows of `L` every time we do an update
+      VectorXd b =
           ((transpositions.transpose() * A.col(transpositions.indices()(k))))
               .tail(tail_size);
-      const VectorXd Acol_shadow = Ashadow.col(k).tail(tail_size);
-      std::cout << "  Acol: " << Acol.transpose() << std::endl;
-      std::cout << "Acol_s: " << Acol_shadow.transpose() << std::endl;
-      std::cout << "  diff: " << (Acol - Acol_shadow).transpose() << std::endl;
 
-      VectorXd b = Acol;
-      // if (k > 0) {
-      //   b -= L.col(k - 1).tail(tail_size) * L(k, k - 1);
-      // }
+      // I couldn't find this derived anywhere -- basically what
+      // happens here is that for the lower-right submatrix below
+      // diagonal element k of the pivoted input matrix, we have to
+      // update it with b_i b_i^t / a_i = l_i l_i^t where a_i =
+      // alpha_i^2 = diagonal element k, _for each preceding pivot
+      // column i_ below the current one.  Of course we are modifying
+      // the whole input matrix in place, and we only care about the
+      // relevant column below the pivot we just chose.  The
+      // successive updates to this column A_k,k+1:n are l_i * l_i[k]
+      // -- the columns of the bottom-left submatrix of L below k,
+      // each column scaled by the element just above it (in row k)
+      // respectively.
       for (Index i = 0; i < k; ++i) {
-        std::cout << "delta b(" << i
-                  << "): " << L.col(i).tail(tail_size).transpose() << " * "
-                  << L(k, i) << " = "
-                  << L.col(i).tail(tail_size).transpose() * L(k, i)
-                  << std::endl;
         b -= L.col(i).tail(tail_size) * L(k, i);
-      }  // + L_accum.tail(tail_size);
-      std::cout << "     b: " << b.transpose() << std::endl;
+      }
 
       L.col(k).tail(tail_size) = b / alpha;
       diag.tail(tail_size) -=
           L.col(k).tail(tail_size).array().square().matrix();
-      L_accum.tail(tail_size) -= Acol * Acol(0) / (alpha * alpha);
 
-      Lshadow.col(k).tail(tail_size) =
-        Acol_shadow / std::sqrt(Ashadow.diagonal()(k));
-      std::cout << "shadow bb^t / alpha:\n"
-                << 1 / (alpha * alpha) * Acol_shadow * Acol_shadow.transpose()
-                << std::endl;
-      Ashadow.bottomRightCorner(tail_size, tail_size) -=
-          1 / (alpha * alpha) * Acol_shadow * Acol_shadow.transpose();
+      for (Index i = 0; i < k; ++i) {
+        assert(L(i, i) >= L(i + 1, i + 1) && "failure in ordering invariant!");
+      }
 
-      std::cout << "L:\n" << L << "\n";
-      std::cout << "L_s:\n" << Lshadow << "\n";
-      std::cout << "A_s:\n" << Ashadow << "\n";
-      // std::cout << "L_accum: " << L_accum.transpose() << "\n";
-      std::cout << "   diag: " << diag.transpose() << '\n';
-      std::cout << "========" << std::endl;
+      assert(calc_error(k + 1) < error && "failure in convergence criterion!");
+      error = calc_error(k + 1);
+
+      // std::cout << "step " << k
+      //           << ": error = " << diag.tail(diag.size() - k).array().sum()
+      //           << std::endl;
     }
 
+    m_error = diag.tail(diag.size() - max_rank).array().sum();
+
+    m_nugget = std::sqrt(A.diagonal().minCoeff());
+
     m_transpositions = transpositions;
-    // std::cout << MatrixXi(m_transpositions) << std::endl;
 
     m_L = L;
-    // std::cout << L << std::endl;
 
-    std::cout << MatrixXd(transpositions * L * L.transpose() *
-                          transpositions.transpose())
-              << std::endl;
-
-    std::cout << MatrixXd(Pshadow * Lshadow * Lshadow.transpose() *
-                          Pshadow.transpose())
-              << std::endl;
-
+    // We decompose before returning to save time on repeated solves.
+    //
+    // Arguably we could pre-apply the outer terms of Woodbury, but
+    // computing that full matrix would significantly increase our
+    // storage requirements in the typical case where k << n.
     m_decomp = LDLT<MatrixXd>(MatrixXd::Identity(L.cols(), L.cols()) +
                               1 / (m_nugget * m_nugget) * L.transpose() * L);
 
@@ -206,37 +181,42 @@ public:
     return *this;
   }
 
+  template <typename Rhs>
+  Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> solve(const Rhs &b) const {
+    assert(finished() &&
+           "Please don't call 'solve()' on an unintialised decomposition!");
+    const double n2 = m_nugget * m_nugget;
+    Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
+        1 / n2 * b - 1 / (n2 * n2) *
+                         (m_transpositions * m_L *
+                          m_decomp.solve(m_L.transpose() *
+                                         m_transpositions.transpose() * b));
+    return ret;
+  }
+
   MatrixXd matrixL() const {
     assert(finished() &&
-           "Please don't call this on an uninitialised decomposition!");
+           "Please don't call 'matrixL()' on an uninitialised decomposition!");
 
     return m_L;
   }
 
   PermutationType permutationsP() const {
-    assert(finished() &&
-           "Please don't call this on an uninitialised decomposition!");
+    assert(finished() && "Please don't call 'permutationsP()' on an "
+                         "uninitialised decomposition!");
 
     return m_transpositions;
   }
 
-  template <typename Rhs>
-  Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> solve(const Rhs &b) const {
-    assert(finished() &&
-           "Please don't call this on an unintialised decomposition!");
-    const double n2 = m_nugget * m_nugget;
-    std::cout << 1 / n2 * b << std::endl;
-    std::cout << m_decomp.solve(m_L.transpose() * b) << std::endl;
-    Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
-        1 / n2 * b -
-        1 / (n2 * n2) *
-            (m_transpositions * m_L *
-             m_decomp.solve(m_L.transpose() * m_transpositions.transpose() * b));
-    return ret;
-  }
-
   inline bool finished() const {
     return rows() > 0 && cols() > 0 & info() == Success;
+  }
+
+  inline MatrixType reconstructedMatrix() const {
+    assert(finished() && "Please don't call 'reconstructedMatrix()' on an "
+                         "unintialised decomposition!");
+    return MatrixType(permutationsP() * matrixL() * matrixL().transpose() *
+                      permutationsP().transpose());
   }
 
   inline Index rows() const { return m_rows; }
@@ -244,11 +224,18 @@ public:
 
   ComputationInfo info() const { return m_info; }
 
+  RealScalar error() const {
+    assert(finished() &&
+           "Please don't call 'error()' on an unintialised decomposition!");
+    return m_error;
+  }
+
 private:
   StorageIndex m_rows{0};
   StorageIndex m_cols{0};
   Index m_order{cDefaultOrder};
   RealScalar m_nugget{cDefaultNugget};
+  RealScalar m_error{0};
   ComputationInfo m_info{Success};
   MatrixType m_L{};
   LDLT<MatrixXd> m_decomp{};

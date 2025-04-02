@@ -58,7 +58,9 @@ TEST(TestConjugateGradientGP, TestMean) {
   CovFunc covariance(1, 1);
   auto dataset = make_toy_linear_data(5, 1, 1.e-3, 5000);
   auto direct = gp_from_covariance(covariance, "direct");
-  auto cg = cg_gp_from_covariance(covariance, "cg");
+  auto cg = cg_gp_from_covariance(covariance, "cg", IterativeSolverOptions{},
+                                  Eigen::PartialCholesky<double>{20, 1.e-3});
+  // auto cg = cg_gp_from_covariance(covariance, "cg");
 
   auto begin = std::chrono::steady_clock::now();
   auto direct_fit = direct.fit(dataset);
