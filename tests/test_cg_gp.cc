@@ -55,12 +55,12 @@ void describe_fit(const FitType &fit, std::ostream &os = std::cout) {
 TEST(TestConjugateGradientGP, TestMean) {
   using CovFunc = SquaredExponential<EuclideanDistance>;
 
-  CovFunc covariance(1, 1);
-  auto dataset = make_toy_linear_data(5, 1, 1.e-3, 5000);
+  CovFunc covariance(0.5, 1);
+  auto dataset = make_toy_linear_data(5, 0.01, 1.e-2, 4000);
   auto direct = gp_from_covariance(covariance, "direct");
-  auto cg = cg_gp_from_covariance(covariance, "cg", IterativeSolverOptions{},
-                                  Eigen::PartialCholesky<double>{20, 1.e-3});
-  // auto cg = cg_gp_from_covariance(covariance, "cg");
+  // auto cg = cg_gp_from_covariance(covariance, "cg", IterativeSolverOptions{},
+  //                                 Eigen::PartialCholesky<double>{100, 1.e-1});
+  auto cg = cg_gp_from_covariance(covariance, "cg");
 
   auto begin = std::chrono::steady_clock::now();
   auto direct_fit = direct.fit(dataset);
