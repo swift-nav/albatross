@@ -36,7 +36,7 @@ public:
 
   static constexpr const Index cDefaultOrder = 22;
 
-  static constexpr const double cDefaultNugget = 1.e-3;
+  static constexpr const double cDefaultNugget = 1.e-2;
 
   PartialCholesky() {}
 
@@ -163,7 +163,7 @@ public:
 
     m_error = diag.tail(diag.size() - max_rank).array().sum();
 
-    m_nugget = std::sqrt(A.diagonal().minCoeff());
+    // m_nugget = std::sqrt(A.diagonal().minCoeff());
 
     m_transpositions = transpositions;
 
@@ -177,6 +177,21 @@ public:
     m_decomp = LDLT<MatrixXd>(MatrixXd::Identity(L.cols(), L.cols()) +
                               1 / (m_nugget * m_nugget) * L.transpose() * L);
 
+    MatrixXd Ltall(L.rows() + max_rank, L.cols());
+    Ltall.topRows(L.rows()) = transpositions * L;
+    Ltall.bottomRows(max_rank) =
+        MatrixXd::Identity(max_rank, max_rank) * m_nugget;
+
+    // std::cout << "Ltall (" << Ltall.rows() << "x" << Ltall.cols() << "):\n"
+    //           << Ltall << std::endl;
+    m_qr = HouseholderQR<MatrixXd>(Ltall);
+    MatrixXd thin_Q = m_qr.householderQ() * MatrixXd::Identity(m_qr.rows(), m_L.cols());
+    // std::cout << "thin_Q (" << thin_Q.rows() << "x" << thin_Q.cols() << "):\n"
+    //           << thin_Q << std::endl;
+    m_Q = thin_Q.topRows(rows());
+    // std::cout << "m_Q (" << m_Q.rows() << "x" << m_Q.cols() << "):\n"
+    //           << m_Q << std::endl;
+
     m_info = Success;
     return *this;
   }
@@ -186,12 +201,28 @@ public:
     assert(finished() &&
            "Please don't call 'solve()' on an unintialised decomposition!");
     const double n2 = m_nugget * m_nugget;
+
+    // std::cout << "Q^T b:\n" << MatrixXd(m_Q.transpose() * b) << std::endl;
+    // std::cout << "Q Q^T b:\n" << MatrixXd(m_Q * (m_Q.transpose() * b)) << std::endl;
+    // std::cout << "b - Q Q^T b:\n" << MatrixXd(b - m_Q * (m_Q.transpose() * b)) << std::endl;
+
     Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
-        1 / n2 * b - 1 / (n2 * n2) *
-                         (m_transpositions * m_L *
-                          m_decomp.solve(m_L.transpose() *
-                                         m_transpositions.transpose() * b));
+        1 / n2 * (b - m_Q * (m_Q.transpose() * b));
+    // Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
+    //     1 / n2 *
+    //     (b - (m_transpositions * m_L *
+    //           m_decomp.solve(m_L.transpose() * m_transpositions.transpose() *
+    //                          b / n2)));
     return ret;
+  }
+
+  LDLT<MatrixXd> direct_solve() const {
+    assert(finished() && "Please don't call 'direct_solve()' on an "
+                         "uninitialised decomposition!");
+    return LDLT<MatrixXd>(permutationsP() * matrixL() * matrixL().transpose() *
+                              permutationsP().transpose() +
+                          MatrixXd::Identity(rows(), cols()) * nugget() *
+                              nugget());
   }
 
   MatrixXd matrixL() const {
@@ -239,6 +270,8 @@ private:
   ComputationInfo m_info{Success};
   MatrixType m_L{};
   LDLT<MatrixXd> m_decomp{};
+  MatrixXd m_Q{};
+  HouseholderQR<MatrixXd> m_qr{};
   PermutationType m_transpositions{};
 };
 
