@@ -105,15 +105,8 @@ jobs:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-<<<<<<< HEAD
-      - uses: bazel-contrib/setup-bazel@0.14.0
-        with:
-          # Avoid downloading Bazel every time.
-          bazelisk-cache: true
-=======
       - name: Install bazelisk
         uses: bazelbuild/setup-bazelisk@v3
->>>>>>> 52b612a (Bump bazelbuild/setup-bazelisk from 2 to 3)
 
       - name: Mount bazel cache
         uses: actions/cache@v4
@@ -135,15 +128,8 @@ jobs:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-<<<<<<< HEAD
-      - uses: bazel-contrib/setup-bazel@0.14.0
-        with:
-          # Avoid downloading Bazel every time.
-          bazelisk-cache: true
-=======
       - name: Install bazelisk
         uses: bazelbuild/setup-bazelisk@v3
->>>>>>> 52b612a (Bump bazelbuild/setup-bazelisk from 2 to 3)
 
       - name: Mount bazel cache
         uses: actions/cache@v4
