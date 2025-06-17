@@ -1,12 +1,12 @@
 workspace(name = "albatross")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-    
+
 http_archive(
     name = "rules_swiftnav",
-    sha256 = "8e00b694b6dce9c91d811e2e9e13e148af5f1dd329b85b7c5d2d9d2238aa92dc",
-    strip_prefix = "rules_swiftnav-1c51c97743c9632169dd7e5a228c6ce915893236",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/1c51c97743c9632169dd7e5a228c6ce915893236.tar.gz",
+    sha256 = "2f91790be7845e2eeb746dd33c59d1ba5d6ee85360a3218d2a4a77ead79f81b9",
+    strip_prefix = "rules_swiftnav-030c1c5050e7541ce66cd82f523939a525b1551c",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/030c1c5050e7541ce66cd82f523939a525b1551c.tar.gz",
 )
 
 load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
