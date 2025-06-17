@@ -130,7 +130,8 @@ public:
   }
 
   std::vector<Eigen::MatrixXd>
-  inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
+  inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks,
+                 ThreadPool *pool = nullptr) const {
     /*
      * The LDLT decomposition is stored such that,
      *
@@ -158,15 +159,14 @@ public:
 
     ALBATROSS_ASSERT(!inverse_cholesky.hasNaN());
 
-    std::vector<Eigen::MatrixXd> output;
-    for (const auto &block_indices : blocks) {
-      Eigen::MatrixXd sub_matrix =
-          albatross::subset_cols(inverse_cholesky, block_indices);
-      Eigen::MatrixXd one_block =
-          sub_matrix.transpose().lazyProduct(sub_matrix);
-      output.push_back(one_block);
-    }
-    return output;
+    return albatross::apply(
+        blocks,
+        [&](const auto &block_indices) -> Eigen::MatrixXd {
+          Eigen::MatrixXd sub_matrix =
+              albatross::subset_cols(inverse_cholesky, block_indices);
+          return sub_matrix.transpose().lazyProduct(sub_matrix);
+        },
+        pool);
   }
 
   /*

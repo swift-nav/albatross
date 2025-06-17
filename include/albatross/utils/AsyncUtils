@@ -23,6 +23,8 @@
 #endif
 
 #include "../Common"
+#include "../src/indexing/traits.hpp"
+#include "../src/indexing/apply.hpp"
 #include "../src/utils/async_utils.hpp"
 
 #endif
