@@ -2,6 +2,8 @@ load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_lib
 load("//:copts.bzl", "COPTS")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
+subpackages(include = ["examples/**"])
+
 refresh_compile_commands(
     name = "gen_compile_commands",
     visibility = ["//visibility:public"],
@@ -21,6 +23,7 @@ filegroup(
 cc_library(
     name = "albatross",
     hdrs = [
+        "include/albatross/CGGP",
         "include/albatross/Common",
         "include/albatross/Core",
         "include/albatross/CovarianceFunctions",
@@ -99,6 +102,7 @@ cc_library(
         "include/albatross/src/details/traits.hpp",
         "include/albatross/src/details/typecast.hpp",
         "include/albatross/src/details/unused.hpp",
+        "include/albatross/src/eigen/partial_cholesky.hpp",
         "include/albatross/src/eigen/serializable_ldlt.hpp",
         "include/albatross/src/eigen/serializable_spqr.hpp",
         "include/albatross/src/evaluation/cross_validation.hpp",
@@ -125,6 +129,7 @@ cc_library(
         "include/albatross/src/linalg/qr_utils.hpp",
         "include/albatross/src/linalg/spqr_utils.hpp",
         "include/albatross/src/models/conditional_gaussian.hpp",
+        "include/albatross/src/models/conjugate_gradient_gp.hpp",
         "include/albatross/src/models/gp.hpp",
         "include/albatross/src/models/least_squares.hpp",
         "include/albatross/src/models/null_model.hpp",
@@ -200,6 +205,7 @@ swift_cc_test(
         "tests/test_block_utils.cc",
         "tests/test_call_trace.cc",
         "tests/test_callers.cc",
+        "tests/test_cg_gp.cc",
         "tests/test_chi_squared_versus_gsl.cc",
         "tests/test_compression.cc",
         "tests/test_concatenate.cc",
@@ -229,6 +235,7 @@ swift_cc_test(
         "tests/test_models.cc",
         "tests/test_models.h",
         "tests/test_parameter_handling_mixin.cc",
+        "tests/test_partial_cholesky.cc",
         "tests/test_prediction.cc",
         "tests/test_radial.cc",
         "tests/test_random_utils.cc",
