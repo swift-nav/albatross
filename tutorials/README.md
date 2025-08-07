@@ -65,13 +65,7 @@ Docker provides an isolated environment with all necessary dependencies pre-inst
 
 ### Step-by-step Docker setup
 
-1. **Navigate to the albatross root directory**
-
-   ```sh
-   cd /path/to/albatross
-   ```
-
-2. **Pull the Jupyter Data Science notebook image**
+1. **Pull the Jupyter Data Science notebook image**
 
    ```sh
    docker pull jupyter/datascience-notebook:latest
@@ -79,23 +73,24 @@ Docker provides an isolated environment with all necessary dependencies pre-inst
 
    This image contains Jupyter Lab with popular data science libraries (numpy, pandas, matplotlib, scipy, etc.) pre-installed.
 
-3. **Launch the Docker container**
+2. **Launch the Docker container**
 
    ```sh
-   docker run -ti -p 8888:8888 -v `pwd`:/home/jovyan jupyter/datascience-notebook:latest
+   docker run --rm -ti -p 8888:8888 -v /path/to/albatross:/home/jovyan jupyter/datascience-notebook:latest
    ```
 
    **Command breakdown:**
+   - `--rm`: Remove the residuals of the container after stopping it.
    - `-ti`: Run in interactive mode with a TTY
    - `-p 8888:8888`: Map port 8888 from container to host
-   - `-v \`pwd\`/albatross:/home/jovyan`: Mount the albatross directory into the container
+   - `-v /path/to/albatross:/home/jovyan`: Mount the albatross directory into the container's `work` directory. Note: `jovyan` is the main user folder, and its contents will be shown in the Jupyter lab file browser when the service is launched.
    - The container will start and display a URL with a token
 
-4. **Access Jupyter Lab**
+3. **Access Jupyter Lab**
 
    Copy the URL from the terminal output (it will look like `http://127.0.0.1:8888/lab?token=...`) and paste it into your browser, or simply go to [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) and enter the token when prompted.
 
-5. **Install Albatross-specific requirements**
+4. **Install Albatross-specific requirements**
 
    Once Jupyter Lab is open, click on the "Terminal" tile in the launcher to open a terminal, then run:
 
@@ -110,7 +105,7 @@ Docker provides an isolated environment with all necessary dependencies pre-inst
    - `seaborn`: Statistical visualization
    - And other dependencies
 
-6. **Start working with tutorials**
+5. **Start working with tutorials**
 
    Navigate to the `tutorials/` folder in the file browser and open any of the available notebooks:
    - `tutorial_1_one_dimension.ipynb` - Introduction to 1D Gaussian Processes
@@ -124,7 +119,7 @@ Docker provides an isolated environment with all necessary dependencies pre-inst
 - **Port 8888 already in use**: If you get a port binding error, either stop the existing service using port 8888 or use a different port:
 
   ```sh
-  docker run -ti -p 8889:8888 -v `pwd`/albatross:/home/jovyan jupyter/datascience-notebook:latest
+  docker run --rm -ti -p 8889:8888 -v `pwd`:/home/jovyan jupyter/datascience-notebook:latest
   ```
 
   Then access via [http://127.0.0.1:8889/lab](http://127.0.0.1:8889/lab)
