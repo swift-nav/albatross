@@ -1,0 +1,42 @@
+module(
+    name = "albatross",
+    version = "0.1.0",
+    compatibility_level = 1
+)
+
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_swiftnav", version = "0.3.0")
+
+swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
+use_repo(
+    swift_cc_toolchain_ext,
+    "aarch64-darwin-llvm",
+    "aarch64-linux-llvm",
+    "aarch64-sysroot",
+    "x86_64-darwin-llvm",
+    "x86_64-linux-llvm",
+    "x86_64-sysroot",
+)
+
+register_toolchains(
+    "@rules_swiftnav//cc/toolchains/llvm/aarch64-darwin:cc-toolchain-aarch64-darwin",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-darwin:cc-toolchain-x86_64-darwin",
+    "@rules_swiftnav//cc/toolchains/llvm/aarch64-linux:cc-toolchain-aarch64-linux",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-x86_64-linux",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-intel-mkl",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
+)
+
+bazel_dep(name = "eigen", version = "0.1.0.swiftnav")
+local_path_override(
+    module_name = "eigen",
+    path = "third_party/eigen",
+)
+
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "4f28899228fb3ad0126897876f147ca15026151e",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+)
