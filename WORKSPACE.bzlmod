@@ -67,12 +67,6 @@ local_repository(
     path = "third_party/googleflags",
 )
 
-local_repository(
-    name = "gtest",
-    path = "third_party/googletest",
-)
-
-
 new_local_repository(
     name = "gzip",
     build_file = "@rules_swiftnav//third_party:gzip.BUILD",
@@ -80,21 +74,9 @@ new_local_repository(
 )
 
 new_local_repository(
-    name = "variant",
-    build_file = "@rules_swiftnav//third_party:variant.BUILD",
-    path = "third_party/variant",
-)
-
-new_local_repository(
     name = "cereal",
     build_file = "@rules_swiftnav//third_party:cereal.BUILD",
     path = "third_party/cereal",
-)
-
-new_local_repository(
-    name = "fast_csv",
-    build_file = "@rules_swiftnav//third_party:fast_csv.BUILD",
-    path = "third_party/fast-cpp-csv-parser",
 )
 
 new_local_repository(

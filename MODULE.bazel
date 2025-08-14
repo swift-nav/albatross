@@ -4,6 +4,7 @@ module(
     compatibility_level = 1
 )
 
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "rules_swiftnav", version = "0.3.0")
 
@@ -39,4 +40,22 @@ git_override(
     module_name = "hedron_compile_commands",
     commit = "4f28899228fb3ad0126897876f147ca15026151e",
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+)
+
+bazel_dep(name = "variant", version = "0.1.0.swiftnav")
+local_path_override(
+    module_name = "variant",
+    path = "third_party/variant",
+)
+
+bazel_dep(name = "fast-cpp-csv-parser", version = "0.1.0.swiftnav", repo_name = "fast_csv")
+local_path_override(
+    module_name = "fast-cpp-csv-parser",
+    path = "third_party/fast-cpp-csv-parser",
+)
+
+bazel_dep(name = "googletest", version = "1.16.0", repo_name = "gtest", dev_dependency = True)
+local_path_override(
+    module_name = "googletest",
+    path = "third_party/googletest",
 )
