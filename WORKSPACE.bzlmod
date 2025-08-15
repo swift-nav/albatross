@@ -34,14 +34,6 @@ http_archive(
 )
 
 http_archive(
-    name = "zstd",
-    sha256 = "9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4",
-    strip_prefix = "zstd-1.5.5",
-    url = "https://github.com/facebook/zstd/releases/download/v1.5.5/zstd-1.5.5.tar.gz",
-    build_file = "@rules_swiftnav//third_party:zstd.BUILD",
-)
-
-http_archive(
     name = "suitesparse",
     build_file = "@rules_swiftnav//third_party:suitesparse.BUILD",
     sha256 = "4cd3d161f9aa4f98ec5fa725ee5dc27bca960a3714a707a7d12b3d0abb504679",

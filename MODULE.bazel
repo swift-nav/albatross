@@ -68,3 +68,5 @@ local_path_override(
     module_name = "gzip_hpp",
     path = "third_party/gzip-hpp",
 )
+
+bazel_dep(name = "zstd", version = "1.5.5.bcr.2")
