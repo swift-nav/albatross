@@ -74,12 +74,6 @@ new_local_repository(
 )
 
 new_local_repository(
-    name = "cereal",
-    build_file = "@rules_swiftnav//third_party:cereal.BUILD",
-    path = "third_party/cereal",
-)
-
-new_local_repository(
     name = "nlopt",
     build_file = "@rules_swiftnav//third_party:nlopt.BUILD",
     path = "third_party/nlopt",

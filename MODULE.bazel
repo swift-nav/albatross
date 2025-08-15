@@ -59,3 +59,5 @@ local_path_override(
     module_name = "googletest",
     path = "third_party/googletest",
 )
+
+bazel_dep(name = "cereal", version = "1.2.2-79.swiftnav")

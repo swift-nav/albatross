@@ -6,7 +6,7 @@ common --enable_bzlmod
 #  login your-github-username
 #  password <paste-your-personal-access-token-here>
 
-common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/
+common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/
 common --registry=https://bcr.bazel.build
 
 common --@rules_swiftnav//cc:enable_bzlmod=true
