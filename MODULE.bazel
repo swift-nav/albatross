@@ -62,7 +62,7 @@ local_path_override(
 
 bazel_dep(name = "cereal", version = "1.2.2-79.swiftnav")
 bazel_dep(name = "zlib", version = "1.2.13")
-bazel_dep(name = "gzip_hpp", version = "0.1.0", repo_name = "gzip")
+bazel_dep(name = "gzip_hpp", version = "0.1.0.swiftnav", repo_name = "gzip")
 local_path_override(
     module_name = "gzip_hpp",
     path = "third_party/gzip-hpp",
