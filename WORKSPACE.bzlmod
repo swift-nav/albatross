@@ -34,17 +34,6 @@ http_archive(
 )
 
 http_archive(
-    name = "zlib",
-    build_file = "@rules_swiftnav//third_party:zlib.BUILD",
-    sha256 = "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
-    strip_prefix = "zlib-1.2.13",
-    urls = [
-        "https://zlib.net/zlib-1.2.13.tar.gz",
-        "https://www.zlib.net/fossils/zlib-1.2.13.tar.gz",
-    ],
-)
-
-http_archive(
     name = "zstd",
     sha256 = "9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4",
     strip_prefix = "zstd-1.5.5",
@@ -65,12 +54,6 @@ http_archive(
 local_repository(
     name = "gflags",
     path = "third_party/googleflags",
-)
-
-new_local_repository(
-    name = "gzip",
-    build_file = "@rules_swiftnav//third_party:gzip.BUILD",
-    path = "third_party/gzip-hpp",
 )
 
 new_local_repository(
