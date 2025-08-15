@@ -84,3 +84,9 @@ local_path_override(
     module_name = "gflags",
     path = "third_party/googleflags",
 )
+
+bazel_dep(name = "nlopt", version = "2.6.1.swiftnav", dev_dependency = True)
+local_path_override(
+    module_name = "nlopt",
+    path = "third_party/nlopt",
+)
