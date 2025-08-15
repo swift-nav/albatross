@@ -154,6 +154,8 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/rules_swiftnav/0.3.0/source.json": "ccc6d1d2db889179e760855839434580853cbfd92e62c6ab78d2a895882a4390",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/stardoc/0.5.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/stardoc/0.5.3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/suitesparse/7.1.0.swiftnav/MODULE.bazel": "4704c0ec3a249258b8b7db1568cbe7025bddac8f37a989a3e5e232c71ee2db04",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/suitesparse/7.1.0.swiftnav/source.json": "83cd54cb3f404636cbbc2dda61b772acf474497f5255f88c72e24ce2ab97804e",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/upb/0.0.0-20220923-a547704/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/zlib/1.2.11/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/add-albatross-deps/modules/zlib/1.2.12/MODULE.bazel": "not found",

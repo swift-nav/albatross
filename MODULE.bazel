@@ -76,3 +76,6 @@ local_path_override(
     module_name = "threadpool",
     path = "third_party/ThreadPool",
 )
+
+bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav")
+
