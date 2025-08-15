@@ -248,7 +248,6 @@ swift_cc_test(
     ],
     copts = COPTS,
     includes = ["tests"],
-    linkopts = ["-lz"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     size = "large",
