@@ -1,0 +1,89 @@
+module(
+    name = "albatross",
+    version = "0.1.0",
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_swiftnav", version = "0.4.0")
+
+swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
+use_repo(
+    swift_cc_toolchain_ext,
+    "aarch64-darwin-llvm",
+    "aarch64-linux-llvm",
+    "aarch64-sysroot",
+    "x86_64-darwin-llvm",
+    "x86_64-linux-llvm",
+    "x86_64-sysroot",
+)
+
+register_toolchains(
+    "@rules_swiftnav//cc/toolchains/llvm/aarch64-darwin:cc-toolchain-aarch64-darwin",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-darwin:cc-toolchain-x86_64-darwin",
+    "@rules_swiftnav//cc/toolchains/llvm/aarch64-linux:cc-toolchain-aarch64-linux",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-x86_64-linux",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-intel-mkl",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
+    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
+)
+
+bazel_dep(name = "eigen", version = "0.1.0.swiftnav")
+local_path_override(
+    module_name = "eigen",
+    path = "third_party/eigen",
+)
+
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "4f28899228fb3ad0126897876f147ca15026151e",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+)
+
+bazel_dep(name = "variant", version = "0.1.0.swiftnav")
+local_path_override(
+    module_name = "variant",
+    path = "third_party/variant",
+)
+
+bazel_dep(name = "fast-cpp-csv-parser", version = "0.1.0.swiftnav", repo_name = "fast_csv")
+local_path_override(
+    module_name = "fast-cpp-csv-parser",
+    path = "third_party/fast-cpp-csv-parser",
+)
+
+bazel_dep(name = "googletest", version = "1.16.0", repo_name = "gtest")
+local_path_override(
+    module_name = "googletest",
+    path = "third_party/googletest",
+)
+
+bazel_dep(name = "cereal", version = "1.2.2-79.swiftnav")
+bazel_dep(name = "zlib", version = "1.2.13")
+bazel_dep(name = "gzip_hpp", version = "0.1.0.swiftnav", repo_name = "gzip")
+local_path_override(
+    module_name = "gzip_hpp",
+    path = "third_party/gzip-hpp",
+)
+
+bazel_dep(name = "zstd", version = "1.5.5.bcr.2")
+bazel_dep(name = "threadpool", version = "0.1.0.swiftnav", repo_name = "ThreadPool")
+local_path_override(
+    module_name = "threadpool",
+    path = "third_party/ThreadPool",
+)
+
+bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav")
+bazel_dep(name = "gflags", version = "2.2.2.swiftnav")
+local_path_override(
+    module_name = "gflags",
+    path = "third_party/googleflags",
+)
+
+bazel_dep(name = "nlopt", version = "2.6.1.1.swiftnav")
+local_path_override(
+    module_name = "nlopt",
+    path = "third_party/nlopt",
+)
