@@ -70,3 +70,9 @@ local_path_override(
 )
 
 bazel_dep(name = "zstd", version = "1.5.5.bcr.2")
+
+bazel_dep(name = "threadpool", version = "0.1.0.swiftnav", repo_name = "ThreadPool")
+local_path_override(
+    module_name = "threadpool",
+    path = "third_party/ThreadPool",
+)
