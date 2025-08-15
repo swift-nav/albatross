@@ -79,3 +79,8 @@ local_path_override(
 
 bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav")
 
+bazel_dep(name = "gflags", version = "2.2.2.swiftnav")
+local_path_override(
+    module_name = "gflags",
+    path = "third_party/googleflags",
+)

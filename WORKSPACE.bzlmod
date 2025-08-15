@@ -34,10 +34,6 @@ http_archive(
 )
 
 
-local_repository(
-    name = "gflags",
-    path = "third_party/googleflags",
-)
 
 new_local_repository(
     name = "nlopt",
