@@ -54,7 +54,7 @@ local_path_override(
     path = "third_party/fast-cpp-csv-parser",
 )
 
-bazel_dep(name = "googletest", version = "1.16.0", dev_dependency = True, repo_name = "gtest")
+bazel_dep(name = "googletest", version = "1.16.0", repo_name = "gtest")
 local_path_override(
     module_name = "googletest",
     path = "third_party/googletest",
