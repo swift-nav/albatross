@@ -13,7 +13,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -41,7 +41,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -74,7 +74,7 @@ jobs:
           # custom instrumented libc.
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -100,7 +100,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -125,7 +125,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -149,7 +149,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -179,7 +179,7 @@ jobs:
           auto-update-conda: true
           auto-activate-base: false
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -203,7 +203,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
