@@ -1,18 +1,3 @@
-common --enable_bzlmod
-#common --noenable_bzlmod
-
-# This only works, because I added following lines to my .netrc file:
-#  machine raw.githubusercontent.com
-#  login your-github-username
-#  password <paste-your-personal-access-token-here>
-
-common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/
-common --registry=https://bcr.bazel.build
-
-common --@rules_swiftnav//cc:enable_bzlmod=true
-common --incompatible_use_plus_in_repo_names
-
-
 # Don't let environment variables pollute the build
 # PATH is part of the action input and can lead to massive cache misses
 build --incompatible_strict_action_env
