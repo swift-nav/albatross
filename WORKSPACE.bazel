@@ -9,7 +9,9 @@ http_archive(
     url = "https://github.com/swift-nav/rules_swiftnav/archive/a9774459f6f051457b43bf9391e35a073c21bf40.tar.gz",
 )
 
-load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
+load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain", "x86_64_sysroot")
+
+x86_64_sysroot()
 
 swift_cc_toolchain()
 
