@@ -106,9 +106,12 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
 
       - uses: bazel-contrib/setup-bazel@0.15.0
+
+      - uses: extractions/netrc@v2
         with:
-          # Avoid downloading Bazel every time.
-          bazelisk-cache: true
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
 
       - name: Mount bazel cache
         uses: actions/cache@v4
@@ -131,9 +134,12 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
 
       - uses: bazel-contrib/setup-bazel@0.15.0
+
+      - uses: extractions/netrc@v2
         with:
-          # Avoid downloading Bazel every time.
-          bazelisk-cache: true
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
 
       - name: Mount bazel cache
         uses: actions/cache@v4

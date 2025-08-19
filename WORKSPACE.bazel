@@ -4,12 +4,14 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
     
 http_archive(
     name = "rules_swiftnav",
-    sha256 = "8e00b694b6dce9c91d811e2e9e13e148af5f1dd329b85b7c5d2d9d2238aa92dc",
-    strip_prefix = "rules_swiftnav-1c51c97743c9632169dd7e5a228c6ce915893236",
-    url = "https://github.com/swift-nav/rules_swiftnav/archive/1c51c97743c9632169dd7e5a228c6ce915893236.tar.gz",
+    sha256 = "9e96737a9ead9780805399888a4735648e3f5384abfdb05aee6fb3f832b0d0b4",
+    strip_prefix = "rules_swiftnav-a9774459f6f051457b43bf9391e35a073c21bf40",
+    url = "https://github.com/swift-nav/rules_swiftnav/archive/a9774459f6f051457b43bf9391e35a073c21bf40.tar.gz",
 )
 
-load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain")
+load("@rules_swiftnav//cc:repositories.bzl", "register_swift_cc_toolchains", "swift_cc_toolchain", "x86_64_sysroot")
+
+x86_64_sysroot()
 
 swift_cc_toolchain()
 
