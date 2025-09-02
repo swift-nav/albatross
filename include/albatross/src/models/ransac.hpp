@@ -245,6 +245,8 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
           std::isnan(output.best.consensus_metric_value) ||
           iteration.consensus_metric_value < output.best.consensus_metric_value;
       if (best_so_far) {
+        // Ranking: iteration.inliers +  iteration.outliers
+        
         output.best = RansacIteration<GroupKey>(iteration);
       }
     }
@@ -253,6 +255,7 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
   }
 
   if (output.best.consensus().size()) {
+    // Ranking: iteration.inliers +  iteration.outliers
     output.return_code = RANSAC_RETURN_CODE_SUCCESS;
   } else {
     output.return_code = RANSAC_RETURN_CODE_NO_CONSENSUS;
