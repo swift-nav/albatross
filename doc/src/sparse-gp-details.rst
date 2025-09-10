@@ -338,3 +338,144 @@ However, we found that while the posterior mean predictions were numerically sta
 
 You should be able to find this implementation and details using git history.
 
+--------------------
+PIC
+--------------------
+
+The PIC approximation is introduced in:
+
+   [5] Local and global sparse Gaussian process approximations
+   Edward Snelson and Zoubin Ghahramani
+   https://proceedings.mlr.press/v2/snelson07a/snelson07a.pdf
+
+without any details of the covariance calculation.
+   
+Mean
+^^^^
+
+.. math::
+            \newcommand{Lam}{\mathbf{\Lambda}}
+            \newcommand{Kuu}{\mathbf{K}_{uu}}
+            \newcommand{Kuf}{\mathbf{K}_{uf}}
+            \newcommand{Kfu}{\mathbf{K}_{fu}}
+            \newcommand{VV}{\mathbf{V}} 
+            \mu^{PIC} &= \tilde{\mathbf{K}}^{PIC}_{*f} \left[ \tilde{\mathbf{K}}^{PITC}_{ff} \right]^{-1} y \\
+            &= \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{Q}_{* B} + \mathbf{V}_{* B}\end{bmatrix} \begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1} \begin{bmatrix} y_{\cancel{B}} \\ y_{B} \end{bmatrix}
+
+Breaking down :math:`\mathbf{K}_{* B} = \mathbf{Q}_{* B} + \VV_{* B}` we can write the PIC mean as a correction to the PITC mean:
+
+.. math::
+           \mu^{PIC} &= \mu^{PITC} + \underbrace{\begin{bmatrix} \mathbf{0} & \VV_{* B} \end{bmatrix} \begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1} \begin{bmatrix} y_{\cancel{B}} \\ y_{B} \end{bmatrix} }_{\Delta \mu^{PIC}}\\
+
+The inverse of the PITC term can be had via Woodbury's lemma and the QR decomposition.
+
+.. math::
+           \Delta \mu^{PIC} &=\begin{bmatrix} \mathbf{0} & \VV_{* B} \end{bmatrix} \begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1} \begin{bmatrix} y_{\cancel{B}} \\ y_{B} \end{bmatrix} \\
+           &= \begin{bmatrix} \mathbf{0} & \VV_{* B} \end{bmatrix} \left(\Kfu \Kuu^{-1} \Kuf + \Lam\right)^{-1} y \\
+           &= \begin{bmatrix} \mathbf{0} & \VV_{* B} \end{bmatrix} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left(\Kuu + \Kuf \Lam^{-1} \Kfu\right)^{-1} \Kuf \Lam^{-1} \right) y
+
+Assume we have already computed the PITC approximation as described above.  We already have access to the information vector :math:`v = P R^{-1} Q^T_1 \Lam^{-\frac{1}{2}} y` by the QR decomposition of :math:`B = \begin{bmatrix} \Lam^{-\frac{1}{2}} \Kfu \\ L^T_{uu}\end{bmatrix}`.  We can mimic the solution of the PITC approximation, but since we are premultiplying by the block-diagonal matrix :math:`\Lam^{-1}`, we can split this into per-block components:
+
+.. math::
+           \Delta \mu^{PIC} &= \begin{bmatrix} \mathbf{0} & \VV_{* B} \end{bmatrix} \Lam^{-1} \left(y - \Kfu v\right) \\
+           &= \mathbf{V}_{* b} \Lam^{-1}_{B} \left(y_{B} - \mathbf{K}_{B u} v_{B} \right)
+ 
+Covariance
+^^^^^^^^^^
+
+The way I started partitioning the covariance term into blocks is as follows:
+
+.. math::
+
+            (\sigma_*^2)^{PIC} &= K_* - \tilde{\mathbf{K}}^{PIC}_{*f} \left[ \tilde{\mathbf{K}}^{PITC}_{ff} \right]^{-1} \tilde{\mathbf{K}}^{PIC}_{f*} + \sigma^2 \\
+            &= K_* - \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B} \end{bmatrix} \left(\mathbf{Q}_{ff} - \mathtt{blkdiag}(\mathbf{K}_{ff} - \mathbf{Q}_{ff})\right)^{-1} \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *} \end{bmatrix} \\
+            &= K_* - \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B} \end{bmatrix} \left(\mathbf{K}_{fu} \mathbf{K}_{uu}^{-1} \mathbf{K}_{uf} + \Lam \right)^{-1} \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *} \end{bmatrix} 
+
+The problem with doing this for PIC covariance (vs. PIC mean and PITC) is that we can't left-multiply the whole thing by :math:`\mathbf{K}_{uu}^{-1} \mathbf{K}_{uf}` (which in those instances leads to applying Woodbury's lemma to reduce the inverse to the size of the number of inducing points :math:`M`) because :math:`\mathbf{K}_{*B}` is not a low-rank approximation using the inducing points.  We can instead break up the inverse term into blocks:
+
+.. math::
+            (\sigma_*^2)^{PIC} &= K_* -
+            \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{K}_{* B}\end{bmatrix}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{K}_{B *}\end{bmatrix}
+
+If we substitute :math:`\mathbf{K}_{* B} = \mathbf{Q}_{* B} + \VV_{* B}` as with the mean, it doesn't work out nicely:
+            
+.. math::
+            (\sigma_*^2)^{PIC} &= K_* - 
+            \begin{bmatrix} \mathbf{Q}_{* \cancel{B}} & \mathbf{Q}_{* B} + \VV_{* B} \end{bmatrix}
+            \underbrace{\begin{bmatrix} \mathbf{Q}_{\cancel{B} \cancel{B}} & \mathbf{Q}_{\cancel{B} B} \\ \mathbf{Q}_{B \cancel{B}} & \mathbf{Q}_{B B} \end{bmatrix}^{-1}}_{\mathbf{S}^{-1}}
+            \begin{bmatrix} \mathbf{Q}_{\cancel{B} *} \\ \mathbf{Q}_{B *} + \VV_{B *}\end{bmatrix} \\
+            &= K_* - \mathbf{Q}_{**}^{PITC} - \underbrace{\mathbf{Q}_{* f} \mathbf{S}^{-1}_{f B} \VV_{B *}}_{\mathbf{U}} - \mathbf{U}^T - \mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}
+
+Now we have 3 correction terms to apply to the posterior PITC covariance.  The best thing I can think of is to apply Woodbury's lemma, but in the opposite direction to usual:
+
+.. math::
+            \mathbf{S}^{-1} &= \left(\Kfu \Kuu^{-1} \Kuf + \Lam\right)^{-1} \\
+            &= \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1}
+
+which involves decomposing the block-diagonal matrix :math:`\Lam` with blocks of size :math:`|B|` and a matrix the size :math:`M` of the inducing point set.  In practice after we precompute terms, we have a sequence of triangular factors that we can subset as needed to pick out :math:`B` and :math:`\cancel{B}`.  (Confusingly, one of these useful decompositions is the QR decomposition of the unrelated matrix :math:`B` in the PITC derivation above.)  
+
+.. math::
+            \mathbf{U} &= \mathbf{Q}_{* f} \mathbf{S}^{-1}_{f B} \VV_{B *} \\
+            &= \mathbf{Q}_{* f} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{f B} \VV_{B *}
+
+This looks appealingly like we could just keep combining instances of the QR decomposition of :math:`B`, but that would leave out the :math:`\Kuu` part.
+
+The open question is how to efficiently distill this into various correction terms for each group that don't require operations that scale with :math:`\cancel{B}`, since the paper promises :math:`O((|B| + M)^2)` for predictive covariances after precomputation.  In principle, using sparse vectors / matrices for the :math:`*` target components, combined with Eigen's expression templates, should bring the complexity of some of these repeated solves for mostly empty vectors (for :math:`B`) down to :math:`O(|B|)`, and likewise for inducing points.
+
+At this point, our cross-terms are preceded by :math:`Q_{* f}`, which expands to :math:`K_{*u} \Kuu^{-1} \Kuf`.  We can precompute everything except :math:`K_{*u}`, including the :math:`O(M^3)` inducing point decomposition, leaving prediction-time computations to scale with :math:`M`.
+
+To compute :math:`\mathbf{V}_{* B} \mathbf{S}^{-1}_{B B} \mathbf{V}_{B *}`, we form a (mostly zero) column of :math:`\mathbf{V}` for each feature, break the two terms of :math:`\mathbf{S}^{-1}` into symmetric parts, multiply by :math:`\mathbf{V}` and subtract, here in excruciating notational detail:
+
+.. math::
+           \VV_{* B} \mathbf{S}^{-1} \VV_{B *} &= \VV_{* B} \left( \Lam^{-1} - \Lam^{-1} \Kfu \left( \Kuu + \Kuf \Lam^{-1} \Kfu \right)^{-1} \Kuf \Lam^{-1} \right)_{B B} \VV_{B *} \\
+           &= \VV_{* B}  \left( \left(P_\Lam L_\Lam^{-T} D_\Lam^{-\frac{1}{2}}\right) \underbrace{\left(D_\Lam^{-\frac{1}{2}} L_\Lam^{-1} P_\Lam^T\right)}_{Z_\Lam} - \mathbf{G}^T (B^T B)^{-1} \mathbf{G} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{G}^T (P_u R_u^{-1} R_u^{-T} P_u^T) \mathbf{G} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{G}^T (P_u R_u^{-1}) \underbrace{(R_u^{-T} P_u^T) \mathbf{G}}_{\mathbf{Z}_u} \right) \VV_{B *} \\
+           &= \VV_{* B}  \left( \mathbf{Z}_\Lam^T \mathbf{Z}_\Lam - \mathbf{Z}_u^T \mathbf{Z}_u \right) \VV_{B *} \\
+           &= \VV_{* B} \mathbf{Z}_\Lam^T \underbrace{\mathbf{Z}_\Lam \VV_{B *}}_{\mathbf{\xi}_\Lam} - \VV_{* B} \mathbf{Z}_u^T \underbrace{\mathbf{Z}_u \VV_{B *}}_{\mathbf{\xi}_u} \\
+           &= \mathbf{\xi}_\Lam^T \mathbf{\xi}_\Lam - \mathbf{\xi}_u^T \mathbf{\xi}_u \\
+
+Note that the left-hand (subscript :math:`\Lam`) term is the decomposition of a block-diagonal matrix, so it will only contain cross-terms between features corresponding to the same local block.  This calculation can be done blockwise.  The right-hand (subscript :math:`u`) term projects the features through the local block of the training dataset and then through the inducing points, so the cross-terms are not in general sparse, and this calculation involves a lot more careful indexing.
+
+The same breakdown of :math:`\mathbf{S}^{-1}` can be used to compute :math:`\mathbf{W}` during the fit step.
+
+The notation :math:`\mathbf{W}_B` indicates that the relevant columns of :math:`\mathbf{W}` are used on the right-hand side.  This is mathematically equivalent to making :math:`\VV_{B *}` have dimension :math:`N \times p` and be zero outside block :math:`B`.  Computationally the right factor must be a sparse object to preserve the desired asymptotics.
+
+Summing up
+^^^^^^^^^^
+
+For the covariance, we must precompute:
+
+ - :math:`P^TLDL^TP = \Lam`
+ - :math:`\mathbf{G} = \Lam^{-1} \Kfu`
+ - :math:`L_{uu} L_{uu}^T = \Kuu`
+ - :math:`QRP^T = B = \begin{bmatrix}\Lam^{-\frac{1}{2}}\Kfu \\ L_{uu} \end{bmatrix}` such that :math:`\mathbf{S}^{-1} = \Lam^{-1} - \mathbf{G} \left(B^T B\right)^{-1} \mathbf{G}^T`, and blocks :math:`\mathbf{S}^{-1}_{a b}` can be got by choosing the right rows / columns with which to do permutations and back-substitutions.
+ - :math:`\mathbf{W} = \Kuu^{-1} \mathbf{K}_{u f} \mathbf{S}^{-1}`
+
+For the mean, we compute the information vector :math:`v` as in PITC.   
+
+then for each group :math:`B`:
+
+ - :math:`\mathbf{Y}_B = \Kuu^{-1} \mathbf{K}_{u B}`
+ - :math:`v_b = \Lam_{B B}^{-1} \left( y_B - \mathbf{K}_{B u} v \right)`
+
+Given that we have already computed :math:`\Kfu`, we can use :math:`\mathbf{K}_{u B}` and :math:`\mathbf{K}_{u \cancel{B}}` efficiently in Eigen using sparse matrices with a single entry per nonzero row or column to be used.
+   
+Then at prediction time, we must compute:
+
+ - :math:`\mathbf{K}_{* B}`, :math:`O(|B|)`
+ - :math:`\mathbf{K}_{* u}`, :math:`O(M)`
+ - :math:`\mathbf{Q}_{* B} = \mathbf{K}_{* u} \mathbf{Y}_B`, :math:`O(M^2)` with the existing decomposition
+ - :math:`\VV_{* B} = \mathbf{K}_{* B} - \mathbf{Q}_{* B}`, :math:`O(|B|^2)`
+ - :math:`\mathbf{Q}_{**}^{PITC}` as with PITC
+ - :math:`\mathbf{U} = \mathbf{K}_{* u} \mathbf{W}_B \VV_{B *}`, :math:`O(M + |B|)`?
+ - :math:`\VV_{* B} \mathbf{S}^{-1}_{B B} \VV_{B *}`, :math:`O(|B|^2)`
+   
+Further notes
+^^^^^^^^^^^^^
+
+If asked to predict something that is uncorrelated with all training data (conditional on inducing points), we simply fall back to the PITC approximation.
+
+On some problems, calculation of the predictive covariance using Woodbury's lemma to avoid an :math:`O(N^3)` decomposition seems to lead to numerical problems.
