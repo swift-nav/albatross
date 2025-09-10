@@ -147,7 +147,6 @@ struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ys...>> {
 template <typename U, typename Caller, typename A, typename B>
 struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
     : public has_valid_cross_cov_caller<U, Caller, A, B> {
-  ;
 };
 
 template <typename U, typename Caller, typename A, typename B, typename... Ts>

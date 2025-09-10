@@ -84,7 +84,6 @@ template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
 
 public:
   static constexpr bool value = decltype(test<GrouperFunction>(0))::value;
-  ;
 };
 
 /*
