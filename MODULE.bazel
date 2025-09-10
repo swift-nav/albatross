@@ -5,8 +5,8 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_swiftnav", version = "0.4.0")
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_swiftnav", version = "0.5.0")
 
 swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
 use_repo(
@@ -60,7 +60,7 @@ local_path_override(
     path = "third_party/googletest",
 )
 
-bazel_dep(name = "cereal", version = "1.2.2-79.swiftnav")
+bazel_dep(name = "cereal", version = "1.2.2-80.swiftnav")
 bazel_dep(name = "zlib", version = "1.2.13")
 bazel_dep(name = "gzip_hpp", version = "0.1.0.swiftnav", repo_name = "gzip")
 local_path_override(
