@@ -19,22 +19,23 @@ using Insights = std::map<std::string, std::string>;
 
 constexpr bool DEFAULT_USE_ASYNC = false;
 
-template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
-
+template <typename ModelType>
+class ModelBase : public ParameterHandlingMixin {
   friend class JointPredictor;
   friend class MarginalPredictor;
   friend class MeanPredictor;
 
-  template <typename T, typename FeatureType> friend class fit_model_type;
+  template <typename T, typename FeatureType>
+  friend class fit_model_type;
 
-protected:
+ protected:
   ModelBase()
       : insights(),
         threads_(DEFAULT_USE_ASYNC
                      ? std::make_shared<ThreadPool>(std::max(
                            std::size_t{1},
                            std::size_t{std::thread::hardware_concurrency()}))
-                     : nullptr){};
+                     : nullptr) {}
 
   /*
    * Fit
@@ -58,27 +59,28 @@ protected:
             const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(FeatureType,
                      "The ModelType *almost* has a _fit_impl method for "
-                     "FeatureType, but it appears to be invalid");
+                     "FeatureType, but it appears to be invalid")
 
-  template <typename FeatureType,
-            typename std::enable_if<
-                !has_possible_fit<ModelType, FeatureType>::value &&
-                    !has_valid_fit<ModelType, FeatureType>::value,
-                int>::type = 0>
-  void _fit(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
-            const MarginalDistribution &targets ALBATROSS_UNUSED) const
+          template <typename FeatureType,
+                    typename std::enable_if<
+                        !has_possible_fit<ModelType, FeatureType>::value &&
+                            !has_valid_fit<ModelType, FeatureType>::value,
+                        int>::type = 0>
+          void _fit(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+                    const MarginalDistribution &targets ALBATROSS_UNUSED) const
       ALBATROSS_FAIL(
           FeatureType,
-          "The ModelType is missing a _fit_impl method for FeatureType.");
+          "The ModelType is missing a _fit_impl method for FeatureType.")
 
-  template <
-      typename PredictFeatureType, typename FitType, typename PredictType,
-      typename std::enable_if<has_valid_predict<ModelType, PredictFeatureType,
-                                                FitType, PredictType>::value,
-                              int>::type = 0>
-  PredictType predict_(const std::vector<PredictFeatureType> &features,
-                       const FitType &fit_,
-                       PredictTypeIdentity<PredictType> &&) const {
+          template <typename PredictFeatureType, typename FitType,
+                    typename PredictType,
+                    typename std::enable_if<
+                        has_valid_predict<ModelType, PredictFeatureType,
+                                          FitType, PredictType>::value,
+                        int>::type = 0>
+          PredictType
+      predict_(const std::vector<PredictFeatureType> &features,
+               const FitType &fit_, PredictTypeIdentity<PredictType> &&) const {
     return derived()._predict_impl(features, fit_,
                                    PredictTypeIdentity<PredictType>());
   }
@@ -92,20 +94,22 @@ protected:
       typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
                                                  FitType, PredictType>::value,
                               int>::type = 0>
-  PredictType
-  predict_(const std::vector<PredictFeatureType> &features ALBATROSS_UNUSED,
-           const FitType &fit ALBATROSS_UNUSED,
-           PredictTypeIdentity<PredictType> &&) const
+  PredictType predict_(const std::vector<PredictFeatureType> &features
+                           ALBATROSS_UNUSED,
+                       const FitType &fit ALBATROSS_UNUSED,
+                       PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(PredictFeatureType,
                      "The ModelType is missing a _predict_impl method for "
-                     "PredictFeatureType, FitType, PredictType.");
+                     "PredictFeatureType, FitType, PredictType.")
 #pragma GCC diagnostic pop
 
-public:
-  /*
-   * CRTP Helpers
-   */
-  ModelType &derived() { return *static_cast<ModelType *>(this); }
+          public :
+      /*
+       * CRTP Helpers
+       */
+      ModelType &derived() {
+    return *static_cast<ModelType *>(this);
+  }
   const ModelType &derived() const {
     return *static_cast<const ModelType *>(this);
   }
@@ -152,10 +156,11 @@ public:
   CrossValidation<ModelType> cross_validate() const;
 
   template <typename Strategy>
-  Ransac<ModelType, Strategy>
-  ransac(const Strategy &strategy, double inlier_threshold,
-         std::size_t random_sample_size, std::size_t min_consensus_size,
-         std::size_t max_iteration) const;
+  Ransac<ModelType, Strategy> ransac(const Strategy &strategy,
+                                     double inlier_threshold,
+                                     std::size_t random_sample_size,
+                                     std::size_t min_consensus_size,
+                                     std::size_t max_iteration) const;
 
   template <typename Strategy>
   Ransac<ModelType, Strategy> ransac(const Strategy &strategy,
@@ -164,5 +169,5 @@ public:
   Insights insights;
   std::shared_ptr<ThreadPool> threads_;
 };
-} // namespace albatross
+}  // namespace albatross
 #endif

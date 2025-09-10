@@ -15,19 +15,19 @@
 
 namespace albatross {
 
-template <typename MetricType> class ModelMetric {
-
-private:
+template <typename MetricType>
+class ModelMetric {
+ private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelMetric<B> {}
   // or
   //     using A = ModelMetric<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  ModelMetric(){};
+  ModelMetric() {}
   friend MetricType;
 
-public:
+ public:
   template <typename FeatureType, typename ModelType,
             typename std::enable_if<
                 has_valid_call_impl<MetricType, RegressionDataset<FeatureType>,
@@ -45,9 +45,9 @@ public:
                 int>::type = 0>
   double operator()(const RegressionDataset<FeatureType> &dataset,
                     const ModelBase<ModelType> &model) const =
-      delete; // Metric Not Valid for these types.
+      delete;  // Metric Not Valid for these types.
 
-protected:
+ protected:
   /*
    * CRTP Helpers
    */
@@ -75,9 +75,9 @@ struct LeaveOneOutLikelihood
 template <typename FeatureType, typename PredictType = JointDistribution>
 class LeaveOneGroupOutLikelihood
     : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
-public:
+ public:
   explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
-      : grouper_(grouper){};
+      : grouper_(grouper) {}
 
   template <typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,
@@ -88,7 +88,7 @@ public:
     return data_nll - prior_nll;
   }
 
-private:
+ private:
   albatross::NegativeLogLikelihood<PredictType> nll_;
   GroupFunction<FeatureType> grouper_;
 };
@@ -105,6 +105,6 @@ struct LeaveOneOutRMSE : public ModelMetric<LeaveOneOutRMSE> {
     return rmse_score;
   }
 };
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_MODEL_METRICS_H_ */

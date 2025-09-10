@@ -30,12 +30,12 @@ namespace albatross {
  */
 
 class Nugget : public CovarianceFunction<Nugget> {
-public:
-  ALBATROSS_DECLARE_PARAMS(nugget_sigma);
+ public:
+  ALBATROSS_DECLARE_PARAMS(nugget_sigma)
 
   std::string get_name() const { return "nugget"; }
 
-  Nugget() { nugget_sigma = {default_nugget_noise, FixedPrior()}; };
+  Nugget() { nugget_sigma = {default_nugget_noise, FixedPrior()}; }
 
   template <typename X,
             typename std::enable_if_t<is_basic_type<X>::value, int> = 0>
@@ -48,6 +48,6 @@ public:
   }
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

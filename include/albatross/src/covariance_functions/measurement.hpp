@@ -15,14 +15,14 @@
 
 namespace albatross {
 
-template <typename X> struct Measurement {
-
+template <typename X>
+struct Measurement {
   static_assert(!is_variant<X>::value,
                 "Wrapping a variant in the measurement tag can lead to "
                 "unexpected behavior.  It's preferable to convert to a variant "
                 "of measurements, see as_measurement()");
 
-  Measurement() : value(){};
+  Measurement() : value() {}
 
   Measurement(const X &x) { value = x; }
 
@@ -71,10 +71,9 @@ auto as_measurements(const std::vector<variant<Ts...>> &features) {
 template <typename SubCovariance>
 class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {
-
-public:
-  MeasurementOnly() : sub_cov_(){};
-  MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov){};
+ public:
+  MeasurementOnly() : sub_cov_() {}
+  MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov) {}
 
   std::string name() const {
     return "measurement[" + sub_cov_.get_name() + "]";
@@ -93,7 +92,7 @@ public:
   double _call_impl(const X &x ALBATROSS_UNUSED,
                     const Y &y ALBATROSS_UNUSED) const {
     return 0.;
-  };
+  }
 
   template <
       typename X, typename Y,
@@ -101,9 +100,9 @@ public:
           has_valid_call_impl<SubCovariance, X &, Y &>::value, int>::type = 0>
   double _call_impl(const Measurement<X> &x, const Measurement<Y> &y) const {
     return sub_cov_(x.value, y.value);
-  };
+  }
 
-private:
+ private:
   SubCovariance sub_cov_;
 };
 
@@ -115,16 +114,24 @@ MeasurementOnly<SubCovariance> measurement_only(const SubCovariance &cov) {
   return MeasurementOnly<SubCovariance>(cov);
 }
 
-template <typename T> T without_measurement(Measurement<T> &&m) {
+template <typename T>
+T without_measurement(Measurement<T> &&m) {
   return m.value;
 }
-template <typename T> const T &without_measurement(const Measurement<T> &m) {
+template <typename T>
+const T &without_measurement(const Measurement<T> &m) {
   return m.value;
 }
 
-template <typename T> T without_measurement(T &&t) { return t; }
-template <typename T> const T &without_measurement(const T &t) { return t; }
+template <typename T>
+T without_measurement(T &&t) {
+  return t;
+}
+template <typename T>
+const T &without_measurement(const T &t) {
+  return t;
+}
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_COVARIANCE_FUNCTIONS_MEASUREMENT_HPP_ */
