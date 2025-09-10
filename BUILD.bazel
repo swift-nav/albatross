@@ -185,26 +185,31 @@ swift_cc_test_library(
     deps = ["@gtest"],
 )
 
+swift_cc_test_library(
+    name = "albatross-test-common",
+    srcs = [
+        "tests/mock_model.h",
+        "tests/test_utils.h",
+        "tests/test_models.h",
+        "tests/test_core_distribution.h",
+        "tests/test_covariance_utils.h",
+    ],
+    includes = ["tests"],
+)
+
 # Common test dependencies
 TEST_DEPS = [
     ":albatross",
     ":serialize-testsuite",
+    ":albatross-test-common",
     "@zlib",
     "@gtest//:gtest_main",
     "@suitesparse//:spqr",
 ]
 
-TEST_COMMON = [
-    "tests/mock_model.h",
-    "tests/test_utils.h",
-    "tests/test_models.h",
-    "tests/test_core_distribution.h",
-    "tests/test_covariance_utils.h",
-]
-
 swift_cc_test(
     name = "albatross-test-traits",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_traits_cereal.cc",
         "tests/test_traits_core.cc",
         "tests/test_traits_covariance_functions.cc",
@@ -221,7 +226,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-covariance",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_covariance_function.cc",
         "tests/test_covariance_functions.cc",
         "tests/test_distance_metrics.cc",
@@ -237,7 +242,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-indexing",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_apply.cc",
         "tests/test_group_by.cc",
         "tests/test_indexing.cc",
@@ -252,7 +257,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-core",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_concatenate.cc",
         "tests/test_core_dataset.cc",
         "tests/test_core_distribution.cc",
@@ -270,7 +275,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-models",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_conditional_gaussian.cc",
         "tests/test_gp.cc",
         "tests/test_models.cc",
@@ -286,7 +291,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-utils",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_async_utils.cc",
         "tests/test_block_utils.cc",
         "tests/test_compression.cc",
@@ -308,7 +313,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-evaluation",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_evaluate.cc",
         "tests/test_model_metrics.cc",
     ],
@@ -321,7 +326,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-cross-validation",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_cross_validation.cc",
     ],
     copts = COPTS,
@@ -334,7 +339,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-serialization",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_serialize.cc",
         "tests/test_serializable_ldlt.cc",
     ],
@@ -347,7 +352,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-stats",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_chi_squared_versus_gsl.cc",
         "tests/test_stats.cc",
     ],
@@ -360,7 +365,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-samplers",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_samplers.cc",
     ],
     copts = COPTS,
@@ -372,7 +377,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-tune",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_tune.cc",
     ],
     copts = COPTS,
@@ -384,7 +389,7 @@ swift_cc_test(
 
 swift_cc_test(
     name = "albatross-test-misc",
-    srcs = TEST_COMMON + [
+    srcs = [
         "tests/test_call_trace.cc",
         "tests/test_callers.cc",
         "tests/test_error_handling.cc",
