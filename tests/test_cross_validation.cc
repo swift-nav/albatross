@@ -244,8 +244,6 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
   };
 
   auto joint_near = [](const auto &x, const auto &y) {
-    std::cout << x << std::endl;
-    std::cout << y << std::endl;
     EXPECT_LE((x.mean - y.mean).norm(), 1e-6);
     EXPECT_LE((x.covariance - y.covariance).norm(), 1e-6);
   };
