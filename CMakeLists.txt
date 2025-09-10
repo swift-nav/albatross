@@ -62,45 +62,23 @@ if(ENABLE_MKL)
   endif()
 endif()
 
-set(albatross_COMPILE_OPTIONS
-  -Werror
-  -Wall
-  -Wno-unused-value
-  -Wcast-align
-  -Wchar-subscripts
-  -Wcomment
-  -Wdisabled-optimization
-  -Wformat
-  -Wformat=2
-  -Wformat-nonliteral
-  -Wformat-security
-  -Wformat-y2k
-  -Wimport
-  -Winit-self
-  -Winvalid-pch
-  -Wmissing-braces
-  -Wmissing-field-initializers
-  -Wmissing-format-attribute
-  -Wmissing-include-dirs
-  -Wparentheses
-  -Wpointer-arith
-  -Wredundant-decls
-  -Wreturn-type
-  -Wsequence-point
-  -Wsign-compare
-  -Wswitch
-  -Wtrigraphs
-  -Wuninitialized
-  -Wunknown-pragmas
-  -Wunused
-  -Wunused-function
-  -Wunused-label
-  -Wunused-variable
-  -Wunused-value
-  -Wunused-variable
-  -Wvolatile-register-var
-  -Wwrite-strings
+function(albatross_add_test target)
+  swift_add_test(${target} ${ARGN})
+  target_include_directories(${target}
+    PUBLIC
+      ${PROJECT_SOURCE_DIR}/include
   )
+  target_compile_features(${target}
+    PUBLIC
+      cxx_std_14
+  )
+  if (MKL_FOUND)
+    target_link_libraries(${target}
+      PRIVATE
+        MKL::MKL
+    )
+  endif ()
+endfunction()
 
 if(albatross_BUILD_TESTS)
   add_subdirectory(tests)
