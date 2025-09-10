@@ -151,7 +151,7 @@ jobs:
         run: bazel test //...
 
   osx-clang:
-    runs-on: macOS-latest
+    runs-on: macOS-14
     steps:
 
       - name: Checkout source
