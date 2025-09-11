@@ -111,16 +111,16 @@ int main(int argc, char *argv[]) {
      */
     std::default_random_engine generator;
     std::normal_distribution<double> noise_distribution(0., meas_noise_sd);
-    std::vector<int> xs(n);
-    Eigen::VectorXd ys(n);
-    for (int i = 0; i < n; i++) {
-      xs[i] = i;
+    std::vector<Eigen::Index> xs(albatross::cast::to_size(n));
+    Eigen::VectorXd ys(albatross::cast::to_index(n));
+    for (Eigen::Index i = 0; i < n; i++) {
+      xs[albatross::cast::to_size(i)] = i;
       double noise = noise_distribution(generator);
       ys[i] = noise;
     }
-    const albatross::RegressionDataset<int> data(xs, ys);
+    const albatross::RegressionDataset<Eigen::Index> test_data(xs, ys);
     const auto cov = indep_noise;
     auto model = gp_from_covariance(cov);
-    run_sampler(model, data);
+    run_sampler(model, test_data);
   }
 }
