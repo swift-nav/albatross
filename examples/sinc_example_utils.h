@@ -22,7 +22,7 @@ namespace albatross {
 class SincFunction : public MeanFunction<SincFunction> {
 
 public:
-  ALBATROSS_DECLARE_PARAMS(scale, translation);
+  ALBATROSS_DECLARE_PARAMS(scale, translation)
 
   std::string get_name() const { return "sinc"; }
 

@@ -1,4 +1,4 @@
-# load("//:copts.bzl", "COPTS")
+load("@rules_swiftnav//cc:defs.bzl", "swift_cc_binary")
 
 TAGS = ["manual"]
 
@@ -8,12 +8,13 @@ DEPS = [
 ]
 
 def example(name, srcs, args):
-    native.cc_binary(
+    swift_cc_binary(
         name = name,
         srcs = srcs,
         tags = TAGS,
         deps = DEPS,
-#        copts = COPTS + ["-Wsign-conversion", "-Wshadow"],
+        rtti = True,
+        nocopts = ["-Wfloat-equal"],
     )
 
     native.sh_binary(
