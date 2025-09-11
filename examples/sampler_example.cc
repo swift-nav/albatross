@@ -109,14 +109,14 @@ int main(int argc, char *argv[]) {
      */
     std::default_random_engine generator;
     std::normal_distribution<double> noise_distribution(0., meas_noise_sd);
-    std::vector<Eigen::Index> xs(albatross::cast::to_size(n));
+    std::vector<double> xs(albatross::cast::to_size(n));
     Eigen::VectorXd ys(n);
     for (Eigen::Index i = 0; i < n; i++) {
-      xs[albatross::cast::to_size(i)] = i;
+      xs[albatross::cast::to_size(i)] = static_cast<double>(i);
       double noise = noise_distribution(generator);
       ys[i] = noise;
     }
-    const albatross::RegressionDataset<Eigen::Index> test_data(xs, ys);
+    const albatross::RegressionDataset<double> test_data(xs, ys);
     const auto cov = indep_noise;
     auto model = gp_from_covariance(cov);
     run_sampler(model, test_data);
