@@ -13,7 +13,7 @@ def example(name, srcs, args):
         srcs = srcs,
         tags = TAGS,
         deps = DEPS,
-        copts = COPTS,
+        copts = COPTS + ["-Wsign-conversion", "-Wshadow"],
     )
 
     native.sh_binary(
