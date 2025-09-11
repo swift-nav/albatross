@@ -185,8 +185,10 @@ public:
     // std::cout << "Ltall (" << Ltall.rows() << "x" << Ltall.cols() << "):\n"
     //           << Ltall << std::endl;
     m_qr = HouseholderQR<MatrixXd>(Ltall);
-    MatrixXd thin_Q = m_qr.householderQ() * MatrixXd::Identity(m_qr.rows(), m_L.cols());
-    // std::cout << "thin_Q (" << thin_Q.rows() << "x" << thin_Q.cols() << "):\n"
+    MatrixXd thin_Q =
+        m_qr.householderQ() * MatrixXd::Identity(m_qr.rows(), m_L.cols());
+    // std::cout << "thin_Q (" << thin_Q.rows() << "x" << thin_Q.cols() <<
+    // "):\n"
     //           << thin_Q << std::endl;
     m_Q = thin_Q.topRows(rows());
     // std::cout << "m_Q (" << m_Q.rows() << "x" << m_Q.cols() << "):\n"
@@ -203,8 +205,9 @@ public:
     const double n2 = m_nugget * m_nugget;
 
     // std::cout << "Q^T b:\n" << MatrixXd(m_Q.transpose() * b) << std::endl;
-    // std::cout << "Q Q^T b:\n" << MatrixXd(m_Q * (m_Q.transpose() * b)) << std::endl;
-    // std::cout << "b - Q Q^T b:\n" << MatrixXd(b - m_Q * (m_Q.transpose() * b)) << std::endl;
+    // std::cout << "Q Q^T b:\n" << MatrixXd(m_Q * (m_Q.transpose() * b)) <<
+    // std::endl; std::cout << "b - Q Q^T b:\n" << MatrixXd(b - m_Q *
+    // (m_Q.transpose() * b)) << std::endl;
 
     Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
         1 / n2 * (b - m_Q * (m_Q.transpose() * b));

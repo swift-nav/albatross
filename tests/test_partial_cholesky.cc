@@ -168,8 +168,7 @@ double condition_number(const Eigen::MatrixXd &m) {
 
 TEST(PartialCholesky, IncreasingRank) {
   std::default_random_engine gen{cDefaultSeed};
-  const Eigen::MatrixXd m =
-      random_covariance_matrix(cExampleSize, gen);
+  const Eigen::MatrixXd m = random_covariance_matrix(cExampleSize, gen);
   const Eigen::VectorXd b{Eigen::VectorXd::NullaryExpr(cExampleSize, [&gen]() {
     return std::normal_distribution<double>(0, 1)(gen);
   })};
@@ -436,4 +435,4 @@ TEST(PartialCholesky, PreconditionRandomProblems) {
   std::cout << "Geom mean condition reduction: " << dcond << std::endl;
 }
 
-}  // namespace albatross
+} // namespace albatross
