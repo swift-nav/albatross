@@ -1,4 +1,4 @@
-load("//:copts.bzl", "COPTS")
+# load("//:copts.bzl", "COPTS")
 
 TAGS = ["manual"]
 
@@ -13,7 +13,7 @@ def example(name, srcs, args):
         srcs = srcs,
         tags = TAGS,
         deps = DEPS,
-        copts = COPTS + ["-Wsign-conversion", "-Wshadow"],
+#        copts = COPTS + ["-Wsign-conversion", "-Wshadow"],
     )
 
     native.sh_binary(

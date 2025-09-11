@@ -1,5 +1,4 @@
 load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
-load("//:copts.bzl", "COPTS")
 
 alias(
     name = "clang_format",
@@ -207,8 +206,6 @@ TEST_DEPS = [
     "@suitesparse//:spqr",
 ]
 
-ALBATROSS_COPTS = COPTS + ["-Wshadow", "-Wsign-conversion"]
-
 swift_cc_test(
     name = "albatross-test-traits",
     srcs = [
@@ -219,7 +216,6 @@ swift_cc_test(
         "tests/test_traits_evaluation.cc",
         "tests/test_traits_indexing.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -235,7 +231,6 @@ swift_cc_test(
         "tests/test_radial.cc",
         "tests/test_scaling_function.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -250,7 +245,6 @@ swift_cc_test(
         "tests/test_indexing.cc",
         "tests/test_unique.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -268,7 +262,6 @@ swift_cc_test(
         "tests/test_parameter_handling_mixin.cc",
         "tests/test_prediction.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -284,7 +277,6 @@ swift_cc_test(
         "tests/test_ransac.cc",
         "tests/test_sparse_gp.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -306,7 +298,6 @@ swift_cc_test(
         "tests/test_variant_utils.cc",
         "tests/test_vector_utils.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -319,7 +310,6 @@ swift_cc_test(
         "tests/test_evaluate.cc",
         "tests/test_model_metrics.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -331,7 +321,6 @@ swift_cc_test(
     srcs = [
         "tests/test_cross_validation.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -345,7 +334,6 @@ swift_cc_test(
         "tests/test_serialize.cc",
         "tests/test_serializable_ldlt.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -358,7 +346,6 @@ swift_cc_test(
         "tests/test_chi_squared_versus_gsl.cc",
         "tests/test_stats.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -370,7 +357,6 @@ swift_cc_test(
     srcs = [
         "tests/test_samplers.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -382,7 +368,6 @@ swift_cc_test(
     srcs = [
         "tests/test_tune.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
@@ -398,7 +383,6 @@ swift_cc_test(
         "tests/test_minimum_spanning_tree.cc",
         "tests/test_model_adapter.cc",
     ],
-    copts = ALBATROSS_COPTS,
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
