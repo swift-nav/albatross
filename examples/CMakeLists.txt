@@ -5,7 +5,7 @@ swift_add_executable(sinc_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(sinc_example
   PUBLIC
@@ -27,7 +27,7 @@ swift_add_executable(sampler_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(sampler_example
   PUBLIC
@@ -50,7 +50,7 @@ swift_add_executable(inspection_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(inspection_example
   PUBLIC
@@ -72,7 +72,7 @@ swift_add_executable(temperature_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(temperature_example
   PUBLIC
@@ -95,7 +95,7 @@ swift_add_executable(call_trace_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(call_trace_example
   PUBLIC
@@ -117,7 +117,7 @@ swift_add_executable(sparse_example
   -Wfloat-equal
   RTTI
   EXCEPTIONS
-  C_EXTENSIONS_ON
+  CXX_EXTENSIONS_ON
   )
 target_link_libraries(sparse_example
   PUBLIC
