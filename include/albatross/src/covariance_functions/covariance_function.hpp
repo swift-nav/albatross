@@ -69,7 +69,7 @@ private:
   //     using A = CovarianceFunction<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  CovarianceFunction() : ParameterHandlingMixin() {};
+  CovarianceFunction() : ParameterHandlingMixin() {}
   friend Derived;
 
   template <typename X, typename Y> double call(const X &x, const Y &y) const {
