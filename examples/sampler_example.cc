@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  int n = FLAGS_n;
+  Eigen::Index n = static_cast<Eigen::Index>(FLAGS_n);
   const double low = -10.;
   const double high = 23.;
   const double meas_noise_sd = 0.1;
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     std::default_random_engine generator;
     std::normal_distribution<double> noise_distribution(0., meas_noise_sd);
     std::vector<Eigen::Index> xs(albatross::cast::to_size(n));
-    Eigen::VectorXd ys(albatross::cast::to_index(n));
+    Eigen::VectorXd ys(n);
     for (Eigen::Index i = 0; i < n; i++) {
       xs[albatross::cast::to_size(i)] = i;
       double noise = noise_distribution(generator);
