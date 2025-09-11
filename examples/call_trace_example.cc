@@ -15,24 +15,22 @@
 namespace albatross {
 
 class LinearScalar : public ScalingFunction {
-public:
+ public:
   std::string get_name() const override { return "linear_scalar"; }
 
   double _call_impl(const double &x) const { return 1. + 3. * x; }
 };
 
 auto complicated_covariance_function() {
-
   ScalingTerm<LinearScalar> linear_scalar;
   Constant constant;
   SquaredExponential<EuclideanDistance> squared_exp;
 
   return (constant + squared_exp) * linear_scalar;
 }
-} // namespace albatross
+}  // namespace albatross
 
 int main() {
-
   auto cov = albatross::complicated_covariance_function();
 
   double x = 1.;

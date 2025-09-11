@@ -70,13 +70,15 @@ inline void print_call_trace(const std::vector<CallAndValue> &call_trace) {
   }
 }
 
-template <typename Derived> class CallTraceBase {
-public:
-  template <typename X, typename Y> void print(const X &x, const Y &y) {
+template <typename Derived>
+class CallTraceBase {
+ public:
+  template <typename X, typename Y>
+  void print(const X &x, const Y &y) {
     print_call_trace(derived().get_trace(x, y));
   }
 
-protected:
+ protected:
   Derived &derived() { return *static_cast<Derived *>(this); }
 
   const Derived &derived() const { return *static_cast<const Derived *>(this); }
@@ -101,7 +103,7 @@ protected:
 
 template <typename CovFunc>
 class CallTrace : public CallTraceBase<CallTrace<CovFunc>> {
-public:
+ public:
   CallTrace(const CovFunc &cov_func) : cov_func_(cov_func) {}
 
   template <typename X, typename Y,
@@ -124,7 +126,7 @@ public:
 template <typename LHS, typename RHS>
 class CallTrace<SumOfCovarianceFunctions<LHS, RHS>>
     : public CallTraceBase<CallTrace<SumOfCovarianceFunctions<LHS, RHS>>> {
-public:
+ public:
   CallTrace(const SumOfCovarianceFunctions<LHS, RHS> &cov_func)
       : cov_func_(cov_func) {}
 
@@ -170,7 +172,7 @@ public:
 template <typename LHS, typename RHS>
 class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>
     : public CallTraceBase<CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>> {
-public:
+ public:
   CallTrace(const ProductOfCovarianceFunctions<LHS, RHS> &cov_func)
       : cov_func_(cov_func) {}
 
@@ -219,5 +221,5 @@ template <typename Derived>
 inline CallTrace<Derived> CovarianceFunction<Derived>::call_trace() const {
   return CallTrace<Derived>(this->derived());
 };
-} // namespace albatross
+}  // namespace albatross
 #endif

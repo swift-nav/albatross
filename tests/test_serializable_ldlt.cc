@@ -19,7 +19,7 @@
 namespace albatross {
 
 class SerializableLDLTTest : public ::testing::Test {
-public:
+ public:
   SerializableLDLTTest() : cov(), information() {
     const int n = 5;
     const auto part = Eigen::MatrixXd(Eigen::MatrixXd::Random(n, n));
@@ -84,4 +84,4 @@ TEST_F(SerializableLDLTTest, test_sqrt_solve) {
             1e-14);
 }
 
-} // namespace albatross
+}  // namespace albatross

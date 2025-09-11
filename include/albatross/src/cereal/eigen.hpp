@@ -71,11 +71,10 @@ inline void load(Archive &ar, Eigen::Matrix<_Scalar, _Rows, _Cols> &m,
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void
-save(Archive &archive,
-     const Eigen::Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                 _StorageIndex> &v,
-     const std::uint32_t) {
+inline void save(Archive &archive,
+                 const Eigen::Transpositions<
+                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
+                 const std::uint32_t) {
   archive(cereal::make_nvp("indices", v.indices()));
 }
 
@@ -93,21 +92,19 @@ inline void load(Archive &archive,
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void
-save(Archive &archive,
-     const Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
-                                    _StorageIndex> &v,
-     const std::uint32_t) {
+inline void save(Archive &archive,
+                 const Eigen::PermutationMatrix<
+                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
+                 const std::uint32_t) {
   archive(cereal::make_nvp("indices", v.indices()));
 }
 
 template <class Archive, int SizeAtCompileTime, int MaxSizeAtCompileTime,
           typename _StorageIndex>
-inline void
-load(Archive &archive,
-     Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
-                              _StorageIndex> &v,
-     const std::uint32_t) {
+inline void load(Archive &archive,
+                 Eigen::PermutationMatrix<
+                     SizeAtCompileTime, MaxSizeAtCompileTime, _StorageIndex> &v,
+                 const std::uint32_t) {
   typename Eigen::PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime,
                                     _StorageIndex>::IndicesType indices;
   archive(cereal::make_nvp("indices", indices));
@@ -230,6 +227,6 @@ inline void load(Archive &ar,
   m.makeCompressed();
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif

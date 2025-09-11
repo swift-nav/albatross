@@ -54,6 +54,6 @@ inline void serialize(Archive &archive, albatross::PriorContainer &priors,
   archive(cereal::make_nvp("container", priors.priors_));
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_PRIORS_HPP_ */

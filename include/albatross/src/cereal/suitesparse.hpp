@@ -92,7 +92,7 @@ inline void suitesparse_cereal_realloc(void **p, std::size_t count,
   ALBATROSS_ASSERT(nullptr != *p);
 }
 
-} // namespace detail
+}  // namespace detail
 
 template <class Archive>
 inline void save(Archive &ar, cholmod_common const &cc,
@@ -211,7 +211,7 @@ inline void save(Archive &ar, cholmod_common const &cc,
 #ifdef GPU_BLAS
   static_assert(false,
                 "This codec will not work for CHOLMOD / SPQR using GPU!");
-#endif // GPU_BLAS
+#endif  // GPU_BLAS
   ALBATROSS_ASSERT(cc.useGPU == 0);
   ar(CEREAL_NVP(cc.useGPU));
 
@@ -340,7 +340,7 @@ inline void load(Archive &ar, cholmod_common &cc,
 #ifdef GPU_BLAS
   static_assert(false,
                 "This codec will not work for CHOLMOD / SPQR using GPU!");
-#endif // GPU_BLAS
+#endif  // GPU_BLAS
   ar(CEREAL_NVP(cc.useGPU));
   ALBATROSS_ASSERT(cc.useGPU == 0);
 
@@ -362,7 +362,8 @@ inline std::size_t get_element_size_bytes(const Matrix &m) {
   return m.dtype == CHOLMOD_DOUBLE ? sizeof(double) : sizeof(float);
 }
 
-template <class Matrix> inline std::size_t get_num_x_elements(const Matrix &m) {
+template <class Matrix>
+inline std::size_t get_num_x_elements(const Matrix &m) {
   // Complex matrices store twice as many elements.
   // https://github.com/DrTimothyAldenDavis/SuiteSparse/blob/dev/CHOLMOD/Core/cholmod_sparse.c#L209
   return m.nzmax * (m.xtype == CHOLMOD_COMPLEX ? 2 : 1);
@@ -491,6 +492,6 @@ inline void load(Archive &ar, cholmod_dense &m,
   ALBATROSS_ASSERT(nullptr == m.z);
 }
 
-} // namespace cereal
+}  // namespace cereal
 
-#endif // ALBATROSS_CEREAL_SUITESPARSE_H
+#endif  // ALBATROSS_CEREAL_SUITESPARSE_H

@@ -21,7 +21,7 @@ inline bool should_serial_apply(ThreadPool *pool) {
   return (nullptr == pool) || (pool->thread_count() <= 1);
 }
 
-} // namespace detail
+}  // namespace detail
 
 template <typename ValueType, typename ApplyFunction,
           typename ApplyType = typename details::value_only_apply_result<
@@ -200,9 +200,8 @@ static constexpr std::nullptr_t serial_thread_pool = nullptr;
 
 // Returns a thread pool.  By default, the thread pool has
 // `get_default_thread_count()` threads.
-inline std::shared_ptr<ThreadPool>
-make_shared_thread_pool(std::size_t num_threads = 0,
-                        std::size_t stack_size = 0) {
+inline std::shared_ptr<ThreadPool> make_shared_thread_pool(
+    std::size_t num_threads = 0, std::size_t stack_size = 0) {
   if (num_threads == 1) {
     return serial_thread_pool;
   }
@@ -213,9 +212,9 @@ make_shared_thread_pool(std::size_t num_threads = 0,
 
 #if defined(EIGEN_USE_MKL_ALL) || defined(EIGEN_USE_MKL_VML)
   const auto init = []() { mkl_set_num_threads_local(1); };
-#else  // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+#else   // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
   const auto init = []() {};
-#endif // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
+#endif  // EIGEN_USE_MKL_ALL || EIGEN_USE_MKL_VML
 
   return std::make_shared<ThreadPool>(num_threads, init, stack_size);
 }
@@ -228,6 +227,6 @@ inline std::size_t get_thread_count(const std::shared_ptr<ThreadPool> &pool) {
   return pool->thread_count();
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_UTILS_ASYNC_UTILS_HPP_ */

@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/GP>
 #include <gflags/gflags.h>
+#include <albatross/GP>
 
 #include "example_utils.h"
 

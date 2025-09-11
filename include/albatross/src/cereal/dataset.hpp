@@ -39,6 +39,6 @@ serialize(Archive &archive ALBATROSS_UNUSED, RegressionDataset<FeatureType> &,
                 "FeatureType must be serializable.");
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif /* ALBATROSS_CEREAL_DATASET_HPP_ */

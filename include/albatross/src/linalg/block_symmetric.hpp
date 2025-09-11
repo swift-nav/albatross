@@ -43,7 +43,8 @@ namespace albatross {
  *
  * In this particular implementation Ai_B and S^-1 are pre-computed.
  */
-template <typename Solver> struct BlockSymmetric {
+template <typename Solver>
+struct BlockSymmetric {
   BlockSymmetric() {}
 
   BlockSymmetric(const Solver &A_, const Eigen::MatrixXd &B_,
@@ -57,8 +58,8 @@ template <typename Solver> struct BlockSymmetric {
             Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))) {}
 
   template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> solve(
+      const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
   bool operator==(const BlockSymmetric &rhs) const;
 
@@ -100,8 +101,8 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
 }
 
 template <typename Solver>
-inline bool
-BlockSymmetric<Solver>::operator==(const BlockSymmetric &rhs) const {
+inline bool BlockSymmetric<Solver>::operator==(
+    const BlockSymmetric &rhs) const {
   return (A == rhs.A && Ai_B == rhs.Ai_B && S == rhs.S);
 }
 
@@ -129,6 +130,6 @@ BlockSymmetric<Solver> build_block_symmetric(const Solver &A,
   return BlockSymmetric<Solver>(A, B, C);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
-#endif // ALBATROSS_SRC_LINALG_BLOCK_SYMMETRIC_HPP
+#endif  // ALBATROSS_SRC_LINALG_BLOCK_SYMMETRIC_HPP

@@ -76,7 +76,7 @@ inline void _print_eigen_directions(const Eigen::MatrixXd &matrix,
   }
 }
 
-} // namespace details
+}  // namespace details
 
 template <typename FeatureType>
 inline void print_small_eigen_directions(
@@ -106,6 +106,6 @@ inline void print_large_eigen_directions(
                                    print_if_above, stream);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
-#endif // ALBATROSS_SRC_LINALG_PRINT_EIGEN_DIRECTIONS_HPP
+#endif  // ALBATROSS_SRC_LINALG_PRINT_EIGEN_DIRECTIONS_HPP

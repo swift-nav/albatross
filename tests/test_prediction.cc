@@ -10,15 +10,15 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Core>
 #include <gtest/gtest.h>
+#include <albatross/Core>
 
 namespace albatross {
 
 struct X {};
 
 class MeanOnlyModel : public ModelBase<MeanOnlyModel> {
-public:
+ public:
   Fit<MeanOnlyModel> _fit_impl(const std::vector<X> &,
                                const MarginalDistribution &) const {
     return {};
@@ -47,15 +47,15 @@ TEST(test_prediction, test_mean_only) {
 }
 
 class MarginalOnlyModel : public ModelBase<MarginalOnlyModel> {
-public:
+ public:
   Fit<MarginalOnlyModel> _fit_impl(const std::vector<X> &,
                                    const MarginalDistribution &) const {
     return {};
   }
 
-  MarginalDistribution
-  _predict_impl(const std::vector<X> &features, const Fit<MarginalOnlyModel> &,
-                PredictTypeIdentity<MarginalDistribution>) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<X> &features, const Fit<MarginalOnlyModel> &,
+      PredictTypeIdentity<MarginalDistribution>) const {
     auto mean = Eigen::VectorXd::Zero(cast::to_index(features.size()));
     return MarginalDistribution(mean);
   }
@@ -81,15 +81,15 @@ TEST(test_prediction, test_marginal_only) {
 }
 
 class JointOnlyModel : public ModelBase<JointOnlyModel> {
-public:
+ public:
   Fit<JointOnlyModel> _fit_impl(const std::vector<X> &,
                                 const MarginalDistribution &) const {
     return {};
   }
 
-  JointDistribution
-  _predict_impl(const std::vector<X> &features, const Fit<JointOnlyModel> &,
-                PredictTypeIdentity<JointDistribution>) const {
+  JointDistribution _predict_impl(
+      const std::vector<X> &features, const Fit<JointOnlyModel> &,
+      PredictTypeIdentity<JointDistribution>) const {
     const Eigen::Index n = cast::to_index(features.size());
     const auto mean = Eigen::VectorXd::Zero(n);
     const auto covariance = Eigen::MatrixXd::Zero(n, n);
@@ -120,4 +120,4 @@ TEST(test_prediction, test_joint_only) {
   EXPECT_EQ(fit_model.predict(empty).joint().size(), 0);
 }
 
-} // namespace albatross
+}  // namespace albatross

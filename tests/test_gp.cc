@@ -46,9 +46,8 @@ struct ConstantPerIntervalFeature {
 using InducingFeature =
     variant<ConstantEverywhereFeature, ConstantPerIntervalFeature>;
 
-std::vector<InducingFeature>
-create_inducing_points(const std::vector<double> &features) {
-
+std::vector<InducingFeature> create_inducing_points(
+    const std::vector<double> &features) {
   std::vector<InducingFeature> inducing_points;
   double min = *std::min_element(features.begin(), features.end());
   double max = *std::max_element(features.begin(), features.end());
@@ -66,7 +65,7 @@ create_inducing_points(const std::vector<double> &features) {
 }
 
 class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
-public:
+ public:
   ConstantEverywhere(){};
   ~ConstantEverywhere(){};
 
@@ -95,7 +94,7 @@ public:
 };
 
 class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
-public:
+ public:
   ConstantPerInterval(){};
   ~ConstantPerInterval(){};
 
@@ -342,7 +341,6 @@ TEST(test_gp, test_model_from_prediction_low_rank) {
 }
 
 TEST(test_gp, test_unobservablemodel_with_sum_constraint) {
-
   const auto dataset = test_unobservable_dataset();
   const auto model = test_unobservable_model();
 
@@ -375,7 +373,6 @@ TEST(test_gp, test_unobservablemodel_with_sum_constraint) {
 }
 
 TEST(test_gp, test_unobservablemodel_with_diff_constraint) {
-
   const auto dataset = test_unobservable_dataset();
   const auto model = test_unobservable_model();
 
@@ -414,7 +411,6 @@ TEST(test_gp, test_unobservablemodel_with_diff_constraint) {
 }
 
 TEST(test_gp, test_nonzero_mean) {
-
   MakeGaussianProcessWithMean gp_with_mean_case;
 
   const auto dataset = gp_with_mean_case.get_dataset();
@@ -442,7 +438,6 @@ TEST(test_gp, test_nonzero_mean) {
 }
 
 TEST(test_gp, test_get_prior) {
-
   MakeGaussianProcessWithMean gp_with_mean_case;
 
   const auto dataset = gp_with_mean_case.get_dataset();
@@ -458,7 +453,6 @@ TEST(test_gp, test_get_prior) {
 }
 
 TEST(test_gp, test_predict_with_complicated_feature) {
-
   MakeGaussianProcessWithMean gp_with_mean_case;
 
   const auto dataset = gp_with_mean_case.get_dataset();
@@ -487,4 +481,4 @@ TEST(test_gp, test_predict_with_complicated_feature) {
   EXPECT_NEAR(expected_variance, pred.covariance(2, 2), 1e-6);
 }
 
-} // namespace albatross
+}  // namespace albatross

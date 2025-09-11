@@ -17,11 +17,15 @@ namespace albatross {
 
 namespace internal {
 
-template <typename X, typename Y, typename = void> struct concatenation_type {
+template <typename X, typename Y, typename = void>
+struct concatenation_type {
   using type = variant<X, Y>;
 };
 
-template <typename X> struct concatenation_type<X, X> { using type = X; };
+template <typename X>
+struct concatenation_type<X, X> {
+  using type = X;
+};
 
 template <typename X, typename... Ts>
 struct concatenation_type<
@@ -55,7 +59,7 @@ struct concatenation_type<
   using type = variant<Ts..., X>;
 };
 
-} // namespace internal
+}  // namespace internal
 
 /*
  * concatenate with two identical types
@@ -136,6 +140,6 @@ inline auto concatenate(const std::vector<X> &xs, const std::vector<Y> &ys) {
   return features;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_CORE_CONCATENATE_HPP_ */

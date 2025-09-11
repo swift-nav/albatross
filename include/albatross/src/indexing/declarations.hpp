@@ -20,9 +20,9 @@ Eigen::MatrixXd symmetric_subset(const Eigen::MatrixXd &v,
                                  const std::vector<SizeType> &indices);
 
 template <typename SizeType, typename Scalar, int Size>
-Eigen::DiagonalMatrix<Scalar, Size>
-symmetric_subset(const Eigen::DiagonalMatrix<Scalar, Size> &v,
-                 const std::vector<SizeType> &indices);
+Eigen::DiagonalMatrix<Scalar, Size> symmetric_subset(
+    const Eigen::DiagonalMatrix<Scalar, Size> &v,
+    const std::vector<SizeType> &indices);
 
 template <typename SizeType>
 Eigen::VectorXd subset(const Eigen::VectorXd &v,
@@ -42,6 +42,6 @@ void set_subset(const Eigen::VectorXd &from,
 
 Eigen::VectorXd concatenate(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_DECLARATIONS_HPP_ */

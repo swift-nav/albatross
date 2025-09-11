@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <gtest/gtest.h>
 #include <albatross/Core>
 #include <albatross/linalg/Utils>
-#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -32,7 +32,6 @@ TEST(test_linalg_utils, test_qr_sqrt_solve) {
 }
 
 TEST(test_linalg_utils, test_print_eigen_values) {
-
   constexpr Eigen::Index k = 10;
   Eigen::MatrixXd random = Eigen::MatrixXd::Random(k, k);
   random = random * random.transpose();
@@ -52,4 +51,4 @@ TEST(test_linalg_utils, test_print_eigen_values) {
                                &oss);
 }
 
-} // namespace albatross
+}  // namespace albatross

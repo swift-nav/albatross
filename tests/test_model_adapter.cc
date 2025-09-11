@@ -18,7 +18,7 @@ namespace albatross {
 template <typename CovFunc>
 class TestAdaptedModel
     : public GaussianProcessBase<CovFunc, ZeroMean, TestAdaptedModel<CovFunc>> {
-public:
+ public:
   using Base =
       GaussianProcessBase<CovFunc, ZeroMean, TestAdaptedModel<CovFunc>>;
 
@@ -43,8 +43,8 @@ public:
     ALBATROSS_ASSERT(success);
   }
 
-  std::vector<double>
-  convert(const std::vector<AdaptedFeature> &features) const {
+  std::vector<double> convert(
+      const std::vector<AdaptedFeature> &features) const {
     std::vector<double> converted;
     for (const auto &f : features) {
       converted.push_back(f.value - this->params_.at("center").value);
@@ -57,10 +57,9 @@ public:
     return Base::_fit_impl(convert(features), targets);
   }
 
-  JointDistribution
-  _predict_impl(const std::vector<AdaptedFeature> &features,
-                const FitType<double> &fit_,
-                PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution _predict_impl(
+      const std::vector<AdaptedFeature> &features, const FitType<double> &fit_,
+      PredictTypeIdentity<JointDistribution> &&) const {
     return Base::_predict_impl(convert(features), fit_,
                                PredictTypeIdentity<JointDistribution>());
   }
@@ -120,4 +119,4 @@ TEST(test_model_adapter, test_fit) {
   EXPECT_EQ(adapted_fit.information, fit.information);
   EXPECT_EQ(adapted_fit.train_covariance, fit.train_covariance);
 }
-} // namespace albatross
+}  // namespace albatross

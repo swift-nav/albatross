@@ -101,7 +101,7 @@ struct ChiSquaredIsValidCandidateMetric {
     return (probability_prior_exceeded <= chi_squared_threshold_);
   };
 
-private:
+ private:
   double chi_squared_threshold_;
 };
 
@@ -154,7 +154,8 @@ struct GaussianProcessRansacStrategy {
       const ConsensusMetric &consensus_metric,
       const IsValidCandidateMetric &is_valid_candidate,
       GrouperFunction grouper_function)
-      : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
+      : inlier_metric_(inlier_metric),
+        consensus_metric_(consensus_metric),
         is_valid_candidate_(is_valid_candidate),
         grouper_function_(grouper_function) {}
 
@@ -172,7 +173,7 @@ struct GaussianProcessRansacStrategy {
     return dataset.group_by(grouper_function_).indexers();
   }
 
-protected:
+ protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
   IsValidCandidateMetric is_valid_candidate_;
@@ -206,6 +207,6 @@ auto gp_ransac_strategy(const InlierMetric &inlier_metric,
       inlier_metric, consensus_metric, is_valid_candidate, grouper_function);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_RANSAC_GP_H_ */

@@ -10,16 +10,15 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <gtest/gtest.h>
 #include <albatross/Distribution>
 #include <albatross/Indexing>
-#include <gtest/gtest.h>
 
 #include "test_core_distribution.h"
 
 namespace albatross {
 
 TEST(test_core_distribution, create_one_dim) {
-
   const double mean = M_PI;
   const double var = std::log(2);
   const MarginalDistribution one_dim(mean, var);
@@ -31,7 +30,6 @@ TEST(test_core_distribution, create_one_dim) {
 }
 
 TYPED_TEST_P(DistributionTest, test_subset) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -44,7 +42,6 @@ TYPED_TEST_P(DistributionTest, test_subset) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_marginal) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -63,7 +60,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_marginal) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_joint) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -80,7 +76,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_matrix_joint) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_marginal) {
-
   const Eigen::Index n = 3;
   const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
   const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
@@ -101,7 +96,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_marginal) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_joint) {
-
   const Eigen::Index n = 3;
   const Eigen::VectorXd mean = Eigen::VectorXd::Random(n, 1);
   const Eigen::VectorXd var = Eigen::VectorXd::Random(n, 1).array().square();
@@ -120,7 +114,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_sparse_matrix_joint) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_with_vector) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
   Eigen::VectorXd vector = Eigen::VectorXd::Random(cast::to_index(dist.size()));
@@ -137,7 +130,6 @@ TYPED_TEST_P(DistributionTest, test_multiply_with_vector) {
 };
 
 TYPED_TEST_P(DistributionTest, test_multiply_by_scalar) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -210,7 +202,6 @@ TYPED_TEST_P(DistributionTest, test_approximately_equal) {
 };
 
 TYPED_TEST_P(DistributionTest, test_add) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -223,7 +214,6 @@ TYPED_TEST_P(DistributionTest, test_add) {
 };
 
 TYPED_TEST_P(DistributionTest, test_subtract) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -237,7 +227,6 @@ TYPED_TEST_P(DistributionTest, test_subtract) {
 };
 
 TYPED_TEST_P(DistributionTest, test_operator_indexing) {
-
   TypeParam test_case;
   const auto dist = test_case.create();
 
@@ -292,4 +281,4 @@ typedef ::testing::Types<MarginalWithCovariance, JointWithCovariance> ToTest;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, DistributionTest, ToTest);
 
-} // namespace albatross
+}  // namespace albatross

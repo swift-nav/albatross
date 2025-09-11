@@ -69,9 +69,9 @@ inline Eigen::MatrixXd block_accumulate(const Grouped<GroupKey, X> &lhs,
 }
 
 template <typename GroupKey, typename ApplyFunction>
-inline Eigen::MatrixXd
-block_product(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
-              const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
+inline Eigen::MatrixXd block_product(
+    const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
+    const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
   // This performs a block matrix product operation where if you aligned the
   // lhs into horizontal blocks and the right into vertical blocks by ordering
   // their keys:
@@ -93,9 +93,9 @@ block_product(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
 }
 
 template <typename GroupKey>
-inline Eigen::MatrixXd
-block_inner_product(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
-                    const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
+inline Eigen::MatrixXd block_inner_product(
+    const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
+    const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
   // This performs a block matrix inner product operation where if you aligned
   // the lhs into horizontal blocks and the right into vertical blocks by
   // ordering their keys:
@@ -140,10 +140,9 @@ inline auto block_diag_solve(const Grouped<GroupKey, Solver> &lhs,
 };
 
 template <typename GroupKey>
-inline Grouped<GroupKey, Eigen::MatrixXd>
-block_subtract(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
-               const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
-
+inline Grouped<GroupKey, Eigen::MatrixXd> block_subtract(
+    const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
+    const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
   ALBATROSS_ASSERT(lhs.size() == rhs.size());
   auto matrix_subtract = [&](const auto &key_i, const auto &rhs_i) {
     return (lhs.at(key_i) - rhs_i).eval();
@@ -152,6 +151,6 @@ block_subtract(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
   return rhs.apply(matrix_subtract);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
-#endif // ALBATROSS_SRC_LINALG_BLOCK_UTILS_HPP
+#endif  // ALBATROSS_SRC_LINALG_BLOCK_UTILS_HPP

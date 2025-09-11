@@ -60,31 +60,29 @@ static inline auto make_toy_linear_data(const double a = 5.,
 }
 
 class MockParameterHandler : public ParameterHandlingMixin {
-public:
+ public:
   MockParameterHandler(const ParameterStore &params)
       : ParameterHandlingMixin(params){};
 };
 
 class TestParameterHandler : public ParameterHandlingMixin {
-public:
+ public:
   TestParameterHandler() : ParameterHandlingMixin() {
     params_ = {{"A", Parameter(1.)}, {"B", Parameter(2.)}};
   };
 };
 
-static inline void
-expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
-                              const std::vector<ParameterValue> &y) {
+static inline void expect_parameter_vector_equal(
+    const std::vector<ParameterValue> &x,
+    const std::vector<ParameterValue> &y) {
   for (std::size_t i = 0; i < x.size(); i++) {
     EXPECT_DOUBLE_EQ(x[i], y[i]);
   }
   EXPECT_EQ(x.size(), y.size());
 }
 
-static inline auto
-make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
-                                     const double sigma = 0.1) {
-
+static inline auto make_heteroscedastic_toy_linear_data(
+    const double a = 5., const double b = 1., const double sigma = 0.1) {
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(7);
@@ -167,7 +165,6 @@ template <typename CovarianceFunction, typename FeatureType>
 void expect_state_space_representation_quality(
     const CovarianceFunction &cov_func,
     const std::vector<FeatureType> &features, double threshold) {
-
   const auto ssr_features = cov_func.state_space_representation(features);
 
   const Eigen::MatrixXd ssr_cov = cov_func(ssr_features);
@@ -185,6 +182,6 @@ void expect_state_space_representation_quality(
   EXPECT_LT(posterior.norm() / full_cov.norm(), threshold);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

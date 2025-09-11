@@ -44,4 +44,4 @@ TEST(test_conditional, test_equivalent_to_gp) {
   EXPECT_LT((conditional_pred.covariance - gp_pred.covariance).norm(), 1e-6);
 }
 
-} // namespace albatross
+}  // namespace albatross

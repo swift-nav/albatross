@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Core>
 #include <gtest/gtest.h>
+#include <albatross/Core>
 
 namespace albatross {
 
@@ -48,7 +48,6 @@ TEST(test_concatenate, test_concatenation_type) {
 }
 
 TEST(test_concatenate, test_same_types) {
-
   std::vector<int> first = {1, 2, 3};
   std::vector<int> second = {4, 5, 6};
   std::vector<int> expected = {1, 2, 3, 4, 5, 6};
@@ -58,7 +57,6 @@ TEST(test_concatenate, test_same_types) {
 }
 
 TEST(test_concatenate, test_different_types) {
-
   std::vector<int> first = {1, 2, 3};
   std::vector<double> second = {4., 5., 6.};
   std::vector<variant<int, double>> expected;
@@ -75,7 +73,6 @@ TEST(test_concatenate, test_different_types) {
 }
 
 TEST(test_concatenate, test_different_types_repeated) {
-
   std::vector<int> first = {1, 2, 3};
   std::vector<double> second = {4., 5., 6.};
   std::vector<variant<int, double>> expected;
@@ -97,7 +94,6 @@ TEST(test_concatenate, test_different_types_repeated) {
 }
 
 struct ConcatenateTest {
-
   ConcatenateTest(const int &x_) : x(x_){};
 
   bool operator==(const ConcatenateTest &other) const { return x == other.x; }
@@ -106,7 +102,6 @@ struct ConcatenateTest {
 };
 
 TEST(test_concatenate, test_different_types_twice) {
-
   std::vector<int> first = {1, 2, 3};
   std::vector<double> second = {4., 5., 6.};
   std::vector<ConcatenateTest> third = {ConcatenateTest(10),
@@ -127,4 +122,4 @@ TEST(test_concatenate, test_different_types_twice) {
   EXPECT_EQ(concatenate(once, third), expected);
 }
 
-} // namespace albatross
+}  // namespace albatross

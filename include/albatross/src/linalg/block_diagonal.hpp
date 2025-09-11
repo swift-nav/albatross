@@ -31,31 +31,28 @@ struct BlockDiagonalLDLT {
   inline Eigen::MatrixXd solve(const Eigen::MatrixBase<Derived> &rhs) const;
 
   template <typename Derived>
-  inline Eigen::MatrixXd
-  sqrt_solve(const Eigen::MatrixBase<Derived> &rhs) const;
+  inline Eigen::MatrixXd sqrt_solve(
+      const Eigen::MatrixBase<Derived> &rhs) const;
 
   template <class _Scalar, int _Options, typename _StorageIndex>
-  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic>
-  solve(const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
+  Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> solve(
+      const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
 
   template <class _Scalar, int _Options, typename _StorageIndex>
   Eigen::Matrix<_Scalar, Eigen::Dynamic, Eigen::Dynamic> sqrt_solve(
       const Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex> &rhs) const;
 
   template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-        ThreadPool *pool) const;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> solve(
+      const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs, ThreadPool *pool) const;
 
   template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
-  inline Eigen::MatrixXd
-  solve(const Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel> &rhs_orig)
-      const;
+  inline Eigen::MatrixXd solve(const Eigen::Block<XprType, BlockRows, BlockCols,
+                                                  InnerPanel> &rhs_orig) const;
 
   template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-             ThreadPool *pool) const;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> sqrt_solve(
+      const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs, ThreadPool *pool) const;
 
   const BlockDiagonalLDLT &adjoint() const;
 
@@ -74,8 +71,8 @@ struct BlockDiagonal {
   std::vector<Eigen::MatrixXd> blocks;
 
   template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  operator*(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
+  Eigen::Matrix<_Scalar, _Rows, _Cols> operator*(
+      const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const;
 
   BlockDiagonal operator-(const BlockDiagonal &rhs) const;
 
@@ -94,8 +91,8 @@ struct BlockDiagonal {
  * BlockDiagonalLDLT
  */
 template <typename Derived>
-inline Eigen::MatrixXd
-BlockDiagonalLDLT::solve(const Eigen::MatrixBase<Derived> &rhs) const {
+inline Eigen::MatrixXd BlockDiagonalLDLT::solve(
+    const Eigen::MatrixBase<Derived> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::MatrixXd output(rows(), rhs.cols());
@@ -108,8 +105,8 @@ BlockDiagonalLDLT::solve(const Eigen::MatrixBase<Derived> &rhs) const {
 }
 
 template <typename Derived>
-inline Eigen::MatrixXd
-BlockDiagonalLDLT::sqrt_solve(const Eigen::MatrixBase<Derived> &rhs) const {
+inline Eigen::MatrixXd BlockDiagonalLDLT::sqrt_solve(
+    const Eigen::MatrixBase<Derived> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
   Eigen::MatrixXd output(rows(), rhs.cols());
@@ -162,8 +159,8 @@ BlockDiagonalLDLT::sqrt_solve(
   return output;
 }
 
-inline std::map<size_t, Eigen::Index>
-BlockDiagonalLDLT::block_to_row_map() const {
+inline std::map<size_t, Eigen::Index> BlockDiagonalLDLT::block_to_row_map()
+    const {
   Eigen::Index row = 0;
   std::map<size_t, Eigen::Index> block_to_row;
 
@@ -177,9 +174,8 @@ BlockDiagonalLDLT::block_to_row_map() const {
 }
 
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLDLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-                         ThreadPool *pool) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs, ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   auto solve_and_fill_one_block = [&](const size_t i, const Eigen::Index row) {
@@ -193,9 +189,8 @@ BlockDiagonalLDLT::solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
 }
 
 template <class _Scalar, int _Rows, int _Cols>
-inline Eigen::Matrix<_Scalar, _Rows, _Cols>
-BlockDiagonalLDLT::sqrt_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs,
-                              ThreadPool *pool) const {
+inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonalLDLT::sqrt_solve(
+    const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs, ThreadPool *pool) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
 
@@ -328,6 +323,6 @@ inline Eigen::Index BlockDiagonal::cols() const {
   return n;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
-#endif // ALBATROSS_SRC_LINALG_BLOCK_DIAGONAL_HPP
+#endif  // ALBATROSS_SRC_LINALG_BLOCK_DIAGONAL_HPP

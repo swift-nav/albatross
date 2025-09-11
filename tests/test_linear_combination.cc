@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Core>
 #include <gtest/gtest.h>
+#include <albatross/Core>
 
 namespace albatross {
 
@@ -103,4 +103,4 @@ TEST(test_linear_combination, test_to_combo) {
   EXPECT_EQ(combo.coefficients[1], -1);
 }
 
-} // namespace albatross
+}  // namespace albatross

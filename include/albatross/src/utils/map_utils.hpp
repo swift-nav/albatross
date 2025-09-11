@@ -89,5 +89,5 @@ inline Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
   return join;
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif

@@ -22,7 +22,7 @@ inline void serialize(Archive &archive, albatross::Parameter &param,
   archive(cereal::make_nvp("prior", param.prior));
 };
 
-} // namespace cereal
+}  // namespace cereal
 
-#endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_PARAMETERS_HPP_   \
+#endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_PARAMETERS_HPP_ \
         */

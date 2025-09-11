@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Core>
 #include <gtest/gtest.h>
+#include <albatross/Core>
 
 namespace albatross {
 
@@ -20,7 +20,7 @@ struct Y {};
 struct Z {};
 
 class HasValidFitImpl : public ModelBase<HasValidFitImpl> {
-public:
+ public:
   Fit<HasValidFitImpl> _fit_impl(const std::vector<X> &,
                                  const MarginalDistribution &) const {
     return {};
@@ -28,14 +28,14 @@ public:
 };
 
 class HasWrongReturnTypeFitImpl : public ModelBase<HasWrongReturnTypeFitImpl> {
-public:
+ public:
   double _fit_impl(const std::vector<X> &, const MarginalDistribution &) const {
     return {};
   };
 };
 
 class HasNonConstFitImpl : public ModelBase<HasNonConstFitImpl> {
-public:
+ public:
   Fit<HasNonConstFitImpl> _fit_impl(const std::vector<X> &,
                                     const MarginalDistribution &) {
     return {};
@@ -43,7 +43,7 @@ public:
 };
 
 class HasNonConstArgsFitImpl : public ModelBase<HasNonConstFitImpl> {
-public:
+ public:
   Fit<HasNonConstArgsFitImpl> _fit_impl(std::vector<X> &,
                                         const MarginalDistribution &) const {
     return {};
@@ -61,7 +61,7 @@ public:
 };
 
 class HasProtectedValidFitImpl : public ModelBase<HasNonConstFitImpl> {
-protected:
+ protected:
   Fit<HasProtectedValidFitImpl> _fit_impl(const std::vector<X> &,
                                           const MarginalDistribution &) const {
     return {};
@@ -69,7 +69,7 @@ protected:
 };
 
 class HasPrivateValidFitImpl : public ModelBase<HasPrivateValidFitImpl> {
-private:
+ private:
   Fit<HasPrivateValidFitImpl> _fit_impl(const std::vector<X> &,
                                         const MarginalDistribution &) const {
     return {};
@@ -77,7 +77,7 @@ private:
 };
 
 class HasValidAndInvalidFitImpl : public ModelBase<HasValidAndInvalidFitImpl> {
-public:
+ public:
   Fit<HasValidAndInvalidFitImpl> _fit_impl(const std::vector<X> &,
                                            const MarginalDistribution &) const {
     return {};
@@ -90,7 +90,7 @@ public:
 };
 
 class HasValidXYFitImpl : public ModelBase<HasValidXYFitImpl> {
-public:
+ public:
   Fit<HasValidXYFitImpl> _fit_impl(const std::vector<X> &,
                                    const MarginalDistribution &) const {
     return {};
@@ -152,7 +152,8 @@ TEST(test_traits_core, test_fit_model_type) {
                         fit_model_type<HasValidXYFitImpl, X>::type>::value));
 }
 
-template <typename T> struct Base : public ModelBase<T> {};
+template <typename T>
+struct Base : public ModelBase<T> {};
 
 struct Derived : public Base<Derived> {};
 
@@ -167,13 +168,14 @@ TEST(test_traits_core, test_is_valid_fit_type) {
   EXPECT_FALSE(bool(is_valid_fit_type<Base<Derived>>::value));
 }
 
-template <typename T, typename FeatureType> struct AdaptableFit;
+template <typename T, typename FeatureType>
+struct AdaptableFit;
 
 template <typename T, typename FeatureType>
 struct Fit<AdaptableFit<T, FeatureType>> {};
 
-template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
-
+template <typename ImplType>
+struct Adaptable : public ModelBase<ImplType> {
   Fit<AdaptableFit<ImplType, X>> _fit_impl(const std::vector<X> &,
                                            const MarginalDistribution &) const {
     return Fit<AdaptableFit<ImplType, X>>();
@@ -181,7 +183,6 @@ template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
 };
 
 struct Extended : public Adaptable<Extended> {
-
   using Base = Adaptable<Extended>;
   using Base::_fit_impl;
 
@@ -212,7 +213,7 @@ TEST(test_traits_core, test_adaptable_has_valid_fit) {
  * Predict Traits
  */
 class HasMeanPredictImpl {
-public:
+ public:
   Eigen::VectorXd _predict_impl(const std::vector<X> &,
                                 const Fit<HasMeanPredictImpl> &,
                                 PredictTypeIdentity<Eigen::VectorXd>) const {
@@ -221,20 +222,20 @@ public:
 };
 
 class HasMarginalPredictImpl {
-public:
-  MarginalDistribution
-  _predict_impl(const std::vector<X> &, const Fit<HasMarginalPredictImpl> &,
-                PredictTypeIdentity<MarginalDistribution>) const {
+ public:
+  MarginalDistribution _predict_impl(
+      const std::vector<X> &, const Fit<HasMarginalPredictImpl> &,
+      PredictTypeIdentity<MarginalDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
 };
 
 class HasJointPredictImpl {
-public:
-  JointDistribution
-  _predict_impl(const std::vector<X> &, const Fit<HasJointPredictImpl> &,
-                PredictTypeIdentity<JointDistribution>) const {
+ public:
+  JointDistribution _predict_impl(
+      const std::vector<X> &, const Fit<HasJointPredictImpl> &,
+      PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     const auto cov = Eigen::MatrixXd::Zero(0, 0);
     return JointDistribution(mean, cov);
@@ -242,23 +243,23 @@ public:
 };
 
 class HasAllPredictImpls {
-public:
+ public:
   Eigen::VectorXd _predict_impl(const std::vector<X> &,
                                 const Fit<HasAllPredictImpls> &,
                                 PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Zero(0);
   }
 
-  MarginalDistribution
-  _predict_impl(const std::vector<X> &, const Fit<HasAllPredictImpls> &,
-                PredictTypeIdentity<MarginalDistribution>) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<X> &, const Fit<HasAllPredictImpls> &,
+      PredictTypeIdentity<MarginalDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     return MarginalDistribution(mean);
   }
 
-  JointDistribution
-  _predict_impl(const std::vector<X> &, const Fit<HasAllPredictImpls> &,
-                PredictTypeIdentity<JointDistribution>) const {
+  JointDistribution _predict_impl(
+      const std::vector<X> &, const Fit<HasAllPredictImpls> &,
+      PredictTypeIdentity<JointDistribution>) const {
     const auto mean = Eigen::VectorXd::Zero(0);
     const auto cov = Eigen::MatrixXd::Zero(0, 0);
     return JointDistribution(mean, cov);
@@ -266,7 +267,6 @@ public:
 };
 
 TEST(test_traits_core, test_has_valid_predict_impl) {
-
   EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X,
                                           Fit<HasMeanPredictImpl>>::value));
   EXPECT_FALSE(
@@ -302,7 +302,7 @@ TEST(test_traits_core, test_has_valid_predict_impl) {
 }
 
 class HasName {
-public:
+ public:
   std::string name() const { return "name"; };
 };
 
@@ -338,7 +338,7 @@ TEST(test_traits_core, test_eigen_expressions) {
 }
 
 class HasValidUpdateImpl : public ModelBase<HasValidUpdateImpl> {
-public:
+ public:
   Fit<HasValidUpdateImpl> _update_impl(const Fit<HasValidUpdateImpl> &,
                                        const std::vector<X> &,
                                        const MarginalDistribution &) const {
@@ -347,7 +347,7 @@ public:
 };
 
 class HasInValidUpdateImpl : public ModelBase<HasValidUpdateImpl> {
-public:
+ public:
   double _update_impl(const Fit<HasValidUpdateImpl> &, const std::vector<X> &,
                       const MarginalDistribution &) const {
     return 0.;
@@ -355,7 +355,7 @@ public:
 };
 
 class HasModifiedUpdateImpl : public ModelBase<HasValidUpdateImpl> {
-public:
+ public:
   Fit<X> _update_impl(const Fit<HasModifiedUpdateImpl> &,
                       const std::vector<X> &,
                       const MarginalDistribution &) const {
@@ -386,4 +386,4 @@ TEST(test_traits_core, update_traits) {
                               X>::can_update_in_place));
 }
 
-} // namespace albatross
+}  // namespace albatross

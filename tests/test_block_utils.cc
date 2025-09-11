@@ -43,7 +43,6 @@ BlockExample block_example() {
 }
 
 TEST(test_block_utils, test_to_dense) {
-
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
@@ -66,7 +65,6 @@ TEST(test_block_utils, test_block_ldlt) {
 }
 
 TEST(test_block_utils, test_diagonal) {
-
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
@@ -76,7 +74,6 @@ TEST(test_block_utils, test_diagonal) {
 }
 
 TEST(test_block_utils, test_dot_product) {
-
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
@@ -90,7 +87,6 @@ TEST(test_block_utils, test_dot_product) {
 }
 
 TEST(test_block_utils, test_solve) {
-
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
@@ -104,7 +100,6 @@ TEST(test_block_utils, test_solve) {
 }
 
 TEST(test_block_utils, test_sqrt_methods) {
-
   auto example = block_example();
   auto block_diag = example.block;
   auto dense = example.dense;
@@ -123,7 +118,6 @@ TEST(test_block_utils, test_sqrt_methods) {
 }
 
 TEST(test_block_utils, test_block_symmetric) {
-
   std::default_random_engine gen(2012);
   const auto X = random_covariance_matrix(5, gen);
 
@@ -146,4 +140,4 @@ TEST(test_block_utils, test_block_symmetric) {
   EXPECT_TRUE(actual_direct.isApprox(expected));
 }
 
-} // namespace albatross
+}  // namespace albatross

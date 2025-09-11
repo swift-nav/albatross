@@ -50,7 +50,8 @@ void expect_predict_order_preserved(
   }
 }
 
-template <typename T> std::vector<T> empty_vector_helper(const T &) {
+template <typename T>
+std::vector<T> empty_vector_helper(const T &) {
   return std::vector<T>();
 }
 
@@ -104,21 +105,21 @@ INSTANTIATE_TYPED_TEST_SUITE_P(test_models, RegressionModelTester,
                                ExampleModels);
 
 class BadModel : public ModelBase<BadModel> {
-public:
+ public:
   Fit<BadModel> _fit_impl(const std::vector<double> &,
                           const MarginalDistribution &) const {
     return {};
   }
 
-  Eigen::VectorXd
-  _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
-                const PredictTypeIdentity<Eigen::VectorXd>) const {
+  Eigen::VectorXd _predict_impl(
+      const std::vector<double> &features, const Fit<BadModel> &,
+      const PredictTypeIdentity<Eigen::VectorXd>) const {
     return Eigen::VectorXd::Ones(cast::to_index(features.size()));
   }
 
-  MarginalDistribution
-  _predict_impl(const std::vector<double> &features, const Fit<BadModel> &,
-                const PredictTypeIdentity<MarginalDistribution>) const {
+  MarginalDistribution _predict_impl(
+      const std::vector<double> &features, const Fit<BadModel> &,
+      const PredictTypeIdentity<MarginalDistribution>) const {
     const auto zeros = Eigen::VectorXd::Zero(cast::to_index(features.size()));
     return MarginalDistribution(zeros, zeros.asDiagonal());
   }
@@ -147,4 +148,4 @@ TEST(test_models, test_model_from_prediction) {
       joint_prediction.covariance, 1e-8));
 }
 
-} // namespace albatross
+}  // namespace albatross

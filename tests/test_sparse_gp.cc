@@ -12,8 +12,8 @@
 
 #include <gtest/gtest.h>
 
-#include "test_models.h"
 #include <chrono>
+#include "test_models.h"
 
 #include <albatross/SparseGP>
 
@@ -24,13 +24,12 @@ inline long int get_group(const double &f) {
 }
 
 struct LeaveOneIntervalOut {
-
   long int operator()(const double &f) const { return get_group(f); }
 };
 
 template <typename GrouperFunctionAndQRImplementation>
 class SparseGaussianProcessTest : public ::testing::Test {
-public:
+ public:
   using GrouperFunction =
       typename GrouperFunctionAndQRImplementation::first_type;
   using QRImplementation =
@@ -51,7 +50,6 @@ void expect_sparse_gp_performance(
     const CovFunc &covariance, const GrouperFunction &grouper,
     double sparse_error_threshold, double really_sparse_error_threshold,
     QRImplementation qr = DenseQRImplementation{}) {
-
   auto dataset = make_toy_linear_data();
   auto direct = gp_from_covariance(covariance, "direct");
 
@@ -218,14 +216,13 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
 }
 
 struct FixedInducingPoints {
-
   FixedInducingPoints(double min, double max, std::size_t num_points = 10)
       : min_(min), max_(max), num_points_(num_points) {}
 
   template <typename CovarianceFunction>
-  std::vector<double>
-  operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
-             const std::vector<double> &features ALBATROSS_UNUSED) const {
+  std::vector<double> operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
+                                 const std::vector<double> &features
+                                     ALBATROSS_UNUSED) const {
     return linspace(min_, max_, num_points_);
   }
 
@@ -466,4 +463,4 @@ TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
   EXPECT_LT((shifted_pred.covariance - full_pred.covariance).norm(), 1e-8);
 }
 
-} // namespace albatross
+}  // namespace albatross

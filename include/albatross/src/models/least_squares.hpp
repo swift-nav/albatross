@@ -15,9 +15,11 @@
 
 namespace albatross {
 
-template <typename ImplType> class LeastSquares;
+template <typename ImplType>
+class LeastSquares;
 
-template <typename ImplType> struct Fit<LeastSquares<ImplType>> {
+template <typename ImplType>
+struct Fit<LeastSquares<ImplType>> {
   Eigen::VectorXd coefs;
 
   bool operator==(const Fit &other) const { return (coefs == other.coefs); }
@@ -45,8 +47,9 @@ inline bool all_same_value(const Eigen::VectorXd &x) {
  *
  * The FeatureType in this case is a single row from the design matrix.
  */
-template <typename ImplType> class LeastSquares : public ModelBase<ImplType> {
-public:
+template <typename ImplType>
+class LeastSquares : public ModelBase<ImplType> {
+ public:
   using FitType = Fit<LeastSquares<ImplType>>;
 
   std::string get_name() const { return "least_squares"; }
@@ -99,8 +102,7 @@ public:
  * an offset and slope.
  */
 class LinearRegression : public LeastSquares<LinearRegression> {
-
-public:
+ public:
   using Base = LeastSquares<LinearRegression>;
 
   std::string get_name() const { return "linear_regression"; }
@@ -111,8 +113,8 @@ public:
     return converted;
   }
 
-  std::vector<Eigen::VectorXd>
-  convert_features(const std::vector<double> &features) const {
+  std::vector<Eigen::VectorXd> convert_features(
+      const std::vector<double> &features) const {
     std::vector<Eigen::VectorXd> output;
     for (const auto &f : features) {
       output.emplace_back(convert_feature(f));
@@ -132,6 +134,6 @@ public:
                                PredictTypeIdentity<Eigen::VectorXd>());
   }
 };
-} // namespace albatross
+}  // namespace albatross
 
 #endif

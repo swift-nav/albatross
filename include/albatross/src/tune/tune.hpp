@@ -48,9 +48,9 @@ inline void set_objective_function(nlopt::opt &optimizer,
                               (void *)&objective);
 }
 
-inline nlopt::opt
-default_optimizer(const ParameterStore &params,
-                  const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
+inline nlopt::opt default_optimizer(
+    const ParameterStore &params,
+    const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
   const auto tunable_params = get_tunable_parameters(params);
 
   nlopt::opt optimizer(algorithm, (unsigned)tunable_params.values.size());
@@ -119,7 +119,8 @@ struct GenericTuner {
                std::ostream &output_stream_ = std::cout)
       : initial_params(initial_params_),
         optimizer(default_optimizer(initial_params)),
-        output_stream(output_stream_), threads(nullptr) {}
+        output_stream(output_stream_),
+        threads(nullptr) {}
 
   GenericTuner(const std::vector<double> &initial_params_,
                std::ostream &output_stream_ = std::cout)
@@ -269,8 +270,11 @@ struct ModelTuner {
              const std::vector<RegressionDataset<FeatureType>> &datasets_,
              const TuningMetricAggregator &aggregator_,
              std::ostream &output_stream_)
-      : model(model_), metric(metric_), datasets(datasets_),
-        aggregator(aggregator_), output_stream(output_stream_),
+      : model(model_),
+        metric(metric_),
+        datasets(datasets_),
+        aggregator(aggregator_),
+        output_stream(output_stream_),
         optimizer(default_optimizer(model.get_params())) {}
 
   ParameterStore tune() {
@@ -289,8 +293,8 @@ struct ModelTuner {
     return generic_tuner.tune(objective);
   }
 
-  void
-  initialize_optimizer(const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
+  void initialize_optimizer(
+      const nlopt::algorithm &algorithm = nlopt::LN_SBPLX) {
     optimizer = default_optimizer(model.get_params(), algorithm);
   }
 };
@@ -314,5 +318,5 @@ auto get_tuner(const ModelType &model, const MetricType &metric,
   return get_tuner(model, metric, datasets, aggregator, output_stream);
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif

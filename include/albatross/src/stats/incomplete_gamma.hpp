@@ -88,9 +88,8 @@ inline double incomplete_gamma_quadrature(double a, double z) {
                                                lgamma(a), 0);
 }
 
-inline double
-incomplete_gamma_continuous_fraction_numerator(double a, double z,
-                                               std::size_t depth_) {
+inline double incomplete_gamma_continuous_fraction_numerator(
+    double a, double z, std::size_t depth_) {
   const auto depth = cast::to_double(depth_);
   if (depth_ % 2 == 0) {
     return 0.5 * depth * z;
@@ -129,7 +128,7 @@ inline double incomplete_gamma_continuous_fraction(double a, double z) {
   return numerator / denominator;
 }
 
-} // namespace details
+}  // namespace details
 
 inline double incomplete_gamma(double a, double z) {
   if (std::isnan(a) || std::isnan(z)) {
@@ -155,5 +154,5 @@ inline double incomplete_gamma(double a, double z) {
   }
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif /* INCLUDE_ALBATROSS_SRC_STATS_INCOMPLETE_GAMMA_HPP_ */

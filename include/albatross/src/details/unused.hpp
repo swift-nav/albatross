@@ -17,6 +17,6 @@ namespace albatross {
 
 #define ALBATROSS_UNUSED __attribute__((unused))
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_DETAILS_UNUSED_HPP_ */

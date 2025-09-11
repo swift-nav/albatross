@@ -38,7 +38,7 @@ inline void serialize(Archive &archive, Fit<MockModel> &f) {
   archive(f.train_data);
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 namespace albatross {
 
@@ -168,7 +168,6 @@ struct ExplainedCovarianceRepresentation
 };
 
 struct ParameterStoreType : public SerializableType<ParameterStore> {
-
   RepresentationType create() const override {
     ParameterStore original = {{"1", {1., UninformativePrior()}},
                                {"2", {2., FixedPrior()}},
@@ -189,9 +188,7 @@ struct ParameterStoreType : public SerializableType<ParameterStore> {
 };
 
 struct Dataset : public SerializableType<RegressionDataset<MockFeature>> {
-
   RepresentationType create() const override {
-
     std::vector<MockFeature> features = {{1}, {3}, {-2}};
     Eigen::VectorXd targets(3);
     targets << 5., 3., 9.;
@@ -209,9 +206,7 @@ struct Dataset : public SerializableType<RegressionDataset<MockFeature>> {
 
 struct DatasetWithMetadata
     : public SerializableType<RegressionDataset<MockFeature>> {
-
   RepresentationType create() const override {
-
     std::vector<MockFeature> features = {{1}, {3}, {-2}};
     Eigen::VectorXd targets(3);
     targets << 5., 3., 9.;
@@ -229,9 +224,7 @@ struct DatasetWithMetadata
 };
 
 struct VariantAsInt : public SerializableType<variant<int, double>> {
-
   RepresentationType create() const override {
-
     variant<int, double> output;
     int foo = 1;
     output = foo;
@@ -240,9 +233,7 @@ struct VariantAsInt : public SerializableType<variant<int, double>> {
 };
 
 struct VariantAsDouble : public SerializableType<variant<int, double>> {
-
   RepresentationType create() const override {
-
     variant<int, double> output;
     double foo = 1.;
     output = foo;
@@ -252,9 +243,7 @@ struct VariantAsDouble : public SerializableType<variant<int, double>> {
 
 struct BlockSymmetricMatrix
     : public SerializableType<BlockSymmetric<Eigen::SerializableLDLT>> {
-
   RepresentationType create() const override {
-
     std::default_random_engine gen(2012);
     const auto X = random_covariance_matrix(5, gen);
 
@@ -295,7 +284,8 @@ INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, SerializeTest, ToTest);
  * Make sure all the example models serialize.
  */
 
-template <typename DatasetType, int = 0> struct feature_type {
+template <typename DatasetType, int = 0>
+struct feature_type {
   typedef void type;
 };
 
@@ -304,18 +294,21 @@ struct feature_type<RegressionDataset<FeatureType>> {
   typedef FeatureType type;
 };
 
-template <typename T> class model_types {
+template <typename T>
+class model_types {
   template <typename C,
             typename ModelType = decltype(std::declval<const T>().get_model())>
   static ModelType test_model(C *);
-  template <typename> static void test_model(...);
+  template <typename>
+  static void test_model(...);
 
   template <typename C, typename DatasetType =
                             decltype(std::declval<const T>().get_dataset())>
   static typename feature_type<DatasetType>::type test_feature_type(C *);
-  template <typename> static void test_feature_type(...);
+  template <typename>
+  static void test_feature_type(...);
 
-public:
+ public:
   typedef decltype(test_model<T>(0)) model_type;
   typedef decltype(test_feature_type<T>(0)) feature;
   typedef typename fit_model_type<decltype(test_model<T>(0)),
@@ -326,7 +319,6 @@ public:
 template <typename ModelTestCase>
 struct SerializableModelType
     : public SerializableType<typename model_types<ModelTestCase>::model_type> {
-
   using ModelType = typename model_types<ModelTestCase>::model_type;
 
   ModelType create() const {
@@ -349,7 +341,6 @@ template <typename ModelTestCase>
 struct SerializableFitModelType
     : public SerializableType<
           typename model_types<ModelTestCase>::fit_model_type> {
-
   using FitModelType = typename model_types<ModelTestCase>::fit_model_type;
 
   FitModelType create() const {
@@ -453,12 +444,11 @@ TEST(test_serialize, test_gp_serialize_version) {
   EXPECT_EQ(actual_version, expected_version);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 namespace other {
 
 TEST(test_serialize, test_dataset_streamable) {
-
   albatross::MarginalDistribution targets(Eigen::VectorXd(1));
   RegressionDataset<int> dataset({1}, targets);
   std::ostringstream oss;
@@ -466,14 +456,12 @@ TEST(test_serialize, test_dataset_streamable) {
 }
 
 TEST(test_serialize, test_marginal_streamable) {
-
   albatross::MarginalDistribution dist(Eigen::VectorXd(1));
   std::ostringstream oss;
   oss << dist;
 }
 
 TEST(test_serialize, test_joint_streamable) {
-
   albatross::JointDistribution dist(Eigen::VectorXd(1), Eigen::MatrixXd(1, 1));
   std::ostringstream oss;
   oss << dist;
@@ -607,4 +595,4 @@ TEST(test_serialize, serialize_spqr_random) {
   }
 }
 
-} // namespace other
+}  // namespace other

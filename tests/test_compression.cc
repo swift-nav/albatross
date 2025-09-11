@@ -91,8 +91,9 @@ TEST(Compress, MaybeDecompressInvalidZstd) {
   EXPECT_FALSE(result);
 }
 
-template <typename Scalar> class Array : public ::testing::Test {
-public:
+template <typename Scalar>
+class Array : public ::testing::Test {
+ public:
   std::vector<Scalar> roundtrip(const std::vector<Scalar> &input) {
     const auto compressed =
         albatross::zstd::compress(input.data(), input.size());
@@ -110,7 +111,8 @@ public:
   }
 };
 
-template <typename Scalar> class IntegerArray : public Array<Scalar> {};
+template <typename Scalar>
+class IntegerArray : public Array<Scalar> {};
 
 TYPED_TEST_SUITE_P(IntegerArray);
 
@@ -154,7 +156,8 @@ using IntegralTypes =
                      std::uint32_t, std::int32_t, std::uint64_t, std::int64_t>;
 INSTANTIATE_TYPED_TEST_SUITE_P(Compress, IntegerArray, IntegralTypes);
 
-template <typename Scalar> class FloatingArray : public Array<Scalar> {};
+template <typename Scalar>
+class FloatingArray : public Array<Scalar> {};
 
 TYPED_TEST_SUITE_P(FloatingArray);
 

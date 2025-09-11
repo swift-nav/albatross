@@ -12,8 +12,8 @@
 
 #include <gtest/gtest.h>
 
-#include "test_utils.h"
 #include <albatross/Evaluation>
+#include "test_utils.h"
 
 namespace albatross {
 
@@ -63,4 +63,4 @@ TEST(test_evaluate, test_negative_log_likelihood) {
   EXPECT_NEAR(marginal_nll_value, dense_diag_nll, 1e-6);
 }
 
-} // namespace albatross
+}  // namespace albatross

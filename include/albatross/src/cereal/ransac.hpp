@@ -44,10 +44,10 @@ inline void serialize(Archive &archive, RansacOutput<GroupKey> &ransac_output,
 
 template <typename Archive, typename ModelType, typename StrategyType,
           typename FeatureType, typename GroupKey>
-inline void
-serialize(Archive &archive,
-          Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> &fit,
-          const std::uint32_t) {
+inline void serialize(
+    Archive &archive,
+    Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> &fit,
+    const std::uint32_t) {
   archive(cereal::make_nvp("maybe_empty_fit_model", fit.maybe_empty_fit_model));
   archive(cereal::make_nvp("ransac_output", fit.ransac_output));
 }
@@ -65,18 +65,18 @@ inline void serialize(Archive &archive,
 
 template <typename Archive, typename InlierMetric, typename ConsensusMetric,
           typename IsValidCandidateMetric, typename GrouperFunction>
-inline void
-serialize(Archive &archive,
-          GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
-                                        IsValidCandidateMetric, GrouperFunction>
-              &strategy,
-          const std::uint32_t) {
+inline void serialize(
+    Archive &archive,
+    GaussianProcessRansacStrategy<InlierMetric, ConsensusMetric,
+                                  IsValidCandidateMetric, GrouperFunction>
+        &strategy,
+    const std::uint32_t) {
   archive(cereal::make_nvp("inlier_metric", strategy.inlier_metric_));
   archive(cereal::make_nvp("consensus_metric", strategy.consensus_metric_));
   archive(cereal::make_nvp("is_valid_candidate", strategy.is_valid_candidate_));
   archive(cereal::make_nvp("grouper_function", strategy.grouper_function_));
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_RANSAC_HPP_ */

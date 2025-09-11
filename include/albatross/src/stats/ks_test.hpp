@@ -36,6 +36,6 @@ inline double uniform_ks_test(const std::vector<double> &samples) {
   return largest_difference_between_sample_and_expected_cdf;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_STATS_KS_TEST_HPP_ */

@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "test_models.h"
-#include <albatross/Tune>
 #include <gtest/gtest.h>
+#include <albatross/Tune>
 #include <nlopt.hpp>
+#include "test_models.h"
 
 namespace albatross {
 
@@ -133,7 +133,7 @@ Eigen::VectorXd nlopt_solve(GenericTuner &tuner, ObjectiveFunction &objective) {
 }
 
 class TestTuneQuadratic : public ::testing::Test {
-public:
+ public:
   TestTuneQuadratic() {
     Eigen::Index k = 3;
     A.resize(k, k);
@@ -174,7 +174,6 @@ public:
 };
 
 TEST_F(TestTuneQuadratic, test_generic) {
-
   auto mahalanobis_distance_eigen = [&](const Eigen::VectorXd &eigen_x) {
     return this->objective(eigen_x);
   };
@@ -228,7 +227,6 @@ TEST_F(TestTuneQuadratic, test_generic) {
 }
 
 TEST_F(TestTuneQuadratic, test_greedy_tune) {
-
   auto mahalanobis_distance_params = [&](const ParameterStore &params) {
     return this->objective(params);
   };
@@ -266,7 +264,6 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
 }
 
 TEST_F(TestTuneQuadratic, test_compute_gradient) {
-
   auto mahalanobis_distance_vector = [&](const std::vector<double> &vector_x) {
     return this->objective(vector_x);
   };
@@ -296,7 +293,6 @@ TEST_F(TestTuneQuadratic, test_compute_gradient) {
 }
 
 TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
-
   auto mahalanobis_distance_params = [&](const ParameterStore &params) {
     return this->objective(params);
   };
@@ -328,4 +324,4 @@ TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
   EXPECT_NEAR(grad.normalized().dot(active_constraint), 1, 1e-4);
 }
 
-} // namespace albatross
+}  // namespace albatross

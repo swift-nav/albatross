@@ -15,9 +15,10 @@
 
 namespace mapbox {
 namespace util {
-template <typename... Ts> class variant;
+template <typename... Ts>
+class variant;
 }
-} // namespace mapbox
+}  // namespace mapbox
 
 using mapbox::util::variant;
 
@@ -37,20 +38,25 @@ namespace albatross {
  *  and so the computations are not repeatedly copying.)
  * This type conversion utility will turn a type `T` into `const T&`
  */
-template <class T> struct const_ref {
+template <class T>
+struct const_ref {
   typedef std::add_lvalue_reference_t<std::add_const_t<T>> type;
 };
 
-template <typename T> using const_ref_t = typename const_ref<T>::type;
+template <typename T>
+using const_ref_t = typename const_ref<T>::type;
 
 /*
  * Model
  */
-template <typename ModelType> class ModelBase;
+template <typename ModelType>
+class ModelBase;
 
-template <typename FeatureType> struct RegressionDataset;
+template <typename FeatureType>
+struct RegressionDataset;
 
-template <typename T> struct PredictTypeIdentity;
+template <typename T>
+struct PredictTypeIdentity;
 
 template <typename ModelType, typename FeatureType, typename FitType>
 class Prediction;
@@ -59,11 +65,14 @@ template <typename ModelType, typename FeatureType, typename FitType>
 using PredictionReference =
     Prediction<const_ref_t<ModelType>, FeatureType, const_ref_t<FitType>>;
 
-template <typename ModelType, typename FitType> class FitModel;
+template <typename ModelType, typename FitType>
+class FitModel;
 
-template <typename Derived> class Fit {};
+template <typename Derived>
+class Fit {};
 
-template <typename X> struct Measurement;
+template <typename X>
+struct Measurement;
 
 /*
  * Group By
@@ -79,7 +88,8 @@ using GroupIndexer = Grouped<GroupKey, GroupIndices>;
 
 struct LeaveOneOutGrouper;
 
-template <typename ValueType, typename GrouperFunction> class GroupBy;
+template <typename ValueType, typename GrouperFunction>
+class GroupBy;
 
 /*
  * Parameter Handling
@@ -99,7 +109,8 @@ using ParameterStore = std::map<ParameterKey, Parameter>;
 /*
  * Distributions
  */
-template <typename Derived> struct DistributionBase;
+template <typename Derived>
+struct DistributionBase;
 
 using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
 struct JointDistribution;
@@ -108,19 +119,25 @@ struct MarginalDistribution;
 /*
  * Covariance Functions
  */
-template <typename X, typename Y> class SumOfCovarianceFunctions;
+template <typename X, typename Y>
+class SumOfCovarianceFunctions;
 
-template <typename X, typename Y> class ProductOfCovarianceFunctions;
+template <typename X, typename Y>
+class ProductOfCovarianceFunctions;
 
-template <typename Derived> class CallTrace;
+template <typename Derived>
+class CallTrace;
 
 struct ZeroMean;
 
-template <typename X, typename Y> class SumOfMeanFunctions;
+template <typename X, typename Y>
+class SumOfMeanFunctions;
 
-template <typename X, typename Y> class ProductOfMeanFunctions;
+template <typename X, typename Y>
+class ProductOfMeanFunctions;
 
-template <typename X> struct LinearCombination;
+template <typename X>
+struct LinearCombination;
 
 /*
  * Models
@@ -133,14 +150,17 @@ class GaussianProcessRegression;
 
 struct NullLeastSquaresImpl {};
 
-template <typename ImplType = NullLeastSquaresImpl> class LeastSquares;
+template <typename ImplType = NullLeastSquaresImpl>
+class LeastSquares;
 
-template <typename FeatureType> struct LinearCombination;
+template <typename FeatureType>
+struct LinearCombination;
 
 /*
  * Cross Validation
  */
-template <typename FeatureType> struct RegressionFold;
+template <typename FeatureType>
+struct RegressionFold;
 
 template <typename GroupKey, typename FeatureType>
 using RegressionFolds = Grouped<GroupKey, RegressionFold<FeatureType>>;
@@ -148,21 +168,26 @@ using RegressionFolds = Grouped<GroupKey, RegressionFold<FeatureType>>;
 template <typename FeatureType>
 using GroupFunction = std::string (*)(const FeatureType &);
 
-template <typename ModelType> class CrossValidation;
+template <typename ModelType>
+class CrossValidation;
 
-template <typename MetricType> class ModelMetric;
+template <typename MetricType>
+class ModelMetric;
 
-template <typename RequiredPredictType> struct PredictionMetric;
+template <typename RequiredPredictType>
+struct PredictionMetric;
 
 /*
  * RANSAC
  */
 
-template <typename GroupKey> struct RansacOutput;
+template <typename GroupKey>
+struct RansacOutput;
 
 struct RansacConfig;
 
-template <typename ModelType, typename StrategyType> class Ransac;
+template <typename ModelType, typename StrategyType>
+class Ransac;
 
 template <typename ModelType, typename StrategyType, typename FeatureType,
           typename GroupKey>
@@ -192,13 +217,15 @@ using EnsembleSamplerState = std::vector<SamplerState>;
  * Traits
  */
 
-template <typename First, typename Second> struct TypePair {
+template <typename First, typename Second>
+struct TypePair {
   using first_type = First;
   using second_type = Second;
 };
 
-template <typename T> struct is_measurement;
+template <typename T>
+struct is_measurement;
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

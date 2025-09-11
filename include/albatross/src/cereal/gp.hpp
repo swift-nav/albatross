@@ -84,6 +84,6 @@ inline void serialize(Archive &archive, LinearCombination<FeatureType> &combo,
   archive(cereal::make_nvp("coefficients", combo.coefficients));
 }
 
-} // namespace cereal
+}  // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_GP_HPP_ */

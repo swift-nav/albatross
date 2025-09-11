@@ -47,7 +47,6 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
                                        std::default_random_engine &gen,
                                        std::size_t n_splits = 2,
                                        double a = 2.) {
-
   const std::size_t n_ensembles = ensembles.size();
   const std::size_t n_dim = ensembles[0].params.size();
 
@@ -64,13 +63,11 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
   EnsembleSamplerState next_ensembles(ensembles);
 
   for (const auto &split : splits) {
-
     const auto complement = indices_complement(split, n_ensembles);
     std::uniform_int_distribution<std::size_t> random_complement_idx(
         0, complement.size() - 1);
 
     for (const std::size_t &k : split) {
-
       SamplerState current(next_ensembles[k]);
       SamplerState proposal(current);
       proposal.accepted = false;
@@ -123,12 +120,10 @@ EnsembleSamplerState stretch_move_step(const EnsembleSamplerState &ensembles,
 }
 
 template <typename ComputeLogProb, typename CallbackFunc = NullCallback>
-std::vector<EnsembleSamplerState>
-ensemble_sampler(ComputeLogProb &&compute_log_prob,
-                 const EnsembleSamplerState &initial_state,
-                 std::size_t max_iterations, std::default_random_engine &gen,
-                 CallbackFunc &&callback = NullCallback()) {
-
+std::vector<EnsembleSamplerState> ensemble_sampler(
+    ComputeLogProb &&compute_log_prob,
+    const EnsembleSamplerState &initial_state, std::size_t max_iterations,
+    std::default_random_engine &gen, CallbackFunc &&callback = NullCallback()) {
   EnsembleSamplerState state = ensure_finite_initial_state(
       std::forward<ComputeLogProb>(compute_log_prob), initial_state, gen);
 
@@ -147,12 +142,10 @@ ensemble_sampler(ComputeLogProb &&compute_log_prob,
 }
 
 template <typename ComputeLogProb, typename CallbackFunc = NullCallback>
-std::vector<EnsembleSamplerState>
-ensemble_sampler(ComputeLogProb &&compute_log_prob,
-                 const std::vector<std::vector<double>> &params,
-                 std::size_t max_iterations, std::default_random_engine &gen,
-                 CallbackFunc &&callback = NullCallback()) {
-
+std::vector<EnsembleSamplerState> ensemble_sampler(
+    ComputeLogProb &&compute_log_prob,
+    const std::vector<std::vector<double>> &params, std::size_t max_iterations,
+    std::default_random_engine &gen, CallbackFunc &&callback = NullCallback()) {
   EnsembleSamplerState ensembles;
   for (const auto &p : params) {
     SamplerState state = {p, compute_log_prob(p), true};
@@ -170,7 +163,6 @@ std::vector<EnsembleSamplerState> ensemble_sampler(
     const ModelType &model, const RegressionDataset<FeatureType> &dataset,
     std::size_t n_walkers, std::size_t max_iterations,
     std::default_random_engine &gen, CallbackFunc &&callback = NullCallback()) {
-
   std::normal_distribution<double> jitter(0., 0.1);
   const auto initial_params =
       initial_params_from_jitter(model.get_params(), jitter, gen, n_walkers);
@@ -185,6 +177,6 @@ std::vector<EnsembleSamplerState> ensemble_sampler(
                           std::forward<CallbackFunc>(callback));
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_SAMPLERS_ENSEMBLE_HPP_ */

@@ -82,6 +82,6 @@ void SerializableSPQR<_MatrixType>::load(
                albatross::cast::to_size(rows()) * integer_size_bytes);
 }
 
-} // namespace Eigen
+}  // namespace Eigen
 
-#endif // ALBATROSS_CEREAL_SERIALIZABLE_SPQR_H
+#endif  // ALBATROSS_CEREAL_SERIALIZABLE_SPQR_H

@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Tune>
 #include <csv.h>
-#include <fstream>
 #include <gflags/gflags.h>
+#include <albatross/Tune>
+#include <fstream>
 #include <iostream>
 
 #include "sinc_example_utils.h"
@@ -31,7 +31,6 @@ using albatross::RegressionDataset;
 template <typename ModelType>
 void run_model(ModelType &model, RegressionDataset<double> &data, double low,
                double high) {
-
   if (FLAGS_tune) {
     albatross::LeaveOneOutLikelihood<> loo_nll;
     model.set_params(get_tuner(model, loo_nll, data).tune());
@@ -48,7 +47,6 @@ void run_model(ModelType &model, RegressionDataset<double> &data, double low,
 }
 
 int main(int argc, char *argv[]) {
-
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = std::stoi(FLAGS_n);

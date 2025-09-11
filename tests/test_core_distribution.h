@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Distribution>
 #include <gtest/gtest.h>
+#include <albatross/Distribution>
 
 namespace albatross {
 
@@ -41,7 +41,8 @@ void expect_subset_equal(const Eigen::DiagonalMatrix<Scalar, Size> &original,
   expect_subset_equal(original.diagonal(), actual.diagonal(), indices);
 }
 
-template <typename X> struct DistributionTestCase {
+template <typename X>
+struct DistributionTestCase {
   using RepresentationType = X;
   virtual RepresentationType create() const {
     RepresentationType obj;
@@ -55,4 +56,4 @@ struct DistributionTest : public ::testing::Test {
 };
 
 TYPED_TEST_SUITE_P(DistributionTest);
-} // namespace albatross
+}  // namespace albatross

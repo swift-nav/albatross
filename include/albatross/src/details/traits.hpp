@@ -22,19 +22,22 @@ namespace albatross {
  * with a static assert let's you include a static assert that
  * only triggers with a particular template parameter is used.
  */
-template <class T> struct delay_static_assert : std::false_type {};
+template <class T>
+struct delay_static_assert : std::false_type {};
 
 /*
  * Checks if a class type is complete by using sizeof.
  *
  * https://stackoverflow.com/questions/25796126/static-assert-that-template-typename-t-is-not-complete
  */
-template <typename X> class is_complete {
+template <typename X>
+class is_complete {
   template <typename T, typename = decltype(!sizeof(T))>
   static std::true_type test(int);
-  template <typename T> static std::false_type test(...);
+  template <typename T>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value =
       decltype(test<typename std::decay<X>::type>(0))::value;
 };
@@ -43,7 +46,8 @@ public:
  * is_vector
  */
 
-template <typename T> struct is_vector : public std::false_type {};
+template <typename T>
+struct is_vector : public std::false_type {};
 
 template <typename T>
 struct is_vector<std::vector<T>> : public std::true_type {};
@@ -75,19 +79,22 @@ struct is_measurement : public is_templated_type<Measurement, T> {};
  * is_streamable
  */
 
-template <typename T> class is_streamable {
+template <typename T>
+class is_streamable {
   template <typename C>
   static auto test(int)
       -> decltype(std::declval<std::ostream &>() << std::declval<C>(),
                   std::true_type());
 
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T> constexpr bool is_streamable<T>::value;
+template <typename T>
+constexpr bool is_streamable<T>::value;
 
 /*
  * is_in_variant
@@ -149,18 +156,21 @@ struct variant_all<Expression, variant<A, Ts...>,
 template <typename X, typename Y>
 struct is_sub_variant : public std::false_type {};
 
-template <typename Y, typename... Ts> struct is_sub_variant<variant<Ts...>, Y> {
-private:
-  template <typename T> struct is_in_y : public is_in_variant<T, Y> {};
+template <typename Y, typename... Ts>
+struct is_sub_variant<variant<Ts...>, Y> {
+ private:
+  template <typename T>
+  struct is_in_y : public is_in_variant<T, Y> {};
 
-public:
+ public:
   static constexpr bool value = variant_all<is_in_y, variant<Ts...>>::value;
 };
 
 /*
  * variant_size
  */
-template <typename T> struct variant_size {};
+template <typename T>
+struct variant_size {};
 
 template <typename... Ts>
 struct variant_size<variant<Ts...>>
@@ -169,20 +179,23 @@ struct variant_size<variant<Ts...>>
 /*
  * Eigen helpers
  */
-template <typename T> class is_eigen_plain_object {
+template <typename T>
+class is_eigen_plain_object {
   template <typename C>
   static typename std::enable_if<
       std::is_base_of<Eigen::PlainObjectBase<C>, C>::value,
       std::true_type>::type
   test(int);
 
-  template <typename C> static std::false_type test(...);
+  template <typename C>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T> class is_eigen_xpr {
+template <typename T>
+class is_eigen_xpr {
   // Here we check if T is a generic eigen expression, but we then
   // want to rule out cases where T is a plain_object such as
   // an Eigen::MatrixXd.
@@ -192,9 +205,10 @@ template <typename T> class is_eigen_xpr {
             std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
   static std::true_type test(int);
 
-  template <typename C> static std::false_type test(...);
+  template <typename C>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
@@ -206,17 +220,20 @@ public:
  */
 
 namespace detail {
-template <class T> struct is_reference_wrapper : std::false_type {};
+template <class T>
+struct is_reference_wrapper : std::false_type {};
 template <class U>
 struct is_reference_wrapper<std::reference_wrapper<U>> : std::true_type {};
 
-template <class T> struct invoke_impl {
+template <class T>
+struct invoke_impl {
   template <class F, class... Args>
   static auto call(F &&f, Args &&...args)
       -> decltype(std::forward<F>(f)(std::forward<Args>(args)...));
 };
 
-template <class B, class MT> struct invoke_impl<MT B::*> {
+template <class B, class MT>
+struct invoke_impl<MT B::*> {
   template <
       class T, class Td = typename std::decay<T>::type,
       class = typename std::enable_if<std::is_base_of<B, Td>::value>::type>
@@ -249,7 +266,8 @@ auto INVOKE(F &&f, Args &&...args)
     -> decltype(invoke_impl<Fd>::call(std::forward<F>(f),
                                       std::forward<Args>(args)...));
 
-template <typename AlwaysVoid, typename, typename...> struct invoke_result {};
+template <typename AlwaysVoid, typename, typename...>
+struct invoke_result {};
 template <typename F, typename... Args>
 struct invoke_result<decltype(void(detail::INVOKE(std::declval<F>(),
                                                   std::declval<Args>()...))),
@@ -258,17 +276,19 @@ struct invoke_result<decltype(void(detail::INVOKE(std::declval<F>(),
       decltype(detail::INVOKE(std::declval<F>(), std::declval<Args>()...));
 };
 
-} // namespace detail
+}  // namespace detail
 
 template <class F, class... Args>
 struct invoke_result : detail::invoke_result<void, F, Args...> {};
 
-template <class F, class... Args> class is_invocable {
+template <class F, class... Args>
+class is_invocable {
   template <typename T, typename = typename invoke_result<T, Args...>::type>
   static std::true_type test(int);
-  template <typename T> static std::false_type test(...);
+  template <typename T>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<F>(0))::value;
 };
 
@@ -279,6 +299,6 @@ struct is_invocable_with_result {
       typename detail::invoke_result<void, F, Args...>::type>::value;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_DETAILS_TRAITS_HPP_ */

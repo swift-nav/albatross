@@ -15,8 +15,8 @@
 #include <albatross/SparseGP>
 
 #include <csv.h>
-#include <fstream>
 #include <gflags/gflags.h>
+#include <fstream>
 #include <iostream>
 
 #define EXAMPLE_SLOPE_VALUE 0.

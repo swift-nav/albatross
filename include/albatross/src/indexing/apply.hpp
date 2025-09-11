@@ -119,6 +119,6 @@ inline auto apply(const Grouped<KeyType, ValueType> &map, ApplyFunction &&f) {
   return apply_map(map, std::forward<ApplyFunction>(f));
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_APPLY_HPP_ */

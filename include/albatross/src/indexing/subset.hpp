@@ -126,9 +126,9 @@ inline Eigen::MatrixXd symmetric_subset(const Eigen::MatrixXd &v,
  * Extract a subset of an Eigen::DiagonalMatrix
  */
 template <typename SizeType, typename Scalar, int Size>
-inline Eigen::DiagonalMatrix<Scalar, Size>
-symmetric_subset(const Eigen::DiagonalMatrix<Scalar, Size> &v,
-                 const std::vector<SizeType> &indices) {
+inline Eigen::DiagonalMatrix<Scalar, Size> symmetric_subset(
+    const Eigen::DiagonalMatrix<Scalar, Size> &v,
+    const std::vector<SizeType> &indices) {
   return subset(v.diagonal(), indices).asDiagonal();
 }
 
@@ -195,9 +195,8 @@ inline std::set<X> vector_set_difference(const std::vector<X> &x,
  * In other words, indices and indices_complement(indices) should
  * contain all the numbers between 0 and n-1
  */
-inline std::vector<std::size_t>
-indices_complement(const std::vector<std::size_t> &indices,
-                   const std::size_t n) {
+inline std::vector<std::size_t> indices_complement(
+    const std::vector<std::size_t> &indices, const std::size_t n) {
   std::vector<std::size_t> all_indices(n);
   std::iota(all_indices.begin(), all_indices.end(), 0);
   const auto complement = vector_set_difference(all_indices, indices);
@@ -214,6 +213,6 @@ inline GroupIndices indices_from_groups(const GroupIndexer<GroupType> &indexer,
   return output;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

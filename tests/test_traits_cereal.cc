@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <cereal/details/traits.hpp>
 #include <gtest/gtest.h>
+#include <cereal/details/traits.hpp>
 #include <type_traits>
 
 #include <albatross/src/cereal/traits.hpp>
@@ -21,25 +21,30 @@ namespace albatross {
 struct NullArchive {};
 
 class ValidInOutSerializer {
-public:
-  template <typename Archive> void serialize(Archive &){};
+ public:
+  template <typename Archive>
+  void serialize(Archive &){};
 };
 
 class ValidSaveLoadSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
+ public:
+  template <typename Archive>
+  void save(Archive &) const {};
 
-  template <typename Archive> void load(Archive &){};
+  template <typename Archive>
+  void load(Archive &){};
 };
 
 class ValidInSerializer {
-public:
-  template <typename Archive> void load(Archive &){};
+ public:
+  template <typename Archive>
+  void load(Archive &){};
 };
 
 class ValidOutSerializer {
-public:
-  template <typename Archive> void save(Archive &) const {};
+ public:
+  template <typename Archive>
+  void save(Archive &) const {};
 };
 
 class InValidInOutSerializer {};
@@ -83,4 +88,4 @@ TEST(test_traits_cereal, test_valid_output_serializer) {
       valid_output_serializer<InValidInOutSerializer, NullArchive>::value));
 }
 
-} // namespace albatross
+}  // namespace albatross

@@ -17,9 +17,9 @@ namespace albatross {
 /*
  * Samples integers between low and high (inclusive) with replacement.
  */
-inline std::vector<std::size_t>
-randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
-                            std::default_random_engine &gen) {
+inline std::vector<std::size_t> randint_without_replacement(
+    std::size_t n, std::size_t low, std::size_t high,
+    std::default_random_engine &gen) {
   std::size_t n_choices = high - low + 1;
   if (n > n_choices) {
     std::cout << "ERROR: n (" << n << ") is larger than n_choices ("
@@ -58,9 +58,8 @@ randint_without_replacement(std::size_t n, std::size_t low, std::size_t high,
 }
 
 template <typename X>
-inline std::vector<X>
-random_without_replacement(const std::vector<X> &xs, std::size_t n,
-                           std::default_random_engine &gen) {
+inline std::vector<X> random_without_replacement(
+    const std::vector<X> &xs, std::size_t n, std::default_random_engine &gen) {
   std::vector<X> random_sample;
   for (const auto &i : randint_without_replacement(n, 0, xs.size() - 1, gen)) {
     random_sample.emplace_back(xs[i]);
@@ -72,7 +71,6 @@ template <typename _Scalar, int _Rows, int _Cols, typename DistributionType,
           typename RandomNumberGenerator>
 void random_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix,
                  DistributionType &dist, RandomNumberGenerator &rng) {
-
   auto random_sample = [&]() { return dist(rng); };
 
   matrix =
@@ -101,10 +99,9 @@ void gaussian_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix) {
 }
 
 template <typename Distribution, typename RandomNumberGenerator>
-inline Eigen::MatrixXd
-random_covariance_matrix(Eigen::Index k, Distribution &eigen_value_distribution,
-                         RandomNumberGenerator &gen) {
-
+inline Eigen::MatrixXd random_covariance_matrix(
+    Eigen::Index k, Distribution &eigen_value_distribution,
+    RandomNumberGenerator &gen) {
   Eigen::MatrixXd Q(k, k);
   gaussian_fill(Q, gen);
   Q = Q.colPivHouseholderQr().matrixQ();
@@ -149,10 +146,11 @@ inline Eigen::VectorXd random_multivariate_normal(const Eigen::MatrixXd &cov,
 }
 
 template <typename T>
-Eigen::SparseMatrix<T>
-random_sparse_matrix(Eigen::Index rows, Eigen::Index cols, double fill,
-                     std::default_random_engine &gen, T min_element = -1e6,
-                     T max_element = 1e6) {
+Eigen::SparseMatrix<T> random_sparse_matrix(Eigen::Index rows,
+                                            Eigen::Index cols, double fill,
+                                            std::default_random_engine &gen,
+                                            T min_element = -1e6,
+                                            T max_element = 1e6) {
   std::uniform_real_distribution<T> valdis(min_element, max_element);
   std::uniform_int_distribution<Eigen::Index> rowdis(0, rows - 1);
   std::uniform_int_distribution<Eigen::Index> coldis(0, cols - 1);
@@ -177,10 +175,10 @@ random_sparse_matrix(Eigen::Index rows, Eigen::Index cols, double fill,
 
   Eigen::SparseMatrix<T> mat(rows, cols);
   mat.setFromTriplets(tripletList.begin(),
-                      tripletList.end()); // create the matrix
+                      tripletList.end());  // create the matrix
   return mat;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

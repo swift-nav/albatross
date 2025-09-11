@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <gtest/gtest.h>
 #include <albatross/Evaluation>
 #include <chrono>
-#include <gtest/gtest.h>
 
 #include "test_models.h"
 
@@ -23,7 +23,8 @@ std::string group_by_interval(const FeatureType &);
 
 // Group values by interval, but return keys that once sorted won't be
 // in order
-template <> std::string group_by_interval(const double &x) {
+template <>
+std::string group_by_interval(const double &x) {
   if (x <= 3) {
     return "2";
   } else if (x <= 6) {
@@ -33,7 +34,8 @@ template <> std::string group_by_interval(const double &x) {
   }
 }
 
-template <> std::string group_by_interval(const AdaptedFeature &x) {
+template <>
+std::string group_by_interval(const AdaptedFeature &x) {
   return group_by_interval<double>(x.value);
 }
 
@@ -263,7 +265,7 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
 }
 
 class MakeLargeGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     return gp_from_covariance(covariance);
@@ -275,7 +277,7 @@ public:
 };
 
 class MakeLargeAdaptedGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
@@ -289,7 +291,7 @@ public:
 
 template <typename ModelTestCase>
 class SpecializedCrossValidationTester : public ::testing::Test {
-public:
+ public:
   ModelTestCase test_case;
 };
 
@@ -327,4 +329,4 @@ TYPED_TEST(SpecializedCrossValidationTester,
   EXPECT_NEAR((cv_fast_scores - cv_slow_scores).norm(), 0., 1e-8);
 }
 
-} // namespace albatross
+}  // namespace albatross

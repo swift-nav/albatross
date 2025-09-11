@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <gtest/gtest.h>
 #include <albatross/CovarianceFunctions>
 #include <array>
-#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -38,8 +38,9 @@ inline auto random_spherical_dataset(std::vector<Eigen::VectorXd> points,
   return RegressionDataset<Eigen::VectorXd>(points, targets);
 }
 
-template <typename T> class RadialCovarianceTester : public ::testing::Test {
-public:
+template <typename T>
+class RadialCovarianceTester : public ::testing::Test {
+ public:
   T test_case;
 };
 
@@ -66,7 +67,6 @@ TYPED_TEST(RadialCovarianceTester, test_edge_cases) {
 }
 
 TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
-
   auto set_sigma_length_scale = [this](double sigma, double length_scale) {
     for (const auto &pair : this->test_case.get_params()) {
       if (pair.first.find("length_scale") != std::string::npos) {
@@ -151,7 +151,7 @@ TEST(test_radial, test_is_positive_definite) {
 }
 
 class SquaredExponentialSSRTest {
-public:
+ public:
   std::vector<double> features() const { return linspace(0., 10., 101); }
 
   auto covariance_function() const {
@@ -163,7 +163,7 @@ public:
 };
 
 class ExponentialSSRTest {
-public:
+ public:
   std::vector<double> features() const { return linspace(0., 10., 11); }
 
   auto covariance_function() const {
@@ -175,7 +175,7 @@ public:
 };
 
 class ExponentialAngularSSRTest {
-public:
+ public:
   std::vector<double> features() const { return linspace(0., M_2_PI, 11); }
 
   auto covariance_function() const {
@@ -188,7 +188,7 @@ public:
 
 template <typename T>
 class CovarianceStateSpaceTester : public ::testing::Test {
-public:
+ public:
   T test_case;
 };
 
@@ -198,7 +198,6 @@ using StateSpaceTestCases =
 TYPED_TEST_SUITE(CovarianceStateSpaceTester, StateSpaceTestCases);
 
 TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
-
   const auto xs = this->test_case.features();
 
   const auto cov_func = this->test_case.covariance_function();
@@ -488,4 +487,4 @@ TEST(test_radial, test_matern_32_oracle) {
   }
 }
 
-} // namespace albatross
+}  // namespace albatross

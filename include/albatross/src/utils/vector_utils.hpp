@@ -69,6 +69,6 @@ inline bool vector_contains(const std::vector<X> &vector, const X &x) {
   return std::find(vector.begin(), vector.end(), x) != vector.end();
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_UTILS_VECTOR_UTILS_HPP_ */

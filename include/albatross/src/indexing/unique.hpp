@@ -78,6 +78,6 @@ inline ApplyType unique_value(const std::vector<ValueType> &xs,
   return unique_value(unique_values(xs, std::forward<ApplyFunction>(f)));
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_UNIQUE_HPP_ */

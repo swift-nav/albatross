@@ -15,9 +15,11 @@
 
 namespace albatross {
 
-template <typename ModelType, typename Fit> class FitModel {
-public:
-  template <typename X, typename Y, typename Z> friend class Prediction;
+template <typename ModelType, typename Fit>
+class FitModel {
+ public:
+  template <typename X, typename Y, typename Z>
+  friend class Prediction;
 
   static_assert(
       std::is_move_constructible<Fit>::value,
@@ -36,8 +38,8 @@ public:
   // When FitModel is an lvalue we store a reference to the fit
   // inside the resulting Prediction class.
   template <typename PredictFeatureType>
-  const PredictionReference<ModelType, PredictFeatureType, Fit>
-  predict(const std::vector<PredictFeatureType> &features) const & {
+  const PredictionReference<ModelType, PredictFeatureType, Fit> predict(
+      const std::vector<PredictFeatureType> &features) const & {
     return PredictionReference<ModelType, PredictFeatureType, Fit>(model_, fit_,
                                                                    features);
   }
@@ -45,8 +47,8 @@ public:
   // When FitModel is an rvalue the Fit will be a temporary so
   // we move it into the Prediction class to be stored there.
   template <typename PredictFeatureType>
-  Prediction<ModelType, PredictFeatureType, Fit>
-  predict(const std::vector<PredictFeatureType> &features) && {
+  Prediction<ModelType, PredictFeatureType, Fit> predict(
+      const std::vector<PredictFeatureType> &features) && {
     return Prediction<ModelType, PredictFeatureType, Fit>(
         std::move(model_), std::move(fit_), features);
   }
@@ -106,7 +108,7 @@ public:
     return (model_ == other.model_ && fit_ == other.fit_);
   }
 
-private:
+ private:
   ModelType model_;
   Fit fit_;
 };
@@ -117,5 +119,5 @@ auto update(const FitModel<ModelType, FitType> &fit_model,
   return fit_model.update(dataset);
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif

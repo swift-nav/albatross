@@ -29,5 +29,5 @@ inline double mean_aggregator(const std::vector<double> &metrics) {
   return mean;
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif

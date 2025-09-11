@@ -52,7 +52,6 @@ inline std::vector<double> query_ratios(std::size_t n) {
 
 inline std::vector<double> get_queries(double value, double low, double high,
                                        std::size_t n) {
-
   if (std::isinf(high)) {
     high = 1e8;
   }
@@ -97,14 +96,15 @@ inline ParameterStore set_tunable_param(const ParameterStore &params,
   perturbed.values[i] = val;
   return set_tunable_params_values(params, perturbed.values, true);
 };
-} // namespace details
+}  // namespace details
 
 template <typename Function>
-inline ParameterStore
-greedy_tune(Function evaluate_function, const ParameterStore &params,
-            std::size_t n_queries_each_direction = 4,
-            std::size_t n_iterations = 10, ThreadPool *threads = nullptr,
-            std::ostream *os = &std::cout) {
+inline ParameterStore greedy_tune(Function evaluate_function,
+                                  const ParameterStore &params,
+                                  std::size_t n_queries_each_direction = 4,
+                                  std::size_t n_iterations = 10,
+                                  ThreadPool *threads = nullptr,
+                                  std::ostream *os = &std::cout) {
   static_assert(
       has_call_operator<Function, ParameterStore>::value,
       "evaluate_function must have a single ParameterStore argument.");
@@ -134,7 +134,6 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
 
   for (std::size_t iter = 0; iter < n_iterations; ++iter) {
     for (std::size_t i = 0; i < tunable.names.size(); ++i) {
-
       tunable = get_tunable_parameters(best_params);
       auto values = details::get_queries(
           tunable.values[i], tunable.lower_bounds[i], tunable.upper_bounds[i],
@@ -196,6 +195,6 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
   return best_params;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_SRC_TUNE_GREEDY_TUNER_HPP_ */

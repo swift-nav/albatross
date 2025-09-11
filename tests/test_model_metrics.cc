@@ -10,16 +10,16 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "test_models.h"
+#include <gtest/gtest.h>
 #include <albatross/GP>
 #include <albatross/Tune>
-#include <gtest/gtest.h>
+#include "test_models.h"
 
 namespace albatross {
 
 template <typename TestMetric>
 class ModelMetricTester : public ::testing::Test {
-public:
+ public:
   TestMetric test_metric;
 };
 
@@ -41,4 +41,4 @@ TYPED_TEST(ModelMetricTester, test_sanity) {
   EXPECT_FALSE(std::isnan(metric));
 }
 
-} // namespace albatross
+}  // namespace albatross

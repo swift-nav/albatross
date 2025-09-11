@@ -35,9 +35,9 @@
  * mode) and avoids the unused variable problem if you want to go that route.
  */
 #ifdef NDEBUG
-#define ALBATROSS_ASSERT(x)                                                    \
-  do {                                                                         \
-    (void)(x);                                                                 \
+#define ALBATROSS_ASSERT(x) \
+  do {                      \
+    (void)(x);              \
   } while (0)
 #else
 #include <assert.h>
@@ -46,7 +46,7 @@
 
 namespace albatross {
 
-#define ALBATROSS_FAIL(dummy, msg)                                             \
+#define ALBATROSS_FAIL(dummy, msg) \
   { static_assert(delay_static_assert<dummy>::value, msg); }
 
 /*
@@ -61,6 +61,6 @@ namespace albatross {
 
 // #define ALBATROSS_FAIL(dummy, msg) = delete
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_DETAILS_ERROR_HANDLING_HPP_ */

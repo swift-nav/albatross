@@ -12,7 +12,8 @@
 
 namespace albatross {
 
-template <typename X> struct SerializableType {
+template <typename X>
+struct SerializableType {
   using RepresentationType = X;
   virtual RepresentationType create() const {
     RepresentationType obj;
@@ -23,7 +24,8 @@ template <typename X> struct SerializableType {
   };
 };
 
-template <typename Serializable> struct SerializeTest : public ::testing::Test {
+template <typename Serializable>
+struct SerializeTest : public ::testing::Test {
   typedef typename Serializable::RepresentationType Representation;
 };
 
@@ -77,4 +79,4 @@ TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_portable_binary) {
                                 cereal::PortableBinaryOutputArchive,
                                 TypeParam>();
 }
-} // namespace albatross
+}  // namespace albatross

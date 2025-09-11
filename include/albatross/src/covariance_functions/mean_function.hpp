@@ -15,8 +15,9 @@
 
 namespace albatross {
 
-template <typename Derived> class MeanFunction : public ParameterHandlingMixin {
-private:
+template <typename Derived>
+class MeanFunction : public ParameterHandlingMixin {
+ private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public MeanFunction<B> {}
   // or
@@ -26,8 +27,9 @@ private:
   MeanFunction() : ParameterHandlingMixin() {}
   friend Derived;
 
-public:
-  template <typename X> double call(const X &x) const {
+ public:
+  template <typename X>
+  double call(const X &x) const {
     return DefaultCaller::call(derived(), x);
   }
 
@@ -115,24 +117,26 @@ public:
                              !has_possible_call_impl<Derived, X>::value),
                             int>::type = 0>
   void operator()(const X &x ALBATROSS_UNUSED) const
-      ALBATROSS_FAIL(X, "No public method with signature 'double "
-                        "Derived::_call_impl(const X&) const'");
+      ALBATROSS_FAIL(X,
+                     "No public method with signature 'double "
+                     "Derived::_call_impl(const X&) const'");
 
   template <typename X,
             typename std::enable_if<(!has_valid_caller<Derived, X>::value &&
                                      has_invalid_call_impl<Derived, X>::value),
                                     int>::type = 0>
   void operator()(const X &x ALBATROSS_UNUSED) const
-      ALBATROSS_FAIL(X, "Incorrectly defined method 'double "
-                        "Derived::_call_impl(const X&) const'");
+      ALBATROSS_FAIL(X,
+                     "Incorrectly defined method 'double "
+                     "Derived::_call_impl(const X&) const'");
 
   template <typename Other>
-  const SumOfMeanFunctions<Derived, Other>
-  operator+(const MeanFunction<Other> &other) const;
+  const SumOfMeanFunctions<Derived, Other> operator+(
+      const MeanFunction<Other> &other) const;
 
   template <typename Other>
-  const ProductOfMeanFunctions<Derived, Other>
-  operator*(const MeanFunction<Other> &other) const;
+  const ProductOfMeanFunctions<Derived, Other> operator*(
+      const MeanFunction<Other> &other) const;
 
   Derived &derived() { return *static_cast<Derived *>(this); }
 
@@ -144,7 +148,7 @@ public:
  */
 template <class LHS, class RHS>
 class SumOfMeanFunctions : public MeanFunction<SumOfMeanFunctions<LHS, RHS>> {
-public:
+ public:
   SumOfMeanFunctions() : lhs_(), rhs_() {}
 
   SumOfMeanFunctions(const LHS &lhs, const RHS &rhs) : lhs_(lhs), rhs_(rhs) {}
@@ -196,7 +200,7 @@ public:
     return this->rhs_(x);
   }
 
-protected:
+ protected:
   LHS lhs_;
   RHS rhs_;
 };
@@ -207,7 +211,7 @@ protected:
 template <class LHS, class RHS>
 class ProductOfMeanFunctions
     : public MeanFunction<ProductOfMeanFunctions<LHS, RHS>> {
-public:
+ public:
   ProductOfMeanFunctions() : lhs_(), rhs_() {}
   ProductOfMeanFunctions(const LHS &lhs, const RHS &rhs)
       : lhs_(lhs), rhs_(rhs) {
@@ -265,14 +269,17 @@ public:
     return this->rhs_(x);
   }
 
-protected:
+ protected:
   LHS lhs_;
   RHS rhs_;
   friend class CallTrace<ProductOfMeanFunctions<LHS, RHS>>;
 };
 
 struct ZeroMean : public MeanFunction<ZeroMean> {
-  template <typename X> double _call_impl(const X &) const { return 0.; }
+  template <typename X>
+  double _call_impl(const X &) const {
+    return 0.;
+  }
 };
 
 template <typename Derived>
@@ -289,6 +296,6 @@ MeanFunction<Derived>::operator*(const MeanFunction<Other> &other) const {
   return ProductOfMeanFunctions<Derived, Other>(derived(), other.derived());
 }
 
-} // namespace albatross
+}  // namespace albatross
 
-#endif // ALBATROSS_COVARIANCE_FUNCTIONS_MEAN_FUNCTION_H
+#endif  // ALBATROSS_COVARIANCE_FUNCTIONS_MEAN_FUNCTION_H

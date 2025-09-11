@@ -21,6 +21,6 @@ struct SamplerState {
   bool accepted;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_SAMPLERS_STATE_HPP_ */

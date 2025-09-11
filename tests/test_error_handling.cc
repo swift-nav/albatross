@@ -27,4 +27,4 @@ TEST(test_error_handling, test_assert_evaluates) {
   EXPECT_EQ(x, 1);
 }
 
-} // namespace albatross
+}  // namespace albatross

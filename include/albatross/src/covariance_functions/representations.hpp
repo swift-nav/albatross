@@ -112,6 +112,6 @@ struct DirectInverse {
   Eigen::MatrixXd inverse_;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTION_REPRESENTATIONS_HPP_ */

@@ -36,9 +36,9 @@ static inline double log_sum(const Eigen::VectorXd &x) {
  * normal.
  */
 template <typename _MatrixType, int _UpLo>
-static inline double
-negative_log_likelihood(const Eigen::VectorXd &deviation,
-                        const Eigen::LDLT<_MatrixType, _UpLo> &ldlt) {
+static inline double negative_log_likelihood(
+    const Eigen::VectorXd &deviation,
+    const Eigen::LDLT<_MatrixType, _UpLo> &ldlt) {
   const auto diag = ldlt.vectorD();
   const double rank = cast::to_double(diag.size());
   const double mahalanobis = deviation.dot(ldlt.solve(deviation));
@@ -50,9 +50,8 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
  * Computes the negative log likelihood under the assumption that the predcitve
  * distribution is multivariate normal.
  */
-static inline double
-negative_log_likelihood(const Eigen::VectorXd &deviation,
-                        const Eigen::MatrixXd &covariance) {
+static inline double negative_log_likelihood(
+    const Eigen::VectorXd &deviation, const Eigen::MatrixXd &covariance) {
   ALBATROSS_ASSERT(deviation.size() == covariance.rows());
   ALBATROSS_ASSERT(covariance.cols() == covariance.rows());
   if (deviation.size() == 1) {
@@ -71,10 +70,10 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
  * independent.
  */
 template <typename _Scalar, int SizeAtCompileTime>
-static inline double
-negative_log_likelihood(const Eigen::VectorXd &deviation,
-                        const Eigen::DiagonalMatrix<_Scalar, SizeAtCompileTime>
-                            &diagonal_covariance) {
+static inline double negative_log_likelihood(
+    const Eigen::VectorXd &deviation,
+    const Eigen::DiagonalMatrix<_Scalar, SizeAtCompileTime>
+        &diagonal_covariance) {
   ALBATROSS_ASSERT(deviation.size() == diagonal_covariance.diagonal().size());
   const auto variances = diagonal_covariance.diagonal();
   double nll = 0.;
@@ -84,6 +83,6 @@ negative_log_likelihood(const Eigen::VectorXd &deviation,
   return nll;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

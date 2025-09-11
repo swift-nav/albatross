@@ -51,8 +51,8 @@ template <template <typename...> class Map, typename KeyType,
           typename std::enable_if<details::is_valid_value_only_filter_function<
                                       ToKeepFunction, ValueType>::value,
                                   int>::type = 0>
-inline Grouped<KeyType, ValueType>
-filter_map(const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
+inline Grouped<KeyType, ValueType> filter_map(
+    const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.second)) {
@@ -68,8 +68,8 @@ template <
     typename std::enable_if<details::is_valid_key_value_filter_function<
                                 ToKeepFunction, KeyType, ValueType>::value,
                             int>::type = 0>
-inline Grouped<KeyType, ValueType>
-filter_map(const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
+inline Grouped<KeyType, ValueType> filter_map(
+    const Map<KeyType, ValueType> &map, ToKeepFunction &&to_keep) {
   Grouped<KeyType, ValueType> output;
   for (const auto &pair : map) {
     if (to_keep(pair.first, pair.second)) {
@@ -96,9 +96,8 @@ template <typename ToKeepFunction, typename FeatureType,
           typename std::enable_if<details::is_valid_value_only_filter_function<
                                       ToKeepFunction, FeatureType>::value,
                                   int>::type = 0>
-inline RegressionDataset<FeatureType>
-filter(const RegressionDataset<FeatureType> &dataset,
-       ToKeepFunction &&to_keep) {
+inline RegressionDataset<FeatureType> filter(
+    const RegressionDataset<FeatureType> &dataset, ToKeepFunction &&to_keep) {
   std::vector<std::size_t> inds_to_keep;
   for (std::size_t i = 0; i < dataset.size(); ++i) {
     if (to_keep(dataset.features[i])) {
@@ -108,6 +107,6 @@ filter(const RegressionDataset<FeatureType> &dataset,
   return subset(dataset, inds_to_keep);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_FILTER_HPP_ */

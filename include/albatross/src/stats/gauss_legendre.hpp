@@ -76,8 +76,8 @@ static const std::vector<double> gauss_legendre_50_weights = {
     0.00675979919574540150277887817799, 0.00675979919574540150277887817799,
     0.00290862255315514095840072434286, 0.00290862255315514095840072434286};
 
-} // namespace details
+}  // namespace details
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_STATS_GAUSS_LEGENDRE_HPP_ */

@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <albatross/Tune>
 #include <csv.h>
-#include <fstream>
 #include <gflags/gflags.h>
+#include <albatross/Tune>
+#include <fstream>
 #include <iostream>
 
 #include "sinc_example_utils.h"
@@ -56,7 +56,7 @@ void run_sampler(const ModelType &model_,
   ensemble_sampler(model, data, walkers, max_iterations, gen, callback);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
   using Noise = IndependentNoise<double>;
   Noise indep_noise(meas_noise_sd);
   indep_noise.sigma_independent_noise.prior =
-      PositivePrior(); // LogScaleUniformPrior(1e-3, 1e2);
+      PositivePrior();  // LogScaleUniformPrior(1e-3, 1e2);
 
   if (FLAGS_mode == "radial") {
     // this approach uses a squared exponential radial function to capture

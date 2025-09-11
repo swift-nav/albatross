@@ -31,7 +31,6 @@ inline double chi_squared_cdf_unsafe(double x, double degrees_of_freedom) {
 }
 
 inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
-
   if (std::isnan(x) || x < 0.) {
     return NAN;
   }
@@ -51,7 +50,7 @@ inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
   return chi_squared_cdf_unsafe(x, degrees_of_freedom);
 }
 
-} // namespace details
+}  // namespace details
 
 template <typename IntType,
           typename = std::enable_if_t<std::is_integral<IntType>::value>>
@@ -80,6 +79,6 @@ inline double chi_squared_cdf(const Eigen::VectorXd &deviation,
   return chi_squared_cdf(distance_squared, n);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_STATS_CHI_SQUARED_HPP_ */

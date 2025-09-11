@@ -19,16 +19,18 @@ namespace albatross {
  * This determines whether or not a class, T, has a method,
  *   `std::string T.name() const`
  */
-template <typename T> class has_name {
+template <typename T>
+class has_name {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().name())>
   static typename std::enable_if<std::is_same<std::string, ReturnType>::value,
                                  std::true_type>::type
   test(int);
 
-  template <typename C> static std::false_type test(...);
+  template <typename C>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
@@ -49,15 +51,17 @@ struct is_valid_fit_type<Fit<FitParameter>> : public std::true_type {};
  *                            const MarginalDistribution &)`
  * where U is a base of T.
  */
-template <typename T, typename FeatureType> class has_valid_fit {
+template <typename T, typename FeatureType>
+class has_valid_fit {
   template <typename C,
             typename FitType = decltype(std::declval<const C>()._fit_impl(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
   static typename is_valid_fit_type<FitType>::type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
@@ -72,15 +76,17 @@ class has_possible_fit : public has__fit_impl<T, std::vector<FeatureType> &,
  *
  *   T::fit(features, targets);
  */
-template <typename T, typename FeatureType> class fit_model_type {
+template <typename T, typename FeatureType>
+class fit_model_type {
   template <typename C,
             typename FitModelType = decltype(std::declval<const C>().fit(
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
   static FitModelType test(C *);
-  template <typename> static void test(...);
+  template <typename>
+  static void test(...);
 
-public:
+ public:
   typedef decltype(test<T>(0)) type;
 };
 
@@ -90,7 +96,8 @@ public:
  * Determines which Fit specialization will be returned if you
  * call ModelType::fit.
  */
-template <typename ModelType, typename FeatureType, int = 0> struct fit_type {
+template <typename ModelType, typename FeatureType, int = 0>
+struct fit_type {
   typedef void type;
 };
 
@@ -108,16 +115,18 @@ struct fit_type<M, F>
  *
  *   T::fit_from_prediction(features, joint_prediction);
  */
-template <typename T, typename FeatureType> class fit_from_prediction_type {
+template <typename T, typename FeatureType>
+class fit_from_prediction_type {
   template <typename C,
             typename FitModelType =
                 decltype(std::declval<const C>().fit_from_prediction(
                     std::declval<const std::vector<FeatureType> &>(),
                     std::declval<const JointDistribution &>()))>
   static FitModelType test(C *);
-  template <typename> static void test(...);
+  template <typename>
+  static void test(...);
 
-public:
+ public:
   typedef decltype(test<T>(0)) type;
 };
 
@@ -174,41 +183,47 @@ struct can_predict_joint
 /*
  * Methods for inspecting `Prediction` types.
  */
-template <typename T> class has_mean {
+template <typename T>
+class has_mean {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().mean())>
   static
       typename std::enable_if<std::is_same<Eigen::VectorXd, ReturnType>::value,
                               std::true_type>::type
       test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T> class has_marginal {
+template <typename T>
+class has_marginal {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().marginal())>
   static typename std::enable_if<
       std::is_same<MarginalDistribution, ReturnType>::value,
       std::true_type>::type
   test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T> class has_joint {
+template <typename T>
+class has_joint {
   template <typename C,
             typename ReturnType = decltype(std::declval<const C>().joint())>
   static typename std::enable_if<
       std::is_same<JointDistribution, ReturnType>::value, std::true_type>::type
   test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
@@ -216,16 +231,16 @@ public:
 
 template <typename T, typename ExistingFitType, typename FeatureType>
 class fit_model_update_traits {
-
   template <typename C,
             typename FitType = decltype(std::declval<const C>()._update_impl(
                 std::declval<const ExistingFitType &>(),
                 std::declval<const std::vector<FeatureType> &>(),
                 std::declval<const MarginalDistribution &>()))>
   static FitType test(C *);
-  template <typename> static void test(...);
+  template <typename>
+  static void test(...);
 
-public:
+ public:
   using UpdateFitType = decltype(test<T>(0));
   static constexpr bool has_valid_update =
       is_valid_fit_type<UpdateFitType>::value;
@@ -253,18 +268,18 @@ struct can_update_in_place {
  *   auto fit_model = model.fit(dataset);
  *   auto updated_fit_model = fit_model.update(other_dataset);
  */
-template <typename T, typename FeatureType> class updated_fit_model_type {
-
+template <typename T, typename FeatureType>
+class updated_fit_model_type {
   using ModelType = typename T::model_type;
   using FitType = typename T::fit_type;
   using UpdatedFitType =
       typename fit_model_update_traits<ModelType, FitType,
                                        FeatureType>::UpdateFitType;
 
-public:
+ public:
   typedef FitModel<ModelType, UpdatedFitType> type;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

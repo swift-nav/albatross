@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "../include/albatross/Indexing"
 #include <gtest/gtest.h>
+#include "../include/albatross/Indexing"
 
 namespace albatross {
 
@@ -52,9 +52,11 @@ struct CallOperatorStringConstRefInt {
 
 CallOperatorStringConstRefInt call_operator_string_const_ref_int;
 
-template <typename T> class TestCanBeCalledWithInt : public ::testing::Test {};
+template <typename T>
+class TestCanBeCalledWithInt : public ::testing::Test {};
 
-template <typename _FunctionType, typename _ReturnType> struct WithReturnType {
+template <typename _FunctionType, typename _ReturnType>
+struct WithReturnType {
   using FunctionType = _FunctionType;
   using ReturnType = _ReturnType;
 };
@@ -109,7 +111,6 @@ bool test_can_be_called_with_x(FunctionType &&) {
 // Here we make sure can_be_called_with works when the type of the
 // functions is deduced by the compiler.
 TEST(test_traits_indexing, test_can_be_called_with_deduction) {
-
   EXPECT_TRUE(test_can_be_called_with_int(free_string_const_ref_int));
   EXPECT_TRUE(test_can_be_called_with_int(free_string_ref_int));
   EXPECT_TRUE(test_can_be_called_with_int(free_string_int));
@@ -172,4 +173,4 @@ TYPED_TEST(TestIsValueFilterFunction, test_is_value_filter_function) {
       details::is_valid_value_only_filter_function<TypeParam, int>::value));
 }
 
-} // namespace albatross
+}  // namespace albatross

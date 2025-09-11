@@ -10,11 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <gtest/gtest.h>
 #include <albatross/LeastSquares>
 #include <albatross/NullModel>
 #include <albatross/Ransac>
 #include <albatross/SparseGP>
-#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -27,7 +27,7 @@ inline auto make_simple_covariance_function() {
 }
 
 class MakeGaussianProcess {
-public:
+ public:
   MakeGaussianProcess(){};
 
   auto get_model() const {
@@ -39,7 +39,7 @@ public:
 };
 
 class MakeSparseGaussianProcess {
-public:
+ public:
   MakeSparseGaussianProcess(){};
 
   auto get_model() const {
@@ -54,7 +54,7 @@ public:
 };
 
 class MakeSparseQRSparseGaussianProcess {
-public:
+ public:
   MakeSparseQRSparseGaussianProcess(){};
 
   auto get_model() const {
@@ -73,11 +73,10 @@ class MakeGaussianProcessWithMean {
   const double a = 5.;
   const double b = 1.;
 
-public:
+ public:
   MakeGaussianProcessWithMean(){};
 
   auto get_model() const {
-
     const auto covariance = make_simple_covariance_function();
 
     LinearMean linear_mean;
@@ -90,7 +89,7 @@ public:
 };
 
 class MakeRansacGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
@@ -111,7 +110,7 @@ public:
 };
 
 class MakeRansacChiSquaredGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
@@ -136,13 +135,11 @@ public:
 };
 
 class MakeRansacChiSquaredGaussianProcessWithMean {
-
   const double a = 5.;
   const double b = 1.;
 
-public:
+ public:
   auto get_model() const {
-
     IndependentNoise<double> meas_noise(0.1);
     LinearMean linear_mean;
     linear_mean.offset.value = a;
@@ -169,8 +166,8 @@ public:
 
 namespace adapted {
 
-inline std::vector<double>
-convert_features(const std::vector<AdaptedFeature> &features) {
+inline std::vector<double> convert_features(
+    const std::vector<AdaptedFeature> &features) {
   std::vector<double> converted;
   for (const auto &f : features) {
     converted.push_back(f.value);
@@ -178,13 +175,13 @@ convert_features(const std::vector<AdaptedFeature> &features) {
   return converted;
 }
 
-} // namespace adapted
+}  // namespace adapted
 
 template <typename CovarianceFunc>
 class AdaptedGaussianProcess
     : public GaussianProcessBase<CovarianceFunc, ZeroMean,
                                  AdaptedGaussianProcess<CovarianceFunc>> {
-public:
+ public:
   using Base = GaussianProcessBase<CovarianceFunc, ZeroMean,
                                    AdaptedGaussianProcess<CovarianceFunc>>;
 
@@ -196,10 +193,10 @@ public:
   using FitType = Fit<GPFit<Eigen::SerializableLDLT, double>>;
 
   template <typename FeatureType, typename PredictType, typename GroupKey>
-  std::map<GroupKey, PredictType>
-  cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
-                              const GroupIndexer<GroupKey> &group_indexer,
-                              PredictTypeIdentity<PredictType> identity) const {
+  std::map<GroupKey, PredictType> cross_validated_predictions(
+      const RegressionDataset<FeatureType> &dataset,
+      const GroupIndexer<GroupKey> &group_indexer,
+      PredictTypeIdentity<PredictType> identity) const {
     return gp_cross_validated_predictions(dataset, group_indexer, *this,
                                           identity);
   }
@@ -219,14 +216,14 @@ public:
                                PredictTypeIdentity<PredictType>());
   }
 
-  Eigen::MatrixXd
-  compute_covariance(const std::vector<AdaptedFeature> &features) const {
+  Eigen::MatrixXd compute_covariance(
+      const std::vector<AdaptedFeature> &features) const {
     return this->covariance_function_(adapted::convert_features(features));
   }
 };
 
 class MakeAdaptedGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
     AdaptedGaussianProcess<decltype(covariance)> gp(covariance);
@@ -240,7 +237,6 @@ struct AdaptedRansacStrategy
     : public GaussianProcessRansacStrategy<
           NegativeLogLikelihood<JointDistribution>, FeatureCountConsensusMetric,
           AlwaysAcceptCandidateMetric, LeaveOneOutGrouper> {
-
   template <typename ModelType>
   auto operator()(const ModelType &model,
                   const RegressionDataset<AdaptedFeature> &dataset) const {
@@ -257,7 +253,7 @@ struct AdaptedRansacStrategy
 };
 
 class MakeRansacAdaptedGaussianProcess {
-public:
+ public:
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
 
@@ -278,7 +274,7 @@ public:
 };
 
 class MakeLinearRegression {
-public:
+ public:
   LinearRegression get_model() const { return LinearRegression(); }
 
   RegressionDataset<double> get_dataset() const {
@@ -287,7 +283,7 @@ public:
 };
 
 class MakeNullModel {
-public:
+ public:
   NullModel get_model() const { return NullModel(); }
 
   RegressionDataset<double> get_dataset() const {
@@ -297,7 +293,7 @@ public:
 
 template <typename ModelTestCase>
 class RegressionModelTester : public ::testing::Test {
-public:
+ public:
   ModelTestCase test_case;
 };
 
@@ -318,8 +314,8 @@ enum PredictLevel { MEAN, MARGINAL, JOINT };
  * This TestPredictVariants struct provides different levels of
  * testing depending on what sort of predictions are available.
  */
-template <typename PredictionType, typename = void> struct TestPredictVariants {
-
+template <typename PredictionType, typename = void>
+struct TestPredictVariants {
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const auto get_mean = pred.template get<Eigen::VectorXd>();
@@ -328,9 +324,9 @@ template <typename PredictionType, typename = void> struct TestPredictVariants {
     return PredictLevel::MEAN;
   }
 
-  PredictLevel
-  test_order(const PredictionType &pred,
-             const std::vector<PredictionType> &individual_preds) const {
+  PredictLevel test_order(
+      const PredictionType &pred,
+      const std::vector<PredictionType> &individual_preds) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     EXPECT_EQ(pred_mean.size(), individual_preds.size());
     for (std::size_t i = 0; i < individual_preds.size(); ++i) {
@@ -351,7 +347,6 @@ template <typename PredictionType>
 struct TestPredictVariants<
     PredictionType, std::enable_if_t<has_marginal<PredictionType>::value &&
                                      !has_joint<PredictionType>::value>> {
-
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const MarginalDistribution marginal = pred.marginal();
@@ -361,9 +356,9 @@ struct TestPredictVariants<
     return PredictLevel::MARGINAL;
   }
 
-  PredictLevel
-  test_order(const PredictionType &pred,
-             const std::vector<PredictionType> &individual_preds) const {
+  PredictLevel test_order(
+      const PredictionType &pred,
+      const std::vector<PredictionType> &individual_preds) const {
     const MarginalDistribution pred_marginal = pred.marginal();
     EXPECT_EQ(pred_marginal.size(), individual_preds.size());
     for (std::size_t i = 0; i < individual_preds.size(); ++i) {
@@ -401,9 +396,9 @@ struct TestPredictVariants<PredictionType,
     return PredictLevel::JOINT;
   }
 
-  PredictLevel
-  test_order(const PredictionType &pred,
-             const std::vector<PredictionType> &individual_preds) const {
+  PredictLevel test_order(
+      const PredictionType &pred,
+      const std::vector<PredictionType> &individual_preds) const {
     const JointDistribution pred_joint = pred.joint();
     EXPECT_EQ(pred_joint.size(), individual_preds.size());
     for (std::size_t i = 0; i < individual_preds.size(); ++i) {
@@ -464,4 +459,4 @@ void expect_predict_variants_inconsistent(const PredictionType &pred) {
   }
 }
 
-} // namespace albatross
+}  // namespace albatross

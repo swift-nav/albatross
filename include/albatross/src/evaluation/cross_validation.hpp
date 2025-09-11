@@ -29,7 +29,7 @@ auto predict_fold(const ModelType &model,
 template <typename ModelType, typename FeatureType, typename GroupKey>
 class Prediction<CrossValidation<ModelType>, FeatureType,
                  GroupIndexer<GroupKey>> {
-public:
+ public:
   Prediction(const ModelType &model,
              const RegressionDataset<FeatureType> &dataset,
              const GroupIndexer<GroupKey> &indexer)
@@ -198,9 +198,9 @@ public:
   Grouped<GroupKey, JointDistribution> joints() const = delete;
 
   template <typename DummyType = ModelType>
-  JointDistribution
-  joint() const = delete; // Cannot produce a full joint distribution from cross
-                          // validation.
+  JointDistribution joint() const =
+      delete;  // Cannot produce a full joint distribution from cross
+               // validation.
 
   template <typename PredictType>
   PredictType get(PredictTypeIdentity<PredictType> =
@@ -208,8 +208,9 @@ public:
     return get(get_type<PredictType>());
   }
 
-private:
-  template <typename T> struct get_type {};
+ private:
+  template <typename T>
+  struct get_type {};
 
   auto get(get_type<Eigen::VectorXd>) const { return this->mean(); }
 
@@ -254,18 +255,19 @@ template <typename ModelType, typename FeatureType, typename GroupKey>
 using CVPrediction =
     Prediction<CrossValidation<ModelType>, FeatureType, GroupIndexer<GroupKey>>;
 
-template <typename ModelType> class CrossValidation {
+template <typename ModelType>
+class CrossValidation {
   ModelType model_;
 
-public:
+ public:
   CrossValidation(const ModelType &model) : model_(model) {}
 
   // Predict
 
   template <typename FeatureType, typename GroupKey>
-  CVPrediction<ModelType, FeatureType, GroupKey>
-  predict(const RegressionDataset<FeatureType> &dataset,
-          const GroupIndexer<GroupKey> &indexer) const {
+  CVPrediction<ModelType, FeatureType, GroupKey> predict(
+      const RegressionDataset<FeatureType> &dataset,
+      const GroupIndexer<GroupKey> &indexer) const {
     return CVPrediction<ModelType, FeatureType, GroupKey>(model_, dataset,
                                                           indexer);
   }
@@ -296,9 +298,9 @@ public:
 
   template <typename RequiredPredictType, typename GroupKey,
             typename FeatureType>
-  Eigen::VectorXd
-  scores(const PredictionMetric<RequiredPredictType> &metric,
-         const RegressionFolds<GroupKey, FeatureType> &folds) const {
+  Eigen::VectorXd scores(
+      const PredictionMetric<RequiredPredictType> &metric,
+      const RegressionFolds<GroupKey, FeatureType> &folds) const {
     const auto preds = predictions(folds);
     return cross_validated_scores(metric, folds, preds);
   }
@@ -330,6 +332,6 @@ CrossValidation<ModelType> ModelBase<ModelType>::cross_validate() const {
   return CrossValidation<ModelType>(derived());
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

@@ -23,7 +23,6 @@
 namespace albatross {
 
 TEST(test_samplers, test_samplers_from_normal_distribution) {
-
   const double sd = M_PI;
 
   auto gaussian_ll = [&](const std::vector<double> &xs) {
@@ -62,7 +61,6 @@ TEST(test_samplers, test_samplers_from_normal_distribution) {
 }
 
 TEST(test_samplers, test_samplers_from_uniform_distribution) {
-
   auto uniform_ll = [&](const std::vector<double> &xs) {
     assert(xs.size() == 1);
     if (xs[0] >= 0. && xs[0] <= 1.) {
@@ -147,7 +145,7 @@ struct LeaveOneIntervalOut {
 
 template <typename QRImplementation>
 class SparseGaussianProcessSamplerTest : public ::testing::Test {
-public:
+ public:
   QRImplementation qr;
 };
 
@@ -215,4 +213,4 @@ TYPED_TEST(SparseGaussianProcessSamplerTest, test_samplers_sparse_gp) {
                    ml_callback);
 }
 
-} // namespace albatross
+}  // namespace albatross

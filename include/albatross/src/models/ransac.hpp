@@ -20,7 +20,8 @@ inline bool accept_all_candidates(const std::vector<GroupKey> &) {
   return true;
 }
 
-template <typename FitType, typename GroupKey> struct RansacFunctions {
+template <typename FitType, typename GroupKey>
+struct RansacFunctions {
   // A function which takes a bunch of keys and fits a model
   // to the corresponding subset of data.
   using FitterFunc = std::function<FitType(const std::vector<GroupKey> &)>;
@@ -40,7 +41,8 @@ template <typename FitType, typename GroupKey> struct RansacFunctions {
       FitterFunc fitter_, InlierMetric inlier_metric_,
       ConsensusMetric consensus_metric_,
       IsValidCandidate is_valid_candidate_ = accept_all_candidates<GroupKey>)
-      : fitter(fitter_), inlier_metric(inlier_metric_),
+      : fitter(fitter_),
+        inlier_metric(inlier_metric_),
         consensus_metric(consensus_metric_),
         is_valid_candidate(is_valid_candidate_) {}
 
@@ -67,21 +69,21 @@ typedef enum ransac_return_code_e {
 
 inline std::string to_string(const ransac_return_code_t &return_code) {
   switch (return_code) {
-  case RANSAC_RETURN_CODE_INVALID:
-    return "invalid";
-  case RANSAC_RETURN_CODE_SUCCESS:
-    return "success";
-  case RANSAC_RETURN_CODE_NO_CONSENSUS:
-    return "no_consensus";
-  case RANSAC_RETURN_CODE_INVALID_ARGUMENTS:
-    return "invalid_arguments";
-  case RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES:
-    return "exceeded_max_failed_candidates";
-  case RANSAC_RETURN_CODE_FAILURE:
-    return "failure";
-  default:
-    ALBATROSS_ASSERT(false);
-    return "unknown return code";
+    case RANSAC_RETURN_CODE_INVALID:
+      return "invalid";
+    case RANSAC_RETURN_CODE_SUCCESS:
+      return "success";
+    case RANSAC_RETURN_CODE_NO_CONSENSUS:
+      return "no_consensus";
+    case RANSAC_RETURN_CODE_INVALID_ARGUMENTS:
+      return "invalid_arguments";
+    case RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES:
+      return "exceeded_max_failed_candidates";
+    case RANSAC_RETURN_CODE_FAILURE:
+      return "failure";
+    default:
+      ALBATROSS_ASSERT(false);
+      return "unknown return code";
   }
 }
 
@@ -89,7 +91,8 @@ inline bool ransac_success(const ransac_return_code_t &rc) {
   return rc == RANSAC_RETURN_CODE_SUCCESS;
 }
 
-template <typename GroupKey> struct RansacIteration {
+template <typename GroupKey>
+struct RansacIteration {
   std::vector<GroupKey> candidates;
   std::map<GroupKey, double> inliers;
   std::map<GroupKey, double> outliers;
@@ -115,7 +118,8 @@ template <typename GroupKey> struct RansacIteration {
   }
 };
 
-template <typename GroupKey> struct RansacOutput {
+template <typename GroupKey>
+struct RansacOutput {
   RansacOutput() : return_code(RANSAC_RETURN_CODE_INVALID) {}
 
   using key_type = GroupKey;
@@ -132,8 +136,11 @@ template <typename GroupKey> struct RansacOutput {
 
 struct RansacConfig {
   RansacConfig()
-      : inlier_threshold(NAN), random_sample_size(0), min_consensus_size(0),
-        max_iterations(0), max_failed_candidates(0) {}
+      : inlier_threshold(NAN),
+        random_sample_size(0),
+        min_consensus_size(0),
+        max_iterations(0),
+        max_failed_candidates(0) {}
 
   RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
                std::size_t min_consensus_size_, std::size_t max_iterations_,
@@ -170,11 +177,11 @@ struct RansacConfig {
  * metrics.
  */
 template <typename FitType, typename GroupKey>
-RansacOutput<GroupKey>
-ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
-       const std::vector<GroupKey> &groups, double inlier_threshold,
-       std::size_t random_sample_size, std::size_t min_consensus_size,
-       std::size_t max_iterations, std::size_t max_failed_candidates) {
+RansacOutput<GroupKey> ransac(
+    const RansacFunctions<FitType, GroupKey> &ransac_functions,
+    const std::vector<GroupKey> &groups, double inlier_threshold,
+    std::size_t random_sample_size, std::size_t min_consensus_size,
+    std::size_t max_iterations, std::size_t max_failed_candidates) {
   RansacOutput<GroupKey> output;
   output.return_code = RANSAC_RETURN_CODE_FAILURE;
 
@@ -335,7 +342,8 @@ struct GenericRansacStrategy {
   GenericRansacStrategy(const InlierMetric &inlier_metric,
                         const ConsensusMetric &consensus_metric,
                         GrouperFunction grouper_function)
-      : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
+      : inlier_metric_(inlier_metric),
+        consensus_metric_(consensus_metric),
         grouper_function_(grouper_function) {}
 
   template <typename ModelType, typename FeatureType,
@@ -353,7 +361,7 @@ struct GenericRansacStrategy {
     return dataset.group_by(grouper_function_).indexers();
   }
 
-protected:
+ protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
   GrouperFunction grouper_function_;
@@ -426,7 +434,7 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
  */
 template <typename ModelType, typename StrategyType>
 class Ransac : public ModelBase<Ransac<ModelType, StrategyType>> {
-public:
+ public:
   Ransac() {}
 
   Ransac(const ModelType &sub_model, const StrategyType &strategy,
@@ -517,9 +525,8 @@ Ransac<ModelType, StrategyType> ModelBase<ModelType>::ransac(
 
 template <typename ModelType>
 template <typename StrategyType>
-Ransac<ModelType, StrategyType>
-ModelBase<ModelType>::ransac(const StrategyType &strategy,
-                             const RansacConfig &config) const {
+Ransac<ModelType, StrategyType> ModelBase<ModelType>::ransac(
+    const StrategyType &strategy, const RansacConfig &config) const {
   return Ransac<ModelType, StrategyType>(derived(), strategy, config);
 }
 
@@ -562,5 +569,5 @@ inline std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
-} // namespace albatross
+}  // namespace albatross
 #endif
