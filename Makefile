@@ -8,7 +8,7 @@ clang-format-all-check:
 	bazel build //... --config=clang-format-check
 
 clang-format-all:
-	bazel run @rules_swiftnav//clang_format:clang_format_all --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
+	bazel run @rules_swiftnav//clang_format:clang_format_all
 
 clang-tidy-all-check:
 	bazel build //... --config=clang-tidy
