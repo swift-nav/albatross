@@ -69,6 +69,7 @@ product_sqrt(const Eigen::SparseMatrixBase<SparseType> &lhs,
 
 template <typename MatrixType, typename DistributionType>
 struct TransformedDistribution {
+
   TransformedDistribution(
       const Eigen::MatrixBase<MatrixType> &matrix,
       const albatross::DistributionBase<DistributionType> &distribution)

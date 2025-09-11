@@ -31,6 +31,7 @@ using albatross::RegressionDataset;
 template <typename ModelType>
 void run_model(ModelType &model, RegressionDataset<double> &data, double low,
                double high) {
+
   if (FLAGS_tune) {
     albatross::LeaveOneOutLikelihood<> loo_nll;
     model.set_params(get_tuner(model, loo_nll, data).tune());
@@ -47,6 +48,7 @@ void run_model(ModelType &model, RegressionDataset<double> &data, double low,
 }
 
 int main(int argc, char *argv[]) {
+
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = std::stoi(FLAGS_n);

@@ -190,6 +190,7 @@ void read_test_csv_with_metadata(std::istream &stream) {
 }
 
 TEST(test_csv_utils, test_writes_metadata) {
+
   std::vector<TestFeature> features = test_features();
   Eigen::VectorXd targets(3);
   targets << 1., 2., 3.;
@@ -254,6 +255,7 @@ void read_test_csv_with_custom_to_map(std::istream &stream) {
 }
 
 TEST(test_csv_utils, test_custom_writes) {
+
   CustomFeature one = {1.2, 2};
   CustomFeature two = {2.2, 3};
   std::vector<CustomFeature> features = {one, two};
@@ -272,6 +274,7 @@ TEST(test_csv_utils, test_custom_writes) {
 }
 
 TEST(test_csv_utils, test_writes_eigen) {
+
   Eigen::MatrixXd x = Eigen::MatrixXd::Random(3, 4);
 
   std::ostringstream oss;

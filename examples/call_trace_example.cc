@@ -22,6 +22,7 @@ public:
 };
 
 auto complicated_covariance_function() {
+
   ScalingTerm<LinearScalar> linear_scalar;
   Constant constant;
   SquaredExponential<EuclideanDistance> squared_exp;
@@ -31,6 +32,7 @@ auto complicated_covariance_function() {
 } // namespace albatross
 
 int main() {
+
   auto cov = albatross::complicated_covariance_function();
 
   double x = 1.;

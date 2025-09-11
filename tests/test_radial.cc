@@ -66,6 +66,7 @@ TYPED_TEST(RadialCovarianceTester, test_edge_cases) {
 }
 
 TYPED_TEST(RadialCovarianceTester, test_derive_length_scale) {
+
   auto set_sigma_length_scale = [this](double sigma, double length_scale) {
     for (const auto &pair : this->test_case.get_params()) {
       if (pair.first.find("length_scale") != std::string::npos) {
@@ -197,6 +198,7 @@ using StateSpaceTestCases =
 TYPED_TEST_SUITE(CovarianceStateSpaceTester, StateSpaceTestCases);
 
 TYPED_TEST(CovarianceStateSpaceTester, test_state_space_representation) {
+
   const auto xs = this->test_case.features();
 
   const auto cov_func = this->test_case.covariance_function();

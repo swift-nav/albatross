@@ -17,6 +17,7 @@
 namespace albatross {
 
 TEST(test_random_utils, randint_without_replacement) {
+
   constexpr std::size_t iterations = 10;
   constexpr std::size_t k = 6;
 

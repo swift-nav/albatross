@@ -77,6 +77,7 @@ public:
   MakeGaussianProcessWithMean(){};
 
   auto get_model() const {
+
     const auto covariance = make_simple_covariance_function();
 
     LinearMean linear_mean;
@@ -135,11 +136,13 @@ public:
 };
 
 class MakeRansacChiSquaredGaussianProcessWithMean {
+
   const double a = 5.;
   const double b = 1.;
 
 public:
   auto get_model() const {
+
     IndependentNoise<double> meas_noise(0.1);
     LinearMean linear_mean;
     linear_mean.offset.value = a;
@@ -237,6 +240,7 @@ struct AdaptedRansacStrategy
     : public GaussianProcessRansacStrategy<
           NegativeLogLikelihood<JointDistribution>, FeatureCountConsensusMetric,
           AlwaysAcceptCandidateMetric, LeaveOneOutGrouper> {
+
   template <typename ModelType>
   auto operator()(const ModelType &model,
                   const RegressionDataset<AdaptedFeature> &dataset) const {
@@ -315,6 +319,7 @@ enum PredictLevel { MEAN, MARGINAL, JOINT };
  * testing depending on what sort of predictions are available.
  */
 template <typename PredictionType, typename = void> struct TestPredictVariants {
+
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const auto get_mean = pred.template get<Eigen::VectorXd>();
@@ -346,6 +351,7 @@ template <typename PredictionType>
 struct TestPredictVariants<
     PredictionType, std::enable_if_t<has_marginal<PredictionType>::value &&
                                      !has_joint<PredictionType>::value>> {
+
   PredictLevel test(const PredictionType &pred) const {
     const Eigen::VectorXd pred_mean = pred.mean();
     const MarginalDistribution marginal = pred.marginal();

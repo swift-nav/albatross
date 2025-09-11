@@ -90,6 +90,7 @@ TEST(test_minimum_spanning_tree, test_disjoint_example) {
  */
 
 TEST(test_minimum_spanning_tree, test_princeton_tiny) {
+
   std::vector<Edge<std::size_t>> edges;
   edges.emplace_back(4, 5, 0.35);
   edges.emplace_back(4, 7, 0.37);
@@ -127,6 +128,7 @@ TEST(test_minimum_spanning_tree, test_princeton_tiny) {
 }
 
 TEST(test_minimum_spanning_tree, test_princeton_medium) {
+
   std::vector<Edge<std::size_t>> edges;
   edges.emplace_back(244, 246, 0.11712);
   edges.emplace_back(239, 240, 0.10616);

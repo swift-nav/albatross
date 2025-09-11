@@ -72,6 +72,7 @@ template <typename _Scalar, int _Rows, int _Cols, typename DistributionType,
           typename RandomNumberGenerator>
 void random_fill(Eigen::Matrix<_Scalar, _Rows, _Cols> &matrix,
                  DistributionType &dist, RandomNumberGenerator &rng) {
+
   auto random_sample = [&]() { return dist(rng); };
 
   matrix =
@@ -103,6 +104,7 @@ template <typename Distribution, typename RandomNumberGenerator>
 inline Eigen::MatrixXd
 random_covariance_matrix(Eigen::Index k, Distribution &eigen_value_distribution,
                          RandomNumberGenerator &gen) {
+
   Eigen::MatrixXd Q(k, k);
   gaussian_fill(Q, gen);
   Q = Q.colPivHouseholderQr().matrixQ();

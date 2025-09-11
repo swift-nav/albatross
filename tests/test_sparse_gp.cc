@@ -24,6 +24,7 @@ inline long int get_group(const double &f) {
 }
 
 struct LeaveOneIntervalOut {
+
   long int operator()(const double &f) const { return get_group(f); }
 };
 
@@ -50,6 +51,7 @@ void expect_sparse_gp_performance(
     const CovFunc &covariance, const GrouperFunction &grouper,
     double sparse_error_threshold, double really_sparse_error_threshold,
     QRImplementation qr = DenseQRImplementation{}) {
+
   auto dataset = make_toy_linear_data();
   auto direct = gp_from_covariance(covariance, "direct");
 
@@ -216,6 +218,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_likelihood) {
 }
 
 struct FixedInducingPoints {
+
   FixedInducingPoints(double min, double max, std::size_t num_points = 10)
       : min_(min), max_(max), num_points_(num_points) {}
 

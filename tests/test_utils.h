@@ -84,6 +84,7 @@ expect_parameter_vector_equal(const std::vector<ParameterValue> &x,
 static inline auto
 make_heteroscedastic_toy_linear_data(const double a = 5., const double b = 1.,
                                      const double sigma = 0.1) {
+
   std::random_device rd{};
   std::mt19937 gen{rd()};
   gen.seed(7);
@@ -166,6 +167,7 @@ template <typename CovarianceFunction, typename FeatureType>
 void expect_state_space_representation_quality(
     const CovarianceFunction &cov_func,
     const std::vector<FeatureType> &features, double threshold) {
+
   const auto ssr_features = cov_func.state_space_representation(features);
 
   const Eigen::MatrixXd ssr_cov = cov_func(ssr_features);

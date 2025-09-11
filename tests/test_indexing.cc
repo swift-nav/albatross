@@ -18,6 +18,7 @@
 namespace albatross {
 
 TEST(test_indexing, test_vector_subset) {
+
   std::vector<std::size_t> idx;
   std::vector<int> expected;
 
@@ -213,6 +214,7 @@ TEST(test_indexing, test_eigen_vector_subset) {
 }
 
 TEST(test_indexing, test_matrix_subset_col) {
+
   Eigen::MatrixXd expected;
   Eigen::MatrixXd x(4, 4);
   x.row(0) << 1., 2., 3., 4.;
@@ -254,6 +256,7 @@ TEST(test_indexing, test_matrix_subset_col) {
 }
 
 TEST(test_indexing, test_matrix_subset_row) {
+
   Eigen::MatrixXd expected;
   Eigen::MatrixXd x(4, 4);
   x.row(0) << 1., 2., 3., 4.;
@@ -295,6 +298,7 @@ TEST(test_indexing, test_matrix_subset_row) {
 }
 
 TEST(test_indexing, test_matrix_symmetric_subset) {
+
   Eigen::MatrixXd expected;
   Eigen::MatrixXd x(4, 4);
   x.row(0) << 1., 2., 3., 4.;

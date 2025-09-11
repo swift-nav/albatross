@@ -42,24 +42,28 @@ public:
  */
 
 struct SquareClassMethodApply {
+
   auto get_parent() const { return test_double_vector(); }
 
   auto get_function() const { return Square(); }
 };
 
 struct SquareFunctionPointerApply {
+
   auto get_parent() const { return test_double_vector(); }
 
   auto get_function() const { return &square; }
 };
 
 struct SquareFunctionApply {
+
   auto get_parent() const { return test_double_vector(); }
 
   auto get_function() const { return square; }
 };
 
 struct SquareLambdaApply {
+
   auto get_parent() const { return test_double_vector(); }
 
   auto get_function() const {
@@ -69,6 +73,7 @@ struct SquareLambdaApply {
 };
 
 struct MakeFooFunctionApply {
+
   auto get_parent() const { return test_double_vector(); }
 
   auto get_function() const { return make_foo; }
@@ -102,6 +107,7 @@ REGISTER_TYPED_TEST_SUITE_P(ApplyTester, test_apply_sanity);
 INSTANTIATE_TYPED_TEST_SUITE_P(test_apply, ApplyTester, ApplyTestCases);
 
 TEST(test_apply, test_vector_apply_free_function) {
+
   const auto xs = linspace(0., 10., 11);
   const auto actual = apply(xs, square);
 
@@ -115,6 +121,7 @@ TEST(test_apply, test_vector_apply_free_function) {
 }
 
 TEST(test_apply, test_vector_apply_void) {
+
   const auto xs = linspace(0., 10., 11);
 
   std::size_t call_count = 0;
@@ -134,6 +141,7 @@ struct AutoApplyTest {
 };
 
 TEST(test_apply, test_works_with_auto) {
+
   std::vector<AutoApplyTest> values;
   values.emplace_back(0);
   values.emplace_back(1);
@@ -144,6 +152,7 @@ TEST(test_apply, test_works_with_auto) {
 }
 
 TEST(test_apply, test_vector_apply_all) {
+
   std::vector<std::vector<bool>> input;
   std::vector<bool> expected;
 
@@ -181,6 +190,7 @@ TEST(test_apply, test_vector_apply_all) {
 }
 
 TEST(test_apply, test_vector_apply_any) {
+
   std::vector<std::vector<bool>> input;
   std::vector<bool> expected;
 
@@ -218,6 +228,7 @@ TEST(test_apply, test_vector_apply_any) {
 }
 
 TEST(test_apply, test_filter) {
+
   const auto xs = linspace(0., 10., 11);
   auto is_odd = [](const double &x) { return fmod(x, 2.) == 1.; };
 

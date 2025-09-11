@@ -174,6 +174,7 @@ public:
 };
 
 TEST_F(TestTuneQuadratic, test_generic) {
+
   auto mahalanobis_distance_eigen = [&](const Eigen::VectorXd &eigen_x) {
     return this->objective(eigen_x);
   };
@@ -227,6 +228,7 @@ TEST_F(TestTuneQuadratic, test_generic) {
 }
 
 TEST_F(TestTuneQuadratic, test_greedy_tune) {
+
   auto mahalanobis_distance_params = [&](const ParameterStore &params) {
     return this->objective(params);
   };
@@ -264,6 +266,7 @@ TEST_F(TestTuneQuadratic, test_greedy_tune) {
 }
 
 TEST_F(TestTuneQuadratic, test_compute_gradient) {
+
   auto mahalanobis_distance_vector = [&](const std::vector<double> &vector_x) {
     return this->objective(vector_x);
   };
@@ -293,6 +296,7 @@ TEST_F(TestTuneQuadratic, test_compute_gradient) {
 }
 
 TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
+
   auto mahalanobis_distance_params = [&](const ParameterStore &params) {
     return this->objective(params);
   };

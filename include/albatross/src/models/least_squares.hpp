@@ -99,6 +99,7 @@ public:
  * an offset and slope.
  */
 class LinearRegression : public LeastSquares<LinearRegression> {
+
 public:
   using Base = LeastSquares<LinearRegression>;
 

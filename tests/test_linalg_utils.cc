@@ -32,6 +32,7 @@ TEST(test_linalg_utils, test_qr_sqrt_solve) {
 }
 
 TEST(test_linalg_utils, test_print_eigen_values) {
+
   constexpr Eigen::Index k = 10;
   Eigen::MatrixXd random = Eigen::MatrixXd::Random(k, k);
   random = random * random.transpose();

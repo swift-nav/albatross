@@ -168,6 +168,7 @@ struct ExplainedCovarianceRepresentation
 };
 
 struct ParameterStoreType : public SerializableType<ParameterStore> {
+
   RepresentationType create() const override {
     ParameterStore original = {{"1", {1., UninformativePrior()}},
                                {"2", {2., FixedPrior()}},
@@ -188,7 +189,9 @@ struct ParameterStoreType : public SerializableType<ParameterStore> {
 };
 
 struct Dataset : public SerializableType<RegressionDataset<MockFeature>> {
+
   RepresentationType create() const override {
+
     std::vector<MockFeature> features = {{1}, {3}, {-2}};
     Eigen::VectorXd targets(3);
     targets << 5., 3., 9.;
@@ -206,7 +209,9 @@ struct Dataset : public SerializableType<RegressionDataset<MockFeature>> {
 
 struct DatasetWithMetadata
     : public SerializableType<RegressionDataset<MockFeature>> {
+
   RepresentationType create() const override {
+
     std::vector<MockFeature> features = {{1}, {3}, {-2}};
     Eigen::VectorXd targets(3);
     targets << 5., 3., 9.;
@@ -224,7 +229,9 @@ struct DatasetWithMetadata
 };
 
 struct VariantAsInt : public SerializableType<variant<int, double>> {
+
   RepresentationType create() const override {
+
     variant<int, double> output;
     int foo = 1;
     output = foo;
@@ -233,7 +240,9 @@ struct VariantAsInt : public SerializableType<variant<int, double>> {
 };
 
 struct VariantAsDouble : public SerializableType<variant<int, double>> {
+
   RepresentationType create() const override {
+
     variant<int, double> output;
     double foo = 1.;
     output = foo;
@@ -243,7 +252,9 @@ struct VariantAsDouble : public SerializableType<variant<int, double>> {
 
 struct BlockSymmetricMatrix
     : public SerializableType<BlockSymmetric<Eigen::SerializableLDLT>> {
+
   RepresentationType create() const override {
+
     std::default_random_engine gen(2012);
     const auto X = random_covariance_matrix(5, gen);
 
@@ -315,6 +326,7 @@ public:
 template <typename ModelTestCase>
 struct SerializableModelType
     : public SerializableType<typename model_types<ModelTestCase>::model_type> {
+
   using ModelType = typename model_types<ModelTestCase>::model_type;
 
   ModelType create() const {
@@ -337,6 +349,7 @@ template <typename ModelTestCase>
 struct SerializableFitModelType
     : public SerializableType<
           typename model_types<ModelTestCase>::fit_model_type> {
+
   using FitModelType = typename model_types<ModelTestCase>::fit_model_type;
 
   FitModelType create() const {
@@ -445,6 +458,7 @@ TEST(test_serialize, test_gp_serialize_version) {
 namespace other {
 
 TEST(test_serialize, test_dataset_streamable) {
+
   albatross::MarginalDistribution targets(Eigen::VectorXd(1));
   RegressionDataset<int> dataset({1}, targets);
   std::ostringstream oss;
@@ -452,12 +466,14 @@ TEST(test_serialize, test_dataset_streamable) {
 }
 
 TEST(test_serialize, test_marginal_streamable) {
+
   albatross::MarginalDistribution dist(Eigen::VectorXd(1));
   std::ostringstream oss;
   oss << dist;
 }
 
 TEST(test_serialize, test_joint_streamable) {
+
   albatross::JointDistribution dist(Eigen::VectorXd(1), Eigen::MatrixXd(1, 1));
   std::ostringstream oss;
   oss << dist;

@@ -216,6 +216,7 @@ public:
 
 template <typename T, typename ExistingFitType, typename FeatureType>
 class fit_model_update_traits {
+
   template <typename C,
             typename FitType = decltype(std::declval<const C>()._update_impl(
                 std::declval<const ExistingFitType &>(),
@@ -253,6 +254,7 @@ struct can_update_in_place {
  *   auto updated_fit_model = fit_model.update(other_dataset);
  */
 template <typename T, typename FeatureType> class updated_fit_model_type {
+
   using ModelType = typename T::model_type;
   using FitType = typename T::fit_type;
   using UpdatedFitType =

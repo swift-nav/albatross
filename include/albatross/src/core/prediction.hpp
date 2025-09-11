@@ -112,6 +112,7 @@ public:
 
 template <typename ModelType, typename FeatureType, typename FitType>
 class Prediction {
+
   using PlainModelType = typename std::decay<ModelType>::type;
   using PlainFitType = typename std::decay<FitType>::type;
 

@@ -105,6 +105,7 @@ TEST(test_traits_covariance, test_has_possible_call_impl) {
 }
 
 TEST(test_traits_covariance, test_is_basic_type) {
+
   struct Foo {};
 
   EXPECT_TRUE(bool(is_basic_type<int>::value));
@@ -130,6 +131,7 @@ TEST(test_traits_covariance, test_has_invalid_call_impl) {
 }
 
 TEST(test_traits_covariance_function, test_operator_resolution) {
+
   EXPECT_TRUE(bool(has_call_operator<HasXY, X, Y>::value));
   EXPECT_TRUE(bool(has_call_operator<HasXY, Y, X>::value));
   EXPECT_FALSE(bool(has_call_operator<HasXY, X, X>::value));
@@ -175,6 +177,7 @@ TEST(test_traits_covariance_function, test_vector_operator_inspection) {
 
 TEST(test_traits_covariance_function,
      test_has_valid_cov_caller_for_all_variants) {
+
   // With one type
   EXPECT_TRUE(
       bool(has_valid_cov_caller_for_all_variants<HasMultiple, DefaultCaller,
@@ -390,6 +393,7 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
 }
 
 struct HasSSRX : public CovarianceFunction<HasSSRX> {
+
   std::vector<double>
   _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
     return {1.};
@@ -397,6 +401,7 @@ struct HasSSRX : public CovarianceFunction<HasSSRX> {
 };
 
 struct HasSSRXY : public CovarianceFunction<HasSSRXY> {
+
   std::vector<double>
   _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
     return {1.};

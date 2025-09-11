@@ -41,6 +41,7 @@ bool overloaded_above_three(const int &x) { return above_three(x); }
 bool overloaded_above_three(const double &x) { return x > 3.; }
 
 struct CustomGroupKey {
+
   bool operator<(const CustomGroupKey &other) const {
     return value < other.value;
   }
@@ -76,18 +77,21 @@ RegressionDataset<int> test_integer_dataset() {
  */
 
 struct BoolClassMethodGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return AboveThree(); }
 };
 
 struct BoolFunctionGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return above_three; }
 };
 
 struct BoolOverloadedFunctionGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const {
@@ -96,18 +100,21 @@ struct BoolOverloadedFunctionGrouper {
 };
 
 struct BoolFunctionPointerGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return &above_three; }
 };
 
 struct BoolClassMethodVectorGrouper {
+
   auto get_parent() const { return test_integer_dataset().features; }
 
   auto get_grouper() const { return AboveThree(); }
 };
 
 struct BoolLambdaGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const {
@@ -117,12 +124,14 @@ struct BoolLambdaGrouper {
 };
 
 struct IntClassMethodGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return IntMod3(); }
 };
 
 struct StringClassMethodGrouper {
+
   auto get_parent() const { return test_integer_dataset(); }
 
   auto get_grouper() const { return IntMod3(); }
@@ -382,6 +391,7 @@ long int number_of_digits(double x) {
 
 std::vector<double>
 direct_remove_less_than_mean(const std::vector<double> &xs) {
+
   std::map<long, std::vector<double>> grouped;
   for (const auto &x : xs) {
     long digits = number_of_digits(x);
@@ -407,6 +417,7 @@ direct_remove_less_than_mean(const std::vector<double> &xs) {
 
 std::vector<double>
 split_apply_combine_less_than_mean(const std::vector<double> &xs) {
+
   const auto remove_less_than_mean = [](const std::vector<double> &group) {
     const double group_mean = mean(group);
     const auto is_greater_than_mean = [&group_mean](const double &x) {
@@ -419,6 +430,7 @@ split_apply_combine_less_than_mean(const std::vector<double> &xs) {
 }
 
 TEST(test_groupby, test_group_by_nested_filter) {
+
   const auto fib = fibonacci(20);
 
   const auto filtered = split_apply_combine_less_than_mean(fib);
@@ -433,6 +445,7 @@ TEST(test_groupby, test_group_by_nested_filter) {
 }
 
 TEST(test_groupby, test_group_by_combine_eigen) {
+
   albatross::Grouped<Eigen::Index, Eigen::VectorXd> grouped;
   grouped[3] = Eigen::VectorXd::Constant(3, 1, 3.);
   grouped[1] = Eigen::VectorXd::Constant(1, 1, 1.);
@@ -447,6 +460,7 @@ TEST(test_groupby, test_group_by_combine_eigen) {
 }
 
 TEST(test_groupby, test_group_by_first_group) {
+
   const auto fib = fibonacci(20);
 
   const auto grouped = group_by(fib, number_of_digits);
@@ -462,6 +476,7 @@ TEST(test_groupby, test_group_by_first_group) {
 }
 
 TEST(test_groupby, test_group_by_first_last_value) {
+
   const auto fib = fibonacci(20);
 
   const auto grouped_indexers = group_by(fib, number_of_digits).indexers();
@@ -502,6 +517,7 @@ TEST(test_groupby, test_group_by_first_last_value) {
 }
 
 TEST(test_groupby, test_group_by_get_group) {
+
   const auto fib = fibonacci(20);
 
   const auto group_2 = group_by(fib, number_of_digits).get_group(2);
@@ -512,6 +528,7 @@ TEST(test_groupby, test_group_by_get_group) {
 }
 
 TEST(test_groupby, test_group_by_erase) {
+
   const auto fib = fibonacci(20);
 
   const auto groups = group_by(fib, number_of_digits).groups();
@@ -543,6 +560,7 @@ template <typename T> inline double test_mean(const std::vector<T> &ts) {
 }
 
 TEST(test_groupby, test_group_by_min_max_value) {
+
   const auto fib = fibonacci(20);
 
   const auto sums = group_by(fib, number_of_digits).apply(test_sum<double>);
@@ -563,6 +581,7 @@ TEST(test_groupby, test_group_by_min_max_value) {
 }
 
 TEST(test_groupby, test_group_by_sum_mean) {
+
   const auto fib = fibonacci(20);
 
   const auto means = group_by(fib, number_of_digits).apply(test_mean<double>);
@@ -575,6 +594,7 @@ TEST(test_groupby, test_group_by_sum_mean) {
 }
 
 TEST(test_groupby, test_group_by_min_max) {
+
   Grouped<std::string, int> example;
   example["one"] = 1;
   example["two"] = 2;
@@ -588,6 +608,7 @@ TEST(test_groupby, test_group_by_min_max) {
 }
 
 TEST(test_groupby, test_group_by_any_all) {
+
   const auto fib = fibonacci(20);
 
   const auto grouped = group_by(fib, number_of_digits);
@@ -618,6 +639,7 @@ TEST(test_groupby, test_group_by_any_all) {
 }
 
 TEST(test_groupby, test_group_by_with_vector) {
+
   const auto fib = fibonacci(20);
 
   std::vector<std::string> strings;
@@ -638,6 +660,7 @@ TEST(test_groupby, test_group_by_with_vector) {
 }
 
 TEST(test_groupby, test_group_by_with_map) {
+
   const auto fib = fibonacci(20);
   const auto grouped = group_by(fib, number_of_digits);
 

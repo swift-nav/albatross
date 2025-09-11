@@ -65,6 +65,7 @@ inline void save(Archive &archive, const variant<VariantTypes...> &&f,
 template <class Archive, typename... VariantTypes>
 inline void save(Archive &archive, const variant<VariantTypes...> &f,
                  const std::uint32_t version) {
+
   archive(cereal::make_nvp("which", f.which()));
   if (version > 0) {
     f.match([&](const auto &x) {

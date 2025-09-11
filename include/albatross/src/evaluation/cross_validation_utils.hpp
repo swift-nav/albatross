@@ -19,6 +19,7 @@ template <typename ModelType, typename FeatureType, typename GroupKey>
 inline auto
 get_predictions(const ModelType &model,
                 const RegressionFolds<GroupKey, FeatureType> &folds) {
+
   const auto predict_group = [&model](const auto &fold) {
     return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
   };
@@ -31,6 +32,7 @@ template <typename PredictType, typename GroupKey, typename Prediction,
 inline auto get_predict_types(
     const Map<GroupKey, Prediction> &predictions,
     PredictTypeIdentity<PredictType> = PredictTypeIdentity<PredictType>()) {
+
   const auto get_predict_type = [](const auto &prediction) {
     return prediction.template get<PredictType>();
   };
@@ -104,6 +106,7 @@ Eigen::VectorXd cross_validated_scores(
     const PredictionMetricType &metric,
     const RegressionFolds<GroupKey, FeatureType> &folds,
     const PredictionContainer<GroupKey, PredictionType> &predictions) {
+
   const auto score_one_group = [&](const GroupKey &key,
                                    const RegressionFold<FeatureType> &fold) {
     ALBATROSS_ASSERT(static_cast<size_t>(fold.test_dataset.size()) ==
@@ -120,6 +123,7 @@ static inline Eigen::VectorXd
 cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
                        const RegressionFolds<GroupKey, FeatureType> &folds,
                        const Grouped<GroupKey, DistributionType> &predictions) {
+
   const auto get_mean = [](const auto &pred) { return pred.mean; };
 
   return cross_validated_scores(metric, folds, predictions.apply(get_mean));
@@ -197,6 +201,7 @@ held_out_predictions(const Eigen::SerializableLDLT &covariance,
                      const Eigen::VectorXd &information,
                      const GroupIndexer<GroupKey> &group_indexer,
                      PredictTypeIdentity<PredictType> predict_type) {
+
   const std::vector<GroupIndices> indices = map_values(group_indexer);
   const std::vector<GroupKey> group_keys = map_keys(group_indexer);
   const auto inverse_blocks = covariance.inverse_blocks(indices);

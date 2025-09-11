@@ -31,6 +31,7 @@ inline double chi_squared_cdf_unsafe(double x, double degrees_of_freedom) {
 }
 
 inline double chi_squared_cdf_safe(double x, double degrees_of_freedom) {
+
   if (std::isnan(x) || x < 0.) {
     return NAN;
   }

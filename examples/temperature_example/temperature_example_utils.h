@@ -122,6 +122,7 @@ template <typename ModelType, typename FitType>
 void write_predictions(const std::string &output_path,
                        const std::vector<Station> &features,
                        const FitModel<ModelType, FitType> &fit_model) {
+
   std::ofstream ostream;
   ostream.open(output_path);
 

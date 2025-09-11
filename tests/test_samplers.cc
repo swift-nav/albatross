@@ -23,6 +23,7 @@
 namespace albatross {
 
 TEST(test_samplers, test_samplers_from_normal_distribution) {
+
   const double sd = M_PI;
 
   auto gaussian_ll = [&](const std::vector<double> &xs) {
@@ -61,6 +62,7 @@ TEST(test_samplers, test_samplers_from_normal_distribution) {
 }
 
 TEST(test_samplers, test_samplers_from_uniform_distribution) {
+
   auto uniform_ll = [&](const std::vector<double> &xs) {
     assert(xs.size() == 1);
     if (xs[0] >= 0. && xs[0] <= 1.) {

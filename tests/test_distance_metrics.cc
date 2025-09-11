@@ -18,6 +18,7 @@
 namespace albatross {
 
 TEST(test_distance_metrics, test_euclidean_distance) {
+
   Eigen::VectorXd x(3);
   Eigen::VectorXd y(3);
   EuclideanDistance dist;
@@ -36,6 +37,7 @@ TEST(test_distance_metrics, test_euclidean_distance) {
 }
 
 TEST(test_distance_metrics, test_radial_distance) {
+
   Eigen::VectorXd x(3);
   Eigen::VectorXd y(3);
   RadialDistance dist;
@@ -54,6 +56,7 @@ TEST(test_distance_metrics, test_radial_distance) {
 }
 
 TEST(test_distance_metrics, test_angular_distance) {
+
   Eigen::VectorXd x(3);
   Eigen::VectorXd y(3);
   AngularDistance dist;
@@ -72,6 +75,7 @@ TEST(test_distance_metrics, test_angular_distance) {
 }
 
 TEST(test_distance_metrics, test_distance_matrix) {
+
   const auto points = random_spherical_points(10);
 
   EuclideanDistance dist;

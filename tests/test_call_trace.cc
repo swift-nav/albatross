@@ -137,6 +137,7 @@ public:
  */
 template <typename T>
 class TestCallTreeCovarianceFunctions : public ::testing::Test {
+
 public:
   T test_case;
 };

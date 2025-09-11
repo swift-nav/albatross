@@ -21,12 +21,14 @@ struct ConditionalFit {
 };
 
 class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
+
 public:
   ConditionalGaussian(const JointDistribution &prior,
                       const MarginalDistribution &truth)
       : prior_(prior), truth_(truth) {}
 
   ConditionalFit fit_from_indices(const GroupIndices &indices) const {
+
     const JointDistribution train_prior = prior_.subset(indices);
     const MarginalDistribution train_truth = truth_.subset(indices);
 
@@ -59,6 +61,7 @@ public:
   JointDistribution
   _predict_impl(const GroupIndices &predict_indices, const ConditionalFit &fit,
                 PredictTypeIdentity<JointDistribution> &&) const {
+
     const JointDistribution predict_prior = prior_.subset(predict_indices);
 
     const Eigen::MatrixXd cross =
@@ -74,6 +77,7 @@ public:
   MarginalDistribution
   _predict_impl(const GroupIndices &predict_indices, const ConditionalFit &fit,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
+
     const MarginalDistribution predict_prior =
         prior_.marginal().subset(predict_indices);
     const Eigen::MatrixXd cross =
@@ -89,6 +93,7 @@ public:
   Eigen::VectorXd _predict_impl(const GroupIndices &predict_indices,
                                 const ConditionalFit &fit,
                                 PredictTypeIdentity<Eigen::VectorXd> &&) const {
+
     const Eigen::MatrixXd cross =
         subset(prior_.covariance, fit.indices, predict_indices);
     Eigen::VectorXd conditional_pred =

@@ -143,6 +143,7 @@ template <typename GroupKey>
 inline Grouped<GroupKey, Eigen::MatrixXd>
 block_subtract(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
                const Grouped<GroupKey, Eigen::MatrixXd> &rhs) {
+
   ALBATROSS_ASSERT(lhs.size() == rhs.size());
   auto matrix_subtract = [&](const auto &key_i, const auto &rhs_i) {
     return (lhs.at(key_i) - rhs_i).eval();

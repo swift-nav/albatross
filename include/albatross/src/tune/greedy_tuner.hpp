@@ -52,6 +52,7 @@ inline std::vector<double> query_ratios(std::size_t n) {
 
 inline std::vector<double> get_queries(double value, double low, double high,
                                        std::size_t n) {
+
   if (std::isinf(high)) {
     high = 1e8;
   }
@@ -133,6 +134,7 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
 
   for (std::size_t iter = 0; iter < n_iterations; ++iter) {
     for (std::size_t i = 0; i < tunable.names.size(); ++i) {
+
       tunable = get_tunable_parameters(best_params);
       auto values = details::get_queries(
           tunable.values[i], tunable.lower_bounds[i], tunable.upper_bounds[i],

@@ -31,6 +31,7 @@ std::vector<Eigen::Vector3d> points_on_a_line(const int n) {
 }
 
 TEST(test_covariance_functions, test_measurement_noise_wrapper) {
+
   SquaredExponential<EuclideanDistance> radial;
   IndependentNoise<double> noise;
   auto meas_noise = measurement_only(noise);
@@ -112,6 +113,7 @@ TEST(test_covariance_functions, test_build_covariance) {
  */
 template <typename T>
 class TestVectorCovarianceFunctions : public ::testing::Test {
+
 public:
   T covariance_function;
 };
@@ -144,6 +146,7 @@ TYPED_TEST(TestVectorCovarianceFunctions, WorksDirectlyOnCovarianceterms) {
 }
 
 TYPED_TEST(TestVectorCovarianceFunctions, can_set_params) {
+
   const ParameterStore params(this->covariance_function.get_params());
 
   double to_add = 3.14159;
@@ -177,6 +180,7 @@ public:
  */
 template <typename T>
 class TestDoubleCovarianceFunctions : public ::testing::Test {
+
 public:
   T covariance_function;
 };
@@ -206,6 +210,7 @@ TYPED_TEST(TestDoubleCovarianceFunctions, works_with_eigen) {
 }
 
 TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {
+
   const ParameterStore params(this->covariance_function.get_params());
 
   const double to_add = 3.14159;
@@ -296,6 +301,7 @@ TEST(test_covariance_functions, test_covariance_utils) {
 }
 
 TEST(test_covariance_functions, test_nugget) {
+
   struct Foo {
     Foo(int x_) : x(x_) {}
     bool operator==(const Foo &other) const { return x == other.x; }

@@ -219,6 +219,7 @@ TEST(test_parameter_handler, test_get_set_with_macros) {
 };
 
 TEST(test_parameter_handler, test_set_params_if_exists_in_any) {
+
   MacroParameterHandler x;
   TestParameterHandler y;
 

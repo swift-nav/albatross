@@ -72,6 +72,7 @@ struct ChiSquaredCdfTestCase {
 };
 
 TEST(test_stats, test_chi_squared_matches_gsl) {
+
   const std::vector<ChiSquaredCdfTestCase> test_cases = {
       {0, 1, 0},
       {0.328433666562, 1, 0.433417139218},

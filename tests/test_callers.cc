@@ -23,6 +23,7 @@ template <typename T> using Identity = T;
 template <typename Caller, template <typename T> class XWrapper = Identity,
           template <typename T> class YWrapper = Identity>
 inline void expect_direct_calls_true() {
+
   EXPECT_TRUE(
       bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<X>>::value));
   EXPECT_TRUE(
@@ -51,6 +52,7 @@ inline void expect_symmetric_calls_true() {
 template <typename Caller, template <typename T> class XWrapper = Identity,
           template <typename T> class YWrapper = Identity>
 inline void expect_all_calls_false() {
+
   EXPECT_FALSE(
       bool(caller_has_valid_call<Caller, HasMultipleMean, XWrapper<Z>>::value));
 
@@ -124,6 +126,7 @@ TEST(test_callers, test_linear_combination_caller) {
 }
 
 template <typename T, typename VariantType> struct VariantOrRaw {
+
   template <typename C,
             typename std::enable_if<!is_in_variant<C, VariantType>::value,
                                     int>::type = 0>

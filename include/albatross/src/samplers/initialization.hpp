@@ -41,6 +41,7 @@ std::vector<double> parse_line(const std::string &line) {
 
 std::vector<std::map<std::string, double>>
 initial_params_from_csv(std::istream &ss) {
+
   std::vector<std::map<std::string, double>> output;
 
   std::string line;
@@ -77,6 +78,7 @@ initial_params_from_csv(std::istream &ss) {
 
 std::vector<std::vector<double>>
 initial_params_from_csv(const ParameterStore &param_store, std::istream &ss) {
+
   const auto all_params = initial_params_from_csv(ss);
 
   std::vector<std::vector<double>> output;
@@ -99,12 +101,14 @@ std::vector<std::vector<double>>
 initial_params_from_jitter(const ParameterStore &params,
                            JitterDistribution &jitter_distribution,
                            std::default_random_engine &gen, std::size_t n = 0) {
+
   n = std::max(n, 2 * params.size() + 1);
 
   std::vector<std::vector<double>> output;
   std::vector<double> double_params = get_tunable_parameters(params).values;
   output.push_back(double_params);
   for (std::size_t i = 0; i < n - 1; ++i) {
+
     std::vector<double> perturbed(double_params);
     for (auto &d : perturbed) {
       d += jitter_distribution(gen);
@@ -120,6 +124,7 @@ inline EnsembleSamplerState
 ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
                             const EnsembleSamplerState &ensembles,
                             std::default_random_engine &gen) {
+
   auto all_finite = [](const std::vector<double> &xs) {
     for (const auto &x : xs) {
       if (!std::isfinite(x)) {

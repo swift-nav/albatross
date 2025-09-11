@@ -109,6 +109,7 @@ inline auto to_xml_buffer(const FeatureType &feature) {
 
 template <typename FeatureType>
 inline std::map<std::string, std::string> to_map(const FeatureType &feature) {
+
   auto buffer = to_xml_buffer(feature);
   // Parse the buffer using the xml file parsing library into doc
   rapidxml::xml_document<> doc;
@@ -208,6 +209,7 @@ inline void write_to_csv(std::ostream &stream,
                          const RegressionDataset<FeatureType> &dataset,
                          const DistributionBase<DistributionType> &predictions,
                          const std::vector<std::string> &columns) {
+
   for (std::size_t i = 0; i < dataset.features.size(); i++) {
     const auto row = to_map(dataset, predictions, i);
     write_row(stream, row, columns);

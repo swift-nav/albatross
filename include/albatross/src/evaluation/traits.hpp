@@ -21,6 +21,7 @@ namespace albatross {
 template <typename T, typename FeatureType, typename PredictType,
           typename GroupKey>
 class has_valid_cross_validated_predictions {
+
   template <typename C,
             typename ReturnType =
                 decltype(std::declval<const C>().cross_validated_predictions(

@@ -17,6 +17,7 @@
 namespace albatross {
 
 TEST(test_variant_utils, test_set_variant_two_types) {
+
   variant<int, double> foo;
   const int one = 1;
   const double two = 2.;
@@ -50,6 +51,7 @@ struct VariantUtilsTestType {
 };
 
 TEST(test_variant_utils, test_set_variant_three_types) {
+
   variant<int, double, VariantUtilsTestType> foo;
   const int one = 1;
   const double two = 2.;

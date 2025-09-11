@@ -173,6 +173,7 @@ template <typename T, typename FeatureType>
 struct Fit<AdaptableFit<T, FeatureType>> {};
 
 template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
+
   Fit<AdaptableFit<ImplType, X>> _fit_impl(const std::vector<X> &,
                                            const MarginalDistribution &) const {
     return Fit<AdaptableFit<ImplType, X>>();
@@ -180,6 +181,7 @@ template <typename ImplType> struct Adaptable : public ModelBase<ImplType> {
 };
 
 struct Extended : public Adaptable<Extended> {
+
   using Base = Adaptable<Extended>;
   using Base::_fit_impl;
 
@@ -264,6 +266,7 @@ public:
 };
 
 TEST(test_traits_core, test_has_valid_predict_impl) {
+
   EXPECT_TRUE(bool(has_valid_predict_mean<HasMeanPredictImpl, X,
                                           Fit<HasMeanPredictImpl>>::value));
   EXPECT_FALSE(

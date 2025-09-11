@@ -206,6 +206,7 @@ struct EmptyRow {
 };
 
 struct SparseIdentity {
+
   auto get_matrix(Eigen::Index n) {
     Eigen::SparseMatrix<double, Eigen::ColMajor> matrix(n, n);
     matrix.setIdentity();
@@ -214,6 +215,7 @@ struct SparseIdentity {
 };
 
 struct SparseShortIdentity {
+
   auto get_matrix(Eigen::Index n) {
     Eigen::SparseMatrix<double, Eigen::ColMajor> matrix =
         Eigen::MatrixXd::Identity(n - 1, n).sparseView();
@@ -222,6 +224,7 @@ struct SparseShortIdentity {
 };
 
 struct SparseShortIdentityRowMajor {
+
   auto get_matrix(Eigen::Index n) {
     Eigen::SparseMatrix<double, Eigen::RowMajor> matrix =
         Eigen::MatrixXd::Identity(n - 1, n).sparseView();
@@ -230,6 +233,7 @@ struct SparseShortIdentityRowMajor {
 };
 
 struct SparseRandomTall {
+
   auto get_matrix(Eigen::Index n) {
     Eigen::SparseMatrix<double> matrix =
         Eigen::MatrixXd::Random(n + 1, n).sparseView();
@@ -238,6 +242,7 @@ struct SparseRandomTall {
 };
 
 struct SparseRandomRowMajor {
+
   auto get_matrix(Eigen::Index n) {
     Eigen::SparseMatrix<double, Eigen::RowMajor> matrix =
         Eigen::MatrixXd::Random(n, n).sparseView();
@@ -274,6 +279,7 @@ struct expected_transformed_type<albatross::LinearCombination<X>> {
 };
 
 TYPED_TEST_P(DatasetOperatorTester, test_output_type_ints) {
+
   const std::vector<int> features = {3, 7, 1};
 
   const auto matrix =
@@ -289,6 +295,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_output_type_ints) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_output_size_combos) {
+
   std::vector<albatross::LinearCombination<int>> features;
 
   auto add_combo = [&](const std::vector<int> &values,
@@ -322,6 +329,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_output_size_combos) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_equivalent_cov_combos) {
+
   std::vector<albatross::LinearCombination<int>> features;
 
   auto add_combo = [&](const std::vector<int> &values,
@@ -352,6 +360,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_equivalent_cov_combos) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_output_type_combos) {
+
   std::vector<albatross::LinearCombination<int>> features;
 
   auto add_combo = [&](const std::vector<int> &values,
@@ -376,6 +385,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_output_type_combos) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_inferred_transformation) {
+
   // Note these have to be unique for the tests to work.
   const std::vector<int> features = {3, 7, 1};
   EXPECT_TRUE(all_values_are_unique(features));
@@ -404,6 +414,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_inferred_transformation) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_multiply_dataset) {
+
   const std::vector<int> features = {3, 7, 1};
   RegressionDataset<int> dataset(features, Eigen::VectorXd::Ones(3));
 
@@ -418,6 +429,7 @@ TYPED_TEST_P(DatasetOperatorTester, test_multiply_dataset) {
 }
 
 TYPED_TEST_P(DatasetOperatorTester, test_sparse_multiply_same_as_dense) {
+
   const std::vector<int> features = {3, 7, 1};
 
   const auto sparse_matrix =

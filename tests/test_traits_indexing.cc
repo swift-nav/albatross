@@ -109,6 +109,7 @@ bool test_can_be_called_with_x(FunctionType &&) {
 // Here we make sure can_be_called_with works when the type of the
 // functions is deduced by the compiler.
 TEST(test_traits_indexing, test_can_be_called_with_deduction) {
+
   EXPECT_TRUE(test_can_be_called_with_int(free_string_const_ref_int));
   EXPECT_TRUE(test_can_be_called_with_int(free_string_ref_int));
   EXPECT_TRUE(test_can_be_called_with_int(free_string_int));
