@@ -13,7 +13,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -41,7 +41,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -74,7 +74,7 @@ jobs:
           # custom instrumented libc.
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -100,19 +100,24 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-      - name: Install bazelisk
-        uses: bazelbuild/setup-bazelisk@v2
+      - uses: bazel-contrib/setup-bazel@0.15.0
+
+      - uses: extractions/netrc@v2
+        with:
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
 
       - name: Mount bazel cache
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: "~/.cache/bazel"
-          key: bazel
+          key: format
 
       - name: Format
         run: bazel build --config=clang-format-check //...
@@ -123,16 +128,21 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-      - name: Install bazelisk
-        uses: bazelbuild/setup-bazelisk@v2
+      - uses: bazel-contrib/setup-bazel@0.15.0
+
+      - uses: extractions/netrc@v2
+        with:
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
 
       - name: Mount bazel cache
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: "~/.cache/bazel"
           key: bazel
@@ -141,11 +151,11 @@ jobs:
         run: bazel test //...
 
   osx-clang:
-    runs-on: macOS-latest
+    runs-on: macOS-14
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -170,12 +180,12 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           auto-activate-base: false
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
@@ -199,7 +209,7 @@ jobs:
     steps:
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
