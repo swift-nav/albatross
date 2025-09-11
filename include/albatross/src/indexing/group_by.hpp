@@ -68,9 +68,9 @@ template <typename KeyType, typename ValueType> class GroupedBase {
 public:
   using key_t = KeyType;
   using value_t = ValueType;
-  GroupedBase() : map_() {};
-  GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)) {};
-  GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map) {};
+  GroupedBase() : map_() {}
+  GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)) {}
+  GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map) {}
 
   void emplace(const KeyType &k, ValueType &&v) {
     map_.emplace(k, std::move(v));
