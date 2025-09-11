@@ -123,9 +123,9 @@ inline bool file_exists(const std::string &name) {
   return f.good();
 }
 
-void maybe_create_training_data(const std::string &input_path, const int n,
-                                const double low, const double high,
-                                const double meas_noise) {
+void maybe_create_training_data(const std::string &input_path,
+                                const Eigen::Index n, const double low,
+                                const double high, const double meas_noise) {
   /*
    * Either read the input data from file, or if it doesn't exist
    * generate new input data and write it to file.
