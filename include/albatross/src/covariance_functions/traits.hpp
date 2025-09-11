@@ -66,7 +66,6 @@ class has_valid_mean_caller
  * The result of the inspection gets stored in the member `value`.
  */
 template <typename T, typename... Args> class has_call_operator {
-
   template <typename C, typename = decltype(std::declval<C>()(
                             std::declval<typename const_ref<Args>::type>()...))>
   static std::true_type test(C *);
@@ -77,7 +76,6 @@ public:
 };
 
 template <typename T, typename... Args> class has_invalid_call_impl {
-
 public:
   static constexpr bool value = (has_possible_call_impl<T, Args...>::value &&
                                  !has_valid_call_impl<T, Args...>::value);
@@ -99,7 +97,6 @@ DEFINE_CLASS_METHOD_TRAITS(state_space_representation);
 
 template <typename T, typename FeatureType>
 struct has_valid_state_space_representation {
-
   using SsrCall =
       class_method_state_space_representation_traits<T,
                                                      std::vector<FeatureType>>;
@@ -146,9 +143,7 @@ struct has_valid_cov_caller<CovFunc, Caller, variant<Ts...>, variant<Ys...>> {
  */
 template <typename U, typename Caller, typename A, typename B>
 struct has_valid_cross_cov_caller<U, Caller, A, variant<B>>
-    : public has_valid_cross_cov_caller<U, Caller, A, B> {
-  ;
-};
+    : public has_valid_cross_cov_caller<U, Caller, A, B> {};
 
 template <typename U, typename Caller, typename A, typename B, typename... Ts>
 struct has_valid_cross_cov_caller<U, Caller, A, variant<B, Ts...>> {

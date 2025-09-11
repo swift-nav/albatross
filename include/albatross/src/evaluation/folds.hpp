@@ -23,20 +23,19 @@ template <typename FeatureType> struct RegressionFold {
   RegressionDataset<FeatureType> test_dataset;
   GroupIndices test_indices;
 
-  RegressionFold() : train_dataset(), test_dataset(), test_indices(){};
+  RegressionFold() : train_dataset(), test_dataset(), test_indices() {}
 
   RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
                  const RegressionDataset<FeatureType> &test_dataset_,
                  const GroupIndices &test_indices_)
       : train_dataset(train_dataset_), test_dataset(test_dataset_),
-        test_indices(test_indices_){};
+        test_indices(test_indices_) {}
 };
 
 template <typename FeatureType>
 inline RegressionFold<FeatureType>
 create_fold(const GroupIndices &test_indices,
             const RegressionDataset<FeatureType> &dataset) {
-
   const auto train_indices = indices_complement(test_indices, dataset.size());
 
   std::vector<FeatureType> train_features =
@@ -68,7 +67,6 @@ template <typename FeatureType, typename GroupKey>
 inline RegressionFolds<GroupKey, FeatureType>
 folds_from_group_indexer(const RegressionDataset<FeatureType> &dataset,
                          const GroupIndexer<GroupKey> &groups) {
-
   const auto create_one_fold = [&dataset](const GroupKey &,
                                           const GroupIndices &test_indices) {
     return create_fold(test_indices, dataset);
@@ -94,7 +92,6 @@ group_indexer_from_folds(const std::map<GroupKey, FeatureType> &folds) {
 template <typename FeatureType, typename GrouperFunction>
 inline auto folds_from_grouper(const RegressionDataset<FeatureType> &dataset,
                                GrouperFunction grouper) {
-
   const auto create_one_fold = [&dataset](const auto &,
                                           const GroupIndices &test_indices) {
     return create_fold(test_indices, dataset);

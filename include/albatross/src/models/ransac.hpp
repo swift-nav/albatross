@@ -42,7 +42,7 @@ template <typename FitType, typename GroupKey> struct RansacFunctions {
       IsValidCandidate is_valid_candidate_ = accept_all_candidates<GroupKey>)
       : fitter(fitter_), inlier_metric(inlier_metric_),
         consensus_metric(consensus_metric_),
-        is_valid_candidate(is_valid_candidate_){};
+        is_valid_candidate(is_valid_candidate_) {}
 
   FitterFunc fitter;
   InlierMetric inlier_metric;
@@ -95,7 +95,7 @@ template <typename GroupKey> struct RansacIteration {
   std::map<GroupKey, double> outliers;
   double consensus_metric_value;
 
-  RansacIteration() : consensus_metric_value(NAN){};
+  RansacIteration() : consensus_metric_value(NAN) {}
 
   std::vector<GroupKey> consensus() const {
     std::vector<GroupKey> output(candidates);
@@ -116,8 +116,7 @@ template <typename GroupKey> struct RansacIteration {
 };
 
 template <typename GroupKey> struct RansacOutput {
-
-  RansacOutput() : return_code(RANSAC_RETURN_CODE_INVALID){};
+  RansacOutput() : return_code(RANSAC_RETURN_CODE_INVALID) {}
 
   using key_type = GroupKey;
 
@@ -132,10 +131,9 @@ template <typename GroupKey> struct RansacOutput {
 };
 
 struct RansacConfig {
-
   RansacConfig()
       : inlier_threshold(NAN), random_sample_size(0), min_consensus_size(0),
-        max_iterations(0), max_failed_candidates(0){};
+        max_iterations(0), max_failed_candidates(0) {}
 
   RansacConfig(double inlier_threshold_, std::size_t random_sample_size_,
                std::size_t min_consensus_size_, std::size_t max_iterations_,
@@ -144,7 +142,7 @@ struct RansacConfig {
         random_sample_size(random_sample_size_),
         min_consensus_size(min_consensus_size_),
         max_iterations(max_iterations_),
-        max_failed_candidates(max_failed_candidates_){};
+        max_failed_candidates(max_failed_candidates_) {}
 
   double inlier_threshold;
   std::size_t random_sample_size;
@@ -177,7 +175,6 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
        const std::vector<GroupKey> &groups, double inlier_threshold,
        std::size_t random_sample_size, std::size_t min_consensus_size,
        std::size_t max_iterations, std::size_t max_failed_candidates) {
-
   RansacOutput<GroupKey> output;
   output.return_code = RANSAC_RETURN_CODE_FAILURE;
 
@@ -194,7 +191,6 @@ ransac(const RansacFunctions<FitType, GroupKey> &ransac_functions,
   std::size_t i = 0;
   std::size_t failed_candidates = 0;
   while (i < max_iterations) {
-
     output.iterations.emplace_back(RansacIteration<GroupKey>());
     RansacIteration<GroupKey> &iteration = output.iterations.back();
 
@@ -287,7 +283,6 @@ inline RansacFunctions<FitModelType, GroupKey> get_generic_ransac_functions(
     const ModelType &model, const RegressionDataset<FeatureType> &dataset,
     const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric) {
-
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
@@ -332,7 +327,6 @@ inline RansacFunctions<FitModelType, GroupKey> get_generic_ransac_functions(
 template <typename InlierMetric, typename ConsensusMetric,
           typename GrouperFunction>
 struct GenericRansacStrategy {
-
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric is not a valid prediction metric");
 
@@ -342,7 +336,7 @@ struct GenericRansacStrategy {
                         const ConsensusMetric &consensus_metric,
                         GrouperFunction grouper_function)
       : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
-        grouper_function_(grouper_function){};
+        grouper_function_(grouper_function) {}
 
   template <typename ModelType, typename FeatureType,
             typename FitModelType =
@@ -389,7 +383,6 @@ struct RansacFit {};
 template <typename ModelType, typename StrategyType, typename FeatureType,
           typename GroupKey>
 struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
-
   using FitModelType = typename fit_model_type<ModelType, FeatureType>::type;
 
   struct EmptyFit {
@@ -398,17 +391,17 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
     };
 
     template <typename Archive>
-    void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t){};
+    void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t) {}
   };
 
-  Fit() : maybe_empty_fit_model(EmptyFit()){};
+  Fit() : maybe_empty_fit_model(EmptyFit()) {}
 
   Fit(const FitModelType &fit_model_,
       const RansacOutput<GroupKey> &ransac_output_)
-      : maybe_empty_fit_model(fit_model_), ransac_output(ransac_output_){};
+      : maybe_empty_fit_model(fit_model_), ransac_output(ransac_output_) {}
 
   Fit(const RansacOutput<GroupKey> &ransac_output_)
-      : maybe_empty_fit_model(EmptyFit()), ransac_output(ransac_output_){};
+      : maybe_empty_fit_model(EmptyFit()), ransac_output(ransac_output_) {}
 
   bool operator==(const Fit &other) const {
     return (maybe_empty_fit_model == other.maybe_empty_fit_model &&
@@ -434,18 +427,18 @@ struct Fit<RansacFit<ModelType, StrategyType, FeatureType, GroupKey>> {
 template <typename ModelType, typename StrategyType>
 class Ransac : public ModelBase<Ransac<ModelType, StrategyType>> {
 public:
-  Ransac(){};
+  Ransac() {}
 
   Ransac(const ModelType &sub_model, const StrategyType &strategy,
          const RansacConfig &config)
-      : sub_model_(sub_model), strategy_(strategy), config_(config){};
+      : sub_model_(sub_model), strategy_(strategy), config_(config) {}
 
   Ransac(const ModelType &sub_model, const StrategyType &strategy,
          double inlier_threshold, std::size_t random_sample_size,
          std::size_t min_consensus_size, std::size_t max_iterations)
       : Ransac(sub_model, strategy,
                RansacConfig(inlier_threshold, random_sample_size,
-                            min_consensus_size, max_iterations, 0)){};
+                            min_consensus_size, max_iterations, 0)) {}
 
   Ransac(const ModelType &sub_model, const StrategyType &strategy,
          double inlier_threshold, std::size_t random_sample_size,
@@ -454,7 +447,7 @@ public:
       : Ransac(sub_model, strategy,
                RansacConfig(inlier_threshold, random_sample_size,
                             min_consensus_size, max_iterations,
-                            max_failed_candidates)){};
+                            max_failed_candidates)) {}
 
   std::string get_name() const {
     return "ransac[" + sub_model_.get_name() + "]";
@@ -470,7 +463,6 @@ public:
   template <typename FeatureType>
   auto _fit_impl(const std::vector<FeatureType> &features,
                  const MarginalDistribution &targets) const {
-
     static_assert(has_call_operator<StrategyType, ModelType,
                                     RegressionDataset<FeatureType>>::value,
                   "Invalid Ransac Strategy");

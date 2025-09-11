@@ -25,7 +25,6 @@ struct MarginalDistribution;
 constexpr double cDefaultApproximatelyEqualEpsilon = 1e-3;
 
 template <typename Derived> struct DistributionBase {
-
 private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public CovarianceFunction<B> {}
@@ -33,11 +32,11 @@ private:
   //     using A = CovarianceFunction<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  DistributionBase(){};
+  DistributionBase() {}
   friend Derived;
 
 public:
-  DistributionBase(const Eigen::VectorXd &mean_) : mean(mean_){};
+  DistributionBase(const Eigen::VectorXd &mean_) : mean(mean_) {}
 
   std::size_t size() const {
     // If the covariance is defined it must have the same number
@@ -64,23 +63,22 @@ template <typename T>
 struct is_distribution : public std::is_base_of<DistributionBase<T>, T> {};
 
 struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
-
   using Base = DistributionBase<MarginalDistribution>;
   using CovarianceType = DiagonalMatrixXd;
 
-  MarginalDistribution(){};
+  MarginalDistribution() {}
 
   MarginalDistribution(const Eigen::VectorXd &mean_)
       : Base(mean_), covariance(mean_.size()) {
     covariance.diagonal().fill(0.);
     assert_valid();
-  };
+  }
 
   MarginalDistribution(const Eigen::VectorXd &mean_,
                        const DiagonalMatrixXd &covariance_)
       : Base(mean_), covariance(covariance_) {
     assert_valid();
-  };
+  }
 
   template <typename DiagonalDerived>
   MarginalDistribution(const Eigen::VectorXd &mean_,
@@ -93,7 +91,7 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
                        const Eigen::VectorXd &variance_)
       : Base(mean_), covariance(variance_.asDiagonal()) {
     assert_valid();
-  };
+  }
 
   MarginalDistribution(double mean_, double variance_)
       : MarginalDistribution(Eigen::VectorXd::Constant(1, mean_),
@@ -155,11 +153,10 @@ struct MarginalDistribution : public DistributionBase<MarginalDistribution> {
 };
 
 struct JointDistribution : public DistributionBase<JointDistribution> {
-
   using Base = DistributionBase<JointDistribution>;
   using CovarianceType = Eigen::MatrixXd;
 
-  JointDistribution(){};
+  JointDistribution() {}
 
   JointDistribution(double mean_, double variance_) {
     mean.resize(1);
@@ -172,7 +169,7 @@ struct JointDistribution : public DistributionBase<JointDistribution> {
                     const Eigen::MatrixXd &covariance_)
       : Base(mean_), covariance(covariance_) {
     ALBATROSS_ASSERT(mean_.size() == covariance_.rows());
-  };
+  }
 
   void assert_valid() const {
     ALBATROSS_ASSERT(mean.size() == covariance.rows());

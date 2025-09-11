@@ -32,7 +32,6 @@ template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
 class SparseGaussianProcessRegression;
 
 struct UniformlySpacedInducingPoints {
-
   UniformlySpacedInducingPoints(std::size_t num_points_ = 10)
       : num_points(num_points_) {}
 
@@ -48,7 +47,6 @@ struct UniformlySpacedInducingPoints {
 };
 
 struct StateSpaceInducingPointStrategy {
-
   template <typename CovarianceFunction, typename FeatureType,
             std::enable_if_t<has_valid_state_space_representation<
                                  CovarianceFunction, FeatureType>::value,
@@ -102,7 +100,7 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
 
-  Fit(){};
+  Fit() {}
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,
@@ -239,7 +237,6 @@ class SparseGaussianProcessRegression
                                  SparseGaussianProcessRegression<
                                      CovFunc, MeanFunc, GrouperFunction,
                                      InducingPointStrategy, QRImplementation>> {
-
 public:
   using Base = GaussianProcessBase<
       CovFunc, MeanFunc,
@@ -314,7 +311,6 @@ public:
   auto _update_impl(const Fit<SparseGPFit<InducingPointFeatureType>> &old_fit,
                     const std::vector<FeatureType> &features,
                     const MarginalDistribution &targets) const {
-
     BlockDiagonalLDLT A_ldlt;
     Eigen::SerializableLDLT K_uu_ldlt;
     Eigen::MatrixXd K_fu;
@@ -639,7 +635,6 @@ private:
       const MarginalDistribution &out_of_order_targets,
       BlockDiagonalLDLT *A_ldlt, Eigen::SerializableLDLT *K_uu_ldlt,
       Eigen::MatrixXd *K_fu, Eigen::VectorXd *y) const {
-
     ALBATROSS_ASSERT(A_ldlt != nullptr);
     ALBATROSS_ASSERT(K_uu_ldlt != nullptr);
     ALBATROSS_ASSERT(K_fu != nullptr);

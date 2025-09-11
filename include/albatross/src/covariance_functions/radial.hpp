@@ -53,7 +53,7 @@ namespace detail {
 inline bool valid_args_for_derive_length_scale(double reference_distance,
                                                double prior_sigma,
                                                double std_dev_increase) {
-  assert(reference_distance > 0.);
+  ALBATROSS_ASSERT(reference_distance > 0.);
   return (std_dev_increase > 0. && prior_sigma > 0. &&
           std_dev_increase < prior_sigma);
 }
@@ -141,7 +141,7 @@ public:
       "SquaredExponential covariance with AngularDistance is not PSD.");
 
   ALBATROSS_DECLARE_PARAMS(squared_exponential_length_scale,
-                           sigma_squared_exponential);
+                           sigma_squared_exponential)
 
   SquaredExponential(double length_scale_ = default_length_scale,
                      double sigma_squared_exponential_ = default_radial_sigma)
@@ -149,7 +149,7 @@ public:
     squared_exponential_length_scale = {length_scale_, PositivePrior()};
     sigma_squared_exponential = {sigma_squared_exponential_,
                                  NonNegativePrior()};
-  };
+  }
 
   std::string name() const {
     return "squared_exponential[" + this->distance_metric_.get_name() + "]";
@@ -239,20 +239,20 @@ inline double derive_exponential_length_scale(double reference_distance,
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
 public:
-  ALBATROSS_DECLARE_PARAMS(exponential_length_scale, sigma_exponential);
+  ALBATROSS_DECLARE_PARAMS(exponential_length_scale, sigma_exponential)
 
   Exponential(double length_scale_ = default_length_scale,
               double sigma_exponential_ = default_radial_sigma)
       : distance_metric_() {
     exponential_length_scale = {length_scale_, PositivePrior()};
     sigma_exponential = {sigma_exponential_, NonNegativePrior()};
-  };
+  }
 
   std::string name() const {
     return "exponential[" + this->distance_metric_.get_name() + "]";
   }
 
-  ~Exponential(){};
+  ~Exponential() {}
 
   std::vector<double> _ssr_impl(const std::vector<double> &xs) const {
     double min = *std::min_element(xs.begin(), xs.end());
@@ -426,14 +426,14 @@ public:
   static_assert(!std::is_base_of<AngularDistance, DistanceMetricType>::value,
                 "Matern32 covariance with AngularDistance is not PSD.");
 
-  ALBATROSS_DECLARE_PARAMS(matern_32_length_scale, sigma_matern_32);
+  ALBATROSS_DECLARE_PARAMS(matern_32_length_scale, sigma_matern_32)
 
   Matern32(double length_scale_ = default_length_scale,
            double sigma_matern_32_ = default_radial_sigma)
       : distance_metric_() {
     matern_32_length_scale = {length_scale_, PositivePrior()};
     sigma_matern_32 = {sigma_matern_32_, NonNegativePrior()};
-  };
+  }
 
   std::string name() const {
     return "matern_32[" + this->distance_metric_.get_name() + "]";
@@ -496,14 +496,14 @@ public:
   static_assert(!std::is_base_of<AngularDistance, DistanceMetricType>::value,
                 "Matern52 covariance with AngularDistance is not PSD.");
 
-  ALBATROSS_DECLARE_PARAMS(matern_52_length_scale, sigma_matern_52);
+  ALBATROSS_DECLARE_PARAMS(matern_52_length_scale, sigma_matern_52)
 
   Matern52(double length_scale_ = default_length_scale,
            double sigma_matern_52_ = default_radial_sigma)
       : distance_metric_() {
     matern_52_length_scale = {length_scale_, PositivePrior()};
     sigma_matern_52 = {sigma_matern_52_, NonNegativePrior()};
-  };
+  }
 
   std::string name() const {
     return "matern_52[" + this->distance_metric_.get_name() + "]";

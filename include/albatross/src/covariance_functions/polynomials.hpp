@@ -32,11 +32,11 @@ class Constant : public CovarianceFunction<Constant> {
 public:
   Constant(double sigma_constant_ = default_sigma) {
     sigma_constant = {sigma_constant_, NonNegativePrior()};
-  };
+  }
 
   ALBATROSS_DECLARE_PARAMS(sigma_constant);
 
-  ~Constant(){};
+  ~Constant() {}
 
   std::string name() const { return "constant"; }
 
@@ -69,11 +69,11 @@ public:
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, NonNegativePrior()};
     }
-  };
+  }
 
   std::string name() const { return "polynomial_" + std::to_string(order); }
 
-  ~Polynomial(){};
+  ~Polynomial() {}
 
   double _call_impl(const double &x, const double &y) const {
     double cov = 0.;
@@ -90,7 +90,6 @@ private:
 };
 
 class LinearMean : public MeanFunction<LinearMean> {
-
 public:
   ALBATROSS_DECLARE_PARAMS(slope, offset);
 

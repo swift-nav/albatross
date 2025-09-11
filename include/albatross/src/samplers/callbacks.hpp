@@ -16,7 +16,7 @@
 namespace albatross {
 
 struct NullCallback {
-  void operator()(std::size_t, const EnsembleSamplerState &){};
+  void operator()(std::size_t, const EnsembleSamplerState &) {}
 };
 
 inline std::vector<std::string>
@@ -34,7 +34,6 @@ inline void write_ensemble_sampler_state(
     std::ostream &stream, const ParameterStore &param_store,
     const EnsembleSamplerState &ensemble, std::size_t iteration,
     const std::vector<std::string> &columns) {
-
   for (std::size_t i = 0; i < ensemble.size(); ++i) {
     std::map<std::string, std::string> row;
 
@@ -51,14 +50,13 @@ inline void write_ensemble_sampler_state(
 }
 
 struct MaximumLikelihoodTrackingCallback {
-
   MaximumLikelihoodTrackingCallback(const ParameterStore &param_store_,
                                     std::shared_ptr<std::ostream> &stream_)
-      : param_store(param_store_), stream(stream_){};
+      : param_store(param_store_), stream(stream_) {}
 
   MaximumLikelihoodTrackingCallback(const ParameterStore &param_store_,
                                     std::shared_ptr<std::ostream> &&stream_)
-      : param_store(param_store_), stream(std::move(stream_)){};
+      : param_store(param_store_), stream(std::move(stream_)) {}
 
   void operator()(std::size_t iteration,
                   const EnsembleSamplerState &ensembles) {
@@ -80,14 +78,13 @@ struct MaximumLikelihoodTrackingCallback {
 };
 
 struct CsvWritingCallback {
-
   CsvWritingCallback(const ParameterStore &param_store_,
                      std::shared_ptr<std::ostream> &stream_)
-      : param_store(param_store_), stream(stream_){};
+      : param_store(param_store_), stream(stream_) {}
 
   CsvWritingCallback(const ParameterStore &param_store_,
                      std::shared_ptr<std::ostream> &&stream_)
-      : param_store(param_store_), stream(std::move(stream_)){};
+      : param_store(param_store_), stream(std::move(stream_)) {}
 
   void operator()(std::size_t iteration,
                   const EnsembleSamplerState &ensembles) {

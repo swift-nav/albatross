@@ -36,7 +36,6 @@ public:
       : model_(model), dataset_(dataset), indexer_(indexer) {}
 
   auto predictions() const {
-
     const auto predict_one_group = [&](const auto &,
                                        const GroupIndices &test_indices) {
       return predict_fold(model_, create_fold(test_indices, dataset_));
@@ -199,8 +198,9 @@ public:
   Grouped<GroupKey, JointDistribution> joints() const = delete;
 
   template <typename DummyType = ModelType>
-  JointDistribution joint() const =
-      delete; // Cannot produce a full joint distribution from cross validation.
+  JointDistribution
+  joint() const = delete; // Cannot produce a full joint distribution from cross
+                          // validation.
 
   template <typename PredictType>
   PredictType get(PredictTypeIdentity<PredictType> =
@@ -255,11 +255,10 @@ using CVPrediction =
     Prediction<CrossValidation<ModelType>, FeatureType, GroupIndexer<GroupKey>>;
 
 template <typename ModelType> class CrossValidation {
-
   ModelType model_;
 
 public:
-  CrossValidation(const ModelType &model) : model_(model){};
+  CrossValidation(const ModelType &model) : model_(model) {}
 
   // Predict
 

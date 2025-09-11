@@ -91,7 +91,6 @@ inline ParameterStore uninformative_params(const std::vector<double> &values) {
 inline ParameterStore run_optimizer(const ParameterStore &params,
                                     nlopt::opt &optimizer,
                                     std::ostream &output_stream) {
-
   auto x = get_tunable_parameters(params).values;
 
   ALBATROSS_ASSERT(cast::to_size(optimizer.get_dimension()) == x.size());
@@ -118,21 +117,19 @@ struct GenericTuner {
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_), threads(nullptr) {
-    optimizer = default_optimizer(initial_params);
-  };
+      : initial_params(initial_params_),
+        optimizer(default_optimizer(initial_params)),
+        output_stream(output_stream_), threads(nullptr) {}
 
   GenericTuner(const std::vector<double> &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : GenericTuner(uninformative_params(initial_params_), output_stream_){};
+      : GenericTuner(uninformative_params(initial_params_), output_stream_) {}
 
   template <
       typename ObjectiveFunction,
       std::enable_if_t<is_invocable<ObjectiveFunction, ParameterStore>::value,
                        int> = 0>
   ParameterStore tune(ObjectiveFunction &objective) {
-
     static_assert(is_invocable_with_result<ObjectiveFunction, double,
                                            ParameterStore>::value,
                   "ObjectiveFunction was expected to take the form `double "
@@ -184,7 +181,6 @@ struct GenericTuner {
       std::enable_if_t<
           is_invocable<ObjectiveFunction, std::vector<double>>::value, int> = 0>
   std::vector<double> tune(ObjectiveFunction &objective) {
-
     static_assert(is_invocable_with_result<ObjectiveFunction, double,
                                            std::vector<double>>::value,
                   "ObjectiveFunction was expected to take the form `double "
@@ -227,7 +223,6 @@ struct GenericTuner {
       std::enable_if_t<is_invocable<ObjectiveFunction, Eigen::VectorXd>::value,
                        int> = 0>
   Eigen::VectorXd tune(ObjectiveFunction &objective) {
-
     static_assert(is_invocable_with_result<ObjectiveFunction, double,
                                            Eigen::VectorXd>::value,
                   "ObjectiveFunction was expected to take the form `double "
@@ -275,12 +270,10 @@ struct ModelTuner {
              const TuningMetricAggregator &aggregator_,
              std::ostream &output_stream_)
       : model(model_), metric(metric_), datasets(datasets_),
-        aggregator(aggregator_), output_stream(output_stream_), optimizer() {
-    optimizer = default_optimizer(model.get_params());
-  };
+        aggregator(aggregator_), output_stream(output_stream_),
+        optimizer(default_optimizer(model.get_params())) {}
 
   ParameterStore tune() {
-
     auto objective = [&](const ParameterStore &params) {
       ModelType m(model);
       m.set_params(params);

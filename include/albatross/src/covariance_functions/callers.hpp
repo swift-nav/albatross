@@ -194,7 +194,6 @@ namespace internal {
  * This Caller just directly call the underlying CovFunc.
  */
 struct DirectCaller {
-
   // Covariance Functions
   template <typename CovFunc, typename X, typename Y,
             typename std::enable_if<has_valid_call_impl<CovFunc, X, Y>::value,
@@ -217,7 +216,6 @@ struct DirectCaller {
  * one valid for Y, X as well.
  */
 template <typename SubCaller> struct SymmetricCaller {
-
   // Covariance Functions
 
   // CovFunc has a direct call implementation for X and Y
@@ -258,7 +256,6 @@ template <typename SubCaller> struct SymmetricCaller {
  * actually be interested in the underlying process.
  */
 template <typename SubCaller> struct MeasurementForwarder {
-
   // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
@@ -322,7 +319,6 @@ template <typename SubCaller> struct MeasurementForwarder {
 };
 
 template <typename SubCaller> struct LinearCombinationCaller {
-
   // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
@@ -338,7 +334,6 @@ template <typename SubCaller> struct LinearCombinationCaller {
           has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
   static double call(const CovFunc &cov_func, const LinearCombination<X> &xs,
                      const LinearCombination<Y> &ys) {
-
     auto sub_caller = [&](const auto &x, const auto &y) {
       return SubCaller::call(cov_func, x, y);
     };
@@ -422,7 +417,6 @@ template <typename SubCaller> struct LinearCombinationCaller {
  *
  */
 template <typename SubCaller> struct VariantForwarder {
-
   // Covariance Functions
 
   // directly forward on the case where both types aren't variants
@@ -440,9 +434,8 @@ template <typename SubCaller> struct VariantForwarder {
    * depending on whether pairs of types in variants are defined.
    */
   template <typename CovFunc, typename X> struct CallVisitor {
-
     CallVisitor(const CovFunc &cov_func, const X &x)
-        : cov_func_(cov_func), x_(x){};
+        : cov_func_(cov_func), x_(x) {}
 
     template <typename Y,
               typename std::enable_if<
@@ -450,7 +443,7 @@ template <typename SubCaller> struct VariantForwarder {
                   int>::type = 0>
     double operator()(const Y &y) const {
       return SubCaller::call(cov_func_, x_, y);
-    };
+    }
 
     template <typename Y,
               typename std::enable_if<
@@ -458,7 +451,7 @@ template <typename SubCaller> struct VariantForwarder {
                   int>::type = 0>
     double operator()(const Y &y ALBATROSS_UNUSED) const {
       return 0.;
-    };
+    }
 
     const CovFunc &cov_func_;
     const X &x_;
@@ -509,8 +502,7 @@ template <typename SubCaller> struct VariantForwarder {
    * depending on whether pairs of types in variants are defined.
    */
   template <typename MeanFunc> struct MeanCallVisitor {
-
-    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func){};
+    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func) {}
 
     template <typename X,
               typename std::enable_if<
@@ -518,7 +510,7 @@ template <typename SubCaller> struct VariantForwarder {
                   int>::type = 0>
     double operator()(const X &x) const {
       return SubCaller::call(mean_func_, x);
-    };
+    }
 
     template <typename X,
               typename std::enable_if<
@@ -526,7 +518,7 @@ template <typename SubCaller> struct VariantForwarder {
                   int>::type = 0>
     double operator()(const X &x ALBATROSS_UNUSED) const {
       return 0.;
-    };
+    }
 
     const MeanFunc &mean_func_;
   };

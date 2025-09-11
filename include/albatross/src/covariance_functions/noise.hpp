@@ -22,11 +22,11 @@ class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
 public:
   IndependentNoise(double sigma_noise = 0.1) {
     sigma_independent_noise = {sigma_noise, PositivePrior()};
-  };
+  }
 
-  ALBATROSS_DECLARE_PARAMS(sigma_independent_noise);
+  ALBATROSS_DECLARE_PARAMS(sigma_independent_noise)
 
-  ~IndependentNoise(){};
+  ~IndependentNoise() {}
 
   std::string name() const { return "independent_noise"; }
 

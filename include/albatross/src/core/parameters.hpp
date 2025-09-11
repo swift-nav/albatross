@@ -29,17 +29,17 @@ struct Parameter {
   ParameterValue value;
   PriorContainer prior;
 
-  Parameter() : value(), prior(){};
+  Parameter() : value(), prior() {}
   explicit Parameter(ParameterValue value_) : value(value_), prior() {}
 
   Parameter(ParameterValue value_, const PriorContainer &prior_)
-      : value(value_), prior(prior_){};
+      : value(value_), prior(prior_) {}
 
   template <typename PriorType,
             typename std::enable_if<
                 is_in_variant<PriorType, PossiblePriors>::value, int>::type = 0>
   Parameter(ParameterValue value_, const PriorType &prior_)
-      : value(value_), prior(prior_){};
+      : value(value_), prior(prior_) {}
 
   bool operator==(const ParameterValue &other_value) const {
     return (value == other_value);

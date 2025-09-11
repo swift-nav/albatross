@@ -16,23 +16,22 @@
 namespace albatross {
 
 template <typename X> struct LinearCombination {
-
   static_assert(
       !is_measurement<X>::value,
       "Putting a Measurement type inside a LinearCombination will lead to "
       "unexpected behavior due to the ordering of the DefaultCaller");
 
-  LinearCombination(){};
+  LinearCombination() {}
 
   LinearCombination(const std::vector<X> &values_)
       : values(values_),
-        coefficients(Eigen::VectorXd::Ones(cast::to_index(values_.size()))){};
+        coefficients(Eigen::VectorXd::Ones(cast::to_index(values_.size()))) {}
 
   LinearCombination(const std::vector<X> &values_,
                     const Eigen::VectorXd &coefficients_)
       : values(values_), coefficients(coefficients_) {
     ALBATROSS_ASSERT(values_.size() == cast::to_size(coefficients_.size()));
-  };
+  }
 
   bool operator==(const LinearCombination &other) const {
     return values == other.values && coefficients == other.coefficients;

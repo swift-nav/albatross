@@ -22,16 +22,16 @@ public:
   using Scalar = double;
   using MatrixType = MatrixXd;
 
-  SerializableLDLT() : LDLT<MatrixXd, Lower>(){};
+  SerializableLDLT() : LDLT<MatrixXd, Lower>() {}
 
-  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()){};
+  SerializableLDLT(const MatrixXd &x) : LDLT<MatrixXd, Lower>(x.ldlt()) {}
 
   SerializableLDLT(const LDLT<MatrixXd, Lower> &ldlt)
       // Can we get around copying here?
-      : LDLT<MatrixXd, Lower>(ldlt){};
+      : LDLT<MatrixXd, Lower>(ldlt) {}
 
   SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
-      : LDLT<MatrixXd, Lower>(std::move(ldlt)){};
+      : LDLT<MatrixXd, Lower>(std::move(ldlt)) {}
 
   bool is_positive_definite() const { return this->vectorD().minCoeff() > 0.; }
 

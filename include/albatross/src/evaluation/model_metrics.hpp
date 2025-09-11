@@ -16,7 +16,6 @@
 namespace albatross {
 
 template <typename MetricType> class ModelMetric {
-
 private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public ModelMetric<B> {}
@@ -24,7 +23,7 @@ private:
   //     using A = ModelMetric<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  ModelMetric(){};
+  ModelMetric() {}
   friend MetricType;
 
 public:
@@ -77,7 +76,7 @@ class LeaveOneGroupOutLikelihood
     : public ModelMetric<LeaveOneGroupOutLikelihood<FeatureType, PredictType>> {
 public:
   explicit LeaveOneGroupOutLikelihood(const GroupFunction<FeatureType> &grouper)
-      : grouper_(grouper){};
+      : grouper_(grouper) {}
 
   template <typename ModelType>
   double _call_impl(const RegressionDataset<FeatureType> &dataset,

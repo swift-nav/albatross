@@ -28,7 +28,7 @@ constexpr double LARGE_VAL = HUGE_VAL;
 
 class Prior {
 public:
-  virtual ~Prior(){};
+  virtual ~Prior() {}
   virtual double log_pdf(double x) const = 0;
   virtual std::string get_name() const = 0;
   virtual double lower_bound() const { return -LARGE_VAL; }
@@ -200,12 +200,12 @@ using PossiblePriors =
 
 class PriorContainer : public Prior {
 public:
-  PriorContainer() : priors_(UninformativePrior()){};
+  PriorContainer() : priors_(UninformativePrior()) {}
 
   template <typename PriorType,
             typename std::enable_if<
                 is_in_variant<PriorType, PossiblePriors>::value, int>::type = 0>
-  PriorContainer(const PriorType &prior) : priors_(prior){};
+  PriorContainer(const PriorType &prior) : priors_(prior) {}
 
   template <
       typename PriorType,
@@ -215,7 +215,7 @@ public:
     static_assert(delay_static_assert<PriorType>::value,
                   "Attempt to initialize a prior which is not one of the types "
                   "see PossiblePriors");
-  };
+  }
 
   double log_pdf(double x) const override {
     return priors_.match([&x](const auto &p) { return p.log_pdf(x); });
@@ -235,7 +235,7 @@ public:
 
   bool is_log_scale() const override {
     return priors_.match([](const auto &p) { return p.is_log_scale(); });
-  };
+  }
 
   bool is_fixed() const override {
     return priors_.match([](const auto &p) { return p.is_fixed(); });

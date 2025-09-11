@@ -44,8 +44,7 @@ namespace albatross {
  * In this particular implementation Ai_B and S^-1 are pre-computed.
  */
 template <typename Solver> struct BlockSymmetric {
-
-  BlockSymmetric(){};
+  BlockSymmetric() {}
 
   BlockSymmetric(const Solver &A_, const Eigen::MatrixXd &B_,
                  const Eigen::SerializableLDLT &S_)
@@ -55,7 +54,7 @@ template <typename Solver> struct BlockSymmetric {
                  const Eigen::MatrixXd &C)
       : BlockSymmetric(
             A_, B_,
-            Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))){};
+            Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))) {}
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>

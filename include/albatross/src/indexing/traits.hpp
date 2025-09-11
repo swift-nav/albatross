@@ -62,7 +62,6 @@ struct grouper_result
                            typename const_ref<ValueType>::type> {};
 
 template <typename GroupKey> class group_key_is_valid {
-
   template <typename C, std::enable_if_t<is_valid_map_key<C>::value, int> = 0>
   static std::true_type test(C *);
   template <typename> static std::false_type test(...);
@@ -72,7 +71,6 @@ public:
 };
 
 template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
-
   template <
       typename C,
       typename GroupKey = typename grouper_result<C, ValueType>::type,
@@ -84,7 +82,6 @@ template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
 
 public:
   static constexpr bool value = decltype(test<GrouperFunction>(0))::value;
-  ;
 };
 
 /*
@@ -118,7 +115,6 @@ struct is_valid_index_apply_function
 
 template <typename Expected, typename FilterFunction, typename... Args>
 struct invoke_result_is_same {
-
   template <typename C,
             typename std::enable_if_t<
                 std::is_same<typename invoke_result<C, Args...>::type,

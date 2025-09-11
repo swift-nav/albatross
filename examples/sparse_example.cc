@@ -49,7 +49,6 @@ albatross::ParameterStore tune_model(ModelType &model,
 }
 
 int main(int argc, char *argv[]) {
-
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = FLAGS_n;
@@ -78,7 +77,7 @@ int main(int argc, char *argv[]) {
   std::cout << cov.pretty_string() << std::endl;
 
   LeaveOneOutGrouper loo;
-  UniformlySpacedInducingPoints strategy(FLAGS_k);
+  UniformlySpacedInducingPoints strategy(albatross::cast::to_size(FLAGS_k));
   auto model = sparse_gp_from_covariance(cov, loo, strategy, "example");
   //  auto model = gp_from_covariance(cov, "example");
 

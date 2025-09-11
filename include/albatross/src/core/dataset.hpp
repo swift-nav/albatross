@@ -29,7 +29,7 @@ template <typename FeatureType> struct RegressionDataset {
 
   using Feature = FeatureType;
 
-  RegressionDataset(){};
+  RegressionDataset() {}
 
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const MarginalDistribution &targets_)
@@ -108,7 +108,6 @@ deduplicate(const RegressionDataset<FeatureType> &dataset) {
 template <typename X, typename EqualTo>
 inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y,
                            EqualTo equal_to) {
-
   std::vector<std::size_t> x_inds;
   std::vector<std::size_t> y_inds;
   for (std::size_t i = 0; i < x->size(); ++i) {
@@ -172,7 +171,6 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const albatross::RegressionDataset<X> &dataset) {
-
   const auto transformed_features = matrix.derived() * dataset.features;
   using TransformedType = typename decltype(transformed_features)::value_type;
 
@@ -183,7 +181,6 @@ inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
                       const albatross::RegressionDataset<X> &dataset) {
-
   const auto transformed_features = matrix.derived() * dataset.features;
   using TransformedType = typename decltype(transformed_features)::value_type;
 

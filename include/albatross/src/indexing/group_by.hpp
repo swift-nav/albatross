@@ -65,13 +65,12 @@ auto select_overload(ReturnType (*fptr)(const Arg &)) {
  */
 
 template <typename KeyType, typename ValueType> class GroupedBase {
-
 public:
   using key_t = KeyType;
   using value_t = ValueType;
-  GroupedBase() : map_(){};
-  GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)){};
-  GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map){};
+  GroupedBase() : map_() {}
+  GroupedBase(std::map<KeyType, ValueType> &&map) : map_(std::move(map)) {}
+  GroupedBase(const std::map<KeyType, ValueType> &map) : map_(map) {}
 
   void emplace(const KeyType &k, ValueType &&v) {
     map_.emplace(k, std::move(v));
@@ -292,7 +291,6 @@ Eigen::VectorXd combine(const Map<KeyType, double> &groups) {
 
 template <template <typename...> class Map, typename KeyType>
 Eigen::VectorXd combine(const Map<KeyType, Eigen::VectorXd> &groups) {
-
   auto get_size = [](const auto &x) { return x.size(); };
   Eigen::Index n = albatross::apply_map(groups, get_size).sum();
 
@@ -349,7 +347,6 @@ class Grouped<KeyType, Eigen::VectorXd>
  * for distinguishing between these different approaches.
  */
 template <typename GrouperFunction> struct IndexerBuilder {
-
   template <
       typename Iterable,
       typename IterableValue = typename const_ref<typename std::iterator_traits<
@@ -386,11 +383,10 @@ struct LeaveOneOutGrouper {
         "You shouldn't be calling LeaveOneOutGrouper directly, pass it into "
         "group_by as a GrouperFunction");
     return 0;
-  };
+  }
 };
 
 template <> struct IndexerBuilder<LeaveOneOutGrouper> {
-
   template <typename Iterable>
   static auto build(const LeaveOneOutGrouper &grouper_function ALBATROSS_UNUSED,
                     const Iterable &iterable) {
@@ -408,8 +404,7 @@ template <> struct IndexerBuilder<LeaveOneOutGrouper> {
 };
 
 struct KFoldGrouper {
-
-  KFoldGrouper(std::size_t k_ = 2) : k(k_){};
+  KFoldGrouper(std::size_t k_ = 2) : k(k_) {}
 
   std::size_t k;
 
@@ -419,11 +414,10 @@ struct KFoldGrouper {
         "You shouldn't be calling KFoldGrouper directly, pass it into "
         "group_by as a GrouperFunction");
     return 0;
-  };
+  }
 };
 
 template <> struct IndexerBuilder<KFoldGrouper> {
-
   template <typename Iterable>
   static auto build(const KFoldGrouper &grouper_function,
                     const Iterable &iterable) {
@@ -453,7 +447,6 @@ inline auto build_indexer(const GrouperFunction &grouper_function,
  * be grouped.
  */
 template <typename Derived> class GroupByBase {
-
 public:
   using KeyType = typename details::group_by_traits<Derived>::KeyType;
   using ValueType = typename details::group_by_traits<Derived>::ValueType;
@@ -463,7 +456,7 @@ public:
   GroupByBase(const ValueType &parent, const GrouperType &grouper)
       : parent_(parent), grouper_(grouper) {
     indexers_ = build_indexers();
-  };
+  }
 
   IndexerType indexers() const { return indexers_; }
 
@@ -595,7 +588,6 @@ template <typename FeatureType, typename GrouperFunction>
 class GroupBy<RegressionDataset<FeatureType>, GrouperFunction>
     : public GroupByBase<
           GroupBy<RegressionDataset<FeatureType>, GrouperFunction>> {
-
   static_assert(!std::is_same<GrouperFunction, void>::value,
                 "GrouperFunction is void (this may indicate the function won't "
                 "compile).");
@@ -614,7 +606,6 @@ public:
 template <typename FeatureType, typename GrouperFunction>
 class GroupBy<std::vector<FeatureType>, GrouperFunction>
     : public GroupByBase<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
-
   static_assert(!std::is_same<GrouperFunction, void>::value,
                 "GrouperFunction is void (this may indicate the function won't "
                 "compile).");

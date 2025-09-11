@@ -26,7 +26,7 @@ public:
   typedef ModelType model_type;
   typedef Fit fit_type;
 
-  FitModel(){};
+  FitModel() {}
 
   FitModel(const ModelType &model, const Fit &fit) = delete;
 
