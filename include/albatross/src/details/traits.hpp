@@ -77,9 +77,9 @@ struct is_measurement : public is_templated_type<Measurement, T> {};
 
 template <typename T> class is_streamable {
   template <typename C>
-  static auto test(int)
-      -> decltype(std::declval<std::ostream &>() << std::declval<C>(),
-                  std::true_type());
+  static auto test(int) -> decltype(std::declval<std::ostream &>()
+                                        << std::declval<C>(),
+                                    std::true_type());
 
   template <typename> static std::false_type test(...);
 
@@ -240,8 +240,9 @@ template <class B, class MT> struct invoke_impl<MT B::*> {
                    pmf)(std::forward<Args>(args)...));
 
   template <class T>
-  static auto call(MT B::*pmd, T &&t)
-      -> decltype(invoke_impl::get(std::forward<T>(t)).*pmd);
+  static auto call(MT B::*pmd,
+                   T &&t) -> decltype(invoke_impl::get(std::forward<T>(t)).*
+                                      pmd);
 };
 
 template <class F, class... Args, class Fd = typename std::decay<F>::type>
