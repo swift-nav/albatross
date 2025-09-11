@@ -20,11 +20,11 @@ namespace cereal {
 
 template <typename Archive, typename MetricType>
 inline void serialize(Archive &, ModelMetric<MetricType> &loo,
-                      const std::uint32_t){};
+                      const std::uint32_t) {}
 
 template <typename Archive, typename RequiredPredictType>
 inline void serialize(Archive &, PredictionMetric<RequiredPredictType> &loo,
-                      const std::uint32_t){};
+                      const std::uint32_t) {}
 
 } // namespace cereal
 

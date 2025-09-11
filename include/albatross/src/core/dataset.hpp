@@ -29,7 +29,7 @@ template <typename FeatureType> struct RegressionDataset {
 
   using Feature = FeatureType;
 
-  RegressionDataset(){};
+  RegressionDataset() {}
 
   RegressionDataset(const std::vector<FeatureType> &features_,
                     const MarginalDistribution &targets_)

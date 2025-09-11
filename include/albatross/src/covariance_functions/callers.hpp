@@ -502,7 +502,7 @@ template <typename SubCaller> struct VariantForwarder {
    * depending on whether pairs of types in variants are defined.
    */
   template <typename MeanFunc> struct MeanCallVisitor {
-    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func) {};
+    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func) {}
 
     template <typename X,
               typename std::enable_if<

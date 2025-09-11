@@ -118,14 +118,13 @@ struct GenericTuner {
 
   GenericTuner(const ParameterStore &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : initial_params(initial_params_), optimizer(),
-        output_stream(output_stream_), threads(nullptr) {
-    optimizer = default_optimizer(initial_params);
-  };
+      : initial_params(initial_params_),
+        optimizer(default_optimizer(initial_params)),
+        output_stream(output_stream_), threads(nullptr) {}
 
   GenericTuner(const std::vector<double> &initial_params_,
                std::ostream &output_stream_ = std::cout)
-      : GenericTuner(uninformative_params(initial_params_), output_stream_){};
+      : GenericTuner(uninformative_params(initial_params_), output_stream_) {}
 
   template <
       typename ObjectiveFunction,
@@ -275,9 +274,8 @@ struct ModelTuner {
              const TuningMetricAggregator &aggregator_,
              std::ostream &output_stream_)
       : model(model_), metric(metric_), datasets(datasets_),
-        aggregator(aggregator_), output_stream(output_stream_), optimizer() {
-    optimizer = default_optimizer(model.get_params());
-  };
+        aggregator(aggregator_), output_stream(output_stream_),
+        optimizer(default_optimizer(model.get_params())) {}
 
   ParameterStore tune() {
 

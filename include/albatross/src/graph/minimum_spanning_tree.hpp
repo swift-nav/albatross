@@ -18,7 +18,7 @@ namespace albatross {
 template <typename VertexType> struct Edge {
 
   Edge(VertexType a_, VertexType b_, double cost_, std::size_t id_ = 0)
-      : a(a_), b(b_), cost(cost_), id(id_){};
+      : a(a_), b(b_), cost(cost_), id(id_) {}
 
   bool operator<(const Edge &other) const {
     return std::tie(this->cost, this->a, this->b) <
@@ -201,7 +201,7 @@ public:
 private:
   struct VertexWithTreeID {
     VertexWithTreeID(const VertexType &v_, const size_t &tree_)
-        : v(v_), tree(tree_){};
+        : v(v_), tree(tree_) {}
     VertexType v;
     size_t tree;
   };

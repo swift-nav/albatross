@@ -102,7 +102,7 @@ template <typename FeatureType> struct Fit<SparseGPFit<FeatureType>> {
   Eigen::VectorXd information;
   Eigen::Index numerical_rank;
 
-  Fit(){};
+  Fit() {}
 
   Fit(const std::vector<FeatureType> &features_,
       const Eigen::SerializableLDLT &train_covariance_,

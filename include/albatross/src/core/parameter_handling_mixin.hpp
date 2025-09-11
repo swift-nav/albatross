@@ -203,10 +203,10 @@ inline bool set_param_if_exists_in_any(const ParameterKey &key,
  */
 class ParameterHandlingMixin {
 public:
-  ParameterHandlingMixin() : params_(){};
-  ParameterHandlingMixin(const ParameterStore &params) : params_(params){};
+  ParameterHandlingMixin() : params_() {}
+  ParameterHandlingMixin(const ParameterStore &params) : params_(params) {}
 
-  virtual ~ParameterHandlingMixin(){};
+  virtual ~ParameterHandlingMixin() {}
 
   /*
    * Provides a safe interface to the parameter values

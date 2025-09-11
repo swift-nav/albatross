@@ -63,7 +63,7 @@ namespace albatross {
  */
 struct ExplainedCovariance {
 
-  ExplainedCovariance(){};
+  ExplainedCovariance() {}
 
   ExplainedCovariance(const Eigen::MatrixXd &outer,
                       const Eigen::MatrixXd &inner_) {
@@ -94,9 +94,9 @@ struct ExplainedCovariance {
  * Simply stores a pre-computed inverse.
  */
 struct DirectInverse {
-  DirectInverse(){};
+  DirectInverse() {}
 
-  DirectInverse(const Eigen::MatrixXd &inverse) : inverse_(inverse){};
+  DirectInverse(const Eigen::MatrixXd &inverse) : inverse_(inverse) {}
 
   Eigen::MatrixXd solve(const Eigen::MatrixXd &rhs) const {
     return inverse_ * rhs;

@@ -58,9 +58,9 @@ public:
 template <typename ScalingFunction>
 class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
 public:
-  ScalingTerm() : scaling_function_(){};
+  ScalingTerm() : scaling_function_() {}
 
-  ScalingTerm(const ScalingFunction &func) : scaling_function_(func){};
+  ScalingTerm(const ScalingFunction &func) : scaling_function_(func) {}
 
   std::string get_name() const { return scaling_function_.get_name(); }
 
@@ -121,11 +121,9 @@ class ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>
 public:
   using LHS = ScalingTerm<ScalingFunction>;
 
-  ProductOfCovarianceFunctions() : lhs_(), rhs_(){};
+  ProductOfCovarianceFunctions() : lhs_(), rhs_() {}
   ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
-      : lhs_(lhs), rhs_(rhs) {
-    ProductOfCovarianceFunctions();
-  };
+      : lhs_(lhs), rhs_(rhs) {}
 
   std::string name() const {
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";
@@ -183,11 +181,9 @@ class ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>
 public:
   using RHS = ScalingTerm<ScalingFunction>;
 
-  ProductOfCovarianceFunctions() : lhs_(), rhs_(){};
+  ProductOfCovarianceFunctions() : lhs_(), rhs_() {}
   ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
-      : lhs_(lhs), rhs_(rhs) {
-    ProductOfCovarianceFunctions();
-  };
+      : lhs_(lhs), rhs_(rhs) {}
 
   std::string name() const {
     return "(" + lhs_.get_name() + "*" + rhs_.get_name() + ")";

@@ -259,7 +259,7 @@ template <typename ModelType> class CrossValidation {
   ModelType model_;
 
 public:
-  CrossValidation(const ModelType &model) : model_(model){};
+  CrossValidation(const ModelType &model) : model_(model) {}
 
   // Predict
 

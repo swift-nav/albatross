@@ -142,7 +142,7 @@ inline double chi_squared_cdf(const JointDistribution &prediction,
 }
 
 struct ChiSquaredCdf : public PredictionMetric<JointDistribution> {
-  ChiSquaredCdf() : PredictionMetric<JointDistribution>(chi_squared_cdf){};
+  ChiSquaredCdf() : PredictionMetric<JointDistribution>(chi_squared_cdf) {}
 };
 
 namespace distance {

@@ -28,7 +28,7 @@ constexpr double LARGE_VAL = HUGE_VAL;
 
 class Prior {
 public:
-  virtual ~Prior() {};
+  virtual ~Prior() {}
   virtual double log_pdf(double x) const = 0;
   virtual std::string get_name() const = 0;
   virtual double lower_bound() const { return -LARGE_VAL; }

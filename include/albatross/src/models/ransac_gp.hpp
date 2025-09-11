@@ -163,7 +163,7 @@ struct GaussianProcessRansacStrategy {
       GrouperFunction grouper_function)
       : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
         is_valid_candidate_(is_valid_candidate),
-        grouper_function_(grouper_function){};
+        grouper_function_(grouper_function) {}
 
   template <typename ModelType, typename FeatureType>
   auto operator()(const ModelType &model,

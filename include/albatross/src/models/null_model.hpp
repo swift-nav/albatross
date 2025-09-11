@@ -19,7 +19,7 @@ class NullModel;
 
 template <> struct Fit<NullModel> {
   template <typename Archive>
-  void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t){};
+  void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t) {}
 
   bool operator==(const Fit<NullModel> &other ALBATROSS_UNUSED) const {
     return true;
@@ -29,8 +29,8 @@ template <> struct Fit<NullModel> {
 class NullModel : public ModelBase<NullModel> {
 
 public:
-  NullModel(){};
-  NullModel(const ParameterStore &param_store) : params_(param_store){};
+  NullModel() {}
+  NullModel(const ParameterStore &param_store) : params_(param_store) {}
 
   std::string get_name() const { return "null_model"; };
 

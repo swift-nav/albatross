@@ -103,7 +103,7 @@ protected:
 template <typename CovFunc>
 class CallTrace : public CallTraceBase<CallTrace<CovFunc>> {
 public:
-  CallTrace(const CovFunc &cov_func) : cov_func_(cov_func){};
+  CallTrace(const CovFunc &cov_func) : cov_func_(cov_func) {}
 
   template <typename X, typename Y,
             typename std::enable_if<has_call_operator<CovFunc, X &, Y &>::value,
@@ -127,7 +127,7 @@ class CallTrace<SumOfCovarianceFunctions<LHS, RHS>>
     : public CallTraceBase<CallTrace<SumOfCovarianceFunctions<LHS, RHS>>> {
 public:
   CallTrace(const SumOfCovarianceFunctions<LHS, RHS> &cov_func)
-      : cov_func_(cov_func){};
+      : cov_func_(cov_func) {}
 
   template <typename X, typename Y,
             typename std::enable_if<
@@ -173,7 +173,7 @@ class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>
     : public CallTraceBase<CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>> {
 public:
   CallTrace(const ProductOfCovarianceFunctions<LHS, RHS> &cov_func)
-      : cov_func_(cov_func){};
+      : cov_func_(cov_func) {}
 
   template <typename X, typename Y,
             typename std::enable_if<
