@@ -38,8 +38,8 @@
 /*
  * Randomly samples n points between low and high.
  */
-std::vector<double> random_points_on_line(const int n, const double low,
-                                          const double high) {
+std::vector<double> random_points_on_line(const Eigen::Index n,
+                                          const double low, const double high) {
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(low, high);
 
@@ -78,7 +78,7 @@ double truth(double x) {
  * Create random noisy observations to use as train data.
  */
 albatross::RegressionDataset<double>
-create_train_data(const int n, const double low, const double high,
+create_train_data(const Eigen::Index n, const double low, const double high,
                   const double measurement_noise) {
   auto xs = random_points_on_line(n, low, high);
 
@@ -87,9 +87,9 @@ create_train_data(const int n, const double low, const double high,
 
   Eigen::VectorXd ys(n);
 
-  for (int i = 0; i < n; i++) {
+  for (Eigen::Index i = 0; i < n; i++) {
     double noise = noise_distribution(generator);
-    ys[i] = (truth(xs[i]) + noise);
+    ys[i] = (truth(xs[albatross::cast::to_size(i)]) + noise);
   }
 
   return albatross::RegressionDataset<double>(xs, ys);
