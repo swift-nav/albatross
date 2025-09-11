@@ -64,10 +64,9 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
  * different types.
  */
 template <typename CovFuncCaller, typename X, typename Y>
-inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
-                                                 const std::vector<X> &xs,
-                                                 const std::vector<Y> &ys,
-                                                 ThreadPool *pool) {
+inline Eigen::MatrixXd
+compute_covariance_matrix(CovFuncCaller caller, const std::vector<X> &xs,
+                          const std::vector<Y> &ys, ThreadPool *pool) {
   static_assert(is_invocable<CovFuncCaller, X, Y>::value,
                 "caller does not support the required arguments");
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, Y>::value,
@@ -216,8 +215,7 @@ struct DirectCaller {
  * This Caller turns any CovFunc defined for argument types X, Y into
  * one valid for Y, X as well.
  */
-template <typename SubCaller>
-struct SymmetricCaller {
+template <typename SubCaller> struct SymmetricCaller {
   // Covariance Functions
 
   // CovFunc has a direct call implementation for X and Y
@@ -257,8 +255,7 @@ struct SymmetricCaller {
  * with training data (measurements) versus test data where you may
  * actually be interested in the underlying process.
  */
-template <typename SubCaller>
-struct MeasurementForwarder {
+template <typename SubCaller> struct MeasurementForwarder {
   // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
@@ -321,8 +318,7 @@ struct MeasurementForwarder {
   }
 };
 
-template <typename SubCaller>
-struct LinearCombinationCaller {
+template <typename SubCaller> struct LinearCombinationCaller {
   // Covariance Functions
   template <
       typename CovFunc, typename X, typename Y,
@@ -420,8 +416,7 @@ struct LinearCombinationCaller {
  *   Y, variant<X, Y>
  *
  */
-template <typename SubCaller>
-struct VariantForwarder {
+template <typename SubCaller> struct VariantForwarder {
   // Covariance Functions
 
   // directly forward on the case where both types aren't variants
@@ -438,8 +433,7 @@ struct VariantForwarder {
    * This visitor helps deal with enabling and disabling the call operator
    * depending on whether pairs of types in variants are defined.
    */
-  template <typename CovFunc, typename X>
-  struct CallVisitor {
+  template <typename CovFunc, typename X> struct CallVisitor {
     CallVisitor(const CovFunc &cov_func, const X &x)
         : cov_func_(cov_func), x_(x) {}
 
@@ -507,9 +501,8 @@ struct VariantForwarder {
    * This visitor helps deal with enabling and disabling the call operator
    * depending on whether pairs of types in variants are defined.
    */
-  template <typename MeanFunc>
-  struct MeanCallVisitor {
-    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func){};
+  template <typename MeanFunc> struct MeanCallVisitor {
+    MeanCallVisitor(const MeanFunc &mean_func) : mean_func_(mean_func) {};
 
     template <typename X,
               typename std::enable_if<
@@ -550,7 +543,7 @@ struct VariantForwarder {
   }
 };
 
-}  // namespace internal
+} // namespace internal
 
 /*
  * This defines the order of operations of the covariance function Callers.
@@ -598,6 +591,6 @@ template <typename CovFunc, typename... Args>
 class has_equivalent_caller
     : public caller_has_valid_call<EquivalentCaller, CovFunc, Args...> {};
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTIONS_CALLERS_HPP_ */

@@ -62,22 +62,21 @@ namespace albatross {
  */
 template <typename Derived>
 class CovarianceFunction : public ParameterHandlingMixin {
- private:
+private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public CovarianceFunction<B> {}
   // or
   //     using A = CovarianceFunction<B>;
   //
   // which if unchecked can lead to some very strange behavior.
-  CovarianceFunction() : ParameterHandlingMixin(){};
+  CovarianceFunction() : ParameterHandlingMixin() {};
   friend Derived;
 
-  template <typename X, typename Y>
-  double call(const X &x, const Y &y) const {
+  template <typename X, typename Y> double call(const X &x, const Y &y) const {
     return DefaultCaller::call(derived(), x, y);
   }
 
- public:
+public:
   static_assert(!is_complete<Derived>::value,
                 "\n\nPassing a complete type in as template parameter "
                 "implies you aren't using CRTP.  Implementations "
@@ -184,36 +183,33 @@ class CovarianceFunction : public ParameterHandlingMixin {
                              !has_possible_call_impl<Derived, X, X>::value),
                             int>::type = 0>
   void operator()(const X &x ALBATROSS_UNUSED) const ALBATROSS_FAIL(
-      X,
-      "No public method with signature 'double "
-      "Derived::_call_impl(const X&, const X&) const'")
+      X, "No public method with signature 'double "
+         "Derived::_call_impl(const X&, const X&) const'")
 
       template <typename X, typename std::enable_if<
                                 (!has_valid_caller<Derived, X, X>::value &&
                                  has_invalid_call_impl<Derived, X, X>::value),
                                 int>::type = 0>
       void operator()(const X &x ALBATROSS_UNUSED) const
-      ALBATROSS_FAIL(X,
-                     "Incorrectly defined method 'double "
-                     "Derived::_call_impl(const X&, const X&) const'")
+      ALBATROSS_FAIL(X, "Incorrectly defined method 'double "
+                        "Derived::_call_impl(const X&, const X&) const'")
 
           template <typename X,
                     typename std::enable_if<
                         !has_valid_caller<Derived, X, X>::value, int>::type = 0>
           void diagonal(const std::vector<X> &xs ALBATROSS_UNUSED) const
-      ALBATROSS_FAIL(X,
-                     "No public method with signature 'double "
-                     "Derived::_call_impl(const X&, const X&) const'")
+      ALBATROSS_FAIL(X, "No public method with signature 'double "
+                        "Derived::_call_impl(const X&, const X&) const'")
 
           CallTrace<Derived> call_trace() const;
 
   template <typename Other>
-  const SumOfCovarianceFunctions<Derived, Other> operator+(
-      const CovarianceFunction<Other> &other) const;
+  const SumOfCovarianceFunctions<Derived, Other>
+  operator+(const CovarianceFunction<Other> &other) const;
 
   template <typename Other>
-  const ProductOfCovarianceFunctions<Derived, Other> operator*(
-      const CovarianceFunction<Other> &other) const;
+  const ProductOfCovarianceFunctions<Derived, Other>
+  operator*(const CovarianceFunction<Other> &other) const;
 
   Derived &derived() { return *static_cast<Derived *>(this); }
 
@@ -226,7 +222,7 @@ class CovarianceFunction : public ParameterHandlingMixin {
 template <class LHS, class RHS>
 class SumOfCovarianceFunctions
     : public CovarianceFunction<SumOfCovarianceFunctions<LHS, RHS>> {
- public:
+public:
   SumOfCovarianceFunctions() : lhs_(), rhs_() {}
 
   SumOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
@@ -322,7 +318,7 @@ class SumOfCovarianceFunctions
     return this->rhs_.state_space_representation(xs);
   }
 
- protected:
+protected:
   LHS lhs_;
   RHS rhs_;
   friend class CallTrace<SumOfCovarianceFunctions<LHS, RHS>>;
@@ -334,7 +330,7 @@ class SumOfCovarianceFunctions
 template <class LHS, class RHS>
 class ProductOfCovarianceFunctions
     : public CovarianceFunction<ProductOfCovarianceFunctions<LHS, RHS>> {
- public:
+public:
   ProductOfCovarianceFunctions() : lhs_(), rhs_() {}
   ProductOfCovarianceFunctions(const LHS &lhs, const RHS &rhs)
       : lhs_(lhs), rhs_(rhs) {
@@ -417,7 +413,7 @@ class ProductOfCovarianceFunctions
     return this->rhs_.state_space_representation(xs);
   }
 
- protected:
+protected:
   LHS lhs_;
   RHS rhs_;
   friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
@@ -440,6 +436,6 @@ CovarianceFunction<Derived>::operator*(
                                                       other.derived());
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif
