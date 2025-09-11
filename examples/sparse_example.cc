@@ -15,8 +15,8 @@
 #include <albatross/SparseGP>
 
 #include <csv.h>
-#include <fstream>
 #include <gflags/gflags.h>
+#include <fstream>
 #include <iostream>
 
 #define EXAMPLE_SLOPE_VALUE 0.
@@ -49,7 +49,6 @@ albatross::ParameterStore tune_model(ModelType &model,
 }
 
 int main(int argc, char *argv[]) {
-
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   int n = FLAGS_n;

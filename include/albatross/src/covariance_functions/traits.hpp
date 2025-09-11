@@ -18,7 +18,8 @@ namespace albatross {
 MAKE_HAS_ANY_TRAIT(_call_impl);
 
 // A helper rename to avoid duplicate underscores.
-template <typename U> class has_any_call_impl : public has_any__call_impl<U> {};
+template <typename U>
+class has_any_call_impl : public has_any__call_impl<U> {};
 
 DEFINE_CLASS_METHOD_TRAITS(_call_impl);
 
@@ -47,7 +48,7 @@ class has_valid_cov_caller
  */
 template <typename U, typename Caller, typename A, typename B>
 class has_valid_cross_cov_caller {
-public:
+ public:
   static constexpr bool value = has_valid_cov_caller<U, Caller, A, A>::value &&
                                 has_valid_cov_caller<U, Caller, A, B>::value &&
                                 has_valid_cov_caller<U, Caller, B, B>::value;
@@ -65,20 +66,21 @@ class has_valid_mean_caller
  *   `operator() (const X &x, const Y &y, const Z &z, ...)`
  * The result of the inspection gets stored in the member `value`.
  */
-template <typename T, typename... Args> class has_call_operator {
-
+template <typename T, typename... Args>
+class has_call_operator {
   template <typename C, typename = decltype(std::declval<C>()(
                             std::declval<typename const_ref<Args>::type>()...))>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T, typename... Args> class has_invalid_call_impl {
-
-public:
+template <typename T, typename... Args>
+class has_invalid_call_impl {
+ public:
   static constexpr bool value = (has_possible_call_impl<T, Args...>::value &&
                                  !has_valid_call_impl<T, Args...>::value);
 };
@@ -87,10 +89,11 @@ DEFINE_CLASS_METHOD_TRAITS(solve);
 
 DEFINE_CLASS_METHOD_TRAITS(_ssr_impl);
 
-template <typename T, typename FeatureType> class has_valid_ssr_impl {
+template <typename T, typename FeatureType>
+class has_valid_ssr_impl {
   using SsrCall = class_method__ssr_impl_traits<T, std::vector<FeatureType>>;
 
-public:
+ public:
   static constexpr bool value =
       (SsrCall::is_defined && is_vector<typename SsrCall::return_type>::value);
 };
@@ -99,12 +102,11 @@ DEFINE_CLASS_METHOD_TRAITS(state_space_representation);
 
 template <typename T, typename FeatureType>
 struct has_valid_state_space_representation {
-
   using SsrCall =
       class_method_state_space_representation_traits<T,
                                                      std::vector<FeatureType>>;
 
-public:
+ public:
   static constexpr bool value =
       (SsrCall::is_defined && is_vector<typename SsrCall::return_type>::value);
 };
@@ -233,16 +235,18 @@ struct has_valid_variant_mean_caller<U, Caller, variant<A, Ts...>,
  * handled by default inside the caller logic. Here we add a trait to
  * be able to distinguish between a basic type and a composite type.
  */
-template <typename X> struct is_basic_type : std::true_type {};
+template <typename X>
+struct is_basic_type : std::true_type {};
 
 template <typename X>
 struct is_basic_type<LinearCombination<X>> : std::false_type {};
 
-template <typename X> struct is_basic_type<Measurement<X>> : std::false_type {};
+template <typename X>
+struct is_basic_type<Measurement<X>> : std::false_type {};
 
 template <typename... Ts>
 struct is_basic_type<variant<Ts...>> : std::false_type {};
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

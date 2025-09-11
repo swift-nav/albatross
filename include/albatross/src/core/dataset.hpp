@@ -22,7 +22,8 @@ namespace albatross {
  * it is assumed that each feature is regressed to a single double typed
  * target.
  */
-template <typename FeatureType> struct RegressionDataset {
+template <typename FeatureType>
+struct RegressionDataset {
   std::vector<FeatureType> features;
   MarginalDistribution targets;
   std::map<std::string, std::string> metadata;
@@ -55,8 +56,8 @@ template <typename FeatureType> struct RegressionDataset {
   RegressionDataset subset(const std::vector<SizeType> &indices) const;
 
   template <typename GrouperFunc>
-  GroupBy<RegressionDataset<FeatureType>, GrouperFunc>
-  group_by(GrouperFunc grouper) const;
+  GroupBy<RegressionDataset<FeatureType>, GrouperFunc> group_by(
+      GrouperFunc grouper) const;
 };
 
 template <typename FeatureType>
@@ -69,9 +70,9 @@ inline auto create_dataset(const std::vector<FeatureType> &features,
  * Convenience method which subsets the features and targets of a dataset.
  */
 template <typename SizeType, typename FeatureType>
-inline RegressionDataset<FeatureType>
-subset(const RegressionDataset<FeatureType> &dataset,
-       const std::vector<SizeType> &indices) {
+inline RegressionDataset<FeatureType> subset(
+    const RegressionDataset<FeatureType> &dataset,
+    const std::vector<SizeType> &indices) {
   return RegressionDataset<FeatureType>(subset(dataset.features, indices),
                                         subset(dataset.targets, indices));
 }
@@ -84,8 +85,8 @@ RegressionDataset<FeatureType> RegressionDataset<FeatureType>::subset(
 }
 
 template <typename FeatureType>
-RegressionDataset<FeatureType>
-deduplicate(const RegressionDataset<FeatureType> &dataset) {
+RegressionDataset<FeatureType> deduplicate(
+    const RegressionDataset<FeatureType> &dataset) {
   auto appears_later = [&](std::size_t index) -> bool {
     for (std::size_t j = index + 1; j < dataset.features.size(); ++j) {
       if (dataset.features[index] == dataset.features[j]) {
@@ -108,7 +109,6 @@ deduplicate(const RegressionDataset<FeatureType> &dataset) {
 template <typename X, typename EqualTo>
 inline auto align_datasets(RegressionDataset<X> *x, RegressionDataset<X> *y,
                            EqualTo equal_to) {
-
   std::vector<std::size_t> x_inds;
   std::vector<std::size_t> y_inds;
   for (std::size_t i = 0; i < x->size(); ++i) {
@@ -146,8 +146,8 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
 }
 
 template <typename X>
-inline auto
-concatenate_datasets(const std::vector<RegressionDataset<X>> &datasets) {
+inline auto concatenate_datasets(
+    const std::vector<RegressionDataset<X>> &datasets) {
   std::vector<std::vector<X>> features;
   std::vector<MarginalDistribution> targets;
 
@@ -172,7 +172,6 @@ inline auto concatenate_datasets(const RegressionDataset<X> &x,
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
                       const albatross::RegressionDataset<X> &dataset) {
-
   const auto transformed_features = matrix.derived() * dataset.features;
   using TransformedType = typename decltype(transformed_features)::value_type;
 
@@ -183,7 +182,6 @@ inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
                       const albatross::RegressionDataset<X> &dataset) {
-
   const auto transformed_features = matrix.derived() * dataset.features;
   using TransformedType = typename decltype(transformed_features)::value_type;
 
@@ -215,6 +213,6 @@ inline std::ostream &operator<<(std::ostream &os,
   }
   return os;
 }
-} // namespace albatross
+}  // namespace albatross
 
 #endif

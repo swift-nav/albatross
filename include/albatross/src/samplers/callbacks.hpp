@@ -19,8 +19,8 @@ struct NullCallback {
   void operator()(std::size_t, const EnsembleSamplerState &) {}
 };
 
-inline std::vector<std::string>
-get_sampler_csv_columns(const ParameterStore &example) {
+inline std::vector<std::string> get_sampler_csv_columns(
+    const ParameterStore &example) {
   std::vector<std::string> columns;
   columns.push_back("iteration");
   columns.push_back("log_probability");
@@ -34,7 +34,6 @@ inline void write_ensemble_sampler_state(
     std::ostream &stream, const ParameterStore &param_store,
     const EnsembleSamplerState &ensemble, std::size_t iteration,
     const std::vector<std::string> &columns) {
-
   for (std::size_t i = 0; i < ensemble.size(); ++i) {
     std::map<std::string, std::string> row;
 
@@ -51,7 +50,6 @@ inline void write_ensemble_sampler_state(
 }
 
 struct MaximumLikelihoodTrackingCallback {
-
   MaximumLikelihoodTrackingCallback(const ParameterStore &param_store_,
                                     std::shared_ptr<std::ostream> &stream_)
       : param_store(param_store_), stream(stream_) {}
@@ -80,7 +78,6 @@ struct MaximumLikelihoodTrackingCallback {
 };
 
 struct CsvWritingCallback {
-
   CsvWritingCallback(const ParameterStore &param_store_,
                      std::shared_ptr<std::ostream> &stream_)
       : param_store(param_store_), stream(stream_) {}
@@ -112,12 +109,11 @@ CsvWritingCallback get_csv_writing_callback(const ModelType &model,
 }
 
 template <typename ModelType>
-CsvWritingCallback
-get_csv_writing_callback(const ModelType &model,
-                         std::shared_ptr<std::ostream> &stream) {
+CsvWritingCallback get_csv_writing_callback(
+    const ModelType &model, std::shared_ptr<std::ostream> &stream) {
   return CsvWritingCallback(model.get_params(), stream);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_SAMPLERS_CALLBACKS_HPP_ */

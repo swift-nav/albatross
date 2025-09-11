@@ -15,8 +15,8 @@
 
 namespace albatross {
 
-template <typename VertexType> struct Edge {
-
+template <typename VertexType>
+struct Edge {
   Edge(VertexType a_, VertexType b_, double cost_, std::size_t id_ = 0)
       : a(a_), b(b_), cost(cost_), id(id_) {}
 
@@ -39,8 +39,8 @@ template <typename VertexType> struct Edge {
 };
 
 template <typename VertexType>
-std::set<VertexType>
-compute_vertices(const std::vector<Edge<VertexType>> &edges) {
+std::set<VertexType> compute_vertices(
+    const std::vector<Edge<VertexType>> &edges) {
   std::set<VertexType> vertices;
   for (const auto &edge : edges) {
     vertices.insert(edge.a);
@@ -49,7 +49,8 @@ compute_vertices(const std::vector<Edge<VertexType>> &edges) {
   return vertices;
 }
 
-template <typename VertexType> struct Graph {
+template <typename VertexType>
+struct Graph {
   std::vector<Edge<VertexType>> edges;
   std::set<VertexType> vertices;
 };
@@ -75,8 +76,8 @@ bool contains_vertex(const Graph<VertexType> &graph, const VertexType &vertex) {
 }
 
 template <typename VertexType>
-std::map<VertexType, std::vector<Edge<VertexType>>>
-adjacency_map(const Graph<VertexType> &graph) {
+std::map<VertexType, std::vector<Edge<VertexType>>> adjacency_map(
+    const Graph<VertexType> &graph) {
   std::map<VertexType, std::vector<Edge<VertexType>>> output;
 
   auto construct_or_push = [&output](const VertexType &key,
@@ -173,8 +174,9 @@ Graph<VertexType> maximum_spanning_tree(const Graph<VertexType> &graph) {
  * proposed edge already has both nodes in the same tree, a closed loop would be
  * formed, and the edge can be rejected.
  */
-template <typename VertexType> class KruskalAlgoRunner {
-public:
+template <typename VertexType>
+class KruskalAlgoRunner {
+ public:
   KruskalAlgoRunner(const Graph<VertexType> &input_graph)
       : sorted_graph_(input_graph), vertices_() {
     std::sort(sorted_graph_.edges.begin(), sorted_graph_.edges.end());
@@ -198,7 +200,7 @@ public:
     return output;
   }
 
-private:
+ private:
   struct VertexWithTreeID {
     VertexWithTreeID(const VertexType &v_, const size_t &tree_)
         : v(v_), tree(tree_) {}
@@ -283,6 +285,6 @@ inline std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

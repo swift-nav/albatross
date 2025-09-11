@@ -62,7 +62,6 @@ namespace albatross {
  * if possible, under the assumption that it may be singular.
  */
 struct ExplainedCovariance {
-
   ExplainedCovariance() {}
 
   ExplainedCovariance(const Eigen::MatrixXd &outer,
@@ -113,6 +112,6 @@ struct DirectInverse {
   Eigen::MatrixXd inverse_;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTION_REPRESENTATIONS_HPP_ */

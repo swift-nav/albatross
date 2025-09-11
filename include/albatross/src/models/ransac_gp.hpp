@@ -21,7 +21,6 @@ template <typename GroupKey>
 inline typename RansacFunctions<ConditionalFit, GroupKey>::FitterFunc
 get_gp_ransac_fitter(const ConditionalGaussian &model,
                      const GroupIndexer<GroupKey> &indexer) {
-
   return [&, model, indexer](const std::vector<GroupKey> &groups) {
     auto indices = indices_from_groups(indexer, groups);
     return model.fit_from_indices(indices);
@@ -33,7 +32,6 @@ inline typename RansacFunctions<ConditionalFit, GroupKey>::IsValidCandidate
 get_gp_ransac_is_valid_candidate(const ConditionalGaussian &model,
                                  const GroupIndexer<GroupKey> &indexer,
                                  const IsValidCandidateMetric &metric) {
-
   return [&, model, indexer](const std::vector<GroupKey> &groups) {
     const auto indices = indices_from_groups(indexer, groups);
     const auto prior = model.get_prior(indices);
@@ -47,7 +45,6 @@ inline typename RansacFunctions<ConditionalFit, GroupKey>::InlierMetric
 get_gp_ransac_inlier_metric(const ConditionalGaussian &model,
                             const GroupIndexer<GroupKey> &indexer,
                             const InlierMetricType &metric) {
-
   return [&, indexer, model](const GroupKey &group, const ConditionalFit &fit) {
     const auto indices = indexer.at(group);
     const auto pred = get_prediction_reference(model, fit, indices);
@@ -61,7 +58,6 @@ inline typename RansacFunctions<ConditionalFit, GroupKey>::ConsensusMetric
 get_gp_ransac_consensus_metric(const ConditionalGaussian &model,
                                const GroupIndexer<GroupKey> &indexer,
                                const ConsensusMetric &metric) {
-
   return [&, model, indexer](const std::vector<GroupKey> &groups) {
     const auto indices = indices_from_groups(indexer, groups);
     const auto prior = model.get_prior(indices);
@@ -93,7 +89,6 @@ struct ChiSquaredConsensusMetric {
 };
 
 struct ChiSquaredIsValidCandidateMetric {
-
   ChiSquaredIsValidCandidateMetric(
       double chi_squared_treshold = DEFAULT_CHI_SQUARED_THRESHOLD)
       : chi_squared_threshold_(chi_squared_treshold) {}
@@ -106,7 +101,7 @@ struct ChiSquaredIsValidCandidateMetric {
     return (probability_prior_exceeded <= chi_squared_threshold_);
   };
 
-private:
+ private:
   double chi_squared_threshold_;
 };
 
@@ -124,7 +119,6 @@ inline RansacFunctions<ConditionalFit, GroupKey> get_gp_ransac_functions(
     const GroupIndexer<GroupKey> &indexer, const InlierMetric &inlier_metric,
     const ConsensusMetric &consensus_metric,
     const IsValidCandidateMetric &is_valid_candidate_metric) {
-
   static_assert(is_prediction_metric<InlierMetric>::value,
                 "InlierMetric must be an PredictionMetric.");
 
@@ -153,7 +147,6 @@ inline RansacFunctions<ConditionalFit, GroupKey> get_gp_ransac_functions(
 template <typename InlierMetric, typename ConsensusMetric,
           typename IsValidCandidateMetric, typename GrouperFunction>
 struct GaussianProcessRansacStrategy {
-
   GaussianProcessRansacStrategy() = default;
 
   GaussianProcessRansacStrategy(
@@ -161,7 +154,8 @@ struct GaussianProcessRansacStrategy {
       const ConsensusMetric &consensus_metric,
       const IsValidCandidateMetric &is_valid_candidate,
       GrouperFunction grouper_function)
-      : inlier_metric_(inlier_metric), consensus_metric_(consensus_metric),
+      : inlier_metric_(inlier_metric),
+        consensus_metric_(consensus_metric),
         is_valid_candidate_(is_valid_candidate),
         grouper_function_(grouper_function) {}
 
@@ -179,7 +173,7 @@ struct GaussianProcessRansacStrategy {
     return dataset.group_by(grouper_function_).indexers();
   }
 
-protected:
+ protected:
   InlierMetric inlier_metric_;
   ConsensusMetric consensus_metric_;
   IsValidCandidateMetric is_valid_candidate_;
@@ -213,6 +207,6 @@ auto gp_ransac_strategy(const InlierMetric &inlier_metric,
       inlier_metric, consensus_metric, is_valid_candidate, grouper_function);
 }
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_MODELS_RANSAC_GP_H_ */

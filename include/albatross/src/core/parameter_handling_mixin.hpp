@@ -20,20 +20,22 @@ namespace details {
 DEFINE_CLASS_METHOD_TRAITS(get_params);
 DEFINE_CLASS_METHOD_TRAITS(set_param);
 
-template <typename T> class is_param_handler {
+template <typename T>
+class is_param_handler {
   template <typename C,
             typename std::enable_if<
                 has_get_params<C>::value &&
                     has_set_param<C, ParameterKey, Parameter>::value,
                 int>::type = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-} // namespace details
+}  // namespace details
 
 // These unchecked setting methods assume the parameter exists, if
 // the parameter does not exist we'll be relying on safety checks
@@ -111,9 +113,9 @@ inline void set_params(const ParameterStore &input_params,
 }
 
 template <typename ParameterHandler>
-inline void
-set_param_values(const std::map<ParameterKey, ParameterValue> &input_params,
-                 ParameterHandler *param_handler) {
+inline void set_param_values(
+    const std::map<ParameterKey, ParameterValue> &input_params,
+    ParameterHandler *param_handler) {
   auto params = param_handler->get_params();
   set_param_values(input_params, &params);
   unchecked_set_params(params, param_handler);
@@ -172,23 +174,24 @@ inline bool set_param_values_if_exists(
 
 namespace details {
 
-inline bool
-variadic_set_param_if_exists(const ParameterKey &key ALBATROSS_UNUSED,
-                             const Parameter &param ALBATROSS_UNUSED) {
+inline bool variadic_set_param_if_exists(
+    const ParameterKey &key ALBATROSS_UNUSED,
+    const Parameter &param ALBATROSS_UNUSED) {
   return false;
 }
 
 template <typename ParameterHandler, typename... Args,
           typename std::enable_if_t<
               details::is_param_handler<ParameterHandler>::value, int> = 0>
-inline bool
-variadic_set_param_if_exists(const ParameterKey &key, const Parameter &param,
-                             ParameterHandler *param_handler, Args... args) {
+inline bool variadic_set_param_if_exists(const ParameterKey &key,
+                                         const Parameter &param,
+                                         ParameterHandler *param_handler,
+                                         Args... args) {
   return (set_param_if_exists(key, param, param_handler) ||
           variadic_set_param_if_exists(key, param, args...));
 }
 
-} // namespace details
+}  // namespace details
 
 template <typename... Args>
 inline bool set_param_if_exists_in_any(const ParameterKey &key,
@@ -202,7 +205,7 @@ inline bool set_param_if_exists_in_any(const ParameterKey &key,
  * change for things such as optimization routines / serialization.
  */
 class ParameterHandlingMixin {
-public:
+ public:
   ParameterHandlingMixin() : params_() {}
   ParameterHandlingMixin(const ParameterStore &params) : params_(params) {}
 
@@ -290,10 +293,10 @@ public:
     albatross::set_param(name, param, &params_);
   }
 
-protected:
+ protected:
   ParameterStore params_;
 };
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif

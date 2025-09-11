@@ -17,34 +17,39 @@ namespace albatross {
 
 namespace details {
 
-template <typename T> class has_less_than_operator {
+template <typename T>
+class has_less_than_operator {
   template <typename C,
             typename std::enable_if<
                 std::is_same<bool, decltype(std::declval<C>() <
                                             std::declval<C>())>::value,
                 int>::type = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T> class is_valid_map_key {
+template <typename T>
+class is_valid_map_key {
   template <typename C,
             typename std::enable_if<std::is_default_constructible<C>::value &&
                                         std::is_copy_assignable<C>::value &&
                                         has_less_than_operator<C>::value,
                                     int>::type = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <> class is_valid_map_key<void> {
-public:
+template <>
+class is_valid_map_key<void> {
+ public:
   static constexpr bool value = false;
 };
 
@@ -61,18 +66,19 @@ struct grouper_result
     : public invoke_result<GrouperFunction,
                            typename const_ref<ValueType>::type> {};
 
-template <typename GroupKey> class group_key_is_valid {
-
+template <typename GroupKey>
+class group_key_is_valid {
   template <typename C, std::enable_if_t<is_valid_map_key<C>::value, int> = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<GroupKey>(0))::value;
 };
 
-template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
-
+template <typename GrouperFunction, typename ValueType>
+class is_valid_grouper {
   template <
       typename C,
       typename GroupKey = typename grouper_result<C, ValueType>::type,
@@ -80,9 +86,10 @@ template <typename GrouperFunction, typename ValueType> class is_valid_grouper {
                                   group_key_is_valid<GroupKey>::value,
                               int>::type = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<GrouperFunction>(0))::value;
 };
 
@@ -117,16 +124,16 @@ struct is_valid_index_apply_function
 
 template <typename Expected, typename FilterFunction, typename... Args>
 struct invoke_result_is_same {
-
   template <typename C,
             typename std::enable_if_t<
                 std::is_same<typename invoke_result<C, Args...>::type,
                              Expected>::value,
                 int> = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<FilterFunction>(0))::value;
 };
 
@@ -139,9 +146,10 @@ class is_valid_filter_function {
             typename std::enable_if_t<
                 invoke_result_is_same<bool, C, Args...>::value, int> = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   // The functions passed into these checks are often derived from
   // universal references which may add qualifiers to the type, without
   // the use of decay here these qualifiers may interfere with
@@ -167,7 +175,8 @@ struct is_valid_value_only_filter_function
  *
  * GrouperFunction is a callable type which should take
  */
-template <typename T> struct group_by_traits {};
+template <typename T>
+struct group_by_traits {};
 
 template <typename FeatureType, typename GrouperFunction>
 struct group_by_traits<
@@ -190,7 +199,8 @@ struct group_by_traits<GroupBy<std::vector<FeatureType>, GrouperFunction>> {
   using GrouperType = GrouperFunction;
 };
 
-template <typename T> class is_subsetable {
+template <typename T>
+class is_subsetable {
   template <typename C,
             typename std::enable_if<
                 std::is_same<C, decltype(subset(std::declval<C>(),
@@ -198,14 +208,15 @@ template <typename T> class is_subsetable {
                                                     std::size_t>>()))>::value,
                 int>::type = 0>
   static std::true_type test(C *);
-  template <typename> static std::false_type test(...);
+  template <typename>
+  static std::false_type test(...);
 
-public:
+ public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-} // namespace details
+}  // namespace details
 
-} // namespace albatross
+}  // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_TRAITS_HPP_ */

@@ -19,14 +19,16 @@ using Insights = std::map<std::string, std::string>;
 
 constexpr bool DEFAULT_USE_ASYNC = false;
 
-template <typename ModelType> class ModelBase : public ParameterHandlingMixin {
+template <typename ModelType>
+class ModelBase : public ParameterHandlingMixin {
   friend class JointPredictor;
   friend class MarginalPredictor;
   friend class MeanPredictor;
 
-  template <typename T, typename FeatureType> friend class fit_model_type;
+  template <typename T, typename FeatureType>
+  friend class fit_model_type;
 
-protected:
+ protected:
   ModelBase()
       : insights(),
         threads_(DEFAULT_USE_ASYNC
@@ -92,10 +94,10 @@ protected:
       typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
                                                  FitType, PredictType>::value,
                               int>::type = 0>
-  PredictType
-  predict_(const std::vector<PredictFeatureType> &features ALBATROSS_UNUSED,
-           const FitType &fit ALBATROSS_UNUSED,
-           PredictTypeIdentity<PredictType> &&) const
+  PredictType predict_(const std::vector<PredictFeatureType> &features
+                           ALBATROSS_UNUSED,
+                       const FitType &fit ALBATROSS_UNUSED,
+                       PredictTypeIdentity<PredictType> &&) const
       ALBATROSS_FAIL(PredictFeatureType,
                      "The ModelType is missing a _predict_impl method for "
                      "PredictFeatureType, FitType, PredictType.")
@@ -154,10 +156,11 @@ protected:
   CrossValidation<ModelType> cross_validate() const;
 
   template <typename Strategy>
-  Ransac<ModelType, Strategy>
-  ransac(const Strategy &strategy, double inlier_threshold,
-         std::size_t random_sample_size, std::size_t min_consensus_size,
-         std::size_t max_iteration) const;
+  Ransac<ModelType, Strategy> ransac(const Strategy &strategy,
+                                     double inlier_threshold,
+                                     std::size_t random_sample_size,
+                                     std::size_t min_consensus_size,
+                                     std::size_t max_iteration) const;
 
   template <typename Strategy>
   Ransac<ModelType, Strategy> ransac(const Strategy &strategy,
@@ -166,5 +169,5 @@ protected:
   Insights insights;
   std::shared_ptr<ThreadPool> threads_;
 };
-} // namespace albatross
+}  // namespace albatross
 #endif

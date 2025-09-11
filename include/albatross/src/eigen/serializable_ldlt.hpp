@@ -17,7 +17,7 @@ namespace Eigen {
 
 // See LDLT.h in Eigen for a detailed description of the decomposition
 class SerializableLDLT : public LDLT<MatrixXd, Lower> {
-public:
+ public:
   using RealScalar = double;
   using Scalar = double;
   using MatrixType = MatrixXd;
@@ -97,7 +97,8 @@ public:
    * Computes the product of the square root of A with rhs,
    *   D^{-1/2} L^-1 P rhs
    */
-  template <class Rhs> Eigen::MatrixXd sqrt_solve(const Rhs &rhs) const {
+  template <class Rhs>
+  Eigen::MatrixXd sqrt_solve(const Rhs &rhs) const {
     return diagonal_sqrt_inverse() *
            this->matrixL().solve(this->transpositionsP() *
                                  Eigen::MatrixXd(rhs));
@@ -114,8 +115,8 @@ public:
    *   P^T L^-T D^{-1/2} rhs
    */
   template <class _Scalar, int _Rows, int _Cols>
-  Eigen::Matrix<_Scalar, _Rows, _Cols>
-  sqrt_transpose_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+  Eigen::Matrix<_Scalar, _Rows, _Cols> sqrt_transpose_solve(
+      const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
     return this->transpositionsP().transpose() *
            (this->matrixL().transpose().solve(diagonal_sqrt_inverse() * rhs));
   }
@@ -129,8 +130,8 @@ public:
     return this->vectorD().array().log().sum();
   }
 
-  std::vector<Eigen::MatrixXd>
-  inverse_blocks(const std::vector<std::vector<std::size_t>> &blocks) const {
+  std::vector<Eigen::MatrixXd> inverse_blocks(
+      const std::vector<std::vector<std::size_t>> &blocks) const {
     /*
      * The LDLT decomposition is stored such that,
      *
@@ -211,6 +212,6 @@ public:
   }
 };
 
-} // namespace Eigen
+}  // namespace Eigen
 
 #endif
