@@ -22,7 +22,6 @@
 namespace albatross {
 
 TEST(test_stats, test_gaussian_pdf) {
-
   // These examples were generated in python using scipy.stats.norm.pdf
   std::vector<double> test_xs = {
       -1.49529605, -0.35674996, -1.19464126, 0.7431096,   0.94945083,
@@ -49,7 +48,6 @@ TEST(test_stats, test_gaussian_pdf) {
 }
 
 TEST(test_stats, test_chi_squared) {
-
   EXPECT_LT(fabs(chi_squared_cdf(3.84, 1) - 0.95), 1e-4);
   EXPECT_LT(fabs(chi_squared_cdf(10.83, 1) - 0.999), 1e-4);
 
@@ -86,7 +84,6 @@ TEST(test_stats, test_chi_squared) {
 }
 
 TEST(test_stats, test_uniform_ks) {
-
   std::default_random_engine gen(2012);
   std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
@@ -100,7 +97,6 @@ TEST(test_stats, test_uniform_ks) {
 }
 
 TEST(test_stats, test_chi_squared_cdf) {
-
   Eigen::Index k = 5;
   std::default_random_engine gen(2012);
   std::size_t iterations = 1000;
@@ -119,7 +115,6 @@ TEST(test_stats, test_chi_squared_cdf) {
 }
 
 TEST(test_stats, test_chi_squared_cdf_bounds) {
-
   for (std::size_t dof = 1; dof < 50; ++dof) {
     const double a = 0.5 * cast::to_double(dof);
     const auto bounds =
@@ -183,6 +178,27 @@ JointDistribution random_distribution(Eigen::Index dimension,
   return {mean, covariance};
 }
 
+static constexpr const double cPoorConditioning{1.e-8};
+
+template <typename RandomNumberGenerator>
+JointDistribution
+ill_conditioned_random_distribution(Eigen::Index dimension,
+                                    RandomNumberGenerator &gen) {
+  bool gave_tiny_eigenvalue = false;
+  auto dist = [gave_tiny = gave_tiny_eigenvalue](auto &rng) mutable {
+    if (!gave_tiny) {
+      gave_tiny = true;
+      return cPoorConditioning;
+    }
+    return std::gamma_distribution<double>(2., 2.)(rng);
+  };
+  const auto covariance = random_covariance_matrix(dimension, dist, gen);
+  Eigen::VectorXd mean(dimension);
+  gaussian_fill(mean, gen);
+
+  return {mean, covariance};
+}
+
 static constexpr Eigen::Index cDistributionDimension = 30;
 static constexpr std::size_t cNumIterations = 10000;
 
@@ -199,6 +215,28 @@ TEST(test_stats, test_wasserstein_zero) {
     EXPECT_LT(distance::wasserstein_2(dist, dist),
               1.e-12 * dist.covariance.trace() +
                   1.e-12 * dist.mean.squaredNorm());
+  }
+}
+
+// The Wasserstein distance between a distribution and itself should
+// be zero to within numerical precision.  For ill-conditioned
+// covariances, we relax this definition of precision, but we still
+// make sure we return a finite value.  (This case occurred a number
+// of times in practice, but it was not covered by the vanilla MVN
+// generator.)
+TEST(test_stats, test_wasserstein_zero_ill_conditioned) {
+  std::default_random_engine gen(2222);
+
+  for (std::size_t iter = 0; iter < cNumIterations; ++iter) {
+    const Eigen::Index dimension = std::uniform_int_distribution<Eigen::Index>(
+        1, cDistributionDimension)(gen);
+    const auto dist = ill_conditioned_random_distribution(dimension, gen);
+
+    const auto w2 = distance::wasserstein_2(dist, dist);
+    EXPECT_TRUE(std::isfinite(w2));
+
+    EXPECT_LT(w2, 2 * cPoorConditioning * dist.covariance.trace() +
+                      2 * cPoorConditioning * dist.mean.squaredNorm());
   }
 }
 

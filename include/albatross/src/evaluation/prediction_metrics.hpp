@@ -151,8 +151,28 @@ namespace detail {
 
 inline Eigen::MatrixXd principal_sqrt(const Eigen::MatrixXd &input) {
   const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigs(input);
+  Eigen::VectorXd eigenvalues{eigs.eigenvalues()};
+  if (!(eigs.eigenvalues().array() >= 0.).all()) {
+    // In the unfortunate case of ill-conditioned arguments, which can
+    // easily happen when comparing two nearby distributions, we clamp
+    // numerically negative but morally OK eigenvalues to 0.
+    //
+    // The factor of 10 here is a heuristic to allow small negative
+    // eigenvalues (due to numerical errors) but not clamp
+    // meaningfully large ones that indicate a serious problem in
+    // calculation.
+    const double min_positive =
+        (eigenvalues.array() > 0)
+            .select(eigenvalues.array(),
+                    std::numeric_limits<double>::infinity())
+            .minCoeff();
+    eigenvalues =
+        (eigenvalues.array() < 0 && eigenvalues.array() > -10 * min_positive)
+            .select(0, eigenvalues.array());
+  }
+
   return eigs.eigenvectors() *
-         eigs.eigenvalues().array().sqrt().matrix().asDiagonal() *
+         eigenvalues.array().sqrt().matrix().asDiagonal() *
          eigs.eigenvectors().transpose();
 }
 
