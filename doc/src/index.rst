@@ -67,7 +67,7 @@ If you want to run the tests you can do so using ``cmake``,
     mkdir build;
     cd build;
     cmake ../
-    make run_albatross_unit_tests
+    make do-all-unit-tests
 
 Similarly you can make and run the examples,
 

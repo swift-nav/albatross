@@ -19,7 +19,7 @@ run_tests() {
         UBSAN_OPTIONS=halt_on_error=true:print_stacktrace=true \
         make \
         -j2 \
-        run_albatross_unit_tests \
+        do-all-unit-tests \
         run_inspection_example \
         run_sinc_example \
         run_temperature_example \

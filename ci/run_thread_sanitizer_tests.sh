@@ -14,7 +14,7 @@ run_tests() {
     TSAN_OPTIONS="force_seq_cst_atomics=1 halt_on_error=1" \
         make \
         -j2 \
-        run_albatross_unit_tests \
+        do-all-unit-tests \
         run_inspection_example \
         run_sinc_example \
         run_temperature_example \

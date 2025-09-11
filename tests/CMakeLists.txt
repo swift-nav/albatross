@@ -8,7 +8,7 @@ string(REPLACE "-DNDEBUG" ""
   CMAKE_CXX_FLAGS_RELWITHDEBINFO
   "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 
-swift_add_test(albatross_unit_tests
+albatross_add_test(albatross_unit_tests
   UNIT_TEST
   SRCS
   test_apply.cc
@@ -70,11 +70,4 @@ swift_add_test(albatross_unit_tests
   zstd::zstd
   suitesparse::spqr
   suitesparse::cholmod
-  )
-add_custom_target(run_albatross_unit_tests ALL
-  COMMAND albatross_unit_tests
-  COMMENT "Running unit tests"
-  )
-add_dependencies(run_albatross_unit_tests
-  albatross_unit_tests
   )
