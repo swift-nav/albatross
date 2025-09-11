@@ -26,6 +26,6 @@ template <typename Archive, typename RequiredPredictType>
 inline void serialize(Archive &, PredictionMetric<RequiredPredictType> &loo,
                       const std::uint32_t) {}
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_EVALUATION_HPP_ */

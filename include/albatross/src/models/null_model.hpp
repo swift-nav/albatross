@@ -17,8 +17,7 @@ namespace albatross {
 
 class NullModel;
 
-template <>
-struct Fit<NullModel> {
+template <> struct Fit<NullModel> {
   template <typename Archive>
   void serialize(Archive &archive ALBATROSS_UNUSED, const std::uint32_t) {}
 
@@ -28,7 +27,7 @@ struct Fit<NullModel> {
 };
 
 class NullModel : public ModelBase<NullModel> {
- public:
+public:
   NullModel() {}
   NullModel(const ParameterStore &param_store) : params_(param_store) {}
 
@@ -37,9 +36,9 @@ class NullModel : public ModelBase<NullModel> {
   // If the implementing class doesn't have a fit method for this
   // FeatureType but the CovarianceFunction does.
   template <typename FeatureType>
-  Fit<NullModel> _fit_impl(
-      const std::vector<FeatureType> &features ALBATROSS_UNUSED,
-      const MarginalDistribution &targets ALBATROSS_UNUSED) const {
+  Fit<NullModel>
+  _fit_impl(const std::vector<FeatureType> &features ALBATROSS_UNUSED,
+            const MarginalDistribution &targets ALBATROSS_UNUSED) const {
     return {};
   }
 
@@ -53,10 +52,10 @@ class NullModel : public ModelBase<NullModel> {
   }
 
   template <typename FeatureType>
-  JointDistribution _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
-      PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
+                PredictTypeIdentity<JointDistribution> &&) const {
     const Eigen::Index n = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(n);
     const Eigen::MatrixXd cov = 1.e4 * Eigen::MatrixXd::Identity(n, n);
@@ -64,21 +63,21 @@ class NullModel : public ModelBase<NullModel> {
   }
 
   template <typename FeatureType>
-  MarginalDistribution _predict_impl(
-      const std::vector<FeatureType> &features,
-      const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
-      PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution
+  _predict_impl(const std::vector<FeatureType> &features,
+                const Fit<NullModel> &fit_ ALBATROSS_UNUSED,
+                PredictTypeIdentity<MarginalDistribution> &&) const {
     const Eigen::Index en = cast::to_index(features.size());
     const Eigen::VectorXd mean = Eigen::VectorXd::Zero(en);
     const Eigen::VectorXd diag = 1.e4 * Eigen::VectorXd::Ones(en);
     return MarginalDistribution(mean, diag.asDiagonal());
   }
 
- private:
+private:
   ParameterStore params_;
 };
 
-}  // namespace albatross
+} // namespace albatross
 
-#endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_MODELS_NULL_MODEL_HPP_ \
+#endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_MODELS_NULL_MODEL_HPP_   \
         */

@@ -19,8 +19,8 @@ struct NullCallback {
   void operator()(std::size_t, const EnsembleSamplerState &) {}
 };
 
-inline std::vector<std::string> get_sampler_csv_columns(
-    const ParameterStore &example) {
+inline std::vector<std::string>
+get_sampler_csv_columns(const ParameterStore &example) {
   std::vector<std::string> columns;
   columns.push_back("iteration");
   columns.push_back("log_probability");
@@ -109,11 +109,12 @@ CsvWritingCallback get_csv_writing_callback(const ModelType &model,
 }
 
 template <typename ModelType>
-CsvWritingCallback get_csv_writing_callback(
-    const ModelType &model, std::shared_ptr<std::ostream> &stream) {
+CsvWritingCallback
+get_csv_writing_callback(const ModelType &model,
+                         std::shared_ptr<std::ostream> &stream) {
   return CsvWritingCallback(model.get_params(), stream);
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_SAMPLERS_CALLBACKS_HPP_ */

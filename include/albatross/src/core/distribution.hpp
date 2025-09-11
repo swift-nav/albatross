@@ -24,9 +24,8 @@ struct MarginalDistribution;
 
 constexpr double cDefaultApproximatelyEqualEpsilon = 1e-3;
 
-template <typename Derived>
-struct DistributionBase {
- private:
+template <typename Derived> struct DistributionBase {
+private:
   // Declaring these private makes it impossible to accidentally do things like:
   //     class A : public CovarianceFunction<B> {}
   // or
@@ -36,7 +35,7 @@ struct DistributionBase {
   DistributionBase() {}
   friend Derived;
 
- public:
+public:
   DistributionBase(const Eigen::VectorXd &mean_) : mean(mean_) {}
 
   std::size_t size() const {
@@ -248,21 +247,22 @@ inline void set_subset(const DistributionBase<DistributionType> &from,
 }
 
 template <typename Derived>
-MarginalDistribution DistributionBase<Derived>::operator[](
-    std::size_t index) const {
+MarginalDistribution
+DistributionBase<Derived>::operator[](std::size_t index) const {
   return MarginalDistribution(mean[cast::to_index(index)],
                               get_diagonal(cast::to_index(index)));
 }
 
-inline MarginalDistribution concatenate_marginals(
-    const MarginalDistribution &x, const MarginalDistribution &y) {
+inline MarginalDistribution
+concatenate_marginals(const MarginalDistribution &x,
+                      const MarginalDistribution &y) {
   return MarginalDistribution(
       concatenate(x.mean, y.mean),
       concatenate(x.covariance.diagonal(), y.covariance.diagonal()));
 }
 
-inline MarginalDistribution concatenate_marginals(
-    const std::vector<MarginalDistribution> &dists) {
+inline MarginalDistribution
+concatenate_marginals(const std::vector<MarginalDistribution> &dists) {
   if (dists.size() == 0) {
     return MarginalDistribution();
   }
@@ -303,5 +303,5 @@ inline std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
-}  // namespace albatross
+} // namespace albatross
 #endif

@@ -18,8 +18,7 @@ namespace albatross {
  * A combination of training and testing datasets, typically used in cross
  * validation.
  */
-template <typename FeatureType>
-struct RegressionFold {
+template <typename FeatureType> struct RegressionFold {
   RegressionDataset<FeatureType> train_dataset;
   RegressionDataset<FeatureType> test_dataset;
   GroupIndices test_indices;
@@ -29,15 +28,14 @@ struct RegressionFold {
   RegressionFold(const RegressionDataset<FeatureType> &train_dataset_,
                  const RegressionDataset<FeatureType> &test_dataset_,
                  const GroupIndices &test_indices_)
-      : train_dataset(train_dataset_),
-        test_dataset(test_dataset_),
+      : train_dataset(train_dataset_), test_dataset(test_dataset_),
         test_indices(test_indices_) {}
 };
 
 template <typename FeatureType>
-inline RegressionFold<FeatureType> create_fold(
-    const GroupIndices &test_indices,
-    const RegressionDataset<FeatureType> &dataset) {
+inline RegressionFold<FeatureType>
+create_fold(const GroupIndices &test_indices,
+            const RegressionDataset<FeatureType> &dataset) {
   const auto train_indices = indices_complement(test_indices, dataset.size());
 
   std::vector<FeatureType> train_features =
@@ -66,9 +64,9 @@ inline RegressionFold<FeatureType> create_fold(
  * GroupIndices and a dataset and creates the resulting folds.
  */
 template <typename FeatureType, typename GroupKey>
-inline RegressionFolds<GroupKey, FeatureType> folds_from_group_indexer(
-    const RegressionDataset<FeatureType> &dataset,
-    const GroupIndexer<GroupKey> &groups) {
+inline RegressionFolds<GroupKey, FeatureType>
+folds_from_group_indexer(const RegressionDataset<FeatureType> &dataset,
+                         const GroupIndexer<GroupKey> &groups) {
   const auto create_one_fold = [&dataset](const GroupKey &,
                                           const GroupIndices &test_indices) {
     return create_fold(test_indices, dataset);
@@ -81,8 +79,8 @@ inline RegressionFolds<GroupKey, FeatureType> folds_from_group_indexer(
  * Extracts the fold indexer that would have created a set of folds
  */
 template <typename GroupKey, typename FeatureType>
-inline GroupIndexer<GroupKey> group_indexer_from_folds(
-    const std::map<GroupKey, FeatureType> &folds) {
+inline GroupIndexer<GroupKey>
+group_indexer_from_folds(const std::map<GroupKey, FeatureType> &folds) {
   GroupIndexer<GroupKey> output;
   for (const auto &fold : folds) {
     ALBATROSS_ASSERT(!map_contains(output, fold.first));
@@ -107,8 +105,8 @@ inline auto folds_from_grouper(const RegressionDataset<FeatureType> &dataset,
  * in an original dataset that comprise the test_datasets and the folds.
  */
 template <typename GroupKey>
-inline std::set<std::size_t> unique_indices(
-    const GroupIndexer<GroupKey> &indexer) {
+inline std::set<std::size_t>
+unique_indices(const GroupIndexer<GroupKey> &indexer) {
   std::set<std::size_t> indices;
   for (const auto &pair : indexer) {
     indices.insert(pair.second.begin(), pair.second.end());
@@ -117,8 +115,8 @@ inline std::set<std::size_t> unique_indices(
 }
 
 template <typename GroupKey>
-inline std::size_t dataset_size_from_indexer(
-    const GroupIndexer<GroupKey> &indexer) {
+inline std::size_t
+dataset_size_from_indexer(const GroupIndexer<GroupKey> &indexer) {
   const auto unique_inds = unique_indices(indexer);
 
   // Make sure there were no duplicate test indices.
@@ -142,11 +140,11 @@ inline std::size_t dataset_size_from_indexer(
 }
 
 template <typename GroupKey, typename FeatureType>
-inline std::size_t dataset_size_from_folds(
-    const RegressionFolds<GroupKey, FeatureType> &folds) {
+inline std::size_t
+dataset_size_from_folds(const RegressionFolds<GroupKey, FeatureType> &folds) {
   return dataset_size_from_indexer(group_indexer_from_folds(folds));
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_FOLDS_H */

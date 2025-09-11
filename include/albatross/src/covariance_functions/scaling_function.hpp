@@ -16,7 +16,7 @@
 namespace albatross {
 
 class ScalingFunction : public ParameterHandlingMixin {
- public:
+public:
   virtual std::string get_name() const = 0;
 
   // A scaling function should also implement calls
@@ -57,7 +57,7 @@ class ScalingFunction : public ParameterHandlingMixin {
  */
 template <typename ScalingFunction>
 class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
- public:
+public:
   ScalingTerm() : scaling_function_() {}
 
   ScalingTerm(const ScalingFunction &func) : scaling_function_(func) {}
@@ -107,7 +107,7 @@ class ScalingTerm : public CovarianceFunction<ScalingTerm<ScalingFunction>> {
     return this->scaling_function_._call_impl(x);
   }
 
- private:
+private:
   ScalingFunction scaling_function_;
 };
 
@@ -118,7 +118,7 @@ template <class ScalingFunction, class RHS>
 class ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>
     : public CovarianceFunction<
           ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>> {
- public:
+public:
   using LHS = ScalingTerm<ScalingFunction>;
 
   ProductOfCovarianceFunctions() : lhs_(), rhs_() {}
@@ -165,7 +165,7 @@ class ProductOfCovarianceFunctions<ScalingTerm<ScalingFunction>, RHS>
     return this->rhs_(x, y);
   }
 
- protected:
+protected:
   LHS lhs_;
   RHS rhs_;
   friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
@@ -178,7 +178,7 @@ template <class LHS, class ScalingFunction>
 class ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>
     : public CovarianceFunction<
           ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>> {
- public:
+public:
   using RHS = ScalingTerm<ScalingFunction>;
 
   ProductOfCovarianceFunctions() : lhs_(), rhs_() {}
@@ -225,11 +225,11 @@ class ProductOfCovarianceFunctions<LHS, ScalingTerm<ScalingFunction>>
     return this->lhs_(x, y);
   }
 
- protected:
+protected:
   LHS lhs_;
   RHS rhs_;
   friend class CallTrace<ProductOfCovarianceFunctions<LHS, RHS>>;
 };
 
-}  // namespace albatross
+} // namespace albatross
 #endif
