@@ -29,7 +29,7 @@ struct ConstantTerm {};
  * of the mean.
  */
 class Constant : public CovarianceFunction<Constant> {
- public:
+public:
   Constant(double sigma_constant_ = default_sigma) {
     sigma_constant = {sigma_constant_, NonNegativePrior()};
   }
@@ -41,8 +41,8 @@ class Constant : public CovarianceFunction<Constant> {
   std::string name() const { return "constant"; }
 
   template <typename X>
-  std::vector<ConstantTerm> get_state_space_representation(
-      std::vector<X> &) const {
+  std::vector<ConstantTerm>
+  get_state_space_representation(std::vector<X> &) const {
     std::vector<ConstantTerm> terms = {ConstantTerm()};
     return terms;
   }
@@ -62,7 +62,7 @@ class Constant : public CovarianceFunction<Constant> {
 
 template <int order>
 class Polynomial : public CovarianceFunction<Polynomial<order>> {
- public:
+public:
   Polynomial(double sigma = default_sigma) {
     for (int i = 0; i < order + 1; i++) {
       std::string param_name = "sigma_polynomial_" + std::to_string(i);
@@ -85,12 +85,12 @@ class Polynomial : public CovarianceFunction<Polynomial<order>> {
     return cov;
   }
 
- private:
+private:
   std::map<int, std::string> param_names_;
 };
 
 class LinearMean : public MeanFunction<LinearMean> {
- public:
+public:
   ALBATROSS_DECLARE_PARAMS(slope, offset);
 
   std::string get_name() const { return "linear"; }
@@ -105,6 +105,6 @@ class LinearMean : public MeanFunction<LinearMean> {
   }
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

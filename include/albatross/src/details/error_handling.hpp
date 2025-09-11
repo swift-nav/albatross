@@ -59,7 +59,7 @@ namespace albatross {
  * isn't possible to include an error message.
  */
 
-//#define ALBATROSS_FAIL(dummy, msg) = delete
+// #define ALBATROSS_FAIL(dummy, msg) = delete
 
 } // namespace albatross
 
