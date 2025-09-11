@@ -184,8 +184,8 @@ template <typename RandomNumberGenerator>
 JointDistribution
 ill_conditioned_random_distribution(Eigen::Index dimension,
                                     RandomNumberGenerator &gen) {
-  bool gave_tiny = false;
-  auto dist = [gave_tiny = gave_tiny](auto &rng) mutable {
+  bool gave_tiny_eigenvalue = false;
+  auto dist = [gave_tiny = gave_tiny_eigenvalue](auto &rng) mutable {
     if (!gave_tiny) {
       gave_tiny = true;
       return cPoorConditioning;

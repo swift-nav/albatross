@@ -153,9 +153,14 @@ inline Eigen::MatrixXd principal_sqrt(const Eigen::MatrixXd &input) {
   const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigs(input);
   Eigen::VectorXd eigenvalues{eigs.eigenvalues()};
   if (!(eigs.eigenvalues().array() >= 0.).all()) {
-    // In the unfortunate case of ill-conditioned arguments, which can easily
-    // happen when comparing two nearby distributions, we clamp
+    // In the unfortunate case of ill-conditioned arguments, which can
+    // easily happen when comparing two nearby distributions, we clamp
     // numerically negative but morally OK eigenvalues to 0.
+    //
+    // The factor of 10 here is a heuristic to allow small negative
+    // eigenvalues (due to numerical errors) but not clamp
+    // meaningfully large ones that indicate a serious problem in
+    // calculation.
     const double min_positive =
         (eigenvalues.array() > 0)
             .select(eigenvalues.array(),
