@@ -86,7 +86,7 @@ inline double fallback_length_scale_for_invalid_args(double reference_distance,
   assert(false);
   return NAN;
 }
-}  // namespace detail
+} // namespace detail
 
 inline double derive_squared_exponential_length_scale(double reference_distance,
                                                       double prior_sigma,
@@ -131,7 +131,7 @@ inline double derive_squared_exponential_length_scale(double reference_distance,
 template <class DistanceMetricType>
 class SquaredExponential
     : public CovarianceFunction<SquaredExponential<DistanceMetricType>> {
- public:
+public:
   // The SquaredExponential radial function is not positive definite
   // when the distance is an angular (or great circle) distance.
   // See:
@@ -238,7 +238,7 @@ inline double derive_exponential_length_scale(double reference_distance,
  */
 template <class DistanceMetricType>
 class Exponential : public CovarianceFunction<Exponential<DistanceMetricType>> {
- public:
+public:
   ALBATROSS_DECLARE_PARAMS(exponential_length_scale, sigma_exponential)
 
   Exponential(double length_scale_ = default_length_scale,
@@ -398,7 +398,7 @@ inline double derive_length_scale(double reference_distance, double prior_sigma,
   return solution * reference_distance;
 }
 
-}  // namespace detail
+} // namespace detail
 
 inline double derive_matern_32_length_scale(double reference_distance,
                                             double prior_sigma,
@@ -420,7 +420,7 @@ inline double derive_matern_32_length_scale(double reference_distance,
 
 template <class DistanceMetricType>
 class Matern32 : public CovarianceFunction<Matern32<DistanceMetricType>> {
- public:
+public:
   // The Matern nu = 3/2 radial function is not positive definite
   // when the distance is an angular (or great circle) distance.
   static_assert(!std::is_base_of<AngularDistance, DistanceMetricType>::value,
@@ -490,7 +490,7 @@ inline double derive_matern_52_length_scale(double reference_distance,
 
 template <class DistanceMetricType>
 class Matern52 : public CovarianceFunction<Matern52<DistanceMetricType>> {
- public:
+public:
   // The Matern nu = 5/2 radial function is not positive definite
   // when the distance is an angular (or great circle) distance.
   static_assert(!std::is_base_of<AngularDistance, DistanceMetricType>::value,
@@ -528,5 +528,5 @@ class Matern52 : public CovarianceFunction<Matern52<DistanceMetricType>> {
   DistanceMetricType distance_metric_;
 };
 
-}  // namespace albatross
+} // namespace albatross
 #endif

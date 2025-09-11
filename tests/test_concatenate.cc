@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Core>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -122,4 +122,4 @@ TEST(test_concatenate, test_different_types_twice) {
   EXPECT_EQ(concatenate(once, third), expected);
 }
 
-}  // namespace albatross
+} // namespace albatross

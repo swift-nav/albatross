@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Common>
 #include <albatross/utils/VariantUtils>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -146,4 +146,4 @@ TEST(test_variant_utils, test_extract_from_variants) {
   EXPECT_EQ(only_test_types.size(), 2);
 }
 
-}  // namespace albatross
+} // namespace albatross

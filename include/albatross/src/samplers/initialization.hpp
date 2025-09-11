@@ -39,8 +39,8 @@ std::vector<double> parse_line(const std::string &line) {
   return output;
 }
 
-std::vector<std::map<std::string, double>> initial_params_from_csv(
-    std::istream &ss) {
+std::vector<std::map<std::string, double>>
+initial_params_from_csv(std::istream &ss) {
   std::vector<std::map<std::string, double>> output;
 
   std::string line;
@@ -75,8 +75,8 @@ std::vector<std::map<std::string, double>> initial_params_from_csv(
   return output;
 }
 
-std::vector<std::vector<double>> initial_params_from_csv(
-    const ParameterStore &param_store, std::istream &ss) {
+std::vector<std::vector<double>>
+initial_params_from_csv(const ParameterStore &param_store, std::istream &ss) {
   const auto all_params = initial_params_from_csv(ss);
 
   std::vector<std::vector<double>> output;
@@ -95,9 +95,10 @@ std::vector<std::vector<double>> initial_params_from_csv(
 }
 
 template <typename JitterDistribution>
-std::vector<std::vector<double>> initial_params_from_jitter(
-    const ParameterStore &params, JitterDistribution &jitter_distribution,
-    std::default_random_engine &gen, std::size_t n = 0) {
+std::vector<std::vector<double>>
+initial_params_from_jitter(const ParameterStore &params,
+                           JitterDistribution &jitter_distribution,
+                           std::default_random_engine &gen, std::size_t n = 0) {
   n = std::max(n, 2 * params.size() + 1);
 
   std::vector<std::vector<double>> output;
@@ -115,9 +116,10 @@ std::vector<std::vector<double>> initial_params_from_jitter(
 }
 
 template <typename ComputeLogProb>
-inline EnsembleSamplerState ensure_finite_initial_state(
-    ComputeLogProb &&compute_log_prob, const EnsembleSamplerState &ensembles,
-    std::default_random_engine &gen) {
+inline EnsembleSamplerState
+ensure_finite_initial_state(ComputeLogProb &&compute_log_prob,
+                            const EnsembleSamplerState &ensembles,
+                            std::default_random_engine &gen) {
   auto all_finite = [](const std::vector<double> &xs) {
     for (const auto &x : xs) {
       if (!std::isfinite(x)) {
@@ -155,6 +157,6 @@ inline EnsembleSamplerState ensure_finite_initial_state(
   return output;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_SAMPLERS_INITIALIZATION_HPP_ */

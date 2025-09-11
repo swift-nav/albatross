@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Core>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -63,8 +63,7 @@ TEST(test_traits_core, test_is_in_variant) {
 
 struct Foo {};
 
-template <typename T>
-struct is_foo : public std::is_same<T, Foo> {};
+template <typename T> struct is_foo : public std::is_same<T, Foo> {};
 
 TEST(test_traits_core, test_variant_any) {
   struct X {};
@@ -89,8 +88,7 @@ TEST(test_traits_core, test_variant_any) {
 
 struct Bar {};
 
-template <typename T>
-struct is_foo_or_bar {
+template <typename T> struct is_foo_or_bar {
   static constexpr bool value =
       std::is_same<T, Foo>::value || std::is_same<T, Bar>::value;
 };
@@ -159,4 +157,4 @@ TEST(test_traits_covariance, test_is_complete) {
   EXPECT_FALSE(bool(is_complete<Incomplete>::value));
 }
 
-}  // namespace albatross
+} // namespace albatross

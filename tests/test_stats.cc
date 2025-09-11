@@ -16,8 +16,8 @@
 #include <albatross/Stats>
 #include <albatross/utils/RandomUtils>
 
-#include <gtest/gtest.h>
 #include <albatross/src/utils/eigen_utils.hpp>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -181,8 +181,9 @@ JointDistribution random_distribution(Eigen::Index dimension,
 static constexpr const double cPoorConditioning{1.e-8};
 
 template <typename RandomNumberGenerator>
-JointDistribution ill_conditioned_random_distribution(
-    Eigen::Index dimension, RandomNumberGenerator &gen) {
+JointDistribution
+ill_conditioned_random_distribution(Eigen::Index dimension,
+                                    RandomNumberGenerator &gen) {
   bool gave_tiny_eigenvalue = false;
   auto dist = [gave_tiny = gave_tiny_eigenvalue](auto &rng) mutable {
     if (!gave_tiny) {
@@ -211,9 +212,9 @@ TEST(test_stats, test_wasserstein_zero) {
         1, cDistributionDimension)(gen);
     const auto dist = random_distribution(dimension, gen);
 
-    EXPECT_LT(
-        distance::wasserstein_2(dist, dist),
-        1.e-12 * dist.covariance.trace() + 1.e-12 * dist.mean.squaredNorm());
+    EXPECT_LT(distance::wasserstein_2(dist, dist),
+              1.e-12 * dist.covariance.trace() +
+                  1.e-12 * dist.mean.squaredNorm());
   }
 }
 
@@ -307,4 +308,4 @@ TEST(test_stats, test_wasserstein_grows_with_covariance) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

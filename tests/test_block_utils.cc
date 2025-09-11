@@ -140,4 +140,4 @@ TEST(test_block_utils, test_block_symmetric) {
   EXPECT_TRUE(actual_direct.isApprox(expected));
 }
 
-}  // namespace albatross
+} // namespace albatross

@@ -18,17 +18,17 @@ namespace albatross {
 constexpr double EPSILON = 1e-16;
 
 class DistanceMetric : public ParameterHandlingMixin {
- public:
+public:
   DistanceMetric() {}
   virtual ~DistanceMetric() {}
 
   virtual std::string get_name() const = 0;
 
- protected:
+protected:
 };
 
 class EuclideanDistance : public DistanceMetric {
- public:
+public:
   ~EuclideanDistance() {}
 
   std::string get_name() const override { return "euclidean_distance"; };
@@ -51,7 +51,7 @@ double radial_distance(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
 }
 
 class RadialDistance : public DistanceMetric {
- public:
+public:
   ~RadialDistance() {}
 
   std::string get_name() const override { return "radial_distance"; };
@@ -77,7 +77,7 @@ double angular_distance(const Eigen::Matrix<_Scalar, _Rows, 1> &x,
 }
 
 class AngularDistance : public DistanceMetric {
- public:
+public:
   ~AngularDistance() {}
 
   std::string get_name() const override { return "angular_distance"; };
@@ -108,6 +108,6 @@ Eigen::MatrixXd distance_matrix(const DistanceMetrixType &distance_metric,
   return D;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

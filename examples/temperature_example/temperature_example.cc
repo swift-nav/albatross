@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gflags/gflags.h>
 #include <albatross/Tune>
+#include <gflags/gflags.h>
 
 #include "temperature_example_utils.h"
 

@@ -182,7 +182,7 @@ TEST(test_parameter_handler, test_set_param_values_doesnt_overwrite_prior) {
 };
 
 class MacroParameterHandler : public ParameterHandlingMixin {
- public:
+public:
   ALBATROSS_DECLARE_PARAMS(foo, bar)
 
   void expect_foo_equals(double x) { EXPECT_DOUBLE_EQ(this->foo.value, x); }
@@ -244,4 +244,4 @@ TEST(test_parameter_handler, test_set_params_if_exists_in_any) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

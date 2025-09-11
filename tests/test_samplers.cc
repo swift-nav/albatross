@@ -145,7 +145,7 @@ struct LeaveOneIntervalOut {
 
 template <typename QRImplementation>
 class SparseGaussianProcessSamplerTest : public ::testing::Test {
- public:
+public:
   QRImplementation qr;
 };
 
@@ -213,4 +213,4 @@ TYPED_TEST(SparseGaussianProcessSamplerTest, test_samplers_sparse_gp) {
                    ml_callback);
 }
 
-}  // namespace albatross
+} // namespace albatross

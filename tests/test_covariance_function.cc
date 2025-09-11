@@ -12,8 +12,8 @@
 
 #include <albatross/CovarianceFunctions>
 
-#include <gtest/gtest.h>
 #include "test_covariance_utils.h"
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -247,4 +247,4 @@ TEST(test_covariance_function, test_linear_combinations) {
   EXPECT_EQ(cov_func(mean_x, mean_x), 0.25 * cov_func(sum_x, sum_x));
 }
 
-}  // namespace albatross
+} // namespace albatross

@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Indexing>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -33,7 +33,7 @@ struct Foo {
 Foo make_foo(double x) { return Foo(x); }
 
 class Square {
- public:
+public:
   double operator()(double x) const { return square(x); }
 };
 
@@ -74,9 +74,8 @@ struct MakeFooFunctionApply {
   auto get_function() const { return make_foo; }
 };
 
-template <typename CaseType>
-class ApplyTester : public ::testing::Test {
- public:
+template <typename CaseType> class ApplyTester : public ::testing::Test {
+public:
   CaseType test_case;
 };
 
@@ -238,4 +237,4 @@ TEST(test_apply, test_filter) {
   EXPECT_EQ(filter(set_xs, is_odd).size(), expected.size());
 }
 
-}  // namespace albatross
+} // namespace albatross

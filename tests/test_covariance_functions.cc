@@ -112,7 +112,7 @@ TEST(test_covariance_functions, test_build_covariance) {
  */
 template <typename T>
 class TestVectorCovarianceFunctions : public ::testing::Test {
- public:
+public:
   T covariance_function;
 };
 
@@ -156,7 +156,7 @@ TYPED_TEST(TestVectorCovarianceFunctions, can_set_params) {
 }
 
 class DummyCovariance : public CovarianceFunction<DummyCovariance> {
- public:
+public:
   DummyCovariance(double foo_ = sqrt(2.), double bar_ = log(2.)) {
     foo.value = foo_;
     bar.value = bar_;
@@ -177,7 +177,7 @@ class DummyCovariance : public CovarianceFunction<DummyCovariance> {
  */
 template <typename T>
 class TestDoubleCovarianceFunctions : public ::testing::Test {
- public:
+public:
   T covariance_function;
 };
 
@@ -218,12 +218,12 @@ TYPED_TEST(TestDoubleCovarianceFunctions, can_set_params) {
 }
 
 class SsrX : public CovarianceFunction<SsrX> {
- public:
+public:
   std::vector<X> _ssr_impl(const std::vector<double> &) const { return {X()}; }
 };
 
 class SsrY : public CovarianceFunction<SsrY> {
- public:
+public:
   std::vector<Y> _ssr_impl(const std::vector<double> &) const { return {Y()}; }
 };
 
@@ -255,7 +255,7 @@ struct IntEquivalent {
 };
 
 class HasEquivalent : public CovarianceFunction<HasEquivalent> {
- public:
+public:
   double _call_impl(const int &x, const int &y) const {
     return 1.0 * (x == y);
   };
@@ -323,4 +323,4 @@ TEST(test_covariance_functions, test_nugget) {
   EXPECT_EQ(nugget(x_foo, y_foo), 0.);
 }
 
-}  // namespace albatross
+} // namespace albatross

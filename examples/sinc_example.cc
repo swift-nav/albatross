@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <csv.h>
-#include <gflags/gflags.h>
 #include <albatross/Tune>
+#include <csv.h>
 #include <fstream>
+#include <gflags/gflags.h>
 #include <iostream>
 
 #include "sinc_example_utils.h"

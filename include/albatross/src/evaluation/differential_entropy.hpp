@@ -17,8 +17,8 @@ namespace albatross {
 
 // Calculate a numerically stable log determinant of a symmetric matrix using
 // the Cholesky (LDLT) decomposition.
-inline double log_determinant_of_symmetric(
-    const Eigen::LDLT<Eigen::MatrixXd> &ldlt) {
+inline double
+log_determinant_of_symmetric(const Eigen::LDLT<Eigen::MatrixXd> &ldlt) {
   double log_determinant = 0;
   const auto diagonal = ldlt.vectorD();
   for (Eigen::Index i = 0; i < diagonal.size(); ++i) {
@@ -34,8 +34,8 @@ inline double log_determinant_of_symmetric(
  *
  * https://en.wikipedia.org/wiki/Differential_entropy
  */
-inline double differential_entropy(
-    const Eigen::LDLT<Eigen::MatrixXd> &cov_ldlt) {
+inline double
+differential_entropy(const Eigen::LDLT<Eigen::MatrixXd> &cov_ldlt) {
   double k = cast::to_double(cov_ldlt.rows());
   double log_det = log_determinant_of_symmetric(cov_ldlt);
   return 0.5 * (k * (1 + log(2 * M_PI) + log_det));
@@ -45,6 +45,6 @@ inline double differential_entropy(const Eigen::MatrixXd &cov) {
   Eigen::LDLT<Eigen::MatrixXd> ldlt(cov);
   return differential_entropy(ldlt);
 }
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_EVALUATION_DIFFERENTIAL_ENTROPY_H_ */

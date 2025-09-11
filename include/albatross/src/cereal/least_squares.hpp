@@ -24,6 +24,6 @@ void serialize(Archive &archive, Fit<LeastSquares<ImplType>> &fit,
   archive(fit.coefs);
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* INCLUDE_ALBATROSS_SRC_CEREAL_LEAST_SQUARES_HPP_ */

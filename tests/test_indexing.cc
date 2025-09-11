@@ -364,4 +364,4 @@ TEST(test_indexing, test_partition_triangular) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

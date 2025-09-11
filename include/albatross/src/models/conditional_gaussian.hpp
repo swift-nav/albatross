@@ -21,7 +21,7 @@ struct ConditionalFit {
 };
 
 class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
- public:
+public:
   ConditionalGaussian(const JointDistribution &prior,
                       const MarginalDistribution &truth)
       : prior_(prior), truth_(truth) {}
@@ -42,8 +42,8 @@ class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
     return fit;
   }
 
-  FitModel<ConditionalGaussian, ConditionalFit> fit(
-      const std::vector<std::size_t> &indices) const {
+  FitModel<ConditionalGaussian, ConditionalFit>
+  fit(const std::vector<std::size_t> &indices) const {
     return FitModel<ConditionalGaussian, ConditionalFit>(
         *this, fit_from_indices(indices));
   }
@@ -56,9 +56,9 @@ class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
     return truth_.subset(indices);
   }
 
-  JointDistribution _predict_impl(
-      const GroupIndices &predict_indices, const ConditionalFit &fit,
-      PredictTypeIdentity<JointDistribution> &&) const {
+  JointDistribution
+  _predict_impl(const GroupIndices &predict_indices, const ConditionalFit &fit,
+                PredictTypeIdentity<JointDistribution> &&) const {
     const JointDistribution predict_prior = prior_.subset(predict_indices);
 
     const Eigen::MatrixXd cross =
@@ -71,9 +71,9 @@ class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
     return conditional_pred;
   }
 
-  MarginalDistribution _predict_impl(
-      const GroupIndices &predict_indices, const ConditionalFit &fit,
-      PredictTypeIdentity<MarginalDistribution> &&) const {
+  MarginalDistribution
+  _predict_impl(const GroupIndices &predict_indices, const ConditionalFit &fit,
+                PredictTypeIdentity<MarginalDistribution> &&) const {
     const MarginalDistribution predict_prior =
         prior_.marginal().subset(predict_indices);
     const Eigen::MatrixXd cross =
@@ -97,11 +97,11 @@ class ConditionalGaussian : public ModelBase<ConditionalGaussian> {
     return conditional_pred;
   }
 
- private:
+private:
   JointDistribution prior_;
   MarginalDistribution truth_;
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_SRC_MODELS_CONDITIONAL_GAUSSIAN_HPP_ */

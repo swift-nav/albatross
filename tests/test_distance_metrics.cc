@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/CovarianceFunctions>
+#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -81,4 +81,4 @@ TEST(test_distance_metrics, test_distance_matrix) {
   EXPECT_EQ(dist_matrix.cols(), points.size());
 }
 
-}  // namespace albatross
+} // namespace albatross

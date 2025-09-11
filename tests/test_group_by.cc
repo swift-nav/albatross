@@ -10,11 +10,11 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
-#include <string.h>
 #include <albatross/Indexing>
 #include <algorithm>
+#include <gtest/gtest.h>
 #include <iterator>
+#include <string.h>
 
 namespace albatross {
 
@@ -146,9 +146,8 @@ struct CustomFunctionGrouper {
   auto get_grouper() const { return custom_nearest_even_number; }
 };
 
-template <typename CaseType>
-class GroupByTester : public ::testing::Test {
- public:
+template <typename CaseType> class GroupByTester : public ::testing::Test {
+public:
   CaseType test_case;
 };
 
@@ -381,8 +380,8 @@ long int number_of_digits(double x) {
   return static_cast<long int>(floorl(log10(x) + 1.));
 }
 
-std::vector<double> direct_remove_less_than_mean(
-    const std::vector<double> &xs) {
+std::vector<double>
+direct_remove_less_than_mean(const std::vector<double> &xs) {
   std::map<long, std::vector<double>> grouped;
   for (const auto &x : xs) {
     long digits = number_of_digits(x);
@@ -406,8 +405,8 @@ std::vector<double> direct_remove_less_than_mean(
   return output;
 }
 
-std::vector<double> split_apply_combine_less_than_mean(
-    const std::vector<double> &xs) {
+std::vector<double>
+split_apply_combine_less_than_mean(const std::vector<double> &xs) {
   const auto remove_less_than_mean = [](const std::vector<double> &group) {
     const double group_mean = mean(group);
     const auto is_greater_than_mean = [&group_mean](const double &x) {
@@ -531,8 +530,7 @@ TEST(test_groupby, test_group_by_erase) {
   }
 }
 
-template <typename T>
-inline double test_sum(const std::vector<T> &ts) {
+template <typename T> inline double test_sum(const std::vector<T> &ts) {
   double output = 0.;
   for (const auto &t : ts) {
     output += static_cast<double>(t);
@@ -540,8 +538,7 @@ inline double test_sum(const std::vector<T> &ts) {
   return output;
 };
 
-template <typename T>
-inline double test_mean(const std::vector<T> &ts) {
+template <typename T> inline double test_mean(const std::vector<T> &ts) {
   return test_sum(ts) / cast::to_double(ts.size());
 }
 
@@ -665,4 +662,4 @@ TEST(test_groupby, test_group_by_with_map) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

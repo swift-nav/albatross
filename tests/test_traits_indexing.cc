@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include "../include/albatross/Indexing"
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -52,11 +52,9 @@ struct CallOperatorStringConstRefInt {
 
 CallOperatorStringConstRefInt call_operator_string_const_ref_int;
 
-template <typename T>
-class TestCanBeCalledWithInt : public ::testing::Test {};
+template <typename T> class TestCanBeCalledWithInt : public ::testing::Test {};
 
-template <typename _FunctionType, typename _ReturnType>
-struct WithReturnType {
+template <typename _FunctionType, typename _ReturnType> struct WithReturnType {
   using FunctionType = _FunctionType;
   using ReturnType = _ReturnType;
 };
@@ -173,4 +171,4 @@ TYPED_TEST(TestIsValueFilterFunction, test_is_value_filter_function) {
       details::is_valid_value_only_filter_function<TypeParam, int>::value));
 }
 
-}  // namespace albatross
+} // namespace albatross

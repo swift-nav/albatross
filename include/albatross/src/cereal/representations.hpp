@@ -29,6 +29,6 @@ inline void serialize(Archive &archive, albatross::DirectInverse &direct,
   archive(cereal::make_nvp("inverse", direct.inverse_));
 }
 
-}  // namespace cereal
+} // namespace cereal
 #endif /* THIRD_PARTY_ALBATROSS_INCLUDE_ALBATROSS_SRC_CEREAL_REPRESENTATIONS_HPP_ \
         */

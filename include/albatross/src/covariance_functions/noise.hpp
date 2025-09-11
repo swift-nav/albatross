@@ -19,7 +19,7 @@ namespace albatross {
 
 template <typename Observed>
 class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
- public:
+public:
   IndependentNoise(double sigma_noise = 0.1) {
     sigma_independent_noise = {sigma_noise, PositivePrior()};
   }
@@ -43,6 +43,6 @@ class IndependentNoise : public CovarianceFunction<IndependentNoise<Observed>> {
   }
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

@@ -185,4 +185,4 @@ TEST(test_async_utils, test_async_apply_speedup_key_value_function) {
   EXPECT_GT(end_direct - start_direct, std::chrono::seconds(xs.size() - 1));
 }
 
-}  // namespace albatross
+} // namespace albatross

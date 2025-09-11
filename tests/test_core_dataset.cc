@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/CovarianceFunctions>
 #include <albatross/Dataset>
 #include <albatross/Indexing>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -247,7 +247,7 @@ struct SparseRandomRowMajor {
 
 template <typename CaseType>
 class DatasetOperatorTester : public ::testing::Test {
- public:
+public:
   CaseType test_case;
 };
 
@@ -258,13 +258,11 @@ typedef ::testing::Types<EmptyTransform, EmptyRow, SparseIdentity,
 
 TYPED_TEST_SUITE_P(DatasetOperatorTester);
 
-template <typename X>
-bool all_values_are_unique(const std::vector<X> &xs) {
+template <typename X> bool all_values_are_unique(const std::vector<X> &xs) {
   return std::set<X>(xs.begin(), xs.end()).size() == xs.size();
 }
 
-template <typename X>
-struct expected_transformed_type {
+template <typename X> struct expected_transformed_type {
   typedef albatross::LinearCombination<X> type;
 };
 
@@ -442,4 +440,4 @@ REGISTER_TYPED_TEST_SUITE_P(DatasetOperatorTester, test_output_type_ints,
 INSTANTIATE_TYPED_TEST_SUITE_P(test_core_dataset, DatasetOperatorTester,
                                DatasetOperatorTestCases);
 
-}  // namespace albatross
+} // namespace albatross

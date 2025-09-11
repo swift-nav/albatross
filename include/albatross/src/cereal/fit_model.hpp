@@ -23,6 +23,6 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("fit", fit_model.get_fit()));
 };
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_FIT_MODEL_HPP_ */

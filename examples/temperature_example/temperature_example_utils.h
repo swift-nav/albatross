@@ -13,9 +13,9 @@
 #ifndef ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 #define ALBATROSS_TEMPERATURE_EXAMPLE_UTILS_H
 
-#include <csv.h>
 #include <albatross/GP>
 #include <albatross/src/utils/csv_utils.hpp>
+#include <csv.h>
 #include <fstream>
 
 namespace albatross {
@@ -33,8 +33,7 @@ struct Station {
 
   bool operator==(const Station &rhs) const { return (ecef == rhs.ecef); }
 
-  template <typename Archive>
-  void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("id", id), cereal::make_nvp("lat", lat),
             cereal::make_nvp("lon", lon), cereal::make_nvp("height", height),
             cereal::make_nvp("ecef_x", ecef[0]),
@@ -50,7 +49,7 @@ struct Station {
  */
 template <typename DistanceMetricType>
 class StationDistance : public DistanceMetricType {
- public:
+public:
   StationDistance(){};
 
   std::string get_name() const {
@@ -67,7 +66,7 @@ class StationDistance : public DistanceMetricType {
 };
 
 class ElevationScalingFunction : public albatross::ScalingFunction {
- public:
+public:
   ElevationScalingFunction(double center = 1000., double factor = 3.5 / 300) {
     this->params_["elevation_scaling_center"] = {center,
                                                  UniformPrior(0., 5000.)};
@@ -85,8 +84,8 @@ class ElevationScalingFunction : public albatross::ScalingFunction {
   }
 };
 
-albatross::RegressionDataset<Station> read_temperature_csv_input(
-    const std::string &file_path, int thin = 5) {
+albatross::RegressionDataset<Station>
+read_temperature_csv_input(const std::string &file_path, int thin = 5) {
   std::vector<Station> features;
   std::vector<double> targets;
 
@@ -135,5 +134,5 @@ void write_predictions(const std::string &output_path,
   albatross::write_to_csv(ostream, dataset, predictions);
 }
 
-}  // namespace albatross
+} // namespace albatross
 #endif

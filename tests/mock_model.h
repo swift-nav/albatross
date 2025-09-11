@@ -33,8 +33,7 @@ struct ContainsMockFeature {
   MockFeature mock;
 };
 
-template <>
-struct Fit<MockModel> {
+template <> struct Fit<MockModel> {
   std::map<int, double> train_data;
 
   bool operator==(const Fit &other) const {
@@ -47,7 +46,7 @@ struct Fit<MockModel> {
  * to a double value.
  */
 class MockModel : public ModelBase<MockModel> {
- public:
+public:
   ALBATROSS_DECLARE_PARAMS(foo, bar);
 
   MockModel(double foo_ = 3.14159, double bar_ = sqrt(2.)) {
@@ -88,10 +87,10 @@ class MockModel : public ModelBase<MockModel> {
   }
 
   // convert before predicting
-  Eigen::VectorXd _predict_impl(
-      const std::vector<ContainsMockFeature> &features,
-      const Fit<MockModel> &fit_,
-      PredictTypeIdentity<Eigen::VectorXd> &&) const {
+  Eigen::VectorXd
+  _predict_impl(const std::vector<ContainsMockFeature> &features,
+                const Fit<MockModel> &fit_,
+                PredictTypeIdentity<Eigen::VectorXd> &&) const {
     std::vector<MockFeature> mock_features;
     for (const auto &f : features) {
       mock_features.push_back(f.mock);
@@ -101,8 +100,8 @@ class MockModel : public ModelBase<MockModel> {
   }
 };
 
-static inline RegressionDataset<MockFeature> mock_training_data(
-    const Eigen::Index n = 10) {
+static inline RegressionDataset<MockFeature>
+mock_training_data(const Eigen::Index n = 10) {
   std::vector<MockFeature> features;
   Eigen::VectorXd targets(n);
   for (int i = 0; i < n; i++) {
@@ -111,6 +110,6 @@ static inline RegressionDataset<MockFeature> mock_training_data(
   }
   return RegressionDataset<MockFeature>(features, targets);
 }
-}  // namespace albatross
+} // namespace albatross
 
 #endif

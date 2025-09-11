@@ -12,8 +12,8 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include "test_models.h"
+#include <chrono>
 
 #include <albatross/SparseGP>
 
@@ -29,7 +29,7 @@ struct LeaveOneIntervalOut {
 
 template <typename GrouperFunctionAndQRImplementation>
 class SparseGaussianProcessTest : public ::testing::Test {
- public:
+public:
   using GrouperFunction =
       typename GrouperFunctionAndQRImplementation::first_type;
   using QRImplementation =
@@ -220,9 +220,9 @@ struct FixedInducingPoints {
       : min_(min), max_(max), num_points_(num_points) {}
 
   template <typename CovarianceFunction>
-  std::vector<double> operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
-                                 const std::vector<double> &features
-                                     ALBATROSS_UNUSED) const {
+  std::vector<double>
+  operator()(const CovarianceFunction &cov ALBATROSS_UNUSED,
+             const std::vector<double> &features ALBATROSS_UNUSED) const {
     return linspace(min_, max_, num_points_);
   }
 
@@ -463,4 +463,4 @@ TYPED_TEST(SparseGaussianProcessTest, test_shift_inducing_points) {
   EXPECT_LT((shifted_pred.covariance - full_pred.covariance).norm(), 1e-8);
 }
 
-}  // namespace albatross
+} // namespace albatross

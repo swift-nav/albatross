@@ -65,8 +65,9 @@ using namespace cereal;
  * XML document by joining nested structure using a ".".
  */
 template <typename NodeType>
-inline std::map<std::string, std::string> flatten_xml_serialization(
-    const rapidxml::xml_node<NodeType> *node, bool prepend_parent = false) {
+inline std::map<std::string, std::string>
+flatten_xml_serialization(const rapidxml::xml_node<NodeType> *node,
+                          bool prepend_parent = false) {
   std::map<std::string, std::string> output;
   std::string value = node->value();
 
@@ -125,11 +126,9 @@ inline std::map<std::string, std::string> to_map(const double &feature) {
 }
 
 template <typename FeatureType>
-inline std::map<std::string, std::string> to_map(const FeatureType &feature,
-                                                 double target,
-                                                 double target_variance,
-                                                 double prediction,
-                                                 double prediction_variance) {
+inline std::map<std::string, std::string>
+to_map(const FeatureType &feature, double target, double target_variance,
+       double prediction, double prediction_variance) {
   auto output = to_map(feature);
   output["target"] = std::to_string(target);
   output["target_variance"] = std::to_string(target_variance);
@@ -143,9 +142,9 @@ inline std::map<std::string, std::string> to_map(const FeatureType &feature,
  * creates the corresponding column to value map.
  */
 template <typename FeatureType, typename DistributionType>
-inline std::map<std::string, std::string> to_map(
-    const RegressionDataset<FeatureType> &dataset,
-    const DistributionBase<DistributionType> &predictions, std::size_t i) {
+inline std::map<std::string, std::string>
+to_map(const RegressionDataset<FeatureType> &dataset,
+       const DistributionBase<DistributionType> &predictions, std::size_t i) {
   ALBATROSS_ASSERT(dataset.targets.size() == predictions.size());
   ALBATROSS_ASSERT(i < dataset.features.size());
   const auto ei = cast::to_index(i);
@@ -173,9 +172,9 @@ inline void replace_last_character_with_newline(std::ostream &stream) {
 }
 
 template <typename FeatureType, typename DistributionType>
-inline std::vector<std::string> get_column_names(
-    const RegressionDataset<FeatureType> &dataset,
-    const DistributionBase<DistributionType> &predictions) {
+inline std::vector<std::string>
+get_column_names(const RegressionDataset<FeatureType> &dataset,
+                 const DistributionBase<DistributionType> &predictions) {
   std::set<std::string> keys;
   for (std::size_t i = 0; i < dataset.features.size(); ++i) {
     const auto next_keys = map_keys(to_map(dataset, predictions, i));
@@ -241,10 +240,10 @@ inline void write_to_csv(std::ostream &stream,
 
 template <typename FeatureType, typename DistributionType,
           std::enable_if_t<is_distribution<DistributionType>::value, int> = 0>
-inline void write_to_csv(
-    std::ostream &stream,
-    const std::vector<RegressionDataset<FeatureType>> &datasets,
-    const std::vector<DistributionType> &predictions) {
+inline void
+write_to_csv(std::ostream &stream,
+             const std::vector<RegressionDataset<FeatureType>> &datasets,
+             const std::vector<DistributionType> &predictions) {
   const auto columns = get_column_names(datasets[0], predictions[0]);
   write_header(stream, columns);
   ALBATROSS_ASSERT(datasets.size() == predictions.size());
@@ -268,6 +267,6 @@ inline void write_to_csv(std::ostream &stream,
     }
   }
 }
-}  // namespace albatross
+} // namespace albatross
 
 #endif

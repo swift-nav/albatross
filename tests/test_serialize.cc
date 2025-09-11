@@ -38,7 +38,7 @@ inline void serialize(Archive &archive, Fit<MockModel> &f) {
   archive(f.train_data);
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 namespace albatross {
 
@@ -284,8 +284,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, SerializeTest, ToTest);
  * Make sure all the example models serialize.
  */
 
-template <typename DatasetType, int = 0>
-struct feature_type {
+template <typename DatasetType, int = 0> struct feature_type {
   typedef void type;
 };
 
@@ -294,21 +293,18 @@ struct feature_type<RegressionDataset<FeatureType>> {
   typedef FeatureType type;
 };
 
-template <typename T>
-class model_types {
+template <typename T> class model_types {
   template <typename C,
             typename ModelType = decltype(std::declval<const T>().get_model())>
   static ModelType test_model(C *);
-  template <typename>
-  static void test_model(...);
+  template <typename> static void test_model(...);
 
   template <typename C, typename DatasetType =
                             decltype(std::declval<const T>().get_dataset())>
   static typename feature_type<DatasetType>::type test_feature_type(C *);
-  template <typename>
-  static void test_feature_type(...);
+  template <typename> static void test_feature_type(...);
 
- public:
+public:
   typedef decltype(test_model<T>(0)) model_type;
   typedef decltype(test_feature_type<T>(0)) feature;
   typedef typename fit_model_type<decltype(test_model<T>(0)),
@@ -444,7 +440,7 @@ TEST(test_serialize, test_gp_serialize_version) {
   EXPECT_EQ(actual_version, expected_version);
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 namespace other {
 
@@ -595,4 +591,4 @@ TEST(test_serialize, serialize_spqr_random) {
   }
 }
 
-}  // namespace other
+} // namespace other

@@ -15,8 +15,7 @@
 
 namespace albatross {
 
-template <typename X>
-struct Measurement {
+template <typename X> struct Measurement {
   static_assert(!is_variant<X>::value,
                 "Wrapping a variant in the measurement tag can lead to "
                 "unexpected behavior.  It's preferable to convert to a variant "
@@ -71,7 +70,7 @@ auto as_measurements(const std::vector<variant<Ts...>> &features) {
 template <typename SubCovariance>
 class MeasurementOnly
     : public CovarianceFunction<MeasurementOnly<SubCovariance>> {
- public:
+public:
   MeasurementOnly() : sub_cov_() {}
   MeasurementOnly(const SubCovariance &sub_cov) : sub_cov_(sub_cov) {}
 
@@ -102,7 +101,7 @@ class MeasurementOnly
     return sub_cov_(x.value, y.value);
   }
 
- private:
+private:
   SubCovariance sub_cov_;
 };
 
@@ -114,24 +113,16 @@ MeasurementOnly<SubCovariance> measurement_only(const SubCovariance &cov) {
   return MeasurementOnly<SubCovariance>(cov);
 }
 
-template <typename T>
-T without_measurement(Measurement<T> &&m) {
+template <typename T> T without_measurement(Measurement<T> &&m) {
   return m.value;
 }
-template <typename T>
-const T &without_measurement(const Measurement<T> &m) {
+template <typename T> const T &without_measurement(const Measurement<T> &m) {
   return m.value;
 }
 
-template <typename T>
-T without_measurement(T &&t) {
-  return t;
-}
-template <typename T>
-const T &without_measurement(const T &t) {
-  return t;
-}
+template <typename T> T without_measurement(T &&t) { return t; }
+template <typename T> const T &without_measurement(const T &t) { return t; }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_COVARIANCE_FUNCTIONS_MEASUREMENT_HPP_ */

@@ -37,9 +37,9 @@ namespace albatross {
 namespace details {
 
 template <typename MatrixType, typename DiagType>
-inline Eigen::MatrixXd product_sqrt(
-    const Eigen::MatrixBase<MatrixType> &matrix,
-    const Eigen::DiagonalBase<DiagType> &diag_matrix) {
+inline Eigen::MatrixXd
+product_sqrt(const Eigen::MatrixBase<MatrixType> &matrix,
+             const Eigen::DiagonalBase<DiagType> &diag_matrix) {
   return matrix.derived() *
          diag_matrix.diagonal().array().sqrt().matrix().asDiagonal();
 }
@@ -52,17 +52,17 @@ inline Eigen::MatrixXd product_sqrt(const Eigen::MatrixBase<Lhs> &lhs,
 }
 
 template <typename MatrixType, typename DiagType>
-inline Eigen::MatrixXd product_sqrt(
-    const Eigen::SparseMatrixBase<MatrixType> &matrix,
-    const Eigen::DiagonalBase<DiagType> &diag_matrix) {
+inline Eigen::MatrixXd
+product_sqrt(const Eigen::SparseMatrixBase<MatrixType> &matrix,
+             const Eigen::DiagonalBase<DiagType> &diag_matrix) {
   return matrix.derived() *
          diag_matrix.diagonal().array().sqrt().matrix().asDiagonal();
 }
 
 template <typename SparseType, typename MatrixType>
-inline Eigen::MatrixXd product_sqrt(
-    const Eigen::SparseMatrixBase<SparseType> &lhs,
-    const Eigen::MatrixBase<MatrixType> &rhs) {
+inline Eigen::MatrixXd
+product_sqrt(const Eigen::SparseMatrixBase<SparseType> &lhs,
+             const Eigen::MatrixBase<MatrixType> &rhs) {
   return lhs.derived() *
          Eigen::SerializableLDLT(rhs).sqrt_transpose().transpose();
 }
@@ -107,26 +107,26 @@ struct TransformedDistribution {
       covariance_product;
 };
 
-}  // namespace details
+} // namespace details
 
 template <typename MatrixType, typename DistributionType>
-inline auto operator*(
-    const Eigen::MatrixBase<MatrixType> &matrix,
-    const albatross::DistributionBase<DistributionType> &distribution) {
+inline auto
+operator*(const Eigen::MatrixBase<MatrixType> &matrix,
+          const albatross::DistributionBase<DistributionType> &distribution) {
   return albatross::details::TransformedDistribution<MatrixType,
                                                      DistributionType>(
       matrix, distribution);
 }
 
 template <typename MatrixType, typename DistributionType>
-inline auto operator*(
-    const Eigen::SparseMatrixBase<MatrixType> &matrix,
-    const albatross::DistributionBase<DistributionType> &distribution) {
+inline auto
+operator*(const Eigen::SparseMatrixBase<MatrixType> &matrix,
+          const albatross::DistributionBase<DistributionType> &distribution) {
   return albatross::details::TransformedDistribution<MatrixType,
                                                      DistributionType>(
       matrix, distribution);
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

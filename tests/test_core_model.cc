@@ -73,4 +73,4 @@ TEST(test_core_model, test_get_set_params) {
   EXPECT_GT(count, 0);
 };
 
-}  // namespace albatross
+} // namespace albatross

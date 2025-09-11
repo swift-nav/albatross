@@ -16,9 +16,9 @@
 namespace albatross {
 
 template <typename ModelType, typename FeatureType, typename GroupKey>
-inline auto get_predictions(
-    const ModelType &model,
-    const RegressionFolds<GroupKey, FeatureType> &folds) {
+inline auto
+get_predictions(const ModelType &model,
+                const RegressionFolds<GroupKey, FeatureType> &folds) {
   const auto predict_group = [&model](const auto &fold) {
     return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
   };
@@ -44,8 +44,8 @@ inline auto get_means(const Grouped<GroupKey, PredictionType> &predictions) {
 }
 
 template <typename GroupKey, typename PredictionType>
-inline auto get_marginals(
-    const Grouped<GroupKey, PredictionType> &predictions) {
+inline auto
+get_marginals(const Grouped<GroupKey, PredictionType> &predictions) {
   return get_predict_types<MarginalDistribution>(predictions);
 }
 
@@ -55,9 +55,9 @@ inline auto get_joints(const Grouped<GroupKey, PredictionType> &predictions) {
 }
 
 template <typename GroupKey>
-inline Eigen::VectorXd concatenate_mean_predictions(
-    const GroupIndexer<GroupKey> &indexer,
-    const Grouped<GroupKey, Eigen::VectorXd> &means) {
+inline Eigen::VectorXd
+concatenate_mean_predictions(const GroupIndexer<GroupKey> &indexer,
+                             const Grouped<GroupKey, Eigen::VectorXd> &means) {
   ALBATROSS_ASSERT(indexer.size() == means.size());
 
   Eigen::Index n = cast::to_index(dataset_size_from_indexer(indexer));
@@ -116,10 +116,10 @@ Eigen::VectorXd cross_validated_scores(
 
 template <typename FeatureType, typename DistributionType, typename GroupKey,
           std::enable_if_t<is_distribution<DistributionType>::value, int> = 0>
-static inline Eigen::VectorXd cross_validated_scores(
-    const PredictionMetric<Eigen::VectorXd> &metric,
-    const RegressionFolds<GroupKey, FeatureType> &folds,
-    const Grouped<GroupKey, DistributionType> &predictions) {
+static inline Eigen::VectorXd
+cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
+                       const RegressionFolds<GroupKey, FeatureType> &folds,
+                       const Grouped<GroupKey, DistributionType> &predictions) {
   const auto get_mean = [](const auto &pred) { return pred.mean; };
 
   return cross_validated_scores(metric, folds, predictions.apply(get_mean));
@@ -133,14 +133,15 @@ inline Eigen::VectorXd leave_one_out_conditional_variance(
   return covariance_ldlt.inverse_diagonal().array().inverse();
 }
 
-inline Eigen::VectorXd leave_one_out_conditional_variance(
-    const Eigen::MatrixXd &covariance) {
+inline Eigen::VectorXd
+leave_one_out_conditional_variance(const Eigen::MatrixXd &covariance) {
   return leave_one_out_conditional_variance(
       Eigen::SerializableLDLT(covariance));
 }
 
-inline MarginalDistribution leave_one_out_conditional(
-    const JointDistribution &prior, const MarginalDistribution &truth) {
+inline MarginalDistribution
+leave_one_out_conditional(const JointDistribution &prior,
+                          const MarginalDistribution &truth) {
   // Computes the conditional distribution of each variable conditional on
   // all others.
   //
@@ -164,34 +165,38 @@ namespace details {
 //
 // https://swiftnav-albatross.readthedocs.io/en/latest/gp-details.html
 
-inline Eigen::VectorXd held_out_prediction(
-    const Eigen::MatrixXd &inverse_block, const Eigen::VectorXd &y,
-    const Eigen::VectorXd &v, PredictTypeIdentity<Eigen::VectorXd>) {
+inline Eigen::VectorXd
+held_out_prediction(const Eigen::MatrixXd &inverse_block,
+                    const Eigen::VectorXd &y, const Eigen::VectorXd &v,
+                    PredictTypeIdentity<Eigen::VectorXd>) {
   return y - inverse_block.ldlt().solve(v);
 }
 
-inline MarginalDistribution held_out_prediction(
-    const Eigen::MatrixXd &inverse_block, const Eigen::VectorXd &y,
-    const Eigen::VectorXd &v, PredictTypeIdentity<MarginalDistribution>) {
+inline MarginalDistribution
+held_out_prediction(const Eigen::MatrixXd &inverse_block,
+                    const Eigen::VectorXd &y, const Eigen::VectorXd &v,
+                    PredictTypeIdentity<MarginalDistribution>) {
   const auto A_ldlt = Eigen::SerializableLDLT(inverse_block);
   const Eigen::VectorXd mean = y - A_ldlt.solve(v);
   return MarginalDistribution(mean, A_ldlt.inverse_diagonal());
 }
 
-inline JointDistribution held_out_prediction(
-    const Eigen::MatrixXd &inverse_block, const Eigen::VectorXd &y,
-    const Eigen::VectorXd &v, PredictTypeIdentity<JointDistribution>) {
+inline JointDistribution
+held_out_prediction(const Eigen::MatrixXd &inverse_block,
+                    const Eigen::VectorXd &y, const Eigen::VectorXd &v,
+                    PredictTypeIdentity<JointDistribution>) {
   const auto A_inv = inverse_block.inverse();
   const Eigen::VectorXd mean = y - A_inv * v;
   return JointDistribution(mean, A_inv);
 }
 
 template <typename GroupKey, typename PredictType>
-inline std::map<GroupKey, PredictType> held_out_predictions(
-    const Eigen::SerializableLDLT &covariance,
-    const Eigen::VectorXd &target_mean, const Eigen::VectorXd &information,
-    const GroupIndexer<GroupKey> &group_indexer,
-    PredictTypeIdentity<PredictType> predict_type) {
+inline std::map<GroupKey, PredictType>
+held_out_predictions(const Eigen::SerializableLDLT &covariance,
+                     const Eigen::VectorXd &target_mean,
+                     const Eigen::VectorXd &information,
+                     const GroupIndexer<GroupKey> &group_indexer,
+                     PredictTypeIdentity<PredictType> predict_type) {
   const std::vector<GroupIndices> indices = map_values(group_indexer);
   const std::vector<GroupKey> group_keys = map_keys(group_indexer);
   const auto inverse_blocks = covariance.inverse_blocks(indices);
@@ -207,10 +212,11 @@ inline std::map<GroupKey, PredictType> held_out_predictions(
 }
 
 template <typename GroupKey, typename PredictType>
-inline std::map<GroupKey, PredictType> leave_one_group_out_conditional(
-    const JointDistribution &prior, const MarginalDistribution &truth,
-    const GroupIndexer<GroupKey> &group_indexer,
-    PredictTypeIdentity<PredictType> predict_type) {
+inline std::map<GroupKey, PredictType>
+leave_one_group_out_conditional(const JointDistribution &prior,
+                                const MarginalDistribution &truth,
+                                const GroupIndexer<GroupKey> &group_indexer,
+                                PredictTypeIdentity<PredictType> predict_type) {
   Eigen::MatrixXd covariance = prior.covariance;
   covariance += truth.covariance;
   Eigen::SerializableLDLT ldlt(covariance);
@@ -220,7 +226,7 @@ inline std::map<GroupKey, PredictType> leave_one_group_out_conditional(
                               group_indexer, predict_type);
 }
 
-}  // namespace details
+} // namespace details
 
 template <typename GroupKey>
 inline std::map<GroupKey, Eigen::VectorXd>
@@ -249,6 +255,6 @@ leave_one_group_out_conditional_joints(
       prior, truth, group_indexer, PredictTypeIdentity<JointDistribution>());
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

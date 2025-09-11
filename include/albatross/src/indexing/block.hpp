@@ -43,8 +43,8 @@ inline auto partition_triangular(Eigen::Index size,
   return results;
 }
 
-}  // namespace detail
+} // namespace detail
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_INDEXING_BLOCK_HPP_ */

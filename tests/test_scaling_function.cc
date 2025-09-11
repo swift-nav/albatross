@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Evaluation>
+#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -57,7 +57,7 @@ namespace albatross {
 double obliquity_function(double x) { return 1. / cos(atan(x - 1.)); }
 
 class ObliquityScaling : public ScalingFunction {
- public:
+public:
   ObliquityScaling() : ScalingFunction(){};
 
   std::string get_name() const { return "obliquity_scaling"; }
@@ -149,7 +149,7 @@ TEST(test_scaling_functions, test_inference) {
 }
 
 class ZeroCovariance : public CovarianceFunction<ZeroCovariance> {
- public:
+public:
   template <typename X, typename Y>
   double _call_impl(const X &x ALBATROSS_UNUSED,
                     const Y &y ALBATROSS_UNUSED) const {
@@ -208,4 +208,4 @@ TEST(test_scaling_functions, test_operations) {
   EXPECT_GT(lhs_cov_func(a, a), 0.);
 }
 
-}  // namespace albatross
+} // namespace albatross

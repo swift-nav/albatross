@@ -15,10 +15,9 @@
 namespace albatross {
 
 template <typename Function>
-inline std::vector<double> compute_gradient(Function f,
-                                            const std::vector<double> &params,
-                                            double f_val,
-                                            ThreadPool *threads = nullptr) {
+inline std::vector<double>
+compute_gradient(Function f, const std::vector<double> &params, double f_val,
+                 ThreadPool *threads = nullptr) {
   std::vector<std::size_t> inds(params.size());
   std::iota(std::begin(inds), std::end(inds), 0);
   const double epsilon = 1e-6;
@@ -33,10 +32,9 @@ inline std::vector<double> compute_gradient(Function f,
 }
 
 template <typename Function>
-inline std::vector<double> compute_gradient(Function f,
-                                            const ParameterStore &params,
-                                            double f_val,
-                                            ThreadPool *threads = nullptr) {
+inline std::vector<double>
+compute_gradient(Function f, const ParameterStore &params, double f_val,
+                 ThreadPool *threads = nullptr) {
   TunableParameters tunable_params = get_tunable_parameters(params);
 
   std::vector<std::size_t> inds(tunable_params.values.size());
@@ -82,6 +80,6 @@ inline std::vector<double> compute_gradient(Function f,
   return albatross::apply(inds, compute_single_sub_gradient, threads);
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_TUNE_FINITE_DIFFERENCE_HPP_ */

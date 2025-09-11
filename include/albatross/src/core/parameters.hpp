@@ -168,9 +168,10 @@ inline double ensure_value_within_bounds(const Parameter &param,
   return value;
 }
 
-inline ParameterStore set_tunable_params_values(
-    const ParameterStore &params, const std::vector<ParameterValue> &x,
-    const bool force_bounds = true) {
+inline ParameterStore
+set_tunable_params_values(const ParameterStore &params,
+                          const std::vector<ParameterValue> &x,
+                          const bool force_bounds = true) {
   ParameterStore output(params);
   std::size_t i = 0;
   for (const auto &pair : params) {
@@ -245,9 +246,9 @@ inline void set_params(const ParameterStore &input_params,
   }
 }
 
-inline void set_param_values(
-    const std::map<ParameterKey, ParameterValue> &param_values,
-    ParameterStore *params) {
+inline void
+set_param_values(const std::map<ParameterKey, ParameterValue> &param_values,
+                 ParameterStore *params) {
   for (const auto &pair : param_values) {
     set_param_value(pair.first, pair.second, params);
   }
@@ -304,6 +305,6 @@ inline double parameter_prior_log_likelihood(const ParameterStore &params) {
   return sum;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_CORE_PARAMETERS_HPP_ */

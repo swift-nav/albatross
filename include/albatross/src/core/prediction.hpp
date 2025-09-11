@@ -17,10 +17,7 @@ namespace albatross {
 
 // This is effectively just a container that allows us to develop methods
 // which behave different conditional on the type of predictions desired.
-template <typename T>
-struct PredictTypeIdentity {
-  typedef T type;
-};
+template <typename T> struct PredictTypeIdentity { typedef T type; };
 
 /*
  * MeanPredictor is responsible for determining if a valid form of
@@ -31,7 +28,7 @@ struct PredictTypeIdentity {
  * any valid mean prediction method exists.
  */
 class MeanPredictor {
- public:
+public:
   template <typename ModelType, typename FeatureType, typename FitType,
             typename std::enable_if<
                 has_valid_predict_mean<ModelType, FeatureType, FitType>::value,
@@ -73,14 +70,14 @@ class MeanPredictor {
 };
 
 class MarginalPredictor {
- public:
+public:
   template <typename ModelType, typename FeatureType, typename FitType,
             typename std::enable_if<has_valid_predict_marginal<
                                         ModelType, FeatureType, FitType>::value,
                                     int>::type = 0>
-  MarginalDistribution _marginal(
-      const ModelType &model, const FitType &fit,
-      const std::vector<FeatureType> &features) const {
+  MarginalDistribution
+  _marginal(const ModelType &model, const FitType &fit,
+            const std::vector<FeatureType> &features) const {
     return model.predict_(features, fit,
                           PredictTypeIdentity<MarginalDistribution>());
   }
@@ -91,9 +88,9 @@ class MarginalPredictor {
           !has_valid_predict_marginal<ModelType, FeatureType, FitType>::value &&
               has_valid_predict_joint<ModelType, FeatureType, FitType>::value,
           int>::type = 0>
-  MarginalDistribution _marginal(
-      const ModelType &model, const FitType &fit,
-      const std::vector<FeatureType> &features) const {
+  MarginalDistribution
+  _marginal(const ModelType &model, const FitType &fit,
+            const std::vector<FeatureType> &features) const {
     const auto joint_pred =
         model.predict_(features, fit, PredictTypeIdentity<JointDistribution>());
     return joint_pred.marginal();
@@ -101,7 +98,7 @@ class MarginalPredictor {
 };
 
 class JointPredictor {
- public:
+public:
   template <typename ModelType, typename FeatureType, typename FitType,
             typename std::enable_if<
                 has_valid_predict_joint<ModelType, FeatureType, FitType>::value,
@@ -118,7 +115,7 @@ class Prediction {
   using PlainModelType = typename std::decay<ModelType>::type;
   using PlainFitType = typename std::decay<FitType>::type;
 
- public:
+public:
   Prediction(const PlainModelType &model, const PlainFitType &fit,
              const std::vector<FeatureType> &features)
       : model_(model), fit_(fit), features_(features) {}
@@ -146,7 +143,7 @@ class Prediction {
       typename std::enable_if<!can_predict_mean<MeanPredictor, ModelType,
                                                 DummyType, FitType>::value,
                               int>::type = 0>
-  Eigen::VectorXd mean() const = delete;  // No valid predict method found.
+  Eigen::VectorXd mean() const = delete; // No valid predict method found.
 
   // Marginal
   template <
@@ -168,8 +165,8 @@ class Prediction {
                 !can_predict_marginal<MarginalPredictor, ModelType, DummyType,
                                       FitType>::value,
                 int>::type = 0>
-  MarginalDistribution marginal() const =
-      delete;  // No valid predict method found.
+  MarginalDistribution
+  marginal() const = delete; // No valid predict method found.
 
   // Joint
   template <
@@ -191,7 +188,7 @@ class Prediction {
       typename std::enable_if<!can_predict_joint<JointPredictor, ModelType,
                                                  DummyType, FitType>::value,
                               int>::type = 0>
-  JointDistribution joint() const = delete;  // No valid predict method found.
+  JointDistribution joint() const = delete; // No valid predict method found.
 
   template <typename PredictType>
   PredictType get(PredictTypeIdentity<PredictType> =
@@ -205,9 +202,8 @@ class Prediction {
 
   explicit operator MarginalDistribution() const { return this->marginal(); };
 
- private:
-  template <typename T>
-  struct get_type {};
+private:
+  template <typename T> struct get_type {};
 
   Eigen::VectorXd get(get_type<Eigen::VectorXd>) const { return this->mean(); }
 
@@ -237,5 +233,5 @@ auto get_prediction_reference(const ModelType &model, const FitType &fit,
                                                               features);
 }
 
-}  // namespace albatross
+} // namespace albatross
 #endif

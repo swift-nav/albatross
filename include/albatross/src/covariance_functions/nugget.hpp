@@ -30,7 +30,7 @@ namespace albatross {
  */
 
 class Nugget : public CovarianceFunction<Nugget> {
- public:
+public:
   ALBATROSS_DECLARE_PARAMS(nugget_sigma)
 
   std::string get_name() const { return "nugget"; }
@@ -48,6 +48,6 @@ class Nugget : public CovarianceFunction<Nugget> {
   }
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

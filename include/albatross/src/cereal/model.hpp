@@ -32,6 +32,6 @@ void load(Archive &archive, ModelBase<ModelType> &model, const std::uint32_t) {
   archive(cereal::make_nvp("insights", model.derived().insights));
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_MODEL_HPP_ */

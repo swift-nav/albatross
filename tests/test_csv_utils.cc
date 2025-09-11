@@ -13,9 +13,9 @@
 #include <albatross/Core>
 #include <albatross/serialize/Core>
 
+#include <albatross/src/utils/csv_utils.hpp>
 #include <csv.h>
 #include <gtest/gtest.h>
-#include <albatross/src/utils/csv_utils.hpp>
 
 namespace albatross {
 
@@ -23,8 +23,7 @@ struct SubFeature {
   double one = 1.;
   int two = 2;
 
-  template <typename Archive>
-  void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("one", one));
     archive(cereal::make_nvp("two", two));
   }
@@ -39,26 +38,17 @@ struct TestFeature {
   variant<double, SubFeature> double_or_feature;
 
   TestFeature()
-      : foo(1.),
-        bar(2),
-        feature(),
-        has_other(false),
-        other(nullptr),
+      : foo(1.), bar(2), feature(), has_other(false), other(nullptr),
         double_or_feature(1.){};
 
   TestFeature(double foo_, int bar_, const SubFeature &feature_, long *other_,
               const variant<double, SubFeature> &double_or_feature_)
-      : foo(foo_),
-        bar(bar_),
-        feature(feature_),
-        has_other(false),
-        other(other_),
-        double_or_feature(double_or_feature_) {
+      : foo(foo_), bar(bar_), feature(feature_), has_other(false),
+        other(other_), double_or_feature(double_or_feature_) {
     has_other = other_ != nullptr;
   };
 
-  template <typename Archive>
-  void save(Archive &archive) const {
+  template <typename Archive> void save(Archive &archive) const {
     archive(CEREAL_NVP(foo));
     archive(CEREAL_NVP(bar));
     archive(CEREAL_NVP(feature));
@@ -69,8 +59,7 @@ struct TestFeature {
     archive(CEREAL_NVP(double_or_feature));
   }
 
-  template <typename Archive>
-  void load(Archive &archive) {
+  template <typename Archive> void load(Archive &archive) {
     archive(CEREAL_NVP(foo));
     archive(CEREAL_NVP(bar));
     archive(CEREAL_NVP(feature));
@@ -227,8 +216,7 @@ struct CustomFeature {
   double one = 1.;
   int two = 2;
 
-  template <typename Archive>
-  void serialize(Archive &archive) {
+  template <typename Archive> void serialize(Archive &archive) {
     archive(cereal::make_nvp("one", one));
     archive(cereal::make_nvp("two", two));
   }
@@ -292,4 +280,4 @@ TEST(test_csv_utils, test_writes_eigen) {
   EXPECT_GT(oss.str().size(), 0);
 }
 
-}  // namespace albatross
+} // namespace albatross

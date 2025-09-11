@@ -16,9 +16,8 @@
 namespace albatross {
 
 namespace details {
-template <typename X>
-struct ToVariantIdentity {};
-}  // namespace details
+template <typename X> struct ToVariantIdentity {};
+} // namespace details
 
 /*
  * In this case X is a sub variant which is compatible so we need to
@@ -68,8 +67,9 @@ inline void set_variants(const std::vector<X> &xs,
 
 template <typename OutputType, typename X,
           std::enable_if_t<is_variant<OutputType>::value, int> = 0>
-inline std::vector<OutputType> to_variant_vector(
-    const std::vector<X> &xs, details::ToVariantIdentity<OutputType> && = {}) {
+inline std::vector<OutputType>
+to_variant_vector(const std::vector<X> &xs,
+                  details::ToVariantIdentity<OutputType> && = {}) {
   std::vector<OutputType> output;
   set_variants(xs, &output);
   return output;
@@ -79,9 +79,9 @@ template <
     typename OutputType, typename... VariantTypes,
     std::enable_if_t<is_in_variant<OutputType, variant<VariantTypes...>>::value,
                      int> = 0>
-inline std::vector<OutputType> extract_from_variants(
-    const std::vector<variant<VariantTypes...>> &xs,
-    details::ToVariantIdentity<OutputType> && = {}) {
+inline std::vector<OutputType>
+extract_from_variants(const std::vector<variant<VariantTypes...>> &xs,
+                      details::ToVariantIdentity<OutputType> && = {}) {
   std::vector<OutputType> output;
   for (const auto &x : xs) {
     x.match([&](const OutputType &f) { output.emplace_back(f); },
@@ -112,6 +112,6 @@ inline RegressionDataset<OutputType> extract_from_variants(
                                        subset(dataset.targets, indices));
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_UTILS_VARIANT_UTILS_HPP_ */

@@ -15,8 +15,7 @@
 
 namespace albatross {
 
-template <typename X>
-struct LinearCombination {
+template <typename X> struct LinearCombination {
   static_assert(
       !is_measurement<X>::value,
       "Putting a Measurement type inside a LinearCombination will lead to "
@@ -44,30 +43,26 @@ struct LinearCombination {
 
 namespace linear_combination {
 
-template <typename X>
-inline auto sum(const X &x, const X &y) {
+template <typename X> inline auto sum(const X &x, const X &y) {
   Eigen::Vector2d coefs;
   coefs << 1., 1.;
   return LinearCombination<X>({x, y}, coefs);
 }
 
-template <typename X, typename Y>
-inline auto sum(const X &x, const Y &y) {
+template <typename X, typename Y> inline auto sum(const X &x, const Y &y) {
   variant<X, Y> vx = x;
   variant<X, Y> vy = y;
   return sum(vx, vy);
 }
 
-template <typename X>
-inline auto mean(const std::vector<X> &xs) {
+template <typename X> inline auto mean(const std::vector<X> &xs) {
   const auto n = cast::to_index(xs.size());
   Eigen::VectorXd coefs(n);
   coefs.fill(1. / cast::to_double(n));
   return LinearCombination<X>(xs, coefs);
 }
 
-template <typename X>
-inline auto difference(const X &x, const X &y) {
+template <typename X> inline auto difference(const X &x, const X &y) {
   Eigen::Vector2d coefs;
   coefs << 1., -1.;
   return LinearCombination<X>({x, y}, coefs);
@@ -84,8 +79,7 @@ inline auto difference(const X &x, const Y &y) {
 // without explicitly knowing the type of x. If x is already a
 // LinearCombination it gets returned without modification.
 
-template <typename X>
-inline auto to_linear_combination(const X &x) {
+template <typename X> inline auto to_linear_combination(const X &x) {
   return LinearCombination<X>({x}, Eigen::VectorXd::Ones(1));
 }
 
@@ -93,7 +87,7 @@ template <typename X>
 inline auto to_linear_combination(const LinearCombination<X> &x) {
   return x;
 }
-}  // namespace linear_combination
+} // namespace linear_combination
 
 template <typename Derived, typename X>
 inline auto operator*(const Eigen::SparseMatrixBase<Derived> &matrix,
@@ -158,6 +152,6 @@ inline auto operator*(const Eigen::MatrixBase<Derived> &matrix,
   return sparse * features;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_COVARIANCE_FUNCTIONS_LINEAR_COMBINATION_HPP_ */

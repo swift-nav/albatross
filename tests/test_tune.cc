@@ -10,10 +10,10 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
-#include <albatross/Tune>
-#include <nlopt.hpp>
 #include "test_models.h"
+#include <albatross/Tune>
+#include <gtest/gtest.h>
+#include <nlopt.hpp>
 
 namespace albatross {
 
@@ -133,7 +133,7 @@ Eigen::VectorXd nlopt_solve(GenericTuner &tuner, ObjectiveFunction &objective) {
 }
 
 class TestTuneQuadratic : public ::testing::Test {
- public:
+public:
   TestTuneQuadratic() {
     Eigen::Index k = 3;
     A.resize(k, k);
@@ -324,4 +324,4 @@ TEST_F(TestTuneQuadratic, test_gradient_based_bounds) {
   EXPECT_NEAR(grad.normalized().dot(active_constraint), 1, 1e-4);
 }
 
-}  // namespace albatross
+} // namespace albatross

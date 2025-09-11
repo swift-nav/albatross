@@ -31,6 +31,6 @@ inline void serialize(Archive &archive, albatross::JointDistribution &dist,
   archive(cereal::make_nvp("metadata", dist.metadata));
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_CEREAL_DISTRIBUTION_HPP_ */

@@ -27,7 +27,7 @@ constexpr double LARGE_VAL = HUGE_VAL;
  */
 
 class Prior {
- public:
+public:
   virtual ~Prior() {}
   virtual double log_pdf(double x) const = 0;
   virtual std::string get_name() const = 0;
@@ -42,13 +42,13 @@ class Prior {
 };
 
 class UninformativePrior : public Prior {
- public:
+public:
   std::string get_name() const override { return "uninformative"; };
   double log_pdf(double) const override { return 0.; }
 };
 
 class FixedPrior : public Prior {
- public:
+public:
   std::string get_name() const override { return "fixed"; };
   double log_pdf(double) const override { return 0.; }
 
@@ -56,7 +56,7 @@ class FixedPrior : public Prior {
 };
 
 class PositivePrior : public Prior {
- public:
+public:
   double log_pdf(double x) const override { return x > 0. ? 0. : -LARGE_VAL; }
   std::string get_name() const override { return "positive"; };
   double lower_bound() const override {
@@ -66,7 +66,7 @@ class PositivePrior : public Prior {
 };
 
 class NonNegativePrior : public Prior {
- public:
+public:
   double log_pdf(double x) const override { return x >= 0. ? 0. : -LARGE_VAL; }
   std::string get_name() const override { return "non_negative"; };
   double lower_bound() const override { return 0.; }
@@ -74,7 +74,7 @@ class NonNegativePrior : public Prior {
 };
 
 class UniformPrior : public Prior {
- public:
+public:
   UniformPrior(double lower = 0., double upper = 1.)
       : lower_(lower), upper_(upper) {
     ALBATROSS_ASSERT(upper_ > lower_);
@@ -102,7 +102,7 @@ class UniformPrior : public Prior {
 };
 
 class LogScaleUniformPrior : public UniformPrior {
- public:
+public:
   LogScaleUniformPrior(double lower = 1e-12, double upper = 1.e12)
       : UniformPrior(lower, upper) {
     ALBATROSS_ASSERT(upper_ > 0.);
@@ -119,7 +119,7 @@ class LogScaleUniformPrior : public UniformPrior {
 };
 
 class GaussianPrior : public Prior {
- public:
+public:
   GaussianPrior(double mu = 0., double sigma = 1.) : mu_(mu), sigma_(sigma) {}
 
   bool operator==(const GaussianPrior &other) const {
@@ -142,7 +142,7 @@ class GaussianPrior : public Prior {
 };
 
 class PositiveGaussianPrior : public Prior {
- public:
+public:
   PositiveGaussianPrior(double mu = 0., double sigma = 1.)
       : mu_(mu), sigma_(sigma) {}
 
@@ -170,7 +170,7 @@ class PositiveGaussianPrior : public Prior {
 };
 
 class LogNormalPrior : public Prior {
- public:
+public:
   LogNormalPrior(double mu = 0., double sigma = 1.) : mu_(mu), sigma_(sigma) {}
 
   bool operator==(const LogNormalPrior &other) const {
@@ -199,7 +199,7 @@ using PossiblePriors =
             PositiveGaussianPrior>;
 
 class PriorContainer : public Prior {
- public:
+public:
   PriorContainer() : priors_(UninformativePrior()) {}
 
   template <typename PriorType,
@@ -245,14 +245,13 @@ class PriorContainer : public Prior {
     return priors_ == other.priors_;
   }
 
-  template <typename PriorType>
-  void operator=(const PriorType &prior) {
+  template <typename PriorType> void operator=(const PriorType &prior) {
     priors_ = prior;
   }
 
   PossiblePriors priors_;
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

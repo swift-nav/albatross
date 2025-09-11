@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Common>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -56,4 +56,4 @@ TEST(test_vector_utils, test_any) {
   EXPECT_TRUE(any({true, true, false}));
 }
 
-}  // namespace albatross
+} // namespace albatross

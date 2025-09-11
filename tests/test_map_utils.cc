@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Common>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -101,4 +101,4 @@ TEST(test_map_utils, map_join) {
     }
   }
 }
-}  // namespace albatross
+} // namespace albatross

@@ -20,19 +20,19 @@ struct X {};
 struct Y {};
 
 class DefinedForX : public CovarianceFunction<DefinedForX> {
- public:
+public:
   double _call_impl(const X &, const X &) const { return 1.; }
   std::string name_ = "defined_for_x";
 };
 
 class DefinedForY : public CovarianceFunction<DefinedForY> {
- public:
+public:
   double _call_impl(const Y &, const Y &) const { return 3.; }
   std::string name_ = "defined_for_y";
 };
 
 class DefinedForXY : public CovarianceFunction<DefinedForXY> {
- public:
+public:
   double _call_impl(const X &, const X &) const { return 5.; }
 
   double _call_impl(const X &, const Y &) const { return 7.; }
@@ -41,9 +41,8 @@ class DefinedForXY : public CovarianceFunction<DefinedForXY> {
   std::string name_ = "defined_for_xy";
 };
 
-template <typename T>
-class CallTraceTest {
- public:
+template <typename T> class CallTraceTest {
+public:
   virtual int expected_number_of_calls() = 0;
 
   virtual void check_expected_values(const X &x, const Y &y) = 0;
@@ -53,7 +52,7 @@ class CallTraceTest {
 
 class SumXandXY : public CallTraceTest<
                       SumOfCovarianceFunctions<DefinedForX, DefinedForXY>> {
- public:
+public:
   int expected_number_of_calls() override { return 3; }
 
   void check_expected_values(const X &x, const Y &y) override {
@@ -69,7 +68,7 @@ class SumXandXY : public CallTraceTest<
 
 class SumXandY
     : public CallTraceTest<SumOfCovarianceFunctions<DefinedForX, DefinedForY>> {
- public:
+public:
   int expected_number_of_calls() override { return 3; }
 
   void check_expected_values(const X &x, const Y &y) override {
@@ -83,7 +82,7 @@ class SumXandY
 class SumSumXandYandXY
     : public CallTraceTest<SumOfCovarianceFunctions<
           SumOfCovarianceFunctions<DefinedForX, DefinedForY>, DefinedForXY>> {
- public:
+public:
   int expected_number_of_calls() override { return 5; }
 
   void check_expected_values(const X &x, const Y &y) override {
@@ -100,7 +99,7 @@ class SumSumXandYandXY
 class ProdXandXY
     : public CallTraceTest<
           ProductOfCovarianceFunctions<DefinedForX, DefinedForXY>> {
- public:
+public:
   int expected_number_of_calls() override { return 3; };
 
   void check_expected_values(const X &x, const Y &y) override {
@@ -118,7 +117,7 @@ class ProdSumXandXYProdXandXY
     : public CallTraceTest<ProductOfCovarianceFunctions<
           SumOfCovarianceFunctions<DefinedForX, DefinedForXY>,
           ProductOfCovarianceFunctions<DefinedForX, DefinedForXY>>> {
- public:
+public:
   int expected_number_of_calls() override { return 7; };
 
   void check_expected_values(const X &x, const Y &y) override {
@@ -138,7 +137,7 @@ class ProdSumXandXYProdXandXY
  */
 template <typename T>
 class TestCallTreeCovarianceFunctions : public ::testing::Test {
- public:
+public:
   T test_case;
 };
 
@@ -167,4 +166,4 @@ TYPED_TEST(TestCallTreeCovarianceFunctions, prints_call_trace) {
   EXPECT_EQ(calls_yy.size(), this->test_case.expected_number_of_calls());
 }
 
-}  // namespace albatross
+} // namespace albatross

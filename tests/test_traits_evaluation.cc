@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Evaluation>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -22,55 +22,61 @@ struct Y {};
  * Predict Traits
  */
 class HasMeanPredictImpl {
- public:
+public:
   template <typename FeatureType, typename GroupKey>
-  std::map<GroupKey, Eigen::VectorXd> cross_validated_predictions(
-      const RegressionDataset<FeatureType> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<Eigen::VectorXd>) const {
+  std::map<GroupKey, Eigen::VectorXd>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<Eigen::VectorXd>) const {
     return std::map<GroupKey, Eigen::VectorXd>();
   }
 };
 
 class HasMarginalPredictImpl {
- public:
+public:
   template <typename FeatureType, typename GroupKey>
-  std::map<GroupKey, MarginalDistribution> cross_validated_predictions(
-      const RegressionDataset<FeatureType> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<MarginalDistribution>) const {
+  std::map<GroupKey, MarginalDistribution>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<MarginalDistribution>) const {
     return std::map<GroupKey, MarginalDistribution>();
   }
 };
 
 class HasJointPredictImpl {
- public:
+public:
   template <typename FeatureType, typename GroupKey>
-  std::map<GroupKey, JointDistribution> cross_validated_predictions(
-      const RegressionDataset<FeatureType> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<JointDistribution>) const {
+  std::map<GroupKey, JointDistribution>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<JointDistribution>) const {
     return std::map<GroupKey, JointDistribution>();
   }
 };
 
 class HasAllPredictImpls {
- public:
+public:
   template <typename GroupKey>
-  std::map<GroupKey, Eigen::VectorXd> cross_validated_predictions(
-      const RegressionDataset<X> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<Eigen::VectorXd>) const {
+  std::map<GroupKey, Eigen::VectorXd>
+  cross_validated_predictions(const RegressionDataset<X> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<Eigen::VectorXd>) const {
     return std::map<GroupKey, Eigen::VectorXd>();
   }
 
   template <typename FeatureType, typename GroupKey>
-  std::map<GroupKey, MarginalDistribution> cross_validated_predictions(
-      const RegressionDataset<FeatureType> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<MarginalDistribution>) const {
+  std::map<GroupKey, MarginalDistribution>
+  cross_validated_predictions(const RegressionDataset<FeatureType> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<MarginalDistribution>) const {
     return std::map<GroupKey, MarginalDistribution>();
   }
 
   template <typename GroupKey>
-  std::map<GroupKey, JointDistribution> cross_validated_predictions(
-      const RegressionDataset<X> &, const GroupIndexer<GroupKey> &,
-      PredictTypeIdentity<JointDistribution>) const {
+  std::map<GroupKey, JointDistribution>
+  cross_validated_predictions(const RegressionDataset<X> &,
+                              const GroupIndexer<GroupKey> &,
+                              PredictTypeIdentity<JointDistribution>) const {
     return std::map<GroupKey, JointDistribution>();
   }
 };
@@ -105,4 +111,4 @@ TEST(test_traits_core, test_has_cross_validated_predictions) {
   EXPECT_FALSE(bool(has_valid_cv_joint<HasAllPredictImpls, Y, TestKey>::value));
 }
 
-}  // namespace albatross
+} // namespace albatross

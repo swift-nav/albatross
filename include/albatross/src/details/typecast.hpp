@@ -53,8 +53,8 @@ constexpr double to_double(Eigen::Index input) {
   return static_cast<double>(input);
 }
 
-}  // namespace cast
+} // namespace cast
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* INCLUDE_ALBATROSS_SRC_DETAILS_TYPECAST_HPP_ */

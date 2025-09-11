@@ -115,6 +115,6 @@ inline std::unique_ptr<SPQR> SPQR_create(const SparseMatrix &A,
   return spqr;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
-#endif  // ALBATROSS_SRC_LINALG_SPQR_UTILS_HPP
+#endif // ALBATROSS_SRC_LINALG_SPQR_UTILS_HPP

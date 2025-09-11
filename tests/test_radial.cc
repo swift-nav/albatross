@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/CovarianceFunctions>
 #include <array>
+#include <gtest/gtest.h>
 
 #include "test_utils.h"
 
@@ -38,9 +38,8 @@ inline auto random_spherical_dataset(std::vector<Eigen::VectorXd> points,
   return RegressionDataset<Eigen::VectorXd>(points, targets);
 }
 
-template <typename T>
-class RadialCovarianceTester : public ::testing::Test {
- public:
+template <typename T> class RadialCovarianceTester : public ::testing::Test {
+public:
   T test_case;
 };
 
@@ -151,7 +150,7 @@ TEST(test_radial, test_is_positive_definite) {
 }
 
 class SquaredExponentialSSRTest {
- public:
+public:
   std::vector<double> features() const { return linspace(0., 10., 101); }
 
   auto covariance_function() const {
@@ -163,7 +162,7 @@ class SquaredExponentialSSRTest {
 };
 
 class ExponentialSSRTest {
- public:
+public:
   std::vector<double> features() const { return linspace(0., 10., 11); }
 
   auto covariance_function() const {
@@ -175,7 +174,7 @@ class ExponentialSSRTest {
 };
 
 class ExponentialAngularSSRTest {
- public:
+public:
   std::vector<double> features() const { return linspace(0., M_2_PI, 11); }
 
   auto covariance_function() const {
@@ -188,7 +187,7 @@ class ExponentialAngularSSRTest {
 
 template <typename T>
 class CovarianceStateSpaceTester : public ::testing::Test {
- public:
+public:
   T test_case;
 };
 
@@ -487,4 +486,4 @@ TEST(test_radial, test_matern_32_oracle) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

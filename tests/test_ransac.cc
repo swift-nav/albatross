@@ -191,4 +191,4 @@ TEST(test_outlier, test_ransac_edge_cases) {
             RANSAC_RETURN_CODE_EXCEEDED_MAX_FAILED_CANDIDATES);
 }
 
-}  // namespace albatross
+} // namespace albatross

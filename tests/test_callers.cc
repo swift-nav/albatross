@@ -18,8 +18,7 @@
 
 namespace albatross {
 
-template <typename T>
-using Identity = T;
+template <typename T> using Identity = T;
 
 template <typename Caller, template <typename T> class XWrapper = Identity,
           template <typename T> class YWrapper = Identity>
@@ -124,17 +123,15 @@ TEST(test_callers, test_linear_combination_caller) {
   EXPECT_EQ(two_xy, 2 * one_xy);
 }
 
-template <typename T, typename VariantType>
-struct VariantOrRaw {
+template <typename T, typename VariantType> struct VariantOrRaw {
   template <typename C,
             typename std::enable_if<!is_in_variant<C, VariantType>::value,
                                     int>::type = 0>
   static T test(C *);
 
-  template <typename>
-  static VariantType test(...);
+  template <typename> static VariantType test(...);
 
- public:
+public:
   typedef decltype(test<T>(0)) type;
 };
 
@@ -265,4 +262,4 @@ TEST(test_callers, test_compute_covariance_matrix) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

@@ -39,6 +39,6 @@ inline void load(Archive &archive, std::shared_ptr<ThreadPool> &pool) {
   }
 }
 
-}  // namespace cereal
+} // namespace cereal
 
-#endif  // ALBATROSS_CEREAL_THREADPOOL_H
+#endif // ALBATROSS_CEREAL_THREADPOOL_H

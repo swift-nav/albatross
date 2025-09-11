@@ -31,6 +31,6 @@ inline void load(Archive &archive, Eigen::SerializableLDLT &ldlt,
           cereal::make_nvp("is_initialized", ldlt.mutable_is_initialized()));
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_SERIALIZABLE_LDLT_HPP_ */

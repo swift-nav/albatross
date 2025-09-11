@@ -5738,4 +5738,4 @@ TEST(test_stats, test_chi_squared_matches_gsl) {
   }
 }
 
-}  // namespace albatross
+} // namespace albatross

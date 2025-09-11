@@ -13,9 +13,9 @@
 #ifndef ALBATROSS_EXAMPLE_UTILS_H
 #define ALBATROSS_EXAMPLE_UTILS_H
 
-#include <csv.h>
 #include <albatross/Core>
 #include <albatross/src/utils/csv_utils.hpp>
+#include <csv.h>
 #include <fstream>
 #include <iostream>
 
@@ -77,9 +77,9 @@ double truth(double x) {
 /*
  * Create random noisy observations to use as train data.
  */
-albatross::RegressionDataset<double> create_train_data(
-    const Eigen::Index n, const double low, const double high,
-    const double measurement_noise) {
+albatross::RegressionDataset<double>
+create_train_data(const Eigen::Index n, const double low, const double high,
+                  const double measurement_noise) {
   auto xs = random_points_on_line(n, low, high);
 
   std::default_random_engine generator;
@@ -95,8 +95,8 @@ albatross::RegressionDataset<double> create_train_data(
   return albatross::RegressionDataset<double>(xs, ys);
 }
 
-albatross::RegressionDataset<double> read_csv_input(
-    const std::string &file_path) {
+albatross::RegressionDataset<double>
+read_csv_input(const std::string &file_path) {
   std::vector<double> xs;
   std::vector<double> ys;
 

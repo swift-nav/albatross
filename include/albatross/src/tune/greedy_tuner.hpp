@@ -96,15 +96,14 @@ inline ParameterStore set_tunable_param(const ParameterStore &params,
   perturbed.values[i] = val;
   return set_tunable_params_values(params, perturbed.values, true);
 };
-}  // namespace details
+} // namespace details
 
 template <typename Function>
-inline ParameterStore greedy_tune(Function evaluate_function,
-                                  const ParameterStore &params,
-                                  std::size_t n_queries_each_direction = 4,
-                                  std::size_t n_iterations = 10,
-                                  ThreadPool *threads = nullptr,
-                                  std::ostream *os = &std::cout) {
+inline ParameterStore
+greedy_tune(Function evaluate_function, const ParameterStore &params,
+            std::size_t n_queries_each_direction = 4,
+            std::size_t n_iterations = 10, ThreadPool *threads = nullptr,
+            std::ostream *os = &std::cout) {
   static_assert(
       has_call_operator<Function, ParameterStore>::value,
       "evaluate_function must have a single ParameterStore argument.");
@@ -195,6 +194,6 @@ inline ParameterStore greedy_tune(Function evaluate_function,
   return best_params;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_SRC_TUNE_GREEDY_TUNER_HPP_ */

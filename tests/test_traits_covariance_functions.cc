@@ -10,20 +10,20 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/CovarianceFunctions>
+#include <gtest/gtest.h>
 
 #include "test_covariance_utils.h"
 
 namespace albatross {
 
 class HasPublicCallOperator {
- public:
+public:
   double operator()(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallOperator {
- protected:
+protected:
   double operator()(const X &, const Y &) const { return 1.; };
 };
 
@@ -390,20 +390,20 @@ TEST(test_traits_covariance_function, test_has_valid_variant_cov_call) {
 }
 
 struct HasSSRX : public CovarianceFunction<HasSSRX> {
-  std::vector<double> _ssr_impl(
-      const std::vector<X> &xs ALBATROSS_UNUSED) const {
+  std::vector<double>
+  _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
     return {1.};
   }
 };
 
 struct HasSSRXY : public CovarianceFunction<HasSSRXY> {
-  std::vector<double> _ssr_impl(
-      const std::vector<X> &xs ALBATROSS_UNUSED) const {
+  std::vector<double>
+  _ssr_impl(const std::vector<X> &xs ALBATROSS_UNUSED) const {
     return {1.};
   }
 
-  std::vector<double> _ssr_impl(
-      const std::vector<Y> &ys ALBATROSS_UNUSED) const {
+  std::vector<double>
+  _ssr_impl(const std::vector<Y> &ys ALBATROSS_UNUSED) const {
     return {1.};
   }
 };
@@ -464,4 +464,4 @@ TEST(test_traits_covariance_function, test_has_valid_ssr_impl) {
   EXPECT_TRUE(bool(has_valid_ssr_impl<ProductWithXWithXY, Y>::value));
 }
 
-}  // namespace albatross
+} // namespace albatross

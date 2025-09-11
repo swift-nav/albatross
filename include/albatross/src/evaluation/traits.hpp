@@ -31,10 +31,9 @@ class has_valid_cross_validated_predictions {
       std::is_same<std::map<GroupKey, PredictType>, ReturnType>::value,
       std::true_type>::type
   test(C *);
-  template <typename>
-  static std::false_type test(...);
+  template <typename> static std::false_type test(...);
 
- public:
+public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
@@ -65,15 +64,13 @@ class is_specific_prediction_metric {
   static typename std::enable_if<std::is_same<double, ReturnType>::value,
                                  std::true_type>::type
   test(C *);
-  template <typename>
-  static std::false_type test(...);
+  template <typename> static std::false_type test(...);
 
- public:
+public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T>
-struct is_prediction_metric {
+template <typename T> struct is_prediction_metric {
   static constexpr bool value =
       (is_specific_prediction_metric<T, Eigen::VectorXd>::value ||
        is_specific_prediction_metric<T, MarginalDistribution>::value ||
@@ -92,13 +89,12 @@ class is_model_metric {
   static typename std::enable_if<std::is_same<double, ReturnType>::value,
                                  std::true_type>::type
   test(C *);
-  template <typename>
-  static std::false_type test(...);
+  template <typename> static std::false_type test(...);
 
- public:
+public:
   static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_TRAITS_H */

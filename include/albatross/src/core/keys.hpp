@@ -17,7 +17,7 @@ namespace albatross {
 namespace keys {
 const std::string YAML_MODEL_NAME = "model_name";
 const std::string YAML_MODEL_PARAMS = "model_params";
-}  // namespace keys
-}  // namespace albatross
+} // namespace keys
+} // namespace albatross
 
 #endif

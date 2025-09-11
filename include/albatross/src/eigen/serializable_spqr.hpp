@@ -19,7 +19,7 @@ template <typename _MatrixType>
 class SerializableSPQR : public SPQR<_MatrixType> {
   using Base = SPQR<_MatrixType>;
 
- public:
+public:
   using Base::cols;
   using Base::rows;
   using StorageIndex = typename Base::StorageIndex;
@@ -42,6 +42,6 @@ class SerializableSPQR : public SPQR<_MatrixType> {
   void load(Archive &ar, const std::uint32_t version ALBATROSS_UNUSED);
 };
 
-}  // namespace Eigen
+} // namespace Eigen
 
-#endif  // ALBATROSS_EIGEN_SERIALIZABLE_SPQR_H
+#endif // ALBATROSS_EIGEN_SERIALIZABLE_SPQR_H

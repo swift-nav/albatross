@@ -27,7 +27,7 @@ inline std::string compress(const void *data, std::size_t size_bytes,
   compressed.resize(compressed_bound);
 
   const std::size_t compressed_size = ZSTD_compress(
-      static_cast<void *>(const_cast<char *>(compressed.data())),  // NOLINT
+      static_cast<void *>(const_cast<char *>(compressed.data())), // NOLINT
       compressed.size(), data, size_bytes, compression_level);
 
   compressed.resize(compressed_size);
@@ -54,29 +54,29 @@ inline bool failed(DecompressResult result) {
 
 inline void assert_on_error(DecompressResult result) {
   switch (result) {
-    case DecompressResult::kOK:
-      return;
-    case DecompressResult::kZstdContentSizeUnknown:
-      ALBATROSS_ASSERT(
-          false && "zstd couldn't determine decompressed size of input buffer");
-      break;
-    case DecompressResult::kZstdContentSizeError:
-      ALBATROSS_ASSERT(
-          false && "zstd error determining decompressed size of input buffer");
-      break;
-    case DecompressResult::kZstdExpectedRequestedSizeMismatch:
-      ALBATROSS_ASSERT(
-          false && "requested object size != zstd expected decompressed size");
-      break;
-    case DecompressResult::kZstdResultingRequestedSizeMismatch:
-      ALBATROSS_ASSERT(
-          false && "requested object size != zstd resulting decompressed size");
-      break;
-    default:
-      ALBATROSS_ASSERT(
-          false &&
-          "albatross internal bug (unexpected decompression result code)");
-      break;
+  case DecompressResult::kOK:
+    return;
+  case DecompressResult::kZstdContentSizeUnknown:
+    ALBATROSS_ASSERT(
+        false && "zstd couldn't determine decompressed size of input buffer");
+    break;
+  case DecompressResult::kZstdContentSizeError:
+    ALBATROSS_ASSERT(
+        false && "zstd error determining decompressed size of input buffer");
+    break;
+  case DecompressResult::kZstdExpectedRequestedSizeMismatch:
+    ALBATROSS_ASSERT(
+        false && "requested object size != zstd expected decompressed size");
+    break;
+  case DecompressResult::kZstdResultingRequestedSizeMismatch:
+    ALBATROSS_ASSERT(
+        false && "requested object size != zstd resulting decompressed size");
+    break;
+  default:
+    ALBATROSS_ASSERT(
+        false &&
+        "albatross internal bug (unexpected decompression result code)");
+    break;
   }
 }
 
@@ -127,7 +127,7 @@ inline void decompress(const std::string &input, void *output,
   assert_on_error(maybe_decompress(input, output, output_size));
 }
 
-}  // namespace internal
+} // namespace internal
 
 constexpr int kDefaultCompressionLevel = ZSTD_CLEVEL_DEFAULT;
 
@@ -212,8 +212,8 @@ inline std::string decompress(const std::string &input) {
   return output;
 }
 
-}  // namespace zstd
+} // namespace zstd
 
-}  // namespace albatross
+} // namespace albatross
 
-#endif  // ALBATROSS_UTILS_COMPRESS_H
+#endif // ALBATROSS_UTILS_COMPRESS_H

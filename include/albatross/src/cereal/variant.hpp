@@ -29,7 +29,7 @@ template <int N, class Variant, class... Args, class Archive,
           typename std::enable_if_t<
               N == albatross::variant_size<Variant>::value, int> = 0>
 void load_variant(Archive &, int, Variant &) {
-  ALBATROSS_ASSERT(false);  // load_variant received an out of bounds index.
+  ALBATROSS_ASSERT(false); // load_variant received an out of bounds index.
 }
 
 template <int N, class Variant, class H, class... T, class Archive,
@@ -49,7 +49,7 @@ template <int N, class Variant, class H, class... T, class Archive,
   }
 }
 
-}  // namespace mapbox_variant_detail
+} // namespace mapbox_variant_detail
 
 // This deleted function is here to make sure that rvalues of variants
 // can't be serialized, this prevents the compiler from thinking it
@@ -92,8 +92,7 @@ inline void load(Archive &archive, variant<VariantTypes...> &v,
 // Here we define the version for variant serialization following the
 // example given here: https://github.com/USCiLab/cereal/issues/319
 namespace detail {
-template <typename... VariantTypes>
-struct Version<variant<VariantTypes...>> {
+template <typename... VariantTypes> struct Version<variant<VariantTypes...>> {
   static const std::uint32_t version;
   static std::uint32_t registerVersion() {
     ::cereal::detail::StaticObject<Versions>::getInstance().mapping.emplace(
@@ -106,7 +105,7 @@ struct Version<variant<VariantTypes...>> {
 template <typename... VariantTypes>
 const std::uint32_t Version<variant<VariantTypes...>>::version =
     Version<variant<VariantTypes...>>::registerVersion();
-}  // namespace detail
+} // namespace detail
 
-}  // namespace cereal
+} // namespace cereal
 #endif /* INCLUDE_ALBATROSS_SRC_CEREAL_VARIANT_HPP_ */

@@ -84,6 +84,6 @@ inline auto truncated_psd_solve(
   return output;
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif

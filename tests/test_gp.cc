@@ -46,8 +46,8 @@ struct ConstantPerIntervalFeature {
 using InducingFeature =
     variant<ConstantEverywhereFeature, ConstantPerIntervalFeature>;
 
-std::vector<InducingFeature> create_inducing_points(
-    const std::vector<double> &features) {
+std::vector<InducingFeature>
+create_inducing_points(const std::vector<double> &features) {
   std::vector<InducingFeature> inducing_points;
   double min = *std::min_element(features.begin(), features.end());
   double max = *std::max_element(features.begin(), features.end());
@@ -65,7 +65,7 @@ std::vector<InducingFeature> create_inducing_points(
 }
 
 class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
- public:
+public:
   ConstantEverywhere(){};
   ~ConstantEverywhere(){};
 
@@ -94,7 +94,7 @@ class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
 };
 
 class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
- public:
+public:
   ConstantPerInterval(){};
   ~ConstantPerInterval(){};
 
@@ -481,4 +481,4 @@ TEST(test_gp, test_predict_with_complicated_feature) {
   EXPECT_NEAR(expected_variance, pred.covariance(2, 2), 1e-6);
 }
 
-}  // namespace albatross
+} // namespace albatross

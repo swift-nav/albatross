@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Indexing>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -92,4 +92,4 @@ TEST(test_unique, unique_values_set_function_non_trival) {
   EXPECT_EQ(unique_values(values, foo), expected);
 }
 
-}  // namespace albatross
+} // namespace albatross

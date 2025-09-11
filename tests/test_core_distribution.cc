@@ -10,9 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Distribution>
 #include <albatross/Indexing>
+#include <gtest/gtest.h>
 
 #include "test_core_distribution.h"
 
@@ -281,4 +281,4 @@ typedef ::testing::Types<MarginalWithCovariance, JointWithCovariance> ToTest;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(Albatross, DistributionTest, ToTest);
 
-}  // namespace albatross
+} // namespace albatross

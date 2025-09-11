@@ -27,8 +27,8 @@ static inline double pdf(double deviation, double variance) {
          std::sqrt(2 * M_PI * variance);
 }
 
-}  // namespace gaussian
+} // namespace gaussian
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_STATS_GAUSSIAN_HPP_ */

@@ -102,4 +102,4 @@ TEST(test_random_utils, test_random_multivariate_normal) {
   EXPECT_LT(uniform_ks_test(cdfs), 0.05);
 }
 
-}  // namespace albatross
+} // namespace albatross

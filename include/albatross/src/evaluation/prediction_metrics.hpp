@@ -34,8 +34,7 @@ template <typename RequiredPredictType>
 using PredictionMetricFunction = double (*)(const RequiredPredictType &,
                                             const MarginalDistribution &);
 
-template <typename RequiredPredictType>
-struct PredictionMetric {
+template <typename RequiredPredictType> struct PredictionMetric {
   PredictionMetricFunction<RequiredPredictType> eval_;
 
   PredictionMetric(PredictionMetricFunction<RequiredPredictType> eval)
@@ -47,9 +46,9 @@ struct PredictionMetric {
   }
 
   template <typename ModelType, typename FeatureType, typename FitType>
-  double operator()(
-      const Prediction<ModelType, FeatureType, FitType> &prediction,
-      const MarginalDistribution &truth) const {
+  double
+  operator()(const Prediction<ModelType, FeatureType, FitType> &prediction,
+             const MarginalDistribution &truth) const {
     return (*this)(prediction.template get<RequiredPredictType>(), truth);
   }
 };
@@ -110,16 +109,18 @@ struct StandardDeviation : public PredictionMetric<Eigen::VectorXd> {
  * predictive
  * distribution is multivariate normal.
  */
-static inline double negative_log_likelihood(
-    const JointDistribution &prediction, const MarginalDistribution &truth) {
+static inline double
+negative_log_likelihood(const JointDistribution &prediction,
+                        const MarginalDistribution &truth) {
   const Eigen::VectorXd mean = prediction.mean - truth.mean;
   Eigen::MatrixXd covariance(prediction.covariance);
   covariance += truth.covariance;
   return albatross::negative_log_likelihood(mean, covariance);
 }
 
-static inline double negative_log_likelihood(
-    const MarginalDistribution &prediction, const MarginalDistribution &truth) {
+static inline double
+negative_log_likelihood(const MarginalDistribution &prediction,
+                        const MarginalDistribution &truth) {
   const Eigen::VectorXd mean = prediction.mean - truth.mean;
   Eigen::VectorXd variance(prediction.covariance.diagonal());
   variance += truth.covariance.diagonal();
@@ -174,7 +175,7 @@ inline Eigen::MatrixXd principal_sqrt(const Eigen::MatrixXd &input) {
          eigs.eigenvectors().transpose();
 }
 
-}  // namespace detail
+} // namespace detail
 
 inline double wasserstein_2(const JointDistribution &a,
                             const JointDistribution &b) {
@@ -185,8 +186,8 @@ inline double wasserstein_2(const JointDistribution &a,
              .trace();
 }
 
-}  // namespace distance
+} // namespace distance
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* ALBATROSS_EVALUATION_PREDICTION_METRICS_H_ */

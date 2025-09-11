@@ -28,19 +28,19 @@ struct Y {};
 struct Z {};
 
 class HasXX : public CovarianceFunction<HasXX> {
- public:
+public:
   double _call_impl(const X &, const X &) const { return 1.; };
 };
 
 class HasXY : public CovarianceFunction<HasXY> {
- public:
+public:
   double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasNone : public CovarianceFunction<HasNone> {};
 
 class HasMultiple : public CovarianceFunction<HasMultiple> {
- public:
+public:
   double _call_impl(const X &, const X &) const { return 1.; };
 
   double _call_impl(const X &, const Y &) const { return 3.; };
@@ -62,7 +62,7 @@ class HasMultiple : public CovarianceFunction<HasMultiple> {
 };
 
 class HasMultipleMean : public MeanFunction<HasMultiple> {
- public:
+public:
   double _call_impl(const X &) const { return 1.; };
 
   double _call_impl(const Y &) const { return 3.; };
@@ -76,12 +76,12 @@ class HasMultipleMean : public MeanFunction<HasMultiple> {
 };
 
 class HasPublicCallImpl {
- public:
+public:
   double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
 class HasProtectedCallImpl {
- protected:
+protected:
   double _call_impl(const X &, const Y &) const { return 1.; };
 };
 
@@ -113,10 +113,11 @@ inline bool has_zero(const Eigen::MatrixXd &matrix) {
  */
 template <typename FeatureType, typename GrouperFunction,
           typename CovarianceFunction>
-inline void expect_zero_covariance_across_groups(
-    const CovarianceFunction &cov_func,
-    const std::vector<FeatureType> &features, GrouperFunction grouper,
-    bool strict = true) {
+inline void
+expect_zero_covariance_across_groups(const CovarianceFunction &cov_func,
+                                     const std::vector<FeatureType> &features,
+                                     GrouperFunction grouper,
+                                     bool strict = true) {
   const auto grouped = group_by(features, grouper);
   // make sure we're actually testing something.
   ASSERT_TRUE(grouped.size() > 1);
@@ -254,9 +255,10 @@ inline void expect_inducing_points_capture_cross_correlation(
 // interchangebly for a given covariance function, here we check all
 // possible conversions for a set of features.
 template <typename CovarianceFunction, typename FeatureType, typename Convert>
-inline void expect_converted_feature_equivalence(
-    const CovarianceFunction &cov, const std::vector<FeatureType> &features,
-    Convert convert) {
+inline void
+expect_converted_feature_equivalence(const CovarianceFunction &cov,
+                                     const std::vector<FeatureType> &features,
+                                     Convert convert) {
   for (const auto &f_a : features) {
     const auto alt_a = convert(f_a);
     for (const auto &f_b : features) {
@@ -268,6 +270,6 @@ inline void expect_converted_feature_equivalence(
   }
 }
 
-}  // namespace albatross
+} // namespace albatross
 
 #endif /* TESTS_TEST_COVARIANCE_UTILS_H_ */

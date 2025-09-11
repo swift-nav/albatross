@@ -24,6 +24,6 @@ inline void serialize(Archive &archive,
           cereal::make_nvp("S", block_sym.S));
 }
 
-}  // namespace cereal
+} // namespace cereal
 
 #endif /* ALBATROSS_SRC_CEREAL_BLOCK_UTILS_HPP_ */

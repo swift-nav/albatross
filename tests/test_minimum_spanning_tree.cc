@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <gtest/gtest.h>
 #include <albatross/Graph>
+#include <gtest/gtest.h>
 
 namespace albatross {
 
@@ -1422,4 +1422,4 @@ TEST(test_minimum_spanning_tree, test_princeton_medium) {
   EXPECT_GT(cost_forest, 10.46350);
 }
 
-}  // namespace albatross
+} // namespace albatross
