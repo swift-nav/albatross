@@ -45,6 +45,7 @@ inline V map_at_or(const Map<K, V> &m, const K &k,
 template <template <typename...> class Map, typename K, typename V>
 inline std::vector<K> map_keys(const Map<K, V> &m) {
   std::vector<K> keys;
+  keys.reserve(m.size());
   for (const auto &pair : m) {
     keys.push_back(pair.first);
   }
@@ -57,6 +58,7 @@ inline std::vector<K> map_keys(const Map<K, V> &m) {
 template <template <typename...> class Map, typename K, typename V>
 inline std::vector<V> map_values(const Map<K, V> &m) {
   std::vector<V> values;
+  values.reserve(m.size());
   for (const auto &pair : m) {
     values.push_back(pair.second);
   }
