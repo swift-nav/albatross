@@ -1,4 +1,4 @@
-load("@rules_swiftnav//cc:defs.bzl", "swift_cc_binary")
+load("@rules_swiftnav//cc:defs2.bzl", "swift_add_internal_cc_binary")
 
 TAGS = ["manual"]
 
@@ -8,7 +8,7 @@ DEPS = [
 ]
 
 def example(name, srcs, args):
-    swift_cc_binary(
+    swift_add_internal_cc_binary(
         name = name,
         srcs = srcs,
         tags = TAGS,
