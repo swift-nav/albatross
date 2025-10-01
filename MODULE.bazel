@@ -31,6 +31,7 @@ register_toolchains(
     "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-intel-mkl",
     "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
     "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
+    "@rules_swiftnav//cc/toolchains/gcc_11/x86_64-linux:gcc_11_system_toolchain",
 )
 
 bazel_dep(name = "eigen", version = "0.1.0.swiftnav")
