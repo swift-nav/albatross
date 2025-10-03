@@ -1,4 +1,4 @@
-load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
+load("@rules_swiftnav//cc:defs2.bzl", "UNIT", "swift_add_safe_cc_library", "swift_add_cc_test", "swift_add_test_cc_library")
 
 alias(
     name = "clang_format",
@@ -11,7 +11,7 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+swift_add_safe_cc_library(
     name = "albatross",
     hdrs = [
         "include/albatross/Common",
@@ -174,7 +174,7 @@ cc_library(
     ],
 )
 
-swift_cc_test_library(
+swift_add_test_cc_library(
     name = "serialize-testsuite",
     srcs = ["tests/test_serialize.h"],
     includes = [
@@ -184,7 +184,7 @@ swift_cc_test_library(
     deps = ["@gtest"],
 )
 
-swift_cc_test_library(
+swift_add_test_cc_library(
     name = "albatross-test-common",
     srcs = [
         "tests/mock_model.h",
@@ -206,7 +206,7 @@ TEST_DEPS = [
     "@suitesparse//:spqr",
 ]
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-traits",
     srcs = [
         "tests/test_traits_cereal.cc",
@@ -222,7 +222,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-covariance",
     srcs = [
         "tests/test_covariance_function.cc",
@@ -237,7 +237,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-indexing",
     srcs = [
         "tests/test_apply.cc",
@@ -251,7 +251,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-core",
     srcs = [
         "tests/test_concatenate.cc",
@@ -268,7 +268,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-models",
     srcs = [
         "tests/test_conditional_gaussian.cc",
@@ -283,7 +283,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-utils",
     srcs = [
         "tests/test_async_utils.cc",
@@ -304,7 +304,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-evaluation",
     srcs = [
         "tests/test_evaluate.cc",
@@ -316,7 +316,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-cross-validation",
     srcs = [
         "tests/test_cross_validation.cc",
@@ -328,7 +328,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-serialization",
     srcs = [
         "tests/test_serialize.cc",
@@ -340,7 +340,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-stats",
     srcs = [
         "tests/test_chi_squared_versus_gsl.cc",
@@ -352,7 +352,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-samplers",
     srcs = [
         "tests/test_samplers.cc",
@@ -363,7 +363,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-tune",
     srcs = [
         "tests/test_tune.cc",
@@ -374,7 +374,7 @@ swift_cc_test(
     deps = TEST_DEPS,
 )
 
-swift_cc_test(
+swift_add_cc_test(
     name = "albatross-test-misc",
     srcs = [
         "tests/test_call_trace.cc",
