@@ -12,7 +12,7 @@
 	url = https://github.com/swift-nav/fast-cpp-csv-parser.git
 [submodule "third_party/cereal"]
 	path = third_party/cereal
-	url = https://github.com/USCiLab/cereal.git
+	url = git@github.com:swift-nav/cereal.git
 [submodule "third_party/gzip-hpp"]
 	path = third_party/gzip-hpp
 	url = https://github.com/swift-nav/gzip-hpp.git
