@@ -24,7 +24,6 @@ inline long int get_group(const double &f) {
 }
 
 struct LeaveOneIntervalOut {
-
   long int operator()(const double &f) const { return get_group(f); }
 };
 
@@ -138,7 +137,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_scales) {
 
   auto large_dataset = make_toy_sine_data(5., 10., 0.1, 3000);
 
-  auto covariance = make_simple_covariance_function();
+  auto covariance = make_simple_covariance_function(10.);
 
   auto direct = gp_from_covariance(covariance, "direct");
   // We need to make sure the priors on the parameters don't enter
@@ -351,7 +350,9 @@ TYPED_TEST(SparseGaussianProcessTest, test_update) {
 TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   auto &grouper_ = this->grouper;
   auto &qr_ = this->qr;
-  auto covariance = make_simple_covariance_function();
+  // These values are not the normal "simple covariance" ones, because
+  // those are too smooth and cause numerical issues.
+  auto covariance = make_simple_covariance_function(10.);
   auto dataset = make_toy_linear_data();
 
   const double min =
@@ -362,7 +363,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   FixedInducingPoints strategy(min, max, 8);
   auto sparse =
       sparse_gp_from_covariance(covariance, grouper_, strategy, "sparse", qr_);
-  sparse.set_param_value(details::inducing_nugget_name(), 1e-3);
+  sparse.set_param_value(details::inducing_nugget_name(), 1e-7);
   sparse.set_param_value(details::measurement_nugget_name(), 1e-12);
 
   auto full_fit = sparse.fit(dataset);
@@ -377,7 +378,7 @@ TYPED_TEST(SparseGaussianProcessTest, test_rebase_inducing_points) {
   // Converting to a low res set of inducing points should lose information.
   EXPECT_GT((low_res_pred.mean - full_pred.mean).norm(), 10.);
 
-  const auto high_res_features = linspace(0.01, 9.9, 51);
+  const auto high_res_features = linspace(0.01, 9.9, 31);
   const auto high_res_fit = rebase_inducing_points(full_fit, high_res_features);
   auto high_res_pred =
       high_res_fit.predict_with_measurement_noise(test_features).joint();

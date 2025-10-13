@@ -15,6 +15,12 @@
 
 namespace albatross {
 
+template <typename MatrixType, int UpLo>
+bool covariance_decomp_ok(const Eigen::LDLT<MatrixType, UpLo> &decomp) {
+  return Eigen::decomp_ok(decomp) &&
+         Eigen::deduce_sign(decomp) == Eigen::MatrixSign::cPositiveDefinite;
+}
+
 template <typename CovarianceRepresentation, typename FeatureType>
 struct GPFit {};
 
@@ -65,6 +71,8 @@ struct Fit<GPFit<CovarianceRepresentation, FeatureType>> {
     cov += targets.covariance;
     ALBATROSS_ASSERT(!cov.hasNaN());
     train_covariance = CovarianceRepresentation(cov);
+    ALBATROSS_ASSERT(covariance_decomp_ok(train_covariance) &&
+                     "invalid covariance matrix in fit!");
     information = train_covariance.solve(targets.mean);
   }
 

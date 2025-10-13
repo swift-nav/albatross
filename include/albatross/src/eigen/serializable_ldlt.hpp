@@ -15,6 +15,48 @@
 
 namespace Eigen {
 
+inline bool decomp_ok(const Eigen::LDLT<MatrixXd, Lower> &decomp) {
+  return decomp.info() == Eigen::Success;
+}
+
+enum class MatrixSign {
+  cPositiveDefinite,
+  cZeroOrSemiDefinite,
+  cNegativeDefinite,
+  cIndefinite
+};
+
+inline MatrixSign deduce_sign(const Eigen::LDLT<MatrixXd, Lower> &decomp) {
+  // These two return true if the decomposition is zero as well,
+  // hence the reverse-engineering
+  const bool pos = decomp.isPositive();
+  const bool neg = decomp.isNegative();
+  if (pos && neg) {
+    return MatrixSign::cZeroOrSemiDefinite;
+  }
+  if (!pos && !neg) {
+    return MatrixSign::cIndefinite;
+  }
+  if (pos) {
+    return MatrixSign::cPositiveDefinite;
+  }
+  return MatrixSign::cNegativeDefinite;
+}
+
+inline std::string describe_sign(MatrixSign sign) {
+  switch (sign) {
+  case MatrixSign::cPositiveDefinite:
+    return "positive definite";
+  case MatrixSign::cZeroOrSemiDefinite:
+    return "zero or semidefinite";
+  case MatrixSign::cNegativeDefinite:
+    return "negative definite";
+  case MatrixSign::cIndefinite:
+    return "indefinite";
+  }
+  return "<invalid sign value " + std::to_string(static_cast<int>(sign)) + ">";
+}
+
 // See LDLT.h in Eigen for a detailed description of the decomposition
 class SerializableLDLT : public LDLT<MatrixXd, Lower> {
 public:
@@ -47,6 +89,8 @@ public:
 
   bool is_initialized() const { return this->m_isInitialized; }
 
+  bool ok() const { return is_initialized() && info() == Eigen::Success; }
+
   double l1_norm() const {
     ALBATROSS_ASSERT(is_initialized() && "Must initialize first!");
     return this->m_l1_norm;
@@ -56,6 +100,7 @@ public:
    * Computes the inverse of the square root of the diagonal, D^{-1/2}
    */
   Eigen::DiagonalMatrix<double, Eigen::Dynamic> diagonal_sqrt_inverse() const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     Eigen::VectorXd thresholded_diag_sqrt_inverse(this->vectorD());
     for (Eigen::Index i = 0; i < thresholded_diag_sqrt_inverse.size(); ++i) {
       if (thresholded_diag_sqrt_inverse[i] > 0.) {
@@ -72,6 +117,7 @@ public:
    * Computes the square root of the diagonal, D^{1/2}
    */
   Eigen::DiagonalMatrix<double, Eigen::Dynamic> diagonal_sqrt() const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     Eigen::VectorXd thresholded_diag = this->vectorD();
     for (Eigen::Index i = 0; i < thresholded_diag.size(); ++i) {
       if (thresholded_diag[i] > 0.) {
@@ -89,6 +135,7 @@ public:
    */
   template <class Rhs>
   Eigen::MatrixXd sqrt_product(const MatrixBase<Rhs> &rhs) const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     return this->transpositionsP().transpose() *
            (this->matrixL() * (diagonal_sqrt() * rhs));
   }
@@ -98,12 +145,14 @@ public:
    *   D^{-1/2} L^-1 P rhs
    */
   template <class Rhs> Eigen::MatrixXd sqrt_solve(const Rhs &rhs) const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     return diagonal_sqrt_inverse() *
            this->matrixL().solve(this->transpositionsP() *
                                  Eigen::MatrixXd(rhs));
   }
 
   Eigen::MatrixXd sqrt_transpose() const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     return this->diagonal_sqrt() * (this->transpositionsP().transpose() *
                                     this->matrixL().toDenseMatrix())
                                        .transpose();
@@ -116,12 +165,15 @@ public:
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
   sqrt_transpose_solve(const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     return this->transpositionsP().transpose() *
            (this->matrixL().transpose().solve(diagonal_sqrt_inverse() * rhs));
   }
 
   double log_determinant() const {
-    // The log determinant can be found by starting with the full decomposition
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
+    // The log determinant can be found by starting with the full
+    // decomposition
     //   log(|A|) = log(|P| |L| |D| |L| |P^T|)
     // then realizing that P and L are both unit matrices so we get:
     //   log(|A|) = log(|D|)
@@ -145,6 +197,7 @@ public:
      * corresponding
      * columns of R^{-1}.
      */
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     Eigen::Index n = this->matrixL().rows();
 
     // P
@@ -174,6 +227,7 @@ public:
    * decomposition represents in O(n^2) operations.
    */
   Eigen::VectorXd inverse_diagonal() const {
+    ALBATROSS_ASSERT(ok() && "Can't use components if the decomp failed.");
     Eigen::Index n = this->rows();
 
     const auto size_n = albatross::cast::to_size(n);
@@ -205,7 +259,7 @@ public:
         MatrixXd(MatrixXd(rhs.matrixLDLT()).triangularView<Eigen::Lower>());
 
     return (this->m_isInitialized == rhs.m_isInitialized &&
-            this_lower == rhs_lower &&
+            this->ok() == rhs.ok() && this_lower == rhs_lower &&
             this->transpositionsP().indices() ==
                 rhs.transpositionsP().indices());
   }

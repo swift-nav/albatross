@@ -141,10 +141,13 @@ TEST(test_models, test_model_from_prediction) {
       model.fit_from_prediction(test_features, joint_prediction)
           .predict(test_features)
           .joint();
-  EXPECT_TRUE(joint_prediction_from_prediction.mean.isApprox(
-      joint_prediction.mean, 1e-12));
-  EXPECT_TRUE(joint_prediction_from_prediction.covariance.isApprox(
-      joint_prediction.covariance, 1e-8));
+  EXPECT_LT(
+      (joint_prediction_from_prediction.mean - joint_prediction.mean).norm(),
+      1e-11);
+  EXPECT_LT((joint_prediction_from_prediction.covariance -
+             joint_prediction.covariance)
+                .norm(),
+            1e-8);
 }
 
 } // namespace albatross

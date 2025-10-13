@@ -20,9 +20,12 @@
 
 namespace albatross {
 
-inline auto make_simple_covariance_function() {
-  SquaredExponential<EuclideanDistance> squared_exponential(100., 100.);
-  IndependentNoise<double> noise(0.1);
+inline auto make_simple_covariance_function(double length_scale = 100.,
+                                            double sigma = 100.,
+                                            double noise_stddev = 0.1) {
+  SquaredExponential<EuclideanDistance> squared_exponential(length_scale,
+                                                            sigma);
+  IndependentNoise<double> noise(noise_stddev);
   return squared_exponential + measurement_only(noise);
 }
 

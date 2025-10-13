@@ -305,6 +305,17 @@ swift_cc_test(
 )
 
 swift_cc_test(
+    name = "albatross-test-eigen",
+    srcs = [
+        "tests/test_eigen.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+)
+
+swift_cc_test(
     name = "albatross-test-evaluation",
     srcs = [
         "tests/test_evaluate.cc",

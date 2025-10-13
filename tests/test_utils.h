@@ -182,7 +182,11 @@ void expect_state_space_representation_quality(
   const Eigen::MatrixXd explained =
       cross_cov * ssr_cov.ldlt().solve(cross_cov.transpose());
   const Eigen::MatrixXd posterior = full_cov - explained;
-  EXPECT_LT(posterior.norm() / full_cov.norm(), threshold);
+  EXPECT_LT(posterior.norm() / full_cov.norm(), threshold)
+      << "posterior (" << posterior.rows() << "x" << posterior.cols() << "):\n"
+      << posterior << '\n'
+      << "full_cov (" << full_cov.rows() << "x" << full_cov.cols() << "):\n"
+      << full_cov << '\n';
 }
 
 } // namespace albatross

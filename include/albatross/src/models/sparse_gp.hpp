@@ -331,6 +331,7 @@ public:
     B.topRows(old_fit.P.rows()) = old_fit.R * old_fit.P.transpose();
     B.bottomRows(n_new) = A_ldlt.sqrt_solve(K_fu);
     const auto B_qr = QRImplementation::compute(B, Base::threads_.get());
+    ALBATROSS_ASSERT(B_qr->info() == Eigen::Success && "update failed!");
 
     // Form:
     //   y_aug = |R_old P_old^T v_old|
@@ -392,6 +393,7 @@ public:
     compute_internal_components(u, features, targets, &A_ldlt, &K_uu_ldlt,
                                 &K_fu, &y);
     auto B_qr = compute_sigma_qr(K_uu_ldlt, A_ldlt, K_fu);
+    ALBATROSS_ASSERT(B_qr->info() == Eigen::Success && "Fit failed!");
 
     Eigen::VectorXd y_augmented = Eigen::VectorXd::Zero(B_qr->rows());
     y_augmented.topRows(y.size()) = A_ldlt.sqrt_solve(y, Base::threads_.get());
@@ -412,9 +414,20 @@ public:
 
     new_fit.train_features = new_inducing_points;
 
-    const Eigen::MatrixXd K_zz =
-        this->covariance_function_(new_inducing_points, Base::threads_.get());
+    Eigen::MatrixXd K_zz =
+      this->covariance_function_(new_inducing_points, Base::threads_.get());
+    K_zz.diagonal().array() += inducing_nugget_.value;
     new_fit.train_covariance = Eigen::SerializableLDLT(K_zz);
+    const auto Kzz_sign = Eigen::deduce_sign(new_fit.train_covariance);
+    if (Kzz_sign != Eigen::MatrixSign::cPositiveDefinite) {
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> Kzz_eig(K_zz);
+      std::cout << "Kzz eigs: " << Kzz_eig.eigenvalues().transpose()
+                << std::endl;
+      std::cerr << "Kzz was " << Eigen::describe_sign(Kzz_sign) << std::endl;
+    }
+    ALBATROSS_ASSERT(
+        Kzz_sign == Eigen::MatrixSign::cPositiveDefinite &&
+        "cannot fit a semidefinite or negative inducing point covariance");
 
     // We're going to need to take the sqrt of the new covariance which
     // could be extremely small, so here we add a small nugget to avoid
@@ -450,8 +463,22 @@ public:
     // We can then compute and store the QR decomposition of B
     // as we do in a normal fit.
     const Eigen::SerializableLDLT C_ldlt(prediction.covariance);
+    const Eigen::MatrixSign C_sign = Eigen::deduce_sign(C_ldlt);
+    if (C_sign != Eigen::MatrixSign::cPositiveDefinite || !C_ldlt.ok()) {
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> C_eigs(
+          prediction.covariance);
+      std::cerr << "C_ldlt was " << Eigen::describe_sign(C_sign)
+                << "; eigenvalues: " << C_eigs.eigenvalues().transpose()
+                << std::endl;
+    }
+    ALBATROSS_ASSERT(C_ldlt.info() == Eigen::Success &&
+                     "fit_from_prediction failed in C_ldlt!");
+    ALBATROSS_ASSERT(C_ldlt.isPositive() && !C_ldlt.isNegative() &&
+                     "cannot fit a semidefinite or negative covariance");
     const Eigen::MatrixXd sigma_inv_sqrt = C_ldlt.sqrt_solve(K_zz);
     const auto B_qr = QRImplementation::compute(sigma_inv_sqrt, nullptr);
+    ALBATROSS_ASSERT(B_qr->info() == Eigen::Success &&
+                     "fit_from_prediction failed in B_qr!");
 
     new_fit.P = get_P(*B_qr);
     new_fit.R = get_R(*B_qr);
@@ -677,6 +704,14 @@ private:
         inducing_nugget_.value * Eigen::VectorXd::Ones(K_uu.rows());
 
     *K_uu_ldlt = K_uu.ldlt();
+    ALBATROSS_ASSERT(K_uu_ldlt->info() == Eigen::Success &&
+                     "internal components failed in K_uu");
+    ALBATROSS_ASSERT(covariance_decomp_ok(*K_uu_ldlt) && "K_uu not PD");
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> Kuu_eig(K_uu);
+    if ((Kuu_eig.eigenvalues().array() < 0.).any()) {
+      std::cerr << "Got indefinite Kuu but didn't flag it; eigenvalues: "
+                << Kuu_eig.eigenvalues().transpose() << std::endl;
+    }
     // P is such that:
     //     Q_ff = K_fu K_uu^-1 K_uf
     //          = K_fu K_uu^-T/2 K_uu^-1/2 K_uf
@@ -694,6 +729,11 @@ private:
     }
     auto A = K_ff - Q_ff_diag;
 
+    // TODO(@peddie) check individual blocks of K_ff and Q_ff_diag --
+    // how can changing the LDLT backend affect A blocks?  only
+    // through P, right?  are the transpositions wrong?  the eigen
+    // test case says they are OK
+
     // It's possible that the inducing points will perfectly describe
     // some of the data, in which case we need to add a bit of extra
     // noise to make sure lambda is invertible.
@@ -702,7 +742,10 @@ private:
           measurement_nugget_.value * Eigen::VectorXd::Ones(b.rows());
     }
 
+    // Eigen::LDLT<Eigen::MatrixXd> Aldlt(A);
     *A_ldlt = A.ldlt();
+    ALBATROSS_ASSERT(A_ldlt->info() == Eigen::Success &&
+                     "internal components failed in A!");
   }
 
   Parameter measurement_nugget_;

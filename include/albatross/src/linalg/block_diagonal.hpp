@@ -65,6 +65,8 @@ struct BlockDiagonalLDLT {
 
   double rcond() const;
 
+  Eigen::ComputationInfo info() const;
+
   Eigen::Index rows() const;
 
   Eigen::Index cols() const;
@@ -228,6 +230,15 @@ inline double BlockDiagonalLDLT::rcond() const {
   return Eigen::internal::rcond_estimate_helper(l1_norm, *this);
 }
 
+inline Eigen::ComputationInfo BlockDiagonalLDLT::info() const {
+  for (const auto &b : blocks) {
+    if (b.info() != Eigen::Success) {
+      return b.info();
+    }
+  }
+  return Eigen::Success;
+}
+
 inline Eigen::Index BlockDiagonalLDLT::rows() const {
   Eigen::Index n = 0;
   for (const auto &b : blocks) {
@@ -306,8 +317,31 @@ inline Eigen::VectorXd BlockDiagonal::diagonal() const {
 
 inline BlockDiagonalLDLT BlockDiagonal::ldlt() const {
   BlockDiagonalLDLT output;
+  std::size_t i = 0;
   for (const auto &b : blocks) {
     output.blocks.emplace_back(b.ldlt());
+    const auto &decomp = output.blocks.back();
+    if (!decomp.isPositive() || decomp.isNegative()) {
+      std::cerr << "LDLT concluded matrix in block " << i
+                << " wasn't positive ("
+                << Eigen::describe_sign(Eigen::deduce_sign(decomp)) << ')'
+                << std::endl;
+    }
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigs(b);
+    if (decomp.info() != Eigen::Success) {
+      std::cerr << "Failed decomp in block " << i << ":\n"
+                << b << "\neigenvalues: " << eigs.eigenvalues().transpose()
+                << std::endl;
+    } else if ((eigs.eigenvalues().array() < 0.).any()) {
+      std::cerr << "Should have failed decomp in block " << i
+                << "; eigenvalues: " << eigs.eigenvalues().transpose()
+                << "\n but Cholesky diagonal was "
+                << Eigen::VectorXd(decomp.vectorD()).transpose() << "\ninput:\n"
+                << b << std::endl;
+    }
+    ALBATROSS_ASSERT(decomp.info() == Eigen::Success && decomp.isPositive() &&
+                     !decomp.isNegative() && "Failed decomp in block diagonal");
+    i++;
   }
   return output;
 }
