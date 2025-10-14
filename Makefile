@@ -21,3 +21,6 @@ do-generate-coverage-report: do-code-coverage
 	
 gen-compile-commands:
 	bazel run //tools/compile_commands:gen_compile_commands
+
+check-targets:
+	bazel run @rules_swiftnav//cc:checktags
