@@ -43,7 +43,7 @@ TEST(test_async_utils, test_async_apply_with_capture) {
     order_processed.push_back(x);
   };
 
-  apply(xs, add_to_sum, &pool);
+  albatross::apply(xs, add_to_sum, &pool);
 
   EXPECT_EQ(sum, std::accumulate(xs.begin(), xs.end(), 0));
   // Make sure the async apply was indeed processed out of order.
@@ -67,7 +67,7 @@ TEST(test_async_utils, test_async_apply_map_value_only_function) {
     order_processed.push_back(x);
   };
 
-  apply(xs, add_to_sum, &pool);
+  albatross::apply(xs, add_to_sum, &pool);
 
   EXPECT_EQ(sum, 15);
   // Make sure the async apply was indeed processed out of order.
@@ -92,7 +92,7 @@ TEST(test_async_utils, test_async_apply_map_key_value_function) {
     order_processed.push_back(x);
   };
 
-  apply(xs, add_to_sum, &pool);
+  albatross::apply(xs, add_to_sum, &pool);
 
   EXPECT_EQ(sum, 15);
   // Make sure the async apply was indeed processed out of order.
@@ -106,7 +106,7 @@ TEST(test_async_utils, test_async_apply_speedup_vector) {
     const auto start = std::chrono::system_clock::now();
     std::chrono::seconds delay(1);
     while (std::chrono::system_clock::now() - start < delay) {
-    };
+    }
     return i;
   };
 
@@ -116,13 +116,13 @@ TEST(test_async_utils, test_async_apply_speedup_vector) {
   }
 
   const auto start = std::chrono::system_clock::now();
-  const auto actual = apply(inds, slow_process, &pool);
+  const auto actual = albatross::apply(inds, slow_process, &pool);
   const auto end = std::chrono::system_clock::now();
 
   EXPECT_LT(end - start, std::chrono::seconds(inds.size() - 1));
 
   const auto start_direct = std::chrono::system_clock::now();
-  const auto expected = apply(inds, slow_process);
+  const auto expected = albatross::apply(inds, slow_process);
   const auto end_direct = std::chrono::system_clock::now();
 
   EXPECT_EQ(actual, expected);
@@ -142,13 +142,13 @@ TEST(test_async_utils, test_async_apply_speedup_value_only_function) {
   std::map<std::string, int> xs = {{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}};
 
   const auto start = std::chrono::system_clock::now();
-  const auto actual = apply(xs, slow_square, &pool);
+  const auto actual = albatross::apply(xs, slow_square, &pool);
   const auto end = std::chrono::system_clock::now();
 
   EXPECT_LT(end - start, std::chrono::seconds(xs.size() - 1));
 
   const auto start_direct = std::chrono::system_clock::now();
-  const auto expected = apply(xs, slow_square);
+  const auto expected = albatross::apply(xs, slow_square);
   const auto end_direct = std::chrono::system_clock::now();
 
   for (const auto &x : expected) {
@@ -170,13 +170,13 @@ TEST(test_async_utils, test_async_apply_speedup_key_value_function) {
   std::map<double, int> xs = {{0., 0}, {1., 1}, {2., 2}, {3., 3}};
 
   const auto start = std::chrono::system_clock::now();
-  const auto actual = apply(xs, slow_square, &pool);
+  const auto actual = albatross::apply(xs, slow_square, &pool);
   const auto end = std::chrono::system_clock::now();
 
   EXPECT_LT(end - start, std::chrono::seconds(xs.size() - 1));
 
   const auto start_direct = std::chrono::system_clock::now();
-  const auto expected = apply(xs, slow_square);
+  const auto expected = albatross::apply(xs, slow_square);
   const auto end_direct = std::chrono::system_clock::now();
 
   for (const auto &x : expected) {

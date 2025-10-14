@@ -155,7 +155,7 @@ cc_library(
         "tests/test_covariance_utils.h",
         "tests/test_utils.h",
     ],
-    copts = ["-Itests"],
+    copts = ["-Itests", "-std=c++17"],
     includes = [
         "include",
     ],
@@ -180,6 +180,7 @@ swift_cc_test_library(
     includes = [
         "tests",
     ],
+    standard=17,
     visibility = ["//visibility:public"],
     deps = ["@gtest"],
 )
@@ -193,6 +194,7 @@ swift_cc_test_library(
         "tests/test_core_distribution.h",
         "tests/test_covariance_utils.h",
     ],
+    standard=17,
     includes = ["tests"],
 )
 
@@ -220,6 +222,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -235,6 +238,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -249,6 +253,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -266,6 +271,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -281,6 +287,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -302,6 +309,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -314,6 +322,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -326,6 +335,7 @@ swift_cc_test(
     type = UNIT,
     tags = ["exclusive"],
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -338,6 +348,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -350,6 +361,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -361,6 +373,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -372,6 +385,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 swift_cc_test(
@@ -387,6 +401,7 @@ swift_cc_test(
     local_defines = ["CSV_IO_NO_THREAD"],
     type = UNIT,
     deps = TEST_DEPS,
+    standard=17,
 )
 
 # Meta-target that runs all tests

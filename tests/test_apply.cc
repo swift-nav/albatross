@@ -92,7 +92,7 @@ TYPED_TEST_SUITE_P(ApplyTester);
 
 TYPED_TEST_P(ApplyTester, test_apply_sanity) {
   auto parent = this->test_case.get_parent();
-  const auto actual = apply(parent, this->test_case.get_function());
+  const auto actual = albatross::apply(parent, this->test_case.get_function());
 
   typename std::remove_const<decltype(actual)>::type expected;
   for (const auto &x : parent) {
@@ -109,7 +109,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(test_apply, ApplyTester, ApplyTestCases);
 TEST(test_apply, test_vector_apply_free_function) {
 
   const auto xs = linspace(0., 10., 11);
-  const auto actual = apply(xs, square);
+  const auto actual = albatross::apply(xs, square);
 
   std::vector<double> expected;
   for (const auto &x : xs) {
@@ -130,7 +130,7 @@ TEST(test_apply, test_vector_apply_void) {
     ++call_count;
   };
 
-  apply(xs, count_calls);
+  albatross::apply(xs, count_calls);
 
   EXPECT_EQ(call_count, xs.size());
 }
@@ -148,7 +148,7 @@ TEST(test_apply, test_works_with_auto) {
 
   auto apply_func_with_auto = [](const auto &f) { return f.x; };
 
-  const auto output = apply(values, apply_func_with_auto);
+  const auto output = albatross::apply(values, apply_func_with_auto);
 }
 
 TEST(test_apply, test_vector_apply_all) {
@@ -184,7 +184,7 @@ TEST(test_apply, test_vector_apply_all) {
   input.push_back({true, false, true});
   expected.push_back(false);
 
-  const auto actual = apply(input, all);
+  const auto actual = albatross::apply(input, all);
 
   EXPECT_EQ(actual, expected);
 }
@@ -222,7 +222,7 @@ TEST(test_apply, test_vector_apply_any) {
   input.push_back({true, false, true});
   expected.push_back(true);
 
-  const auto actual = apply(input, any);
+  const auto actual = albatross::apply(input, any);
 
   EXPECT_EQ(actual, expected);
 }
