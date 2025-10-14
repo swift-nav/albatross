@@ -148,7 +148,7 @@ jobs:
           key: bazel
 
       - name: Build and test
-        run: bazel test //...
+        run: bazel test //... --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/armallen/incorrect-module-sha
 
   osx-clang:
     runs-on: macOS-14
