@@ -63,7 +63,7 @@ TEST(test_unique, unique_values_function_mixed) {
   std::vector<int> values = {3, 1, 5, 1, 3};
   auto foo = [](const int &x) { return x + 1; };
 
-  const auto applied = apply(values, foo);
+  const auto applied = albatross::apply(values, foo);
   std::set<int> expected(applied.begin(), applied.end());
 
   EXPECT_EQ(unique_values(values, foo), expected);

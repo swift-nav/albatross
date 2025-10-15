@@ -151,7 +151,7 @@ greedy_tune(Function evaluate_function, const ParameterStore &params,
         return details::set_tunable_param(best_params, i, v);
       };
 
-      const auto proposed_params = apply(values, get_params);
+      const auto proposed_params = albatross::apply(values, get_params);
 
       if (os) {
         (*os) << "NEXT ATTEMPTS: " << tunable.names[i] << " : ";

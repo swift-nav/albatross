@@ -6,6 +6,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake" "${CMAKE_CURRENT_LIST_DI
 set(SWIFT_CLANG_TIDY_RATCHET_FILE
   "${PROJECT_SOURCE_DIR}/ci/clang_tidy_ratchet.yaml")
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(CCache)
 include(ClangTidy)
 include(SwiftCmakeOptions)
@@ -70,7 +73,7 @@ function(albatross_add_test target)
   )
   target_compile_features(${target}
     PUBLIC
-      cxx_std_14
+      cxx_std_17
   )
   if (MKL_FOUND)
     target_link_libraries(${target}

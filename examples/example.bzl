@@ -15,6 +15,7 @@ def example(name, srcs, args):
         deps = DEPS,
         rtti = True,
         nocopts = ["-Wfloat-equal"],
+        standard = "17",
     )
 
     native.sh_binary(

@@ -36,6 +36,10 @@ common:mkl --platform_suffix=mkl
 build:system --noincompatible_enable_cc_toolchain_resolution
 build:system --platform_suffix=system
 
+# Starting from XCode 26, llvm14 is not compatible with MacOS SDK anymore, so we override to llvm20
+build --enable_platform_specific_config
+build:macos --platforms=@rules_swiftnav//platforms:aarch64_darwin_llvm20
+
 # Clang format config
 build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
 build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config

@@ -137,5 +137,7 @@ set(albatross_example_BINARIES
   )
 foreach(TARGET IN LISTS albatross_example_BINARIES)
   target_compile_options(${TARGET} PRIVATE ${albatross_COMPILE_OPTIONS})
-  set_target_properties(${TARGET} PROPERTIES CXX_STANDARD 14 CXX_EXTENSIONS OFF)
+  set_target_properties(${TARGET} PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
 endforeach()
+
+swift_validate_targets()
