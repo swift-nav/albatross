@@ -49,6 +49,21 @@ template <typename T>
 struct is_vector<std::vector<T>> : public std::true_type {};
 
 /*
+ * map helpers
+ */
+
+template <typename Map, typename K, typename = void>
+struct has_find_key : std::false_type {};
+
+template <typename Map, typename K>
+struct has_find_key<Map, K,
+                    std::void_t<decltype(std::declval<const Map &>().find(
+                        std::declval<const K &>()))>> : std::true_type {};
+
+template <typename Map, typename K>
+inline constexpr bool has_find_key_v = has_find_key<Map, K>::value;
+
+/*
  * is_templated_type
  */
 template <template <typename...> class Wrapper, typename T>
