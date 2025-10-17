@@ -63,6 +63,86 @@ struct has_find_key<Map, K,
 template <typename Map, typename K>
 inline constexpr bool has_find_key_v = has_find_key<Map, K>::value;
 
+template <typename T, typename = void>
+struct has_key_compare : std::false_type {};
+
+template <typename T>
+struct has_key_compare<T, std::void_t<typename T::key_compare>>
+    : std::true_type {};
+
+template <typename T>
+inline constexpr bool has_key_compare_v = has_key_compare<T>::value;
+
+template <typename T, typename U, typename = void>
+struct has_same_key_compare : std::false_type {};
+
+template <typename T, typename U>
+struct has_same_key_compare<
+    T, U, std::void_t<typename T ::key_compare, typename U::key_compare>>
+    : std::is_same<typename T::key_compare, typename U::key_compare> {};
+
+template <typename T, typename U>
+inline constexpr bool has_same_key_compare_v =
+    has_same_key_compare<T, U>::value;
+
+template <typename F, typename K, typename V, typename V2,
+          bool WithKey =
+              std::is_invocable_v<F &, const K &, const V &, const V2 &>,
+          bool WithoutKey = std::is_invocable_v<F &, const V &, const V2 &>>
+struct map_intersection_traits;
+
+template <typename F, typename K, typename V, typename V2, bool WithoutKey>
+struct map_intersection_traits<F, K, V, V2, true, WithoutKey> {
+  static constexpr const bool with_key = true;
+  static constexpr const bool without_key = WithoutKey;
+  using result_t =
+      std::decay_t<std::invoke_result_t<F &, const K &, const V &, const V2 &>>;
+};
+
+template <typename F, typename K, typename V, typename V2>
+struct map_intersection_traits<F, K, V, V2, false, true> {
+  static constexpr const bool with_key = false;
+  static constexpr const bool without_key = true;
+  using result_t =
+      std::decay_t<std::invoke_result_t<F &, const V &, const V2 &>>;
+};
+
+template <typename F, typename K, typename V, typename V2>
+struct map_intersection_traits<F, K, V, V2, false, false> {
+  static constexpr const bool with_key = false;
+  static constexpr const bool without_key = false;
+};
+
+template <typename OnMatch, typename K, typename V, typename V2>
+using MapIntersectionResultType =
+    typename map_intersection_traits<std::decay_t<OnMatch>, K, V, V2>::result_t;
+
+template <typename OnMatch, typename K, typename V, typename V2>
+inline constexpr bool can_call_map_intersection_v =
+    map_intersection_traits<std::decay_t<OnMatch>, K, V, V2>::with_key ||
+    map_intersection_traits<std::decay_t<OnMatch>, K, V, V2>::without_key;
+
+template <typename OnMatch, typename K, typename V, typename V2,
+          typename = std::enable_if_t<
+              can_call_map_intersection_v<OnMatch, K, V, V2>, void>>
+auto call_map_intersection(OnMatch &&f, const K &k, const V &v, const V2 &v2) {
+  using traits = map_intersection_traits<std::decay_t<OnMatch>, K, V, V2>;
+  if constexpr (traits::with_key) {
+    return std::invoke(std::forward<OnMatch>(f), k, v, v2);
+  } else {
+    static_assert(traits::without_key,
+                  "Map intersection helper must be callable either as f(K, V, "
+                  "V2) or f(V, V2)!");
+    return std::invoke(std::forward<OnMatch>(f), v, v2);
+  }
+}
+
+template <template <typename...> typename Map, typename K, typename V,
+          typename V2, typename OnMatch, typename... More>
+using IntersectedMapType = std::enable_if_t<
+    can_call_map_intersection_v<OnMatch, K, V, V2>,
+    Map<K, MapIntersectionResultType<OnMatch, K, V, V2>, More...>>;
+
 /*
  * is_templated_type
  */
