@@ -953,4 +953,215 @@ TEST(test_map_utils, map_subset_heterogeneous_disjoint) {
   EXPECT_EQ(subset.size(), 0);
 }
 
+TEST(test_map_utils, map_union) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
+  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
+
+  // Default merge (ReturnLeft) should keep values from first map on overlap
+  const auto result = map_union(test_map_1, test_map_2);
+  EXPECT_EQ(result.size(), 5);
+  EXPECT_TRUE(map_contains(result, 1));
+  EXPECT_TRUE(map_contains(result, 2));
+  EXPECT_TRUE(map_contains(result, 3));
+  EXPECT_TRUE(map_contains(result, 4));
+  EXPECT_TRUE(map_contains(result, 5));
+  // All keys from first map should have their original values
+  for (const auto &[key, value] : test_map_1) {
+    EXPECT_EQ(result.at(key), value);
+  }
+  // Unique keys from second map should have their values
+  EXPECT_EQ(result.at(4), 400);
+  EXPECT_EQ(result.at(5), 500);
+}
+
+TEST(test_map_utils, map_union_empty) {
+  const std::map<int, int> test_map = {{1, 10}, {2, 20}};
+  const std::map<int, int> empty_map;
+
+  // Union with empty should return first map
+  const auto result_1 = map_union(test_map, empty_map);
+  EXPECT_EQ(result_1.size(), test_map.size());
+  for (const auto &[key, value] : test_map) {
+    EXPECT_TRUE(map_contains(result_1, key));
+    EXPECT_EQ(result_1.at(key), value);
+  }
+
+  // Union of empty with non-empty should return second map
+  const auto result_2 = map_union(empty_map, test_map);
+  EXPECT_EQ(result_2.size(), test_map.size());
+  for (const auto &[key, value] : test_map) {
+    EXPECT_TRUE(map_contains(result_2, key));
+    EXPECT_EQ(result_2.at(key), value);
+  }
+}
+
+TEST(test_map_utils, map_union_disjoint) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}};
+  const std::map<int, int> test_map_2 = {{3, 30}, {4, 40}};
+
+  // Disjoint maps should contain all entries from both
+  const auto result = map_union(test_map_1, test_map_2);
+  EXPECT_EQ(result.size(), test_map_1.size() + test_map_2.size());
+  for (const auto &[key, value] : test_map_1) {
+    EXPECT_TRUE(map_contains(result, key));
+    EXPECT_EQ(result.at(key), value);
+  }
+  for (const auto &[key, value] : test_map_2) {
+    EXPECT_TRUE(map_contains(result, key));
+    EXPECT_EQ(result.at(key), value);
+  }
+}
+
+TEST(test_map_utils, map_union_return_right) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
+  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
+
+  // ReturnRight should keep values from second map on overlap
+  const auto result = map_union(test_map_1, test_map_2,
+                                ExplicitConstruct<int>{}, ReturnRight{});
+  EXPECT_EQ(result.size(), 5);
+  // All keys from second map should have their original values
+  for (const auto &[key, value] : test_map_2) {
+    EXPECT_EQ(result.at(key), value);
+  }
+  // Unique keys from first map should have their values
+  EXPECT_EQ(result.at(1), 10);
+  EXPECT_EQ(result.at(3), 30);
+}
+
+TEST(test_map_utils, map_union_custom_merge) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
+  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
+
+  // Custom merge function that adds values on overlap
+  const auto result = map_union(test_map_1, test_map_2,
+                                ExplicitConstruct<int>{}, std::plus<>{});
+
+  EXPECT_EQ(result.size(), 5);
+  // Verify all keys and values
+  for (const auto &[key, value] : result) {
+    const bool in_1 = map_contains(test_map_1, key);
+    const bool in_2 = map_contains(test_map_2, key);
+    if (in_1 && in_2) {
+      // Overlapping key should have sum
+      EXPECT_EQ(value, test_map_1.at(key) + test_map_2.at(key));
+    } else if (in_1) {
+      EXPECT_EQ(value, test_map_1.at(key));
+    } else {
+      EXPECT_EQ(value, test_map_2.at(key));
+    }
+  }
+}
+
+TEST(test_map_utils, map_union_custom_merge_with_key) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
+  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
+
+  // Custom merge function f(key, v1, v2) that multiplies key by sum
+  const auto key_times_sum = [](int key, int v1, int v2) {
+    return key * (v1 + v2);
+  };
+  const auto result = map_union(test_map_1, test_map_2,
+                                ExplicitConstruct<int>{}, key_times_sum);
+
+  EXPECT_EQ(result.size(), 5);
+  // Overlapping key should have key * (v1 + v2)
+  EXPECT_EQ(result.at(2), 2 * (20 + 200)); // 440
+  // Unique keys should have original values
+  EXPECT_EQ(result.at(1), 10);
+  EXPECT_EQ(result.at(3), 30);
+  EXPECT_EQ(result.at(4), 400);
+  EXPECT_EQ(result.at(5), 500);
+}
+
+TEST(test_map_utils, map_union_heterogeneous) {
+  const std::map<int, int, CompareString> test_map_1 = {
+      {1, 10}, {2, 20}, {3, 30}};
+  const std::map<std::string, int> test_map_2 = {
+      {"2", 200}, {"4", 400}, {"5", 500}};
+
+  using std::literals::string_view_literals::operator""sv;
+
+  // Custom project function to convert string keys to int
+  const auto string_to_int = [](const std::string &s) {
+    return from_string_view(s);
+  };
+
+  // Union with heterogeneous key types via custom project
+  const auto result = map_union(test_map_1, test_map_2, string_to_int);
+  EXPECT_EQ(result.size(), 5);
+  // Result should inherit comparator from test_map_1
+  EXPECT_TRUE(map_contains(result, "1"sv));
+  EXPECT_TRUE(map_contains(result, "2"sv));
+  EXPECT_TRUE(map_contains(result, "3"sv));
+  EXPECT_TRUE(map_contains(result, "4"sv));
+  EXPECT_TRUE(map_contains(result, "5"sv));
+  // All keys from first map should have their original values (ReturnLeft)
+  for (const auto &[key, value] : test_map_1) {
+    EXPECT_EQ(result.at(key), value);
+  }
+  // Unique keys from second map
+  EXPECT_EQ(map_at_or(result, "4"sv), 400);
+  EXPECT_EQ(map_at_or(result, "5"sv), 500);
+}
+
+TEST(test_map_utils, map_union_heterogeneous_custom_merge) {
+  const std::map<int, int, CompareString> test_map_1 = {
+      {1, 10}, {2, 20}, {3, 30}};
+  const std::map<std::string, int> test_map_2 = {
+      {"2", 200}, {"4", 400}, {"5", 500}};
+
+  using std::literals::string_view_literals::operator""sv;
+
+  // Custom project and merge functions
+  const auto string_to_int = [](const std::string &s) {
+    return from_string_view(s);
+  };
+
+  const auto result =
+      map_union(test_map_1, test_map_2, string_to_int, std::plus<>{});
+  EXPECT_EQ(result.size(), 5);
+  // Verify all keys and values
+  for (const auto &[key, value] : result) {
+    const std::string key_string = std::to_string(key);
+    const bool in_1 = map_contains(test_map_1, key);
+    const bool in_2 = map_contains(test_map_2, key_string);
+    if (in_1 && in_2) {
+      // Overlapping key should have sum
+      EXPECT_EQ(value, test_map_1.at(key) + test_map_2.at(key_string));
+    } else if (in_1) {
+      EXPECT_EQ(value, test_map_1.at(key));
+    } else {
+      EXPECT_EQ(value, test_map_2.at(key_string));
+    }
+  }
+}
+
+TEST(test_map_utils, map_union_incompatible_comparators) {
+  const std::map<int, int, CompareString> test_map_1 = {
+      {1, 10}, {2, 20}, {3, 30}};
+  // CompareBackwards orders in reverse, forcing copy and sort path
+  const std::map<int, int, CompareBackwards> test_map_2 = {
+      {2, 200}, {4, 400}, {5, 500}};
+
+  using std::literals::string_view_literals::operator""sv;
+
+  // Union with incompatible comparators should still work correctly
+  const auto result = map_union(test_map_1, test_map_2);
+  EXPECT_EQ(result.size(), 5);
+  // Result should inherit comparator from test_map_1
+  EXPECT_TRUE(map_contains(result, "1"sv));
+  EXPECT_TRUE(map_contains(result, "2"sv));
+  EXPECT_TRUE(map_contains(result, "3"sv));
+  EXPECT_TRUE(map_contains(result, "4"sv));
+  EXPECT_TRUE(map_contains(result, "5"sv));
+  // All keys from first map should have their original values (ReturnLeft)
+  for (const auto &[key, value] : test_map_1) {
+    EXPECT_EQ(result.at(key), value);
+  }
+  // Unique keys from second map
+  EXPECT_EQ(map_at_or(result, "4"sv), 400);
+  EXPECT_EQ(map_at_or(result, "5"sv), 500);
+}
+
 } // namespace albatross

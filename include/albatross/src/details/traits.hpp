@@ -85,6 +85,56 @@ template <typename T, typename U>
 inline constexpr bool has_same_key_compare_v =
     has_same_key_compare<T, U>::value;
 
+template <typename Project, typename K, typename K2, typename = void>
+struct can_project_key : std::false_type {};
+
+template <typename Project, typename K, typename K2>
+struct can_project_key<Project, K, K2,
+                       std::void_t<std::is_invocable_r<K, Project, K2>>>
+    : std::true_type {};
+
+template <typename Project, typename K, typename K2>
+inline constexpr bool can_project_key_v =
+    can_project_key<Project, K, K2>::value;
+
+template <typename F, typename K, typename V,
+          bool WithKey =
+              std::is_invocable_r_v<V, F &, const K &, const V &, const V &>,
+          bool WithoutKey = std::is_invocable_r_v<V, F &, const V &, const V &>>
+struct map_union_traits;
+
+template <typename F, typename K, typename V, bool WithoutKey>
+struct map_union_traits<F, K, V, true, WithoutKey> {
+  static constexpr const bool with_key = true;
+  static constexpr const bool without_key = WithoutKey;
+};
+
+template <typename F, typename K, typename V>
+struct map_union_traits<F, K, V, false, true> {
+  static constexpr const bool with_key = false;
+  static constexpr const bool without_key = true;
+};
+
+template <typename OnMatch, typename K, typename V>
+inline constexpr bool can_call_map_union_v =
+    map_union_traits<std::decay_t<OnMatch>, K, V>::with_key ||
+    map_union_traits<std::decay_t<OnMatch>, K, V>::without_key;
+
+template <
+    typename OnMatch, typename K, typename V,
+    typename = std::enable_if_t<can_call_map_union_v<OnMatch, K, V>, void>>
+auto call_map_union(OnMatch &&f, const K &k, const V &va, const V &vb) {
+  using traits = map_union_traits<std::decay_t<OnMatch>, K, V>;
+  if constexpr (traits::with_key) {
+    return std::invoke(std::forward<OnMatch>(f), k, va, vb);
+  } else {
+    static_assert(traits::without_key,
+                  "Map union helper must be callable either as f(K, V, "
+                  "V) or f(V, V)!");
+    return std::invoke(std::forward<OnMatch>(f), va, vb);
+  }
+}
+
 template <typename F, typename K, typename V, typename V2,
           bool WithKey =
               std::is_invocable_v<F &, const K &, const V &, const V2 &>,

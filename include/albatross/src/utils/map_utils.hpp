@@ -103,30 +103,18 @@ inline Map<K, V, More...> map_join_strict(const Map<K, V, More...> &m,
 
 namespace detail {
 
-template <typename Map1, typename Map2, typename F>
-void map_difference(const Map1 &a, const Map2 &b, F &&f) {
-  auto less = a.key_comp();
-  auto ai = a.begin();
-  for (auto bi = b.begin(); ai != a.end() && bi != b.end();) {
-    const auto &[ak, av] = *ai;
-    const auto &[bk, _] = *bi;
-    if (less(ak, bk)) {
-      f(ak, av);
-      ++ai;
-    } else if (less(bk, ak)) {
-      ++bi;
-    } else {
-      ++ai;
-      ++bi;
-    }
-  }
-  for (; ai != a.end(); ++ai) {
-    f(ai->first, ai->second);
-  }
-}
+// Implementation notes
+//
+// These helpers take in consistently ordered maps / sequences and
+// perform the desired operation in a single linear pass.
+//
+// Your functor will be called in key order, so you should use
+// `emplace_hint()` or `push_back()`.
 
-template <typename Map1, typename Map2, typename F>
-void map_intersect(const Map1 &a, const Map2 &b, F &&f) {
+template <typename Map1, typename Map2, typename OnlyA, typename OnlyB,
+          typename Merge>
+void map_merge(const Map1 &a, const Map2 &b, OnlyA &&only_a, OnlyB &&only_b,
+               Merge &&merge) {
   auto less = a.key_comp();
   auto ai = a.begin();
   auto bi = b.begin();
@@ -134,15 +122,48 @@ void map_intersect(const Map1 &a, const Map2 &b, F &&f) {
     const auto &[ak, av] = *ai;
     const auto &[bk, bv] = *bi;
     if (less(ak, bk)) {
+      only_a(ak, av);
       ++ai;
     } else if (less(bk, ak)) {
+      only_b(bk, bv);
       ++bi;
     } else {
-      f(ak, av, bv);
+      merge(ak, av, bv);
       ++ai;
       ++bi;
     }
   }
+  for (; ai != a.end(); ++ai) {
+    only_a(ai->first, ai->second);
+  }
+  for (; bi != b.end(); ++bi) {
+    only_b(bi->first, bi->second);
+  }
+}
+
+struct DoNothing {
+  template <typename K, typename V>
+  constexpr void operator()(const K &, const V &) const {}
+
+  template <typename K, typename V, typename V2>
+  constexpr void operator()(const K &, const V &, const V2 &) const {}
+};
+
+template <typename Map1, typename Map2, typename F>
+void map_difference(const Map1 &a, const Map2 &b, F &&f) {
+  map_merge(a, b, std::forward<F>(f), DoNothing{}, DoNothing{});
+}
+
+template <typename Map1, typename Map2, typename F>
+void map_intersect(const Map1 &a, const Map2 &b, F &&f) {
+  map_merge(a, b, DoNothing{}, DoNothing{}, std::forward<F>(f));
+}
+
+template <typename Map1, typename Map2, typename AddA, typename AddB,
+          typename MergeAdd>
+void map_union(const Map1 &a, const Map2 &b, AddA &&add_a, AddB &&add_b,
+               MergeAdd &&merge_add) {
+  map_merge(a, b, add_a, add_b, merge_add);
 }
 
 template <typename Map, typename Set, typename F>
@@ -225,7 +246,7 @@ auto call_on_sorted_b(const A &a, const B &b, F &&f) {
 // type of `b`.  The resulting map will have the same key type and
 // comparator type as `a`.
 //
-// If `b` has a different comparator than `a`, a runtime checkwill be
+// If `b` has a different comparator than `a`, a runtime check will be
 // run to ensure `b` is sorted according to `a`'s comparator, at cost
 // O(|b|). If it's not, this function will internally create a sorted
 // copy at cost O(|b| log|b|).
@@ -235,7 +256,7 @@ template <template <typename...> typename Map1, typename K, typename V,
 Map1<K, V, Compare> map_difference(const Map1<K, V, Compare> &a,
                                    const Map2<K2, V2, Compare2> &b) {
   static constexpr bool can_compare_key_values =
-      std::is_invocable_r_v<bool, const Compare &, const V2 &, const V2 &>;
+      std::is_invocable_r_v<bool, const Compare &, const K2 &, const K2 &>;
   static_assert(can_compare_key_values,
                 "`map_difference()` needs to be able to compare the keys of "
                 "`b` using `a.key_comp()`");
@@ -259,10 +280,10 @@ Map1<K, V, Compare> map_difference(const Map1<K, V, Compare> &a,
 // If `a` and `b` have different key types, `a`'s comparator must
 // implement strict weak ordering between the two key types,
 // _including_ supporting a comparison between two values of the key
-// type of `b`.  The resulting map will have the same key type and
-// comparator type as `a`.
+// type of `b`.  The resulting vector will contain the key type of
+// `a`.
 //
-// If `b` has a different comparator than `a`, a runtime checkwill be
+// If `b` has a different comparator than `a`, a runtime check will be
 // run to ensure `b` is sorted according to `a`'s comparator, at cost
 // O(|b|). If it's not, this function will internally create a sorted
 // copy at cost O(|b| log|b|).
@@ -272,7 +293,7 @@ template <template <typename...> typename Map1, typename K, typename V,
 std::vector<K> map_difference_keys(const Map1<K, V, Compare> &a,
                                    const Map2<K2, V2, Compare2> &b) {
   static constexpr bool can_compare_key_values =
-      std::is_invocable_r_v<bool, const Compare &, const V2 &, const V2 &>;
+      std::is_invocable_r_v<bool, const Compare &, const K2 &, const K2 &>;
   static_assert(can_compare_key_values,
                 "`map_difference_keys()` needs to be able to compare the keys "
                 "of `b` using `a.key_comp()`");
@@ -297,7 +318,7 @@ std::vector<K> map_difference_keys(const Map1<K, V, Compare> &a,
 // type of `b`.  The resulting map will have the same key type and
 // comparator type as `a`.
 //
-// If `b` has a different comparator than `a`, a runtime checkwill be
+// If `b` has a different comparator than `a`, a runtime check will be
 // run to ensure `b` is sorted according to `a`'s comparator, at cost
 // O(|b|). If it's not, this function will internally create a sorted
 // copy at cost O(|b| log|b|).
@@ -307,9 +328,9 @@ template <template <typename...> typename Map1, typename K, typename V,
 std::vector<K> map_intersect_keys(const Map1<K, V, Compare> &a,
                                   const Map2<K2, V2, Compare2> &b) {
   static constexpr bool can_compare_key_values =
-      std::is_invocable_r_v<bool, const Compare &, const V2 &, const V2 &>;
+      std::is_invocable_r_v<bool, const Compare &, const K2 &, const K2 &>;
   static_assert(can_compare_key_values,
-                "`map_difference_keys()` needs to be able to compare the keys "
+                "`map_intersect_keys()` needs to be able to compare the keys "
                 "of `b` using `a.key_comp()`");
   std::vector<K> intersection;
   const auto intersect_on_match = [&intersection](const auto &a,
@@ -334,7 +355,7 @@ std::vector<K> map_intersect_keys(const Map1<K, V, Compare> &a,
 // type of `b`.  The resulting map will have the same key type and
 // comparator type as `a`.
 //
-// If `b` has a different comparator than `a`, a runtime checkwill be
+// If `b` has a different comparator than `a`, a runtime check will be
 // run to ensure `b` is sorted according to `a`'s comparator, at cost
 // O(|b|). If it's not, this function will internally create a sorted
 // copy at cost O(|b| log|b|).
@@ -384,16 +405,15 @@ Map map_subset(const Map &m, const Set &keys) {
 
 struct MakePair {
   template <typename V1, typename V2>
-  constexpr auto operator()(V1 &&v1, V2 &&v2) const
-      noexcept(noexcept(std::make_pair(std::forward<V1>(v1),
-                                       std::forward<V2>(v2)))) {
+  constexpr auto operator()(V1 &&v1, V2 &&v2) const noexcept {
     return std::make_pair(std::forward<V1>(v1), std::forward<V2>(v2));
   }
 };
 
 // A functor returning its first argument.  Useful for left-biased map
 // intersection (when you just want the associations from `a` whose
-// keys are in `b`)
+// keys are in `b`) or union (when you want to keep `a`'s values on
+// overlap).
 struct ReturnLeft {
   template <typename L, typename R>
   constexpr auto operator()(L l, R &&) const noexcept {
@@ -403,13 +423,79 @@ struct ReturnLeft {
 
 // A functor returning its second argument.  Useful for right-biased
 // map intersection (when you just want the associations from `b`
-// whose keys are in `a`).
+// whose keys are in `a`) or union (when you want to keep `b`'s values
+// on overlap).
 struct ReturnRight {
   template <typename L, typename R>
   constexpr auto operator()(L &&, R r) const noexcept {
     return r;
   }
 };
+
+template <typename Result> struct ExplicitConstruct {
+  template <typename Arg> Result operator()(Arg &&arg) const {
+    return Result(arg);
+  }
+};
+
+// Union the maps `a` and `b`, returning a map containing the the
+// associations in both inputs, with values for overlapping keys
+// computed by calling `merge()`, either as `merge(key, val_a, val_b)`
+// or `merge(val_a, val_b)` if the former is not available.  The
+// resulting map will have the same key type and comparator type as
+// `a`.  In the case that `b`'s key type differs from that of `a`,
+// they are converted from the former to the latter using
+// `project(key_b)`.
+//
+// By default, `project` calls the constructor of `a`'s key type on
+// values of `b`'s key type.
+//
+// By default, `merge` is provided and simply preserves the value from
+// `a`.  See also `ReturnRight` for the opposite behaviour, or provide
+// your own merge function.
+//
+// If `a` and `b` have different key types, `a`'s comparator must
+// implement strict weak ordering between the two key types,
+// _including_ supporting a comparison between two values of the key
+// type of `b`.
+//
+// If `b` has a different comparator than `a`, a runtime check will be
+// run to ensure `b` is sorted according to `a`'s comparator, at cost
+// O(|b|). If it's not, this function will internally create a sorted
+// copy at cost O(|b| log|b|).
+template <template <typename...> typename Map, typename K, typename V,
+          template <typename...> typename Map2, typename K2, typename Compare,
+          typename Compare2, typename Project = ExplicitConstruct<K>,
+          typename Merge = ReturnLeft,
+          typename = std::enable_if_t<can_call_map_union_v<Merge, K, V> &&
+                                          can_project_key_v<Project, K, K2>,
+                                      void>>
+auto map_union(const Map<K, V, Compare> &a, const Map2<K2, V, Compare2> &b,
+               Project &&project = Project{}, Merge &&merge = Merge{}) {
+  static constexpr bool can_compare_key_values =
+      std::is_invocable_r_v<bool, Compare &, const K2 &, const K2 &>;
+  static_assert(can_compare_key_values,
+                "`map_union()` needs to be able to compare the elements of "
+                "`b` using `a.key_comp()`");
+  Map<K, V, Compare> result;
+  const auto add_a = [&result](const auto &k, const auto &av) {
+    result.emplace_hint(result.end(), k, av);
+  };
+  const auto add_b = [&result, project = std::forward<Project>(project)](
+                         const auto &bk, const auto &bv) {
+    result.emplace_hint(result.end(), project(bk), bv);
+  };
+  const auto both = [&result, merge = std::forward<Merge>(merge)](
+                        const auto &k, const auto &av, const auto &bv) {
+    result.emplace_hint(result.end(), k, call_map_union(merge, k, av, bv));
+  };
+  const auto union_on_match = [&](const auto &a, const auto &b_sorted) {
+    detail::map_union(a, b_sorted, add_a, add_b, both);
+  };
+  detail::call_on_sorted_b<Map2<K2, V, Compare>, detail::MapCompare>(
+      a, b, union_on_match);
+  return result;
+}
 
 // Intersect the maps `a` and `b`, returning a map containing the
 // overlapping keys and values computed by calling `f()`, either as
