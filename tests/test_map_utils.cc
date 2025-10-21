@@ -229,13 +229,14 @@ TEST(test_map_utils, map_difference_identical) {
 TEST(test_map_utils, map_difference_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // Difference using heterogeneous lookup with different key types
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // Difference with same comparator but different key types
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
   const auto diff = map_difference(test_map_1, test_map_2);
   EXPECT_EQ(diff.size(), 2);
@@ -252,28 +253,91 @@ TEST(test_map_utils, map_difference_heterogeneous) {
   }
 }
 
-TEST(test_map_utils, map_difference_incompatible_comparators) {
+TEST(test_map_utils, map_symmetric_difference) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
+  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
+
+  // Symmetric difference should contain keys in either map but not both
+  const auto sym_diff = map_symmetric_difference(test_map_1, test_map_2);
+  EXPECT_EQ(sym_diff.size(), 4);
+  EXPECT_TRUE(map_contains(sym_diff, 1));
+  EXPECT_TRUE(map_contains(sym_diff, 3));
+  EXPECT_TRUE(map_contains(sym_diff, 4));
+  EXPECT_TRUE(map_contains(sym_diff, 5));
+  EXPECT_FALSE(map_contains(sym_diff, 2));
+  // Values from map_1 for keys only in map_1
+  EXPECT_EQ(sym_diff.at(1), 10);
+  EXPECT_EQ(sym_diff.at(3), 30);
+  // Values from map_2 for keys only in map_2
+  EXPECT_EQ(sym_diff.at(4), 400);
+  EXPECT_EQ(sym_diff.at(5), 500);
+}
+
+TEST(test_map_utils, map_symmetric_difference_empty) {
+  const std::map<int, int> test_map = {{1, 10}, {2, 20}};
+  const std::map<int, int> empty_map;
+
+  // Symmetric difference with empty should return first map
+  const auto sym_diff_1 = map_symmetric_difference(test_map, empty_map);
+  EXPECT_EQ(sym_diff_1.size(), test_map.size());
+  for (const auto &[key, value] : test_map) {
+    EXPECT_TRUE(map_contains(sym_diff_1, key));
+    EXPECT_EQ(sym_diff_1.at(key), value);
+  }
+
+  // Symmetric difference of empty with non-empty should return second map
+  const auto sym_diff_2 = map_symmetric_difference(empty_map, test_map);
+  EXPECT_EQ(sym_diff_2.size(), test_map.size());
+  for (const auto &[key, value] : test_map) {
+    EXPECT_TRUE(map_contains(sym_diff_2, key));
+    EXPECT_EQ(sym_diff_2.at(key), value);
+  }
+}
+
+TEST(test_map_utils, map_symmetric_difference_disjoint) {
+  const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}};
+  const std::map<int, int> test_map_2 = {{3, 30}, {4, 40}};
+
+  // Disjoint maps should return union of both
+  const auto sym_diff = map_symmetric_difference(test_map_1, test_map_2);
+  EXPECT_EQ(sym_diff.size(), test_map_1.size() + test_map_2.size());
+  for (const auto &[key, value] : test_map_1) {
+    EXPECT_TRUE(map_contains(sym_diff, key));
+    EXPECT_EQ(sym_diff.at(key), value);
+  }
+  for (const auto &[key, value] : test_map_2) {
+    EXPECT_TRUE(map_contains(sym_diff, key));
+    EXPECT_EQ(sym_diff.at(key), value);
+  }
+}
+
+TEST(test_map_utils, map_symmetric_difference_identical) {
+  const std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}};
+
+  // Identical maps should return empty
+  const auto sym_diff = map_symmetric_difference(test_map, test_map);
+  EXPECT_EQ(sym_diff.size(), 0);
+}
+
+TEST(test_map_utils, map_symmetric_difference_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // CompareBackwards orders in reverse, forcing copy and sort path
-  const std::map<int, int, CompareBackwards> test_map_2 = {
-      {2, 200}, {4, 400}, {5, 500}};
+      {1, 10}, {2, 20}, {3, 30}};
+  // Both maps use CompareString, same key and value types
+  const std::map<int, int, CompareString> test_map_2 = {{2, 200}, {4, 400}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // Difference with incompatible comparators should still work correctly
-  // This tests the "copy and sort" path
-  const auto diff = map_difference(test_map_1, test_map_2);
-  EXPECT_EQ(diff.size(), 2);
-  EXPECT_TRUE(map_contains(diff, "1"sv));
-  EXPECT_TRUE(map_contains(diff, "3"sv));
-  EXPECT_FALSE(map_contains(diff, "2"sv));
-  EXPECT_FALSE(map_contains(diff, "4"sv));
-  // Values from map_1 should be preserved
-  for (const auto &[key, value] : diff) {
-    EXPECT_TRUE(map_contains(test_map_1, key));
-    EXPECT_EQ(value, test_map_1.at(key));
-  }
+  // Symmetric difference with same comparator
+  const auto sym_diff = map_symmetric_difference(test_map_1, test_map_2);
+  EXPECT_EQ(sym_diff.size(), 3);
+  EXPECT_TRUE(map_contains(sym_diff, "1"sv));
+  EXPECT_TRUE(map_contains(sym_diff, "3"sv));
+  EXPECT_TRUE(map_contains(sym_diff, "4"sv));
+  EXPECT_FALSE(map_contains(sym_diff, "2"sv));
+  // Verify values
+  EXPECT_EQ(map_at_or(sym_diff, "1"sv), 10);
+  EXPECT_EQ(map_at_or(sym_diff, "3"sv), 30);
+  EXPECT_EQ(map_at_or(sym_diff, "4"sv), 400);
 }
 
 TEST(test_map_utils, map_difference_keys) {
@@ -324,32 +388,13 @@ TEST(test_map_utils, map_difference_keys_disjoint) {
 TEST(test_map_utils, map_difference_keys_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
-  // Difference keys using heterogeneous lookup with different key types
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // Difference keys with same comparator but different key types
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
-  const std::vector<int> diff_keys =
-      map_difference_keys(test_map_1, test_map_2);
-  EXPECT_EQ(diff_keys.size(), 2);
-  EXPECT_TRUE(is_in_vector(diff_keys, 1));
-  EXPECT_TRUE(is_in_vector(diff_keys, 3));
-  EXPECT_FALSE(is_in_vector(diff_keys, 2));
-  EXPECT_FALSE(is_in_vector(diff_keys, 4));
-  // Result should be sorted
-  EXPECT_LT(diff_keys[0], diff_keys[1]);
-}
-
-TEST(test_map_utils, map_difference_keys_incompatible_comparators) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // CompareBackwards orders in reverse, forcing copy and sort path
-  const std::map<int, int, CompareBackwards> test_map_2 = {
-      {2, 200}, {4, 400}, {5, 500}};
-
-  // Difference keys with incompatible comparators should still work correctly
-  // This tests the "copy and sort" path
   const std::vector<int> diff_keys =
       map_difference_keys(test_map_1, test_map_2);
   EXPECT_EQ(diff_keys.size(), 2);
@@ -417,11 +462,12 @@ TEST(test_map_utils, map_intersect_keys_identical) {
 TEST(test_map_utils, map_intersect_keys_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
-  // Intersection using heterogeneous lookup with different key types
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // Intersection with same comparator but different key types
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
   const std::vector<int> intersect_keys =
       map_intersect_keys(test_map_1, test_map_2);
@@ -435,93 +481,6 @@ TEST(test_map_utils, map_intersect_keys_heterogeneous) {
   EXPECT_LT(intersect_keys[0], intersect_keys[1]);
 }
 
-TEST(test_map_utils, map_intersect_keys_incompatible_comparators) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // CompareBackwards orders in reverse, forcing copy and sort path
-  const std::map<int, int, CompareBackwards> test_map_2 = {
-      {2, 200}, {4, 400}, {5, 500}};
-
-  // Intersection with incompatible comparators should still work correctly
-  // This tests the "copy and sort" path
-  const std::vector<int> intersect_keys =
-      map_intersect_keys(test_map_1, test_map_2);
-  EXPECT_EQ(intersect_keys.size(), 2);
-  EXPECT_TRUE(is_in_vector(intersect_keys, 2));
-  EXPECT_TRUE(is_in_vector(intersect_keys, 4));
-  EXPECT_FALSE(is_in_vector(intersect_keys, 1));
-  EXPECT_FALSE(is_in_vector(intersect_keys, 3));
-  EXPECT_FALSE(is_in_vector(intersect_keys, 5));
-  // Result should be sorted
-  EXPECT_LT(intersect_keys[0], intersect_keys[1]);
-}
-
-TEST(test_map_utils, map_intersect_subset) {
-  std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
-
-  // map_intersect_subset should modify test_map_1 in place
-  map_intersect_subset(test_map_1, test_map_2);
-  EXPECT_EQ(test_map_1.size(), 2);
-  EXPECT_TRUE(map_contains(test_map_1, 2));
-  EXPECT_TRUE(map_contains(test_map_1, 4));
-  EXPECT_FALSE(map_contains(test_map_1, 1));
-  EXPECT_FALSE(map_contains(test_map_1, 3));
-  // Values from original map_1 should be preserved
-  EXPECT_EQ(test_map_1.at(2), 20);
-  EXPECT_EQ(test_map_1.at(4), 40);
-}
-
-TEST(test_map_utils, map_intersect_subset_empty) {
-  std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}};
-  const std::map<int, int> empty_map;
-
-  // Intersecting with empty map should clear the first map
-  map_intersect_subset(test_map, empty_map);
-  EXPECT_EQ(test_map.size(), 0);
-}
-
-TEST(test_map_utils, map_intersect_subset_disjoint) {
-  std::map<int, int> test_map_1 = {{1, 10}, {2, 20}};
-  const std::map<int, int> test_map_2 = {{3, 30}, {4, 40}};
-
-  // Disjoint maps should clear the first map
-  map_intersect_subset(test_map_1, test_map_2);
-  EXPECT_EQ(test_map_1.size(), 0);
-}
-
-TEST(test_map_utils, map_intersect_subset_identical) {
-  std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}};
-  const std::map<int, int> test_map_1_original(test_map_1);
-  const std::map<int, int> test_map_2 = {{1, 100}, {2, 200}, {3, 300}};
-
-  // Identical keys should preserve all entries with original values
-  map_intersect_subset(test_map_1, test_map_2);
-  EXPECT_EQ(test_map_1, test_map_1_original);
-}
-
-TEST(test_map_utils, map_intersect_subset_heterogeneous) {
-  std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
-      {"2", 200}, {"4", 400}, {"5", 500}};
-
-  using std::literals::string_view_literals::operator""sv;
-
-  // map_intersect_subset with heterogeneous lookup with different key types
-  // CompareString should compare int keys from test_map_1 to string keys from
-  // test_map_2
-  map_intersect_subset(test_map_1, test_map_2);
-  EXPECT_EQ(test_map_1.size(), 2);
-  // Can check with string_view for heterogeneous lookup
-  EXPECT_TRUE(map_contains(test_map_1, "2"sv));
-  EXPECT_TRUE(map_contains(test_map_1, "4"sv));
-  EXPECT_FALSE(map_contains(test_map_1, "1"sv));
-  EXPECT_FALSE(map_contains(test_map_1, "3"sv));
-  // Values from original map_1 should be preserved
-  EXPECT_EQ(map_at_or(test_map_1, "2"sv), 20);
-  EXPECT_EQ(map_at_or(test_map_1, "4"sv), 40);
-}
 
 TEST(test_map_utils, map_intersect) {
   const std::map<int, int> test_map_1 = {{1, 10}, {2, 20}, {3, 30}, {4, 40}};
@@ -620,13 +579,14 @@ TEST(test_map_utils, map_intersect_custom_match_with_key) {
 TEST(test_map_utils, map_intersect_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // Intersection with heterogeneous lookup with different key types
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // Intersection with same comparator but different key types
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
   const auto intersection = map_intersect(test_map_1, test_map_2);
   EXPECT_EQ(intersection.size(), 2);
@@ -649,7 +609,8 @@ TEST(test_map_utils, map_intersect_heterogeneous) {
 TEST(test_map_utils, map_intersect_heterogeneous_custom_match_values_only) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
@@ -670,12 +631,13 @@ TEST(test_map_utils, map_intersect_heterogeneous_custom_match_values_only) {
 TEST(test_map_utils, map_intersect_heterogeneous_custom_match_with_key) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // Custom match function f(key, v1, v2) with heterogeneous lookup
+  // Custom match function f(key, v1, v2) with same comparator
   const auto key_times_sum = [](int key, int v1, int v2) {
     return key * (v1 + v2);
   };
@@ -689,33 +651,6 @@ TEST(test_map_utils, map_intersect_heterogeneous_custom_match_with_key) {
   for (const auto &[key, value] : intersection) {
     const std::string key_string = std::to_string(key);
     EXPECT_EQ(key * (test_map_1.at(key) + test_map_2.at(key_string)), value);
-  }
-}
-
-TEST(test_map_utils, map_intersect_incompatible_comparators) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // CompareBackwards orders in reverse, forcing copy and sort path
-  const std::map<int, int, CompareBackwards> test_map_2 = {
-      {2, 200}, {4, 400}, {5, 500}};
-
-  using std::literals::string_view_literals::operator""sv;
-
-  // Intersection with incompatible comparators should still work correctly
-  // This tests the "copy and sort" path with default match function
-  const auto intersection = map_intersect(test_map_1, test_map_2);
-  EXPECT_EQ(intersection.size(), 2);
-  EXPECT_TRUE(map_contains(intersection, "2"sv));
-  EXPECT_TRUE(map_contains(intersection, "4"sv));
-  EXPECT_FALSE(map_contains(intersection, "1"sv));
-  EXPECT_FALSE(map_contains(intersection, "3"sv));
-  // Values should be pairs from both maps
-  for (const auto &[key, pair] : intersection) {
-    const auto &[v1, v2] = pair;
-    EXPECT_TRUE(map_contains(test_map_1, key));
-    EXPECT_EQ(test_map_1.at(key), v1);
-    EXPECT_TRUE(map_contains(test_map_2, key));
-    EXPECT_EQ(test_map_2.at(key), v2);
   }
 }
 
@@ -753,13 +688,14 @@ TEST(test_map_utils, map_intersect_return_right) {
 TEST(test_map_utils, map_intersect_return_left_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // ReturnLeft with heterogeneous lookup - left-biased intersection
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // ReturnLeft with same comparator - left-biased intersection
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
   const auto intersection = map_intersect(test_map_1, test_map_2, ReturnLeft{});
   EXPECT_EQ(intersection.size(), 2);
@@ -777,13 +713,14 @@ TEST(test_map_utils, map_intersect_return_left_heterogeneous) {
 TEST(test_map_utils, map_intersect_return_right_heterogeneous) {
   const std::map<int, int, CompareString> test_map_1 = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  const std::map<std::string, int> test_map_2 = {
+  // Both maps use CompareString, but different key types
+  const std::map<std::string, int, CompareString> test_map_2 = {
       {"2", 200}, {"4", 400}, {"5", 500}};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // ReturnRight with heterogeneous lookup - right-biased intersection
-  // CompareString should compare int keys from test_map_1 to string keys from
+  // ReturnRight with same comparator - right-biased intersection
+  // CompareString can compare int keys from test_map_1 to string keys from
   // test_map_2
   const auto intersection =
       map_intersect(test_map_1, test_map_2, ReturnRight{});
@@ -799,12 +736,12 @@ TEST(test_map_utils, map_intersect_return_right_heterogeneous) {
   }
 }
 
-TEST(test_map_utils, map_subset_vector) {
+TEST(test_map_utils, map_subset_sorted_vector) {
   const std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}, {4, 40}};
   const std::vector<int> keys = {2, 4};
 
-  // Subset with vector of keys should return only those associations
-  const auto subset = map_subset(test_map, keys);
+  // Subset with sorted vector of keys should return only those associations
+  const auto subset = map_subset_sorted(test_map, keys);
   EXPECT_EQ(subset.size(), 2);
   EXPECT_TRUE(map_contains(subset, 2));
   EXPECT_TRUE(map_contains(subset, 4));
@@ -833,39 +770,39 @@ TEST(test_map_utils, map_subset_set) {
   }
 }
 
-TEST(test_map_utils, map_subset_empty_keys) {
+TEST(test_map_utils, map_subset_sorted_empty_keys) {
   const std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}};
   const std::vector<int> empty_keys;
 
   // Empty key sequence should return empty map
-  const auto subset = map_subset(test_map, empty_keys);
+  const auto subset = map_subset_sorted(test_map, empty_keys);
   EXPECT_EQ(subset.size(), 0);
 }
 
-TEST(test_map_utils, map_subset_empty_map) {
+TEST(test_map_utils, map_subset_sorted_empty_map) {
   const std::map<int, int> empty_map;
   const std::vector<int> keys = {1, 2, 3};
 
   // Empty map should return empty subset
-  const auto subset = map_subset(empty_map, keys);
+  const auto subset = map_subset_sorted(empty_map, keys);
   EXPECT_EQ(subset.size(), 0);
 }
 
-TEST(test_map_utils, map_subset_disjoint) {
+TEST(test_map_utils, map_subset_sorted_disjoint) {
   const std::map<int, int> test_map = {{1, 10}, {2, 20}};
   const std::vector<int> keys = {3, 4, 5};
 
   // Disjoint keys should return empty map
-  const auto subset = map_subset(test_map, keys);
+  const auto subset = map_subset_sorted(test_map, keys);
   EXPECT_EQ(subset.size(), 0);
 }
 
-TEST(test_map_utils, map_subset_superset) {
+TEST(test_map_utils, map_subset_sorted_superset) {
   const std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}};
   const std::vector<int> keys = {1, 2, 3, 4, 5};
 
   // Keys superset should return entire map
-  const auto subset = map_subset(test_map, keys);
+  const auto subset = map_subset_sorted(test_map, keys);
   EXPECT_EQ(subset.size(), test_map.size());
   for (const auto &[key, value] : test_map) {
     EXPECT_TRUE(map_contains(subset, key));
@@ -873,12 +810,13 @@ TEST(test_map_utils, map_subset_superset) {
   }
 }
 
-TEST(test_map_utils, map_subset_unsorted_vector) {
+TEST(test_map_utils, map_subset_sorted_unsorted_vector) {
   const std::map<int, int> test_map = {{1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // Vector with unsorted keys - should still work
-  const std::vector<int> keys = {4, 1, 3};
+  // Vector with unsorted keys - need to sort first
+  std::vector<int> keys = {4, 1, 3};
+  std::sort(keys.begin(), keys.end());
 
-  const auto subset = map_subset(test_map, keys);
+  const auto subset = map_subset_sorted(test_map, keys);
   EXPECT_EQ(subset.size(), 3);
   EXPECT_TRUE(map_contains(subset, 1));
   EXPECT_TRUE(map_contains(subset, 3));
@@ -890,16 +828,16 @@ TEST(test_map_utils, map_subset_unsorted_vector) {
   }
 }
 
-TEST(test_map_utils, map_subset_heterogeneous_vector) {
+TEST(test_map_utils, map_subset_sorted_heterogeneous_vector) {
   const std::map<int, int, CompareString> test_map = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // Use vector of strings to select subset via heterogeneous lookup
+  // Use vector of strings - must be sorted according to CompareString
   const std::vector<std::string> keys = {"2", "4"};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // CompareString should compare int keys from test_map to string elements
-  const auto subset = map_subset(test_map, keys);
+  // CompareString can compare int keys from test_map to string elements
+  const auto subset = map_subset_sorted(test_map, keys);
   EXPECT_EQ(subset.size(), 2);
   // Result should inherit comparator from test_map
   EXPECT_TRUE(map_contains(subset, "2"sv));
@@ -915,12 +853,12 @@ TEST(test_map_utils, map_subset_heterogeneous_vector) {
 TEST(test_map_utils, map_subset_heterogeneous_set) {
   const std::map<int, int, CompareString> test_map = {
       {1, 10}, {2, 20}, {3, 30}, {4, 40}};
-  // Use set of strings to select subset via heterogeneous lookup
-  const std::set<std::string> keys = {"2", "4"};
+  // Use set of strings with same comparator
+  const std::set<std::string, CompareString> keys = {"2", "4"};
 
   using std::literals::string_view_literals::operator""sv;
 
-  // CompareString should compare int keys from test_map to string elements
+  // CompareString can compare int keys from test_map to string elements
   const auto subset = map_subset(test_map, keys);
   EXPECT_EQ(subset.size(), 2);
   // Result should inherit comparator from test_map
@@ -934,19 +872,19 @@ TEST(test_map_utils, map_subset_heterogeneous_set) {
   }
 }
 
-TEST(test_map_utils, map_subset_heterogeneous_empty_keys) {
+TEST(test_map_utils, map_subset_sorted_heterogeneous_empty_keys) {
   const std::map<int, int, CompareString> test_map = {
       {1, 10}, {2, 20}, {3, 30}};
   const std::vector<std::string> empty_keys;
 
   // Empty key sequence should return empty map
-  const auto subset = map_subset(test_map, empty_keys);
+  const auto subset = map_subset_sorted(test_map, empty_keys);
   EXPECT_EQ(subset.size(), 0);
 }
 
 TEST(test_map_utils, map_subset_heterogeneous_disjoint) {
   const std::map<int, int, CompareString> test_map = {{1, 10}, {2, 20}};
-  const std::set<std::string> keys = {"3", "4", "5"};
+  const std::set<std::string, CompareString> keys = {"3", "4", "5"};
 
   // Disjoint keys should return empty map
   const auto subset = map_subset(test_map, keys);
@@ -1017,8 +955,7 @@ TEST(test_map_utils, map_union_return_right) {
   const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
 
   // ReturnRight should keep values from second map on overlap
-  const auto result = map_union(test_map_1, test_map_2,
-                                ExplicitConstruct<int>{}, ReturnRight{});
+  const auto result = map_union(test_map_1, test_map_2, ReturnRight{});
   EXPECT_EQ(result.size(), 5);
   // All keys from second map should have their original values
   for (const auto &[key, value] : test_map_2) {
@@ -1034,8 +971,7 @@ TEST(test_map_utils, map_union_custom_merge) {
   const std::map<int, int> test_map_2 = {{2, 200}, {4, 400}, {5, 500}};
 
   // Custom merge function that adds values on overlap
-  const auto result = map_union(test_map_1, test_map_2,
-                                ExplicitConstruct<int>{}, std::plus<>{});
+  const auto result = map_union(test_map_1, test_map_2, std::plus<>{});
 
   EXPECT_EQ(result.size(), 5);
   // Verify all keys and values
@@ -1061,8 +997,7 @@ TEST(test_map_utils, map_union_custom_merge_with_key) {
   const auto key_times_sum = [](int key, int v1, int v2) {
     return key * (v1 + v2);
   };
-  const auto result = map_union(test_map_1, test_map_2,
-                                ExplicitConstruct<int>{}, key_times_sum);
+  const auto result = map_union(test_map_1, test_map_2, key_times_sum);
 
   EXPECT_EQ(result.size(), 5);
   // Overlapping key should have key * (v1 + v2)
@@ -1072,96 +1007,6 @@ TEST(test_map_utils, map_union_custom_merge_with_key) {
   EXPECT_EQ(result.at(3), 30);
   EXPECT_EQ(result.at(4), 400);
   EXPECT_EQ(result.at(5), 500);
-}
-
-TEST(test_map_utils, map_union_heterogeneous) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}};
-  const std::map<std::string, int> test_map_2 = {
-      {"2", 200}, {"4", 400}, {"5", 500}};
-
-  using std::literals::string_view_literals::operator""sv;
-
-  // Custom project function to convert string keys to int
-  const auto string_to_int = [](const std::string &s) {
-    return from_string_view(s);
-  };
-
-  // Union with heterogeneous key types via custom project
-  const auto result = map_union(test_map_1, test_map_2, string_to_int);
-  EXPECT_EQ(result.size(), 5);
-  // Result should inherit comparator from test_map_1
-  EXPECT_TRUE(map_contains(result, "1"sv));
-  EXPECT_TRUE(map_contains(result, "2"sv));
-  EXPECT_TRUE(map_contains(result, "3"sv));
-  EXPECT_TRUE(map_contains(result, "4"sv));
-  EXPECT_TRUE(map_contains(result, "5"sv));
-  // All keys from first map should have their original values (ReturnLeft)
-  for (const auto &[key, value] : test_map_1) {
-    EXPECT_EQ(result.at(key), value);
-  }
-  // Unique keys from second map
-  EXPECT_EQ(map_at_or(result, "4"sv), 400);
-  EXPECT_EQ(map_at_or(result, "5"sv), 500);
-}
-
-TEST(test_map_utils, map_union_heterogeneous_custom_merge) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}};
-  const std::map<std::string, int> test_map_2 = {
-      {"2", 200}, {"4", 400}, {"5", 500}};
-
-  using std::literals::string_view_literals::operator""sv;
-
-  // Custom project and merge functions
-  const auto string_to_int = [](const std::string &s) {
-    return from_string_view(s);
-  };
-
-  const auto result =
-      map_union(test_map_1, test_map_2, string_to_int, std::plus<>{});
-  EXPECT_EQ(result.size(), 5);
-  // Verify all keys and values
-  for (const auto &[key, value] : result) {
-    const std::string key_string = std::to_string(key);
-    const bool in_1 = map_contains(test_map_1, key);
-    const bool in_2 = map_contains(test_map_2, key_string);
-    if (in_1 && in_2) {
-      // Overlapping key should have sum
-      EXPECT_EQ(value, test_map_1.at(key) + test_map_2.at(key_string));
-    } else if (in_1) {
-      EXPECT_EQ(value, test_map_1.at(key));
-    } else {
-      EXPECT_EQ(value, test_map_2.at(key_string));
-    }
-  }
-}
-
-TEST(test_map_utils, map_union_incompatible_comparators) {
-  const std::map<int, int, CompareString> test_map_1 = {
-      {1, 10}, {2, 20}, {3, 30}};
-  // CompareBackwards orders in reverse, forcing copy and sort path
-  const std::map<int, int, CompareBackwards> test_map_2 = {
-      {2, 200}, {4, 400}, {5, 500}};
-
-  using std::literals::string_view_literals::operator""sv;
-
-  // Union with incompatible comparators should still work correctly
-  const auto result = map_union(test_map_1, test_map_2);
-  EXPECT_EQ(result.size(), 5);
-  // Result should inherit comparator from test_map_1
-  EXPECT_TRUE(map_contains(result, "1"sv));
-  EXPECT_TRUE(map_contains(result, "2"sv));
-  EXPECT_TRUE(map_contains(result, "3"sv));
-  EXPECT_TRUE(map_contains(result, "4"sv));
-  EXPECT_TRUE(map_contains(result, "5"sv));
-  // All keys from first map should have their original values (ReturnLeft)
-  for (const auto &[key, value] : test_map_1) {
-    EXPECT_EQ(result.at(key), value);
-  }
-  // Unique keys from second map
-  EXPECT_EQ(map_at_or(result, "4"sv), 400);
-  EXPECT_EQ(map_at_or(result, "5"sv), 500);
 }
 
 } // namespace albatross
