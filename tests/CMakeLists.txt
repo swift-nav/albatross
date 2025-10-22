@@ -63,6 +63,7 @@ albatross_add_test(albatross_unit_tests
   albatross
   gtest
   gtest_main
+  gmock
   pthread
   gflags
   nlopt
