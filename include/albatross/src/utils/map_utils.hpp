@@ -161,11 +161,8 @@ void map_subset_sequence(const Map &a, const Set &b, Merge &&merge) {
 }
 
 struct DoNothing {
-  template <typename K, typename V>
-  constexpr void operator()(const K &, const V &) const {}
-
-  template <typename K, typename V, typename V2>
-  constexpr void operator()(const K &, const V &, const V2 &) const {}
+  template <typename... Args>
+  constexpr void operator()(const Args &...) const noexcept {}
 };
 
 template <typename Map1, typename Map2, typename F>
@@ -194,15 +191,38 @@ void map_union(const Map1 &a, const Map2 &b, AddA &&add_a, AddB &&add_b,
 
 // Efficient map operations
 //
+// The following functions offer similar logic to
+// `std::set_difference()`, `std::set_intersection()` and friends, but
+// with slightly simpler behavior and interfaces (not dealing manually
+// with iterators everywhere), better checking of ordering
+// requirements and some map-specific operations like subsetting
+// without having to do extra lambda gymnastics every time.
+//
 // The functions below operate via a linear merge pass over two
 // ordered containers for efficiency; this means consistent ordering
-// is crucial for correctness.  Both containers (`a` and `b`) must
-// have the same comparator type where applicable, accessible via a
-// member type `key_compare` or as a third template parameter
-// `Compare`.  This value must be accessible at runtime via a
-// `.key_comp()` member.  If the container has no inherent ordering
-// (`std::vector` e.g.), the elements of the container must be sorted
-// according to the `key_compare` of the other argument.
+// is crucial for correctness.
+//
+//  - Both containers (`a` and `b`) must have the same comparator type
+//    where applicable, accessible via a member type `key_compare` or
+//    as a third template parameter `Compare`.  Either this comparator
+//    must be stateless, or both instances must have the same state.
+//
+//  - This value must be accessible at runtime via a `.key_comp()`
+//    member.
+//
+//  - If the container has no inherent ordering (`std::vector` e.g.),
+//    the elements of the container must be sorted according to the
+//    `key_compare` of the other argument.
+//
+//  - Map types must have a `key_type` member type corresponding to
+//    the key type and a `mapped_type` member type corresponding to
+//    the value type of each association.
+//
+//  - Any argument type (map or sequence) must offer forward iterators
+//    accessible via `.begin()` and `.end()`.
+//
+//  - Map types used for returned maps (i.e. `a`'s map type) must
+//    offer `.emplace_hint(const_iterator, key, value)`.
 //
 // Since this comparator must be the same between both types, if `a`
 // and `b` have different key types, this comparator must implement
@@ -250,6 +270,13 @@ void map_union(const Map1 &a, const Map2 &b, AddA &&add_a, AddB &&add_b,
 //
 // if your merge does the same thing for any key.  `T` here is the
 // appropriate return type for your operation.
+//
+// The asymptotic performance of all of these is O(|a| + |b|) in time.
+// Each allocates a new map or other container (and its contents) and
+// returns by value (using RVO).
+//
+// Basic safety is guaranteed -- if an exception is thrown, any
+// partial results will be correctly destroyed.
 
 // Returns a map containing the associations in `a` whose keys are not
 // present in `b`.
@@ -269,7 +296,11 @@ Map1 map_difference(const Map1 &a, const Map2 &b) {
 // in `a`.
 //
 // If the maps have different key types, then `b`'s key type must be
-// implicitly convertible to `a`'s.
+// implicitly convertible to `a`'s (and the associations only in `b`
+// will be inserted into the resulting map using the converted key
+// values).  It is your responsibility to ensure this conversion is
+// bijective (i.e. each value of `Map2::key_type` corresponds to only
+// one value of `Map1::key_type`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<
               has_same_key_compare_v<Map1, Map2> &&
@@ -291,7 +322,9 @@ Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
 // reasons that make it awkward to pass `std::make_pair()` directly.
 struct MakePair {
   template <typename V1, typename V2>
-  constexpr auto operator()(V1 &&v1, V2 &&v2) const noexcept {
+  constexpr auto operator()(V1 &&v1, V2 &&v2) const
+      noexcept(noexcept(std::make_pair(std::forward<V1>(v1),
+                                       std::forward<V2>(v2)))) {
     return std::make_pair(std::forward<V1>(v1), std::forward<V2>(v2));
   }
 };
@@ -327,6 +360,11 @@ struct ReturnRight {
 // By default, `merge` is provided and simply preserves the value from
 // `a`.  See also `ReturnRight` for the opposite behaviour, or provide
 // your own merge function.
+//
+// If the maps have different key types, then `b`'s key type must be
+// implicitly convertible to `a`'s.  It is your responsibility to
+// ensure this conversion is bijective (i.e. each value of
+// `Map2::key_type` corresponds to only one value of `Map1::key_type`.
 template <typename Map1, typename Map2, typename Merge = ReturnLeft,
           typename = std::enable_if_t<
               has_same_key_compare_v<Map1, Map2> &&
@@ -337,7 +375,7 @@ template <typename Map1, typename Map2, typename Merge = ReturnLeft,
                   can_call_map_union_v<Merge, typename Map1::key_type,
                                        typename Map1::mapped_type>,
               void>>
-Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = Merge{}) {
+Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = ReturnLeft{}) {
   Map1 result;
   const auto add_a = [&result](const auto &k, const auto &av) {
     result.emplace_hint(result.end(), k, av);
@@ -373,7 +411,7 @@ template <template <typename...> typename Map, typename K, typename V,
               void>>
 IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
 map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
-              Merge &&merge = Merge{}) {
+              Merge &&merge = MakePair{}) {
   IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
       intersection;
   const auto on_both = [&intersection, merge = std::forward<Merge>(merge)](
@@ -385,7 +423,7 @@ map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
   return intersection;
 }
 
-// Returns a sorted vector of the the keys present in `a` but not `b`.
+// Returns a sorted vector of the keys present in `a` but not `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
 std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
@@ -398,7 +436,7 @@ std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
   return diff;
 }
 
-// Returns a sorted vector of the the keys present in `a` but not `b`.
+// Returns a sorted vector of the keys present in both `a` and `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
 std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
@@ -415,9 +453,12 @@ std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
 // Returns a new map containing the associations from `m` whose keys
 // were present in the sequence `keys`.  `keys` must be an ordered
 // container with the usual interface of `::key_compare` /
-// `.key_comp()` and whose `key_compare` type matches that of `m`.  If
-// you have something like a `std::vector<m::key_type>`, use
-// `map_subset_sorted`.
+// `.key_comp()` and whose `key_compare` type matches that of `m`.
+//
+// If you have something like a properly sorted
+// `std::vector<m::key_type>` (with no inherent ordering), for example
+// from calling `map_(intersect|difference)_keys()` or `map_keys()`,
+// use `map_subset_sorted`.
 template <
     typename Map, typename Sequence,
     typename = std::enable_if_t<has_same_key_compare_v<Map, Sequence>, void>>
@@ -436,6 +477,9 @@ Map map_subset(const Map &m, const Sequence &keys) {
 // `::key_compare` member type.  `keys` *must* be sorted according to
 // the comparator `m.key_comp()` (`Map::key_compare`); if they are
 // not, this function will assert.
+//
+// If you have something like a `std::set<m::key_type>`, you should
+// use `map_subset`.
 template <typename Map, typename Sequence>
 Map map_subset_sorted(const Map &m, const Sequence &keys) {
   ALBATROSS_ASSERT(std::is_sorted(keys.begin(), keys.end(), m.key_comp()) &&
@@ -451,3 +495,9 @@ Map map_subset_sorted(const Map &m, const Sequence &keys) {
 
 } // namespace albatross
 #endif
+
+// missing heterogeneous tests
+// missing death tests
+// don't have access to property-based testing tools
+// does googletest offer a way to test negative compilation?
+// [[nodiscard]]
