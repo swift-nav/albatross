@@ -291,6 +291,18 @@ Map1 map_difference(const Map1 &a, const Map2 &b) {
   return diff;
 }
 
+template <
+    typename Map1, typename Map2,
+    typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
+    typename = void>
+Map1 map_difference(const Map1 &a, const Map2 &b) {
+  static_assert(
+      has_same_key_compare_v<Map1, Map2>,
+      "map_difference requires both maps to have the same comparator type. "
+      "Check that Map1::key_compare and Map2::key_compare are the same type.");
+  return {};
+}
+
 // Returns a map containing the associations in `a` whose keys are not
 // present in `b` and those present in `b` whose keys are not present
 // in `a`.
@@ -316,6 +328,35 @@ Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
   };
   detail::map_symmetric_difference(a, b, either);
   return diff;
+}
+
+template <typename Map1, typename Map2,
+          typename = std::enable_if_t<
+              !has_same_key_compare_v<Map1, Map2> ||
+                  !std::is_convertible_v<typename Map2::key_type,
+                                         typename Map1::key_type> ||
+                  !std::is_same_v<typename Map1::mapped_type,
+                                  typename Map2::mapped_type>,
+              void>,
+          typename = void>
+Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
+  static_assert(
+      has_same_key_compare_v<Map1, Map2>,
+      "map_symmetric_difference requires both maps to have the same "
+      "comparator type (Map1::key_compare must equal Map2::key_compare)");
+
+  static_assert(
+      std::is_convertible_v<typename Map2::key_type, typename Map1::key_type>,
+      "map_symmetric_difference requires Map2::key_type to be implicitly "
+      "convertible to Map1::key_type, because keys from `b` will be "
+      "inserted into the result map");
+
+  static_assert(
+      std::is_same_v<typename Map1::mapped_type, typename Map2::mapped_type>,
+      "map_symmetric_difference requires both maps to have the same "
+      "value type (Map1::mapped_type must equal Map2::mapped_type)");
+
+  return {};
 }
 
 // A functor to call `make_pair()`.  This is only useful for the C++
@@ -391,6 +432,45 @@ Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = ReturnLeft{}) {
   return result;
 }
 
+template <typename Map1, typename Map2, typename Merge = ReturnLeft,
+          typename = std::enable_if_t<
+              !has_same_key_compare_v<Map1, Map2> ||
+                  !std::is_convertible_v<typename Map2::key_type,
+                                         typename Map1::key_type> ||
+                  !std::is_same_v<typename Map1::mapped_type,
+                                  typename Map2::mapped_type> ||
+                  !can_call_map_union_v<Merge, typename Map1::key_type,
+                                        typename Map1::mapped_type>,
+              void>,
+          typename = void>
+Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = ReturnLeft{}) {
+  static_assert(
+      has_same_key_compare_v<Map1, Map2>,
+      "map_union requires both maps to have the same comparator type. "
+      "Check that Map1::key_compare and Map2::key_compare are the same type. "
+      "Both containers must be sorted by the same comparison function.");
+
+  static_assert(
+      std::is_convertible_v<typename Map2::key_type, typename Map1::key_type>,
+      "map_union requires Map2::key_type to be implicitly convertible to "
+      "Map1::key_type. Keys from the second map will be inserted into the "
+      "result (which has Map1's key type), so the conversion must be valid.");
+
+  static_assert(
+      std::is_same_v<typename Map1::mapped_type, typename Map2::mapped_type>,
+      "map_union requires both maps to have the same value type. "
+      "Check that Map1::mapped_type and Map2::mapped_type are identical.");
+
+  static_assert(
+      can_call_map_union_v<Merge, typename Map1::key_type,
+                           typename Map1::mapped_type>,
+      "map_union requires the merge function to be callable as either "
+      "merge(key, val_a, val_b) or merge(val_a, val_b), where key is "
+      "Map1::key_type and val_a/val_b are Map1::mapped_type.");
+
+  return {};
+}
+
 // Intersect the maps `a` and `b`, returning a map containing the
 // overlapping keys and values computed by calling `f()`, either as
 // `merge(key, val_a, val_b)` or `merge(val_a, val_b)` if the former
@@ -423,6 +503,33 @@ map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
   return intersection;
 }
 
+template <template <typename...> typename Map, typename K, typename V,
+          typename Compare, typename Map2, typename Merge = MakePair,
+          typename = std::enable_if_t<
+              !has_same_key_compare_v<Map<K, V, Compare>, Map2> ||
+                  !can_call_map_intersection_v<Merge, K, V,
+                                               typename Map2::mapped_type>,
+              void>,
+          typename = void>
+IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
+map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
+              Merge &&merge = MakePair{}) {
+  static_assert(
+      has_same_key_compare_v<Map<K, V, Compare>, Map2>,
+      "map_intersect requires both maps to have the same comparator type. "
+      "Check that the comparators of both input maps are the same type.");
+
+  static_assert(
+      can_call_map_intersection_v<Merge, K, V, typename Map2::mapped_type>,
+      "map_intersect requires the merge function to be callable as either "
+      "merge(key, val_a, val_b) or merge(val_a, val_b), where key is the "
+      "key type of the first map and val_a/val_b are the value types from "
+      "each map. The return type of merge determines the value type of the "
+      "result.");
+
+  return {};
+}
+
 // Returns a sorted vector of the keys present in `a` but not `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
@@ -434,6 +541,20 @@ std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
   };
   detail::map_difference(a, b, only_a);
   return diff;
+}
+
+template <
+    typename Map1, typename Map2,
+    typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
+    typename = void>
+std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
+                                                         const Map2 &b) {
+  static_assert(
+      has_same_key_compare_v<Map1, Map2>,
+      "map_difference_keys requires both maps to have the same comparator "
+      "type. "
+      "Check that Map1::key_compare and Map2::key_compare are the same type.");
+  return {};
 }
 
 // Returns a sorted vector of the keys present in both `a` and `b`.
@@ -448,6 +569,19 @@ std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
   };
   detail::map_intersect(a, b, on_match);
   return intersection;
+}
+
+template <
+    typename Map1, typename Map2,
+    typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
+    typename = void>
+std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
+                                                        const Map2 &b) {
+  static_assert(
+      has_same_key_compare_v<Map1, Map2>,
+      "map_intersect_keys requires both maps to have the same comparator type. "
+      "Check that Map1::key_compare and Map2::key_compare are the same type.");
+  return {};
 }
 
 // Returns a new map containing the associations from `m` whose keys
@@ -469,6 +603,21 @@ Map map_subset(const Map &m, const Sequence &keys) {
   };
   detail::map_subset_sequence(m, keys, on_match);
   return results;
+}
+
+template <
+    typename Map, typename Sequence,
+    typename = std::enable_if_t<!has_same_key_compare_v<Map, Sequence>, void>,
+    typename = void>
+Map map_subset(const Map &m, const Sequence &keys) {
+  static_assert(has_same_key_compare_v<Map, Sequence>,
+                "map_subset requires the key sequence to have the same "
+                "comparator type as the map. "
+                "This typically means using std::set or std::map with the same "
+                "comparator. "
+                "If you have a std::vector or other unordered sequence, use "
+                "map_subset_sorted() instead.");
+  return {};
 }
 
 // Returns a new map containing the associations from `m` whose keys
