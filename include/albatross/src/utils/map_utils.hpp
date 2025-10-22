@@ -295,7 +295,7 @@ template <
     typename Map1, typename Map2,
     typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
     typename = void>
-Map1 map_difference(const Map1 &a, const Map2 &b) {
+Map1 map_difference(const Map1 &, const Map2 &) {
   static_assert(
       has_same_key_compare_v<Map1, Map2>,
       "map_difference requires both maps to have the same comparator type. "
@@ -339,7 +339,7 @@ template <typename Map1, typename Map2,
                                   typename Map2::mapped_type>,
               void>,
           typename = void>
-Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
+Map1 map_symmetric_difference(const Map1 &, const Map2 &) {
   static_assert(
       has_same_key_compare_v<Map1, Map2>,
       "map_symmetric_difference requires both maps to have the same "
@@ -444,7 +444,7 @@ template <typename Map1, typename Map2, typename Merge = ReturnLeft,
                                         typename Map1::mapped_type>,
               void>,
           typename = void>
-Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = ReturnLeft{}) {
+Map1 map_union(const Map1 &, const Map2 &, Merge &&) {
   static_assert(
       has_same_key_compare_v<Map1, Map2>,
       "map_union requires both maps to have the same comparator type. "
@@ -514,8 +514,7 @@ template <template <typename...> typename Map, typename K, typename V,
               void>,
           typename = void>
 IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
-map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
-              Merge &&merge = MakePair{}) {
+map_intersect(const Map<K, V, Compare> &, const Map2 &, Merge &&) {
   static_assert(
       has_same_key_compare_v<Map<K, V, Compare>, Map2>,
       "map_intersect requires both maps to have the same comparator type. "
@@ -549,8 +548,8 @@ template <
     typename Map1, typename Map2,
     typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
     typename = void>
-std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
-                                                         const Map2 &b) {
+std::vector<typename Map1::key_type> map_difference_keys(const Map1 &,
+                                                         const Map2 &) {
   static_assert(
       has_same_key_compare_v<Map1, Map2>,
       "map_difference_keys requires both maps to have the same comparator "
@@ -577,8 +576,8 @@ template <
     typename Map1, typename Map2,
     typename = std::enable_if_t<!has_same_key_compare_v<Map1, Map2>, void>,
     typename = void>
-std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
-                                                        const Map2 &b) {
+std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &,
+                                                        const Map2 &) {
   static_assert(
       has_same_key_compare_v<Map1, Map2>,
       "map_intersect_keys requires both maps to have the same comparator type. "
@@ -611,7 +610,7 @@ template <
     typename Map, typename Sequence,
     typename = std::enable_if_t<!has_same_key_compare_v<Map, Sequence>, void>,
     typename = void>
-Map map_subset(const Map &m, const Sequence &keys) {
+Map map_subset(const Map &, const Sequence &) {
   static_assert(has_same_key_compare_v<Map, Sequence>,
                 "map_subset requires the key sequence to have the same "
                 "comparator type as the map. "
