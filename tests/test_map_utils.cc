@@ -121,7 +121,7 @@ TYPED_TEST_P(MapOperationsTest, Difference) {
 
   EXPECT_EQ(diff.size(), 2);
 
-  // Values from map_1 should be preserved
+  // All values in `diff` should come from `map1`
   for (const auto &[key, value] : diff) {
     SCOPED_TRACE(::testing::Message() << "Checking key=" << key);
     EXPECT_TRUE(map_contains(map1, key));

@@ -645,9 +645,3 @@ template <typename Map, typename Sequence>
 
 } // namespace albatross
 #endif
-
-// missing heterogeneous tests
-// missing death tests
-// don't have access to property-based testing tools
-// does googletest offer a way to test negative compilation?
-// [[nodiscard]]
