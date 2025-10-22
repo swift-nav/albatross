@@ -282,7 +282,7 @@ void map_union(const Map1 &a, const Map2 &b, AddA &&add_a, AddB &&add_b,
 // present in `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
-Map1 map_difference(const Map1 &a, const Map2 &b) {
+[[nodiscard]] Map1 map_difference(const Map1 &a, const Map2 &b) {
   Map1 diff;
   const auto only_a = [&diff](const auto &k, const auto &v) {
     diff.emplace_hint(diff.end(), k, v);
@@ -321,7 +321,7 @@ template <typename Map1, typename Map2,
                   std::is_same_v<typename Map1::mapped_type,
                                  typename Map2::mapped_type>,
               void>>
-Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
+[[nodiscard]] Map1 map_symmetric_difference(const Map1 &a, const Map2 &b) {
   Map1 diff;
   const auto either = [&diff](const auto &k, const auto &v) {
     diff.emplace_hint(diff.end(), k, v);
@@ -416,7 +416,8 @@ template <typename Map1, typename Map2, typename Merge = ReturnLeft,
                   can_call_map_union_v<Merge, typename Map1::key_type,
                                        typename Map1::mapped_type>,
               void>>
-Map1 map_union(const Map1 &a, const Map2 &b, Merge &&merge = ReturnLeft{}) {
+[[nodiscard]] Map1 map_union(const Map1 &a, const Map2 &b,
+                             Merge &&merge = ReturnLeft{}) {
   Map1 result;
   const auto add_a = [&result](const auto &k, const auto &av) {
     result.emplace_hint(result.end(), k, av);
@@ -489,7 +490,8 @@ template <template <typename...> typename Map, typename K, typename V,
                   can_call_map_intersection_v<Merge, K, V,
                                               typename Map2::mapped_type>,
               void>>
-IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
+[[nodiscard]] IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge,
+                                 Compare>
 map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
               Merge &&merge = MakePair{}) {
   IntersectedMapType<Map, K, V, typename Map2::mapped_type, Merge, Compare>
@@ -533,8 +535,8 @@ map_intersect(const Map<K, V, Compare> &a, const Map2 &b,
 // Returns a sorted vector of the keys present in `a` but not `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
-std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
-                                                         const Map2 &b) {
+[[nodiscard]] std::vector<typename Map1::key_type>
+map_difference_keys(const Map1 &a, const Map2 &b) {
   std::vector<typename Map1::key_type> diff;
   const auto only_a = [&diff](const auto &k, const auto &) {
     diff.push_back(k);
@@ -560,8 +562,8 @@ std::vector<typename Map1::key_type> map_difference_keys(const Map1 &a,
 // Returns a sorted vector of the keys present in both `a` and `b`.
 template <typename Map1, typename Map2,
           typename = std::enable_if_t<has_same_key_compare_v<Map1, Map2>, void>>
-std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
-                                                        const Map2 &b) {
+[[nodiscard]] std::vector<typename Map1::key_type>
+map_intersect_keys(const Map1 &a, const Map2 &b) {
   std::vector<typename Map1::key_type> intersection;
   const auto on_match = [&intersection](const auto &k, const auto &,
                                         const auto &) {
@@ -596,7 +598,7 @@ std::vector<typename Map1::key_type> map_intersect_keys(const Map1 &a,
 template <
     typename Map, typename Sequence,
     typename = std::enable_if_t<has_same_key_compare_v<Map, Sequence>, void>>
-Map map_subset(const Map &m, const Sequence &keys) {
+[[nodiscard]] Map map_subset(const Map &m, const Sequence &keys) {
   Map results;
   const auto on_match = [&results](const auto &k, const auto &v) {
     results.emplace_hint(results.end(), k, v);
@@ -630,7 +632,7 @@ Map map_subset(const Map &m, const Sequence &keys) {
 // If you have something like a `std::set<m::key_type>`, you should
 // use `map_subset`.
 template <typename Map, typename Sequence>
-Map map_subset_sorted(const Map &m, const Sequence &keys) {
+[[nodiscard]] Map map_subset_sorted(const Map &m, const Sequence &keys) {
   ALBATROSS_ASSERT(std::is_sorted(keys.begin(), keys.end(), m.key_comp()) &&
                    "You promised when you called this function that the `keys` "
                    "would be sorted!");
