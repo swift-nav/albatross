@@ -114,16 +114,16 @@ template <typename Map1, typename Map2, typename OnlyA, typename OnlyB,
           typename Merge>
 void map_merge(const Map1 &a, const Map2 &b, OnlyA &&only_a, OnlyB &&only_b,
                Merge &&merge) {
-  auto less = a.key_comp();
+  auto comp = a.key_comp();
   auto ai = a.begin();
   auto bi = b.begin();
   while (ai != a.end() && bi != b.end()) {
     const auto &[ak, av] = *ai;
     const auto &[bk, bv] = *bi;
-    if (less(ak, bk)) {
+    if (comp(ak, bk)) {
       only_a(ak, av);
       ++ai;
-    } else if (less(bk, ak)) {
+    } else if (comp(bk, ak)) {
       only_b(bk, bv);
       ++bi;
     } else {
@@ -142,15 +142,15 @@ void map_merge(const Map1 &a, const Map2 &b, OnlyA &&only_a, OnlyB &&only_b,
 
 template <typename Map, typename Set, typename Merge>
 void map_subset_sequence(const Map &a, const Set &b, Merge &&merge) {
-  auto less = a.key_comp();
+  auto comp = a.key_comp();
   auto ai = a.begin();
   auto bi = b.begin();
   while (ai != a.end() && bi != b.end()) {
     const auto &[ak, av] = *ai;
     const auto bk = *bi;
-    if (less(ak, bk)) {
+    if (comp(ak, bk)) {
       ++ai;
-    } else if (less(bk, ak)) {
+    } else if (comp(bk, ak)) {
       ++bi;
     } else {
       merge(ak, av);

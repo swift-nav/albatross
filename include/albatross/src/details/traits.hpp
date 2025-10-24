@@ -78,7 +78,7 @@ struct has_same_key_compare : std::false_type {};
 
 template <typename T, typename U>
 struct has_same_key_compare<
-    T, U, std::void_t<typename T ::key_compare, typename U::key_compare>>
+    T, U, std::void_t<typename T::key_compare, typename U::key_compare>>
     : std::is_same<typename T::key_compare, typename U::key_compare> {};
 
 template <typename T, typename U>
