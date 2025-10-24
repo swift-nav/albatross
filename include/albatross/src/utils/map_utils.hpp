@@ -19,8 +19,9 @@ namespace albatross {
  * Convenience function instead of using the find == end
  * method of determining if a key exists in a map.
  */
-template <template <typename...> class Map, typename K, typename V>
-inline bool map_contains(const Map<K, V> &m, const K &k) {
+template <typename Map, typename K,
+          std::enable_if_t<has_find_key_v<Map, K>, int> = 0>
+inline bool map_contains(const Map &m, const K &k) {
   return m.find(k) != m.end();
 }
 
@@ -29,8 +30,11 @@ inline bool map_contains(const Map<K, V> &m, const K &k) {
  * the map in which case it uses either the default constructor
  * or the provided alternate value.
  */
-template <template <typename...> class Map, typename K, typename V>
-inline V map_at_or(const Map<K, V> &m, const K &k,
+template <template <typename...> class Map, typename K, typename SearchKey,
+          typename V, typename... More,
+          typename = std::enable_if_t<
+              has_find_key_v<Map<K, V, More...>, SearchKey>, void>>
+inline V map_at_or(const Map<K, V, More...> &m, const SearchKey &k,
                    const V &value_if_missing = V()) {
   const auto iter = m.find(k);
   if (iter == m.end()) {
@@ -42,12 +46,13 @@ inline V map_at_or(const Map<K, V> &m, const K &k,
 /*
  * Returns a vector consisting of all the keys in a map.
  */
-template <template <typename...> class Map, typename K, typename V>
-inline std::vector<K> map_keys(const Map<K, V> &m) {
+template <template <typename...> class Map, typename K, typename V,
+          typename... More>
+inline std::vector<K> map_keys(const Map<K, V, More...> &m) {
   std::vector<K> keys;
   keys.reserve(m.size());
-  for (const auto &pair : m) {
-    keys.push_back(pair.first);
+  for (const auto &[key, _] : m) {
+    keys.push_back(key);
   }
   return keys;
 }
@@ -55,19 +60,22 @@ inline std::vector<K> map_keys(const Map<K, V> &m) {
 /*
  * Returns a vector consisting of all the values in a map.
  */
-template <template <typename...> class Map, typename K, typename V>
-inline std::vector<V> map_values(const Map<K, V> &m) {
+template <template <typename...> class Map, typename K, typename V,
+          typename... More>
+inline std::vector<V> map_values(const Map<K, V, More...> &m) {
   std::vector<V> values;
   values.reserve(m.size());
-  for (const auto &pair : m) {
-    values.push_back(pair.second);
+  for (const auto &[_, value] : m) {
+    values.push_back(value);
   }
   return values;
 }
 
-template <template <typename...> class Map, typename K, typename V>
-inline Map<K, V> map_join(const Map<K, V> &m, const Map<K, V> &other) {
-  Map<K, V> join(other);
+template <template <typename...> class Map, typename K, typename V,
+          typename... More>
+inline Map<K, V, More...> map_join(const Map<K, V, More...> &m,
+                                   const Map<K, V, More...> &other) {
+  Map<K, V, More...> join(other);
   // Note the order here is reversed since insert will not insert if a key
   // already exists, in this case we want the result to contain all elements of
   // m overwritten by any elements in other.
@@ -75,18 +83,20 @@ inline Map<K, V> map_join(const Map<K, V> &m, const Map<K, V> &other) {
   return join;
 }
 
-template <template <typename...> class Map, typename K, typename V>
-inline Map<K, V> map_join_strict(const Map<K, V> &m, const Map<K, V> &other) {
-  Map<K, V> join(other);
+template <template <typename...> class Map, typename K, typename V,
+          typename... More>
+inline Map<K, V, More...> map_join_strict(const Map<K, V, More...> &m,
+                                          const Map<K, V, More...> &other) {
+  Map<K, V, More...> join(other);
   // Note the order here is reversed since insert will not insert if a key
   // already exists, in this case we want the result to contain all elements of
   // m overwritten by any elements in other.
-  for (const auto &pair : m) {
-    if (join.find(pair.first) != join.end()) {
+  for (const auto &[key, value] : m) {
+    if (map_contains(join, key)) {
       // duplicate key found in map_join.
       ALBATROSS_ASSERT(false && "duplicate key found");
     }
-    join[pair.first] = pair.second;
+    join[key] = value;
   }
   return join;
 }
