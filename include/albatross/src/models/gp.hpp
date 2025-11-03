@@ -473,9 +473,9 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
   // have been formed by taking the mean function into account and the
   // held out predictions will use that to derive deltas from the truth
   // so removing the mean, then adding it back later is unneccesary
-  return details::held_out_predictions(gp_fit.train_covariance,
-                                       dataset.targets.mean, gp_fit.information,
-                                       group_indexer, predict_type);
+  return details::held_out_predictions(
+      gp_fit.train_covariance, dataset.targets.mean, gp_fit.information,
+      group_indexer, predict_type, model.threads_.get());
 }
 
 /*
