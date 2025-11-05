@@ -59,3 +59,11 @@ example(
     ],
     args = "-input examples/sinc_input.csv -output examples_out/sinc_predictions.csv",
 )
+
+example(
+    name = "mixed-precision",
+    srcs = [
+        "mixed_precision_example.cc",
+    ],
+    args = "",
+)
