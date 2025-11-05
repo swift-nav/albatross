@@ -72,6 +72,7 @@ cc_library(
         "include/albatross/src/core/parameters.hpp",
         "include/albatross/src/core/prediction.hpp",
         "include/albatross/src/core/priors.hpp",
+        "include/albatross/src/core/scalar_traits.hpp",
         "include/albatross/src/core/traits.hpp",
         "include/albatross/src/core/transformed_distribution.hpp",
         "include/albatross/src/covariance_functions/call_trace.hpp",
@@ -120,6 +121,7 @@ cc_library(
         "include/albatross/src/models/conditional_gaussian.hpp",
         "include/albatross/src/models/gp.hpp",
         "include/albatross/src/models/least_squares.hpp",
+        "include/albatross/src/models/mixed_precision_gp.hpp",
         "include/albatross/src/models/null_model.hpp",
         "include/albatross/src/models/ransac.hpp",
         "include/albatross/src/models/ransac_gp.hpp",
@@ -264,6 +266,7 @@ swift_cc_test(
         "tests/test_core_distribution.cc",
         "tests/test_core_model.cc",
         "tests/test_linear_combination.cc",
+        "tests/test_mixed_precision.cc",
         "tests/test_parameter_handling_mixin.cc",
         "tests/test_prediction.cc",
     ],
@@ -422,4 +425,13 @@ test_suite(
         ":albatross-test-tune",
         ":albatross-test-misc",
     ],
+)
+
+# Performance benchmark for mixed-precision implementation
+cc_binary(
+    name = "benchmark_mixed_precision",
+    srcs = ["tests/benchmark_mixed_precision.cc"],
+    copts = ["-std=c++17"],
+    includes = ["include"],
+    deps = [":albatross"],
 )
