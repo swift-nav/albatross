@@ -15,6 +15,27 @@
 
 namespace albatross {
 
+// Build-time precision configuration
+//
+// IMPORTANT: Some operations MUST always use double precision for numerical stability:
+// - Matrix decompositions (LDLT, Cholesky, QR)
+// - Linear system solves
+// - Matrix inverses
+// - Log determinants
+// - Variance/covariance storage
+// - Hyperparameter values
+//
+// Only use BuildTimeScalar for:
+// - Covariance function evaluation (e.g., exp(-d²/l²))
+// - Distance computations
+// - Intermediate matrix products (if numerically stable)
+//
+#ifdef ALBATROSS_USE_FLOAT_PRECISION
+using BuildTimeScalar = float;
+#else
+using BuildTimeScalar = double;
+#endif
+
 /*
  * Scalar type traits for mixed-precision support.
  *
@@ -74,11 +95,15 @@ struct ScalarTraits {
 };
 
 // Predefined scalar policies
-using DoublePrecision = ScalarTraits<double, double>;  // DEFAULT: backward compatible
-using FloatPrecision = ScalarTraits<float, float>;    // Pure float (fastest)
-using MixedPrecision = ScalarTraits<float, double>;   // RECOMMENDED: optimal balance
+using DoublePrecision = ScalarTraits<double, double>;  // Pure double precision
+using FloatPrecision = ScalarTraits<float, float>;    // Pure float precision (fastest)
+using MixedPrecision = ScalarTraits<float, double>;   // Float compute, double storage (optimal)
 
-// Default scalar type (for backward compatibility)
+// Build-time default: uses BuildTimeScalar for compute, double for storage
+// When ALBATROSS_USE_FLOAT_PRECISION is defined, this enables mixed-precision mode
+using DefaultPrecision = ScalarTraits<BuildTimeScalar, double>;
+
+// Legacy: Default scalar type (for backward compatibility)
 using DefaultScalar = double;
 
 // Type trait to check if a type is a ScalarTraits instantiation

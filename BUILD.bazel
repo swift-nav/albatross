@@ -462,3 +462,12 @@ cc_binary(
     includes = ["include"],
     deps = [":albatross"],
 )
+
+# Diagonal inverse speedup comparison
+cc_binary(
+    name = "benchmark_diagonal_inverse_speedup",
+    srcs = ["tests/benchmark_diagonal_inverse_speedup.cc"],
+    copts = ["-std=c++17"],
+    includes = ["include"],
+    deps = [":albatross"],
+)
