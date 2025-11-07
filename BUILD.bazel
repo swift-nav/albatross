@@ -453,3 +453,12 @@ cc_binary(
     includes = ["include"],
     deps = [":albatross"],
 )
+
+# Diagonal inverse optimization benchmark
+cc_binary(
+    name = "benchmark_diagonal_inverse",
+    srcs = ["tests/benchmark_diagonal_inverse.cc"],
+    copts = ["-std=c++17"],
+    includes = ["include"],
+    deps = [":albatross"],
+)

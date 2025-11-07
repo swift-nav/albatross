@@ -175,22 +175,39 @@ public:
   /*
    * The diagonal of the inverse of the matrix this LDLT
    * decomposition represents in O(n^2) operations.
+   *
+   * Optimized: Direct computation without full inverse.
+   * For LDLT: A = P^T L D L^T P, so A^{-1} = P^T L^{-T} D^{-1} L^{-1} P
+   * Diagonal element: (A^{-1})_{ii} = ||L^{-1} P e_i||^2_{D^{-1}}
    */
   Eigen::VectorXd inverse_diagonal() const {
-    Eigen::Index n = this->rows();
+    ALBATROSS_ASSERT(this->m_isInitialized && "LDLT must be initialized");
 
-    const auto size_n = albatross::cast::to_size(n);
-    std::vector<std::vector<std::size_t>> block_indices(size_n);
-    for (std::size_t i = 0; i < size_n; i++) {
-      block_indices[i] = {i};
-    }
+    const Eigen::Index n = this->rows();
+    const auto& L = this->matrixL();
+    const auto& D = this->vectorD();
+    const auto& P = this->transpositionsP();
 
     Eigen::VectorXd inv_diag(n);
-    const auto blocks = inverse_blocks(block_indices);
-    for (std::size_t i = 0; i < size_n; i++) {
-      ALBATROSS_ASSERT(blocks[i].rows() == 1);
-      ALBATROSS_ASSERT(blocks[i].cols() == 1);
-      inv_diag[albatross::cast::to_index(i)] = blocks[i](0, 0);
+
+    // For each diagonal element
+    for (Eigen::Index i = 0; i < n; ++i) {
+      // Create unit vector e_i and apply permutation P
+      Eigen::VectorXd e_i = Eigen::VectorXd::Zero(n);
+      e_i(i) = 1.0;
+      Eigen::VectorXd Pe_i = P * e_i;
+
+      // Solve L v = P e_i (forward substitution, O(n))
+      Eigen::VectorXd v = L.solve(Pe_i);
+
+      // Compute (A^{-1})_{ii} = v^T D^{-1} v = sum_j (v[j]^2 / D[j])
+      double diag_val = 0.0;
+      for (Eigen::Index j = 0; j < n; ++j) {
+        if (D(j) > 0.0) {
+          diag_val += v(j) * v(j) / D(j);
+        }
+      }
+      inv_diag(i) = diag_val;
     }
 
     return inv_diag;
