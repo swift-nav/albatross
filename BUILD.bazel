@@ -435,3 +435,21 @@ cc_binary(
     includes = ["include"],
     deps = [":albatross"],
 )
+
+# Performance benchmark for SIMD and cache optimizations
+cc_binary(
+    name = "benchmark_optimizations",
+    srcs = ["tests/benchmark_optimizations.cc"],
+    copts = ["-std=c++17"],
+    includes = ["include"],
+    deps = [":albatross"],
+)
+
+# Before/After comparison benchmark
+cc_binary(
+    name = "benchmark_comparison",
+    srcs = ["tests/benchmark_comparison.cc"],
+    copts = ["-std=c++17"],
+    includes = ["include"],
+    deps = [":albatross"],
+)
