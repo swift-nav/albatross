@@ -24,5 +24,6 @@
 #include <albatross/src/covariance_functions/representations.hpp>
 #include <albatross/src/models/gp.hpp>
 #include <albatross/src/models/conditional_gaussian.hpp>
+#include <albatross/src/models/mixed_precision_gp.hpp>
 
 #endif
