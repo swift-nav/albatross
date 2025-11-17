@@ -33,6 +33,7 @@
 #include <albatross/src/covariance_functions/nugget.hpp>
 #include <albatross/src/covariance_functions/polynomials.hpp>
 #include <albatross/src/covariance_functions/radial.hpp>
+#include <albatross/src/covariance_functions/spherical.hpp>
 #include <albatross/src/covariance_functions/scaling_function.hpp>
 
 #endif
