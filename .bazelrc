@@ -7,6 +7,10 @@ common --@rules_swiftnav//cc:enable_bzlmod=true
 # Preparation for Bazel 8 behavior of paths in external (plus instead of tilde)
 common --incompatible_use_plus_in_repo_names
 
+# This is an open source project and we want to test BuildBuddy integration
+build --bes_results_url=https://app.buildbuddy.io/invocation/
+build --bes_backend=grpcs://remote.buildbuddy.io
+
 # Don't let environment variables pollute the build
 # PATH is part of the action input and can lead to massive cache misses
 build --incompatible_strict_action_env
