@@ -11,6 +11,10 @@ common --incompatible_use_plus_in_repo_names
 build --bes_results_url=https://app.buildbuddy.io/invocation/
 build --bes_backend=grpcs://remote.buildbuddy.io
 
+build:rbe --platforms=//:docker_image_platform
+build:rbe --host_platform=//:docker_image_platform
+
+
 # Don't let environment variables pollute the build
 # PATH is part of the action input and can lead to massive cache misses
 build --incompatible_strict_action_env
