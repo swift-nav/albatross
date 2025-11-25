@@ -50,6 +50,7 @@ albatross_add_test(albatross_unit_tests
   test_serialize.cc
   test_sparse_gp.cc
   test_stats.cc
+  test_stats_wasserstein.cc
   test_thread_pool.cc
   test_traits_cereal.cc
   test_traits_core.cc
