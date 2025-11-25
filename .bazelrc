@@ -13,7 +13,11 @@ build --bes_backend=grpcs://remote.buildbuddy.io
 
 build:rbe --platforms=//:docker_image_platform
 build:rbe --host_platform=//:docker_image_platform
+build:rbe --remote_cache=grpcs://remote.buildbuddy.io
+build:rbe --remote_timeout=10m
 
+build:rbe_readonly --config=rbe
+build:rbe_readonly --noremote_upload_local_results
 
 # Don't let environment variables pollute the build
 # PATH is part of the action input and can lead to massive cache misses
