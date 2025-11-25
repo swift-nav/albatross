@@ -29,5 +29,8 @@ jobs:
           username: ${{ secrets.GH_NAME }}
           password: ${{ secrets.GH_TOKEN }}
 
-      - name: Build and test
+      - name: Build
         run: bazel build --remote_header=x-buildbuddy-api-key=${{ secrets.BUILDBUDDY_TEST }} --remote_executor=grpcs://remote.buildbuddy.io --config=rbe //...
+      
+      - name: Test
+        run: bazel test --remote_header=x-buildbuddy-api-key=${{ secrets.BUILDBUDDY_TEST }} --remote_executor=grpcs://remote.buildbuddy.io --config=rbe //:standalone_test
