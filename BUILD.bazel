@@ -291,17 +291,50 @@ swift_cc_test(
 )
 
 swift_cc_test(
-    name = "albatross-test-utils",
+    name = "albatross-test-async-utils",
     srcs = [
         "tests/test_async_utils.cc",
-        "tests/test_block_utils.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
+    name = "albatross-test-compression",
+    srcs = [
         "tests/test_compression.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
+    name = "albatross-test-thread-pool",
+    srcs = [
+        "tests/test_thread_pool.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
+    name = "albatross-test-utils",
+    srcs = [
+        "tests/test_block_utils.cc",
         "tests/test_csv_utils.cc",
         "tests/test_eigen_utils.cc",
         "tests/test_linalg_utils.cc",
         "tests/test_map_utils.cc",
         "tests/test_random_utils.cc",
-        "tests/test_thread_pool.cc",
         "tests/test_variant_utils.cc",
         "tests/test_vector_utils.cc",
     ],
@@ -365,6 +398,18 @@ swift_cc_test(
 )
 
 swift_cc_test(
+    name = "albatross-test-stats-wasserstein",
+    srcs = [
+        "tests/test_stats_wasserstein.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
     name = "albatross-test-samplers",
     srcs = [
         "tests/test_samplers.cc",
@@ -413,11 +458,15 @@ test_suite(
         ":albatross-test-indexing",
         ":albatross-test-core",
         ":albatross-test-models",
+        ":albatross-test-async-utils",
+        ":albatross-test-compression",
+        ":albatross-test-thread-pool",
         ":albatross-test-utils",
         ":albatross-test-evaluation",
         ":albatross-test-cross-validation",
         ":albatross-test-serialization",
         ":albatross-test-stats",
+        ":albatross-test-stats-wasserstein",
         ":albatross-test-samplers",
         ":albatross-test-tune",
         ":albatross-test-misc",
