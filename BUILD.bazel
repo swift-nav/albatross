@@ -472,3 +472,26 @@ test_suite(
         ":albatross-test-misc",
     ],
 )
+
+swift_cc_test(
+    name = "standalone_test",
+    srcs = ["tests/standalone_test.cc"],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = ["@gtest//:gtest_main"],
+    standard=17,
+)
+
+platform(
+    name = "docker_image_platform",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    exec_properties = {
+        "OSFamily": "Linux",
+        "dockerNetwork": "off",
+        "container-image": "docker://gcr.io/flame-public/rbe-ubuntu20-04:latest",
+    },
+)
