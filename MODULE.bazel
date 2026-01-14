@@ -8,21 +8,21 @@ bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 bazel_dep(name = "rules_cc", version = "0.2.16")
-bazel_dep(name = "rules_swiftnav", version = "0.11.0")
+bazel_dep(name = "rules_swiftnav", version = "0.16.0")
 git_override(
     module_name = "rules_swiftnav",
+    commit = "bc82a952a2f4298636dc844e9783b555e2a068f6",
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
-    commit = "b1e6c763b6906c0e77cb26bc6ab5adba481c715e",
 )
 
 swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
 use_repo(
     swift_cc_toolchain_ext,
-    "aarch64-darwin-llvm",
-    "aarch64-linux-llvm",
+    "aarch64-darwin-llvm20",
+    "aarch64-linux-llvm20",
     "aarch64-sysroot",
-    "x86_64-darwin-llvm",
-    "x86_64-linux-llvm",
+    "x86_64-darwin-llvm20",
+    "x86_64-linux-llvm20",
     "x86_64-sysroot",
 )
 
