@@ -9,18 +9,18 @@ bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_swiftnav", version = "0.11.0")
 git_override(
     module_name = "rules_swiftnav",
+    commit = "186af3917017f0886017756816f58155a243b688",
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
-    commit = "b1e6c763b6906c0e77cb26bc6ab5adba481c715e",
 )
 
 swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
 use_repo(
     swift_cc_toolchain_ext,
-    "aarch64-darwin-llvm",
-    "aarch64-linux-llvm",
+    "aarch64-darwin-llvm20",
+    "aarch64-linux-llvm20",
     "aarch64-sysroot",
-    "x86_64-darwin-llvm",
-    "x86_64-linux-llvm",
+    "x86_64-darwin-llvm20",
+    "x86_64-linux-llvm20",
     "x86_64-sysroot",
 )
 
