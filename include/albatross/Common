@@ -46,4 +46,6 @@
 #include <albatross/src/utils/map_utils.hpp>
 #include <albatross/src/utils/compress.hpp>
 
+#include <albatross/src/polynomial/chebyshev.hpp>
+
 #endif
