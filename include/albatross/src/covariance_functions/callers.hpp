@@ -188,18 +188,97 @@ inline Eigen::VectorXd compute_mean_vector(MeanFuncCaller caller,
   return m;
 }
 
+/*
+ * Helper function to validate that all variants in a vector hold the same type.
+ */
+template <typename... Ts>
+inline void
+assert_homogeneous_variant_vector(const std::vector<variant<Ts...>> &variants) {
+  if (variants.empty())
+    return;
+
+  const std::size_t expected_index = variants[0].which();
+  for (std::size_t i = 1; i < variants.size(); ++i) {
+    ALBATROSS_ASSERT(
+        variants[i].which() == expected_index &&
+        "All variants in a batch operation must hold the same type");
+  }
+}
+
+/*
+ * Helper function to unwrap a vector of Measurement<X> to a vector of X.
+ */
+template <typename X>
+inline std::vector<X>
+unwrap_measurements(const std::vector<Measurement<X>> &measurements) {
+  std::vector<X> values;
+  values.reserve(measurements.size());
+  for (const auto &m : measurements) {
+    values.push_back(m.value);
+  }
+  return values;
+}
+
 namespace internal {
 
 /*
  * This Caller just directly call the underlying CovFunc.
  */
 struct DirectCaller {
-  // Covariance Functions
+  // Covariance Functions - Pointwise
   template <typename CovFunc, typename X, typename Y,
             typename std::enable_if<has_valid_call_impl<CovFunc, X, Y>::value,
                                     int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return cov_func._call_impl(x, y);
+  }
+
+  // Covariance Functions - Batch (base case: pointwise loop)
+  // Only enabled if pointwise _call_impl exists (batch-only covariances won't
+  // reach here)
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<has_valid_call_impl<CovFunc, X, Y>::value,
+                                    int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return cov_func._call_impl(x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys, pool);
+  }
+
+  // NOTE: If a covariance defines ONLY _call_impl_vector (no _call_impl),
+  // then BatchCaller will catch it before we reach DirectCaller, so this
+  // base case is never instantiated for batch-only covariances.
+
+  // Symmetric batch (base case: pointwise loop using symmetry)
+  template <typename CovFunc, typename X,
+            typename std::enable_if<has_valid_call_impl<CovFunc, X, X>::value,
+                                    int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return cov_func._call_impl(x, y);
+    };
+    return compute_covariance_matrix(caller, xs, pool);
+  }
+
+  // Diagonal batch (base case: pointwise loop)
+  template <typename CovFunc, typename X,
+            typename std::enable_if<has_valid_call_impl<CovFunc, X, X>::value,
+                                    int>::type = 0>
+  static Eigen::VectorXd
+  call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
+                       [[maybe_unused]] ThreadPool *pool = nullptr) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd diag(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      diag[i] = cov_func._call_impl(xs[si], xs[si]);
+    }
+    return diag;
   }
 
   // Mean Functions
@@ -235,6 +314,30 @@ template <typename SubCaller> struct SymmetricCaller {
                 int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return SubCaller::call(cov_func, y, x);
+  }
+
+  // Batch Covariance Functions - cross-covariance passthrough
+  template <typename CovFunc, typename X, typename Y>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, ys, pool);
+  }
+
+  // Symmetric passthrough
+  template <typename CovFunc, typename X>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, pool);
+  }
+
+  // Diagonal passthrough
+  template <typename CovFunc, typename X>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector_diagonal(cov_func, xs, pool);
   }
 
   // Mean Functions
@@ -296,6 +399,81 @@ template <typename SubCaller> struct MeasurementForwarder {
   static double call(const CovFunc &cov_func, const X &x,
                      const Measurement<Y> &y) {
     return SubCaller::call(cov_func, x, y.value);
+  }
+
+  // Batch Covariance Functions
+
+  // Passthrough when no Measurement types
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<!is_measurement<X>::value &&
+                                        !is_measurement<Y>::value,
+                                    int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, ys, pool);
+  }
+
+  // Unwrap Measurement types using pointwise loop (matches old behavior
+  // exactly) We use pointwise here rather than unwrap+delegate because it
+  // ensures exact numerical equivalence with the original code, avoiding test
+  // failures.
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          is_measurement<X>::value || is_measurement<Y>::value, int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return MeasurementForwarder::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys, pool);
+  }
+
+  // Symmetric: passthrough for non-Measurements
+  template <typename CovFunc, typename X,
+            typename std::enable_if<!is_measurement<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, pool);
+  }
+
+  // Symmetric: pointwise for Measurements
+  template <typename CovFunc, typename X,
+            typename std::enable_if<is_measurement<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return MeasurementForwarder::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, pool);
+  }
+
+  // Diagonal: passthrough for non-Measurements
+  template <typename CovFunc, typename X,
+            typename std::enable_if<!is_measurement<X>::value, int>::type = 0>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector_diagonal(cov_func, xs, pool);
+  }
+
+  // Diagonal: pointwise for Measurements
+  template <typename CovFunc, typename X,
+            typename std::enable_if<is_measurement<X>::value, int>::type = 0>
+  static Eigen::VectorXd
+  call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
+                       [[maybe_unused]] ThreadPool *pool = nullptr) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd diag(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      diag[i] = MeasurementForwarder::call(cov_func, xs[si], xs[si]);
+    }
+    return diag;
   }
 
   // Mean Functions
@@ -371,6 +549,82 @@ template <typename SubCaller> struct LinearCombinationCaller {
     return sum;
   }
 
+  // Batch Covariance Functions
+
+  // Passthrough when no LinearCombination types
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<!is_linear_combination<X>::value &&
+                                        !is_linear_combination<Y>::value,
+                                    int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, ys, pool);
+  }
+
+  // Handle LinearCombination types by building matrix pointwise (like old code)
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<is_linear_combination<X>::value ||
+                                        is_linear_combination<Y>::value,
+                                    int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return LinearCombinationCaller::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys, pool);
+  }
+
+  // Symmetric: passthrough for non-LinearCombinations
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<!is_linear_combination<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, pool);
+  }
+
+  // Symmetric: pointwise for LinearCombinations
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<is_linear_combination<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return LinearCombinationCaller::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, pool);
+  }
+
+  // Diagonal: passthrough for non-LinearCombinations
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<!is_linear_combination<X>::value, int>::type = 0>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector_diagonal(cov_func, xs, pool);
+  }
+
+  // Diagonal: pointwise for LinearCombinations
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<is_linear_combination<X>::value, int>::type = 0>
+  static Eigen::VectorXd
+  call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
+                       [[maybe_unused]] ThreadPool *pool = nullptr) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd diag(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      diag[i] = LinearCombinationCaller::call(cov_func, xs[si], xs[si]);
+    }
+    return diag;
+  }
+
   // Mean Functions
   template <
       typename MeanFunc, typename X,
@@ -417,7 +671,7 @@ template <typename SubCaller> struct LinearCombinationCaller {
  *
  */
 template <typename SubCaller> struct VariantForwarder {
-  // Covariance Functions
+  // Covariance Functions - Pointwise
 
   // directly forward on the case where both types aren't variants
   template <typename CovFunc, typename X, typename Y,
@@ -427,6 +681,76 @@ template <typename SubCaller> struct VariantForwarder {
                 int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return SubCaller::call(cov_func, x, y);
+  }
+
+  // Covariance Functions - Batch
+
+  // Passthrough when no variants
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !is_variant<X>::value && !is_variant<Y>::value, int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, ys, pool);
+  }
+
+  // Variants - use pointwise with visitor (like old code)
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                is_variant<X>::value || is_variant<Y>::value, int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return VariantForwarder::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys, pool);
+  }
+
+  // Symmetric: passthrough for non-variants
+  template <typename CovFunc, typename X,
+            typename std::enable_if<!is_variant<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector(cov_func, xs, pool);
+  }
+
+  // Symmetric: pointwise for variants
+  template <typename CovFunc, typename X,
+            typename std::enable_if<is_variant<X>::value, int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return VariantForwarder::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, pool);
+  }
+
+  // Diagonal: passthrough for non-variants
+  template <typename CovFunc, typename X,
+            typename std::enable_if<!is_variant<X>::value, int>::type = 0>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    return SubCaller::call_vector_diagonal(cov_func, xs, pool);
+  }
+
+  // Diagonal: pointwise for variants
+  template <typename CovFunc, typename X,
+            typename std::enable_if<is_variant<X>::value, int>::type = 0>
+  static Eigen::VectorXd
+  call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
+                       [[maybe_unused]] ThreadPool *pool = nullptr) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd diag(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      diag[i] = VariantForwarder::call(cov_func, xs[si], xs[si]);
+    }
+    return diag;
   }
 
   /*
@@ -543,14 +867,147 @@ template <typename SubCaller> struct VariantForwarder {
   }
 };
 
+/*
+ * BatchCaller - attempts batch covariance via _call_impl_vector
+ */
+template <typename SubCaller> struct BatchCaller {
+  // Batch method exists - use it directly
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<has_valid_call_impl_vector<CovFunc, X, Y>::value,
+                              int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    return cov_func._call_impl_vector(xs, ys, pool);
+  }
+
+  // No batch - build matrix pointwise using SubCaller
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !has_valid_call_impl_vector<CovFunc, X, Y>::value &&
+                    has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value,
+                int>::type = 0>
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              const std::vector<Y> &ys, ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return SubCaller::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, ys, pool);
+  }
+
+  // Symmetric batch: use _call_impl_vector when available
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                has_valid_call_impl_vector_symmetric<CovFunc, X>::value,
+                int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    return cov_func._call_impl_vector(xs, xs, pool);
+  }
+
+  // Symmetric no batch - pointwise loop
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_vector_symmetric<CovFunc, X>::value &&
+                    has_valid_cov_caller<CovFunc, SubCaller, X, X>::value,
+                int>::type = 0>
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     ThreadPool *pool = nullptr) {
+    auto caller = [&](const auto &x, const auto &y) {
+      return SubCaller::call(cov_func, x, y);
+    };
+    return compute_covariance_matrix(caller, xs, pool);
+  }
+
+  // Primary: use batch when available (synthesize scalar from batch)
+  // This ensures consistency between scalar and matrix calls.
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<has_valid_call_impl_vector<CovFunc, X, Y>::value,
+                              int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    const std::vector<X> xs{x};
+    const std::vector<Y> ys{y};
+    return cov_func._call_impl_vector(xs, ys, nullptr)(0, 0);
+  }
+
+  // Fallback: use pointwise when batch is not available
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl_vector<CovFunc, X, Y>::value &&
+                 has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value),
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return SubCaller::call(cov_func, x, y);
+  }
+
+  // Mean function pass-through
+  template <
+      typename MeanFunc, typename X,
+      typename std::enable_if<
+          has_valid_mean_caller<MeanFunc, SubCaller, X>::value, int>::type = 0>
+  static double call(const MeanFunc &mean_func, const X &x) {
+    return SubCaller::call(mean_func, x);
+  }
+
+  // Diagonal batch: use _call_impl_vector_diagonal when available
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                has_valid_call_impl_vector_diagonal<CovFunc, X>::value,
+                int>::type = 0>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    return cov_func._call_impl_vector_diagonal(xs, pool);
+  }
+
+  // Diagonal no batch - extract diagonal pointwise (when SubCaller supports it)
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_vector_diagonal<CovFunc, X>::value &&
+                    has_valid_cov_caller<CovFunc, SubCaller, X, X>::value,
+                int>::type = 0>
+  static Eigen::VectorXd
+  call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
+                       [[maybe_unused]] ThreadPool *pool = nullptr) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd diag(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      diag[i] = SubCaller::call(cov_func, xs[si], xs[si]);
+    }
+    return diag;
+  }
+
+  // Diagonal for batch-only covariances - synthesize from _call_impl_vector
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_vector_diagonal<CovFunc, X>::value &&
+                    !has_valid_cov_caller<CovFunc, SubCaller, X, X>::value &&
+                    has_valid_call_impl_vector<CovFunc, X, X>::value,
+                int>::type = 0>
+  static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
+                                              const std::vector<X> &xs,
+                                              ThreadPool *pool = nullptr) {
+    // Extract diagonal from full matrix
+    // This is less efficient but correct for batch-only covariances
+    return cov_func._call_impl_vector(xs, xs, pool).diagonal();
+  }
+};
+
 } // namespace internal
 
 /*
  * This defines the order of operations of the covariance function Callers.
  */
-using DefaultCaller = internal::VariantForwarder<internal::MeasurementForwarder<
-    internal::LinearCombinationCaller<internal::VariantForwarder<
-        internal::SymmetricCaller<internal::DirectCaller>>>>>;
+using DefaultCaller = internal::VariantForwarder<
+    internal::MeasurementForwarder<internal::LinearCombinationCaller<
+        internal::BatchCaller<internal::VariantForwarder<
+            internal::SymmetricCaller<internal::DirectCaller>>>>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call
@@ -561,6 +1018,36 @@ class caller_has_valid_call
 template <typename CovFunc, typename... Args>
 class has_valid_caller
     : public caller_has_valid_call<DefaultCaller, CovFunc, Args...> {};
+
+/*
+ * Check if EITHER pointwise OR batch is available for a type pair.
+ * This allows operator() to be enabled for batch-only covariances.
+ */
+template <typename CovFunc, typename X, typename Y>
+class has_valid_caller_or_batch {
+public:
+  static constexpr bool value =
+      has_valid_caller<CovFunc, X, Y>::value ||
+      has_valid_call_impl_vector<CovFunc, X, Y>::value;
+};
+
+// Symmetric version: check if pointwise OR symmetric batch is available
+template <typename CovFunc, typename X>
+class has_valid_caller_or_batch_symmetric {
+public:
+  static constexpr bool value =
+      has_valid_caller<CovFunc, X, X>::value ||
+      has_valid_call_impl_vector_symmetric<CovFunc, X>::value;
+};
+
+// Diagonal version: check if pointwise OR diagonal batch is available
+template <typename CovFunc, typename X>
+class has_valid_caller_or_batch_diagonal {
+public:
+  static constexpr bool value =
+      has_valid_caller<CovFunc, X, X>::value ||
+      has_valid_call_impl_vector_diagonal<CovFunc, X>::value;
+};
 
 /*
  * This defines a helper trait which indicates whether a call to a
@@ -583,9 +1070,13 @@ class has_valid_caller
  * while has_valid_caller should evaluate true in both cases, but only the
  * first is equivalent, the others _could_ be equivalent but aren't
  * neccesarily.
+ *
+ * Note: BatchCaller is included to support batch-only covariances that
+ * define _call_impl_vector but not _call_impl. BatchCaller can synthesize
+ * pointwise results from the batch method.
  */
 using EquivalentCaller = internal::MeasurementForwarder<
-    internal::SymmetricCaller<internal::DirectCaller>>;
+    internal::BatchCaller<internal::SymmetricCaller<internal::DirectCaller>>>;
 
 template <typename CovFunc, typename... Args>
 class has_equivalent_caller
