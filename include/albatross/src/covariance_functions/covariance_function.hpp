@@ -110,61 +110,71 @@ public:
   }
 
   /*
-   * We only allow the covariance function for argument types X and Y
-   * to be defined if the corresponding term is defined for these
-   * types.  This allows us to distinguish between covariance functions which
-   * are 0. and ones that are just not defined (read: possibly bugs).
+   * Scalar covariance evaluation.
+   *
+   * When _call_impl_vector exists, we ALWAYS use it (synthesizing scalar
+   * from batch). This ensures consistency between scalar and matrix calls.
+   * Only when batch is not available do we fall back to pointwise _call_impl.
    */
+
+  // Primary: use batch when available (synthesize scalar from batch)
+  template <
+      typename X, typename Y,
+      typename std::enable_if<has_valid_call_impl_vector<Derived, X, Y>::value,
+                              int>::type = 0>
+  double operator()(const X &x, const Y &y) const {
+    const std::vector<X> xs{x};
+    const std::vector<Y> ys{y};
+    return derived()._call_impl_vector(xs, ys, nullptr)(0, 0);
+  }
+
+  // Fallback: use pointwise when batch is not available
   template <typename X, typename Y,
-            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                (!has_valid_call_impl_vector<Derived, X, Y>::value &&
+                 has_valid_caller<Derived, X, Y>::value),
+                int>::type = 0>
   auto operator()(const X &x, const Y &y) const {
     return call(x, y);
   }
 
   /*
    * Covariance between each element and every other in a vector.
+   * Enabled if EITHER pointwise OR symmetric batch is defined.
    */
   template <typename X,
-            typename std::enable_if<has_valid_caller<Derived, X, X>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                has_valid_caller_or_batch_symmetric<Derived, X>::value,
+                int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              ThreadPool *pool = nullptr) const {
-    auto caller = [&](const auto &x, const auto &y) {
-      return this->call(x, y);
-    };
-    return compute_covariance_matrix(caller, xs, pool);
+    return DefaultCaller::call_vector(derived(), xs, pool);
   }
 
   /*
    * Cross covariance between two vectors of (possibly) different types.
+   * Enabled if EITHER pointwise (_call_impl) OR batch (_call_impl_vector) is
+   * defined.
    */
   template <typename X, typename Y,
-            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                has_valid_caller_or_batch<Derived, X, Y>::value, int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
                              ThreadPool *pool = nullptr) const {
-    auto caller = [&](const auto &x, const auto &y) {
-      return this->call(x, y);
-    };
-    return compute_covariance_matrix(caller, xs, ys, pool);
+    return DefaultCaller::call_vector(derived(), xs, ys, pool);
   }
 
   /*
    * Diagonal of the covariance matrix.
+   * Enabled if EITHER pointwise OR diagonal batch is defined.
    */
-  template <typename X,
-            typename std::enable_if<has_valid_caller<Derived, X, X>::value,
-                                    int>::type = 0>
-  Eigen::VectorXd diagonal(const std::vector<X> &xs) const {
-    const Eigen::Index n = cast::to_index(xs.size());
-    Eigen::VectorXd diag(n);
-
-    for (Eigen::Index i = 0; i < n; i++) {
-      const auto si = cast::to_size(i);
-      diag[i] = call(xs[si], xs[si]);
-    }
-    return diag;
+  template <
+      typename X,
+      typename std::enable_if<
+          has_valid_caller_or_batch_diagonal<Derived, X>::value, int>::type = 0>
+  Eigen::VectorXd diagonal(const std::vector<X> &xs,
+                           ThreadPool *pool = nullptr) const {
+    return DefaultCaller::call_vector_diagonal(derived(), xs, pool);
   }
 
   template <typename X,
@@ -196,10 +206,14 @@ public:
 
           template <typename X,
                     typename std::enable_if<
-                        !has_valid_caller<Derived, X, X>::value, int>::type = 0>
+                        !has_valid_caller_or_batch_diagonal<Derived, X>::value,
+                        int>::type = 0>
           void diagonal(const std::vector<X> &xs ALBATROSS_UNUSED) const
-      ALBATROSS_FAIL(X, "No public method with signature 'double "
-                        "Derived::_call_impl(const X&, const X&) const'")
+      ALBATROSS_FAIL(
+          X, "No public method with signature 'double "
+             "Derived::_call_impl(const X&, const X&) const' or "
+             "'Eigen::VectorXd Derived::_call_impl_vector_diagonal(const "
+             "std::vector<X>&, ThreadPool*) const'")
 
           CallTrace<Derived> call_trace() const;
 
@@ -318,6 +332,126 @@ public:
     return this->rhs_.state_space_representation(xs);
   }
 
+  /*
+   * Batch covariance implementations
+   *
+   * These use has_valid_batch_or_measurement_batch to check whether batch
+   * calls can be made, either directly or through Measurement unwrapping.
+   * We then call through DefaultCaller::call_vector to leverage the
+   * caller hierarchy's transformation capabilities (especially
+   * MeasurementForwarder).
+   */
+
+  // Case 1: Both LHS and RHS have batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 has_valid_batch_or_measurement_batch<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    return DefaultCaller::call_vector(lhs_, xs, ys, pool) +
+           DefaultCaller::call_vector(rhs_, xs, ys, pool);
+  }
+
+  // Case 2: Only LHS has batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 !has_valid_batch_or_measurement_batch<RHS, X, Y>::value &&
+                 has_equivalent_caller<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    Eigen::MatrixXd result = DefaultCaller::call_vector(lhs_, xs, ys, pool);
+    result += compute_covariance_matrix(rhs_, xs, ys, pool);
+    return result;
+  }
+
+  // Case 3: Only RHS has batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 has_equivalent_caller<LHS, X, Y>::value &&
+                 has_valid_batch_or_measurement_batch<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    Eigen::MatrixXd result = DefaultCaller::call_vector(rhs_, xs, ys, pool);
+    result += compute_covariance_matrix(lhs_, xs, ys, pool);
+    return result;
+  }
+
+  /*
+   * Diagonal batch implementations
+   */
+
+  // Both have diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 has_valid_call_impl_vector_diagonal<RHS, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    return this->lhs_._call_impl_vector_diagonal(xs, pool) +
+           this->rhs_._call_impl_vector_diagonal(xs, pool);
+  }
+
+  // Only LHS has diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 !has_valid_call_impl_vector_diagonal<RHS, X>::value &&
+                 has_equivalent_caller<RHS, X, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    Eigen::VectorXd result = this->lhs_._call_impl_vector_diagonal(xs, pool);
+    const Eigen::Index n = cast::to_index(xs.size());
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      result[i] += this->rhs_(xs[si], xs[si]);
+    }
+    return result;
+  }
+
+  // Only RHS has diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (!has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 has_equivalent_caller<LHS, X, X>::value &&
+                 has_valid_call_impl_vector_diagonal<RHS, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    Eigen::VectorXd result = this->rhs_._call_impl_vector_diagonal(xs, pool);
+    const Eigen::Index n = cast::to_index(xs.size());
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      result[i] += this->lhs_(xs[si], xs[si]);
+    }
+    return result;
+  }
+
+  // Single-arg symmetric batch: at least one child has single-arg support.
+  // DefaultCaller::call_vector(child, xs, pool) dispatches to the best
+  // available path for each child independently (single-arg if available,
+  // two-arg fallback otherwise).
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
+                 has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    ThreadPool *pool = nullptr) const {
+    return DefaultCaller::call_vector(lhs_, xs, pool) +
+           DefaultCaller::call_vector(rhs_, xs, pool);
+  }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -411,6 +545,131 @@ public:
                                     int>::type = 0>
   auto _ssr_impl(const std::vector<X> &xs) const {
     return this->rhs_.state_space_representation(xs);
+  }
+
+  /*
+   * Batch covariance implementations
+   *
+   * These use has_valid_batch_or_measurement_batch to check whether batch
+   * calls can be made, either directly or through Measurement unwrapping.
+   * We then call through DefaultCaller::call_vector to leverage the
+   * caller hierarchy's transformation capabilities (especially
+   * MeasurementForwarder).
+   */
+
+  // Case 1: Both LHS and RHS have batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 has_valid_batch_or_measurement_batch<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    // Element-wise multiplication using Eigen array operations
+    return DefaultCaller::call_vector(lhs_, xs, ys, pool).array() *
+           DefaultCaller::call_vector(rhs_, xs, ys, pool).array();
+  }
+
+  // Case 2: Only LHS has batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 !has_valid_batch_or_measurement_batch<RHS, X, Y>::value &&
+                 has_equivalent_caller<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    Eigen::MatrixXd result = DefaultCaller::call_vector(lhs_, xs, ys, pool);
+    result.array() *= compute_covariance_matrix(rhs_, xs, ys, pool).array();
+    return result;
+  }
+
+  // Case 3: Only RHS has batch support (direct or via Measurement)
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_batch_or_measurement_batch<LHS, X, Y>::value &&
+                 has_equivalent_caller<LHS, X, Y>::value &&
+                 has_valid_batch_or_measurement_batch<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    Eigen::MatrixXd result = DefaultCaller::call_vector(rhs_, xs, ys, pool);
+    result.array() *= compute_covariance_matrix(lhs_, xs, ys, pool).array();
+    return result;
+  }
+
+  /*
+   * Diagonal batch implementations
+   */
+
+  // Both have diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 has_valid_call_impl_vector_diagonal<RHS, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    return this->lhs_._call_impl_vector_diagonal(xs, pool).array() *
+           this->rhs_._call_impl_vector_diagonal(xs, pool).array();
+  }
+
+  // Only LHS has diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 !has_valid_call_impl_vector_diagonal<RHS, X>::value &&
+                 has_equivalent_caller<RHS, X, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    Eigen::VectorXd result = this->lhs_._call_impl_vector_diagonal(xs, pool);
+    const Eigen::Index n = cast::to_index(xs.size());
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      if (result[i] != 0.) {
+        result[i] *= this->rhs_(xs[si], xs[si]);
+      }
+    }
+    return result;
+  }
+
+  // Only RHS has diagonal batch
+  template <typename X,
+            typename std::enable_if<
+                (!has_valid_call_impl_vector_diagonal<LHS, X>::value &&
+                 has_equivalent_caller<LHS, X, X>::value &&
+                 has_valid_call_impl_vector_diagonal<RHS, X>::value),
+                int>::type = 0>
+  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
+                                             ThreadPool *pool = nullptr) const {
+    Eigen::VectorXd result = this->rhs_._call_impl_vector_diagonal(xs, pool);
+    const Eigen::Index n = cast::to_index(xs.size());
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const auto si = cast::to_size(i);
+      if (result[i] != 0.) {
+        result[i] *= this->lhs_(xs[si], xs[si]);
+      }
+    }
+    return result;
+  }
+
+  // Single-arg symmetric batch: at least one child has single-arg support.
+  // DefaultCaller::call_vector(child, xs, pool) dispatches to the best
+  // available path for each child independently (single-arg if available,
+  // two-arg fallback otherwise).
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
+                 has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    ThreadPool *pool = nullptr) const {
+    return DefaultCaller::call_vector(lhs_, xs, pool).array() *
+           DefaultCaller::call_vector(rhs_, xs, pool).array();
   }
 
 protected:
