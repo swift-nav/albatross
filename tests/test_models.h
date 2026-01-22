@@ -10,6 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef TESTS_TEST_MODELS_H
+#define TESTS_TEST_MODELS_H
+
 #include <albatross/LeastSquares>
 #include <albatross/NullModel>
 #include <albatross/Ransac>
@@ -465,3 +468,5 @@ void expect_predict_variants_inconsistent(const PredictionType &pred) {
 }
 
 } // namespace albatross
+
+#endif
