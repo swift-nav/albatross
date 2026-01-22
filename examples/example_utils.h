@@ -10,8 +10,8 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef ALBATROSS_EXAMPLE_UTILS_H
-#define ALBATROSS_EXAMPLE_UTILS_H
+#ifndef EXAMPLES_EXAMPLE_UTILS_H
+#define EXAMPLES_EXAMPLE_UTILS_H
 
 #include <albatross/Core>
 #include <albatross/src/utils/csv_utils.hpp>

@@ -10,6 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef TESTS_TEST_CORE_DISTRIBUTION_H
+#define TESTS_TEST_CORE_DISTRIBUTION_H
+
 #include <albatross/Distribution>
 #include <gtest/gtest.h>
 
@@ -56,3 +59,5 @@ struct DistributionTest : public ::testing::Test {
 
 TYPED_TEST_SUITE_P(DistributionTest);
 } // namespace albatross
+
+#endif

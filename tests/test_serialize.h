@@ -10,6 +10,9 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef TESTS_TEST_SERIALIZE_H
+#define TESTS_TEST_SERIALIZE_H
+
 namespace albatross {
 
 template <typename X> struct SerializableType {
@@ -78,3 +81,5 @@ TYPED_TEST_P(SerializeTest, test_roundtrip_serialize_portable_binary) {
                                 TypeParam>();
 }
 } // namespace albatross
+
+#endif
