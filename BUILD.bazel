@@ -124,6 +124,7 @@ cc_library(
         "include/albatross/src/models/ransac.hpp",
         "include/albatross/src/models/ransac_gp.hpp",
         "include/albatross/src/models/sparse_gp.hpp",
+        "include/albatross/src/polynomial/chebyshev.hpp",
         "include/albatross/src/samplers/callbacks.hpp",
         "include/albatross/src/samplers/ensemble.hpp",
         "include/albatross/src/samplers/initialization.hpp",
@@ -303,8 +304,21 @@ swift_cc_test(
 )
 
 swift_cc_test(
+    name = "albatross-test-polynomials",
+    srcs = [
+        "tests/test_chebyshev.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
     name = "albatross-test-compression",
     srcs = [
+        "tests/test_block_utils.cc",
         "tests/test_compression.cc",
     ],
     includes = ["tests"],
@@ -464,6 +478,7 @@ test_suite(
         ":albatross-test-utils",
         ":albatross-test-evaluation",
         ":albatross-test-cross-validation",
+        ":albatross-test-polynomials",
         ":albatross-test-serialization",
         ":albatross-test-stats",
         ":albatross-test-stats-wasserstein",
