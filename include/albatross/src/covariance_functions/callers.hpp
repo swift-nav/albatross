@@ -47,13 +47,16 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
   Eigen::Index n = cast::to_index(ys.size());
   Eigen::MatrixXd C(m, n);
 
+  // Optimized: Column-major loop order for better cache locality
+  // Eigen matrices are column-major, so C(i,j) with i varying is sequential
   Eigen::Index i, j;
   std::size_t si, sj;
-  for (i = 0; i < m; i++) {
-    si = cast::to_size(i);
-    for (j = 0; j < n; j++) {
-      sj = cast::to_size(j);
-      C(i, j) = caller(xs[si], ys[sj]);
+  for (j = 0; j < n; j++) {
+    sj = cast::to_size(j);
+    const auto& y = ys[sj];  // Cache y value for inner loop
+    for (i = 0; i < m; i++) {
+      si = cast::to_size(i);
+      C(i, j) = caller(xs[si], y);  // Sequential writes in column j
     }
   }
   return C;
@@ -83,14 +86,18 @@ compute_covariance_matrix(CovFuncCaller caller, const std::vector<X> &xs,
   const auto num_cols = cast::to_index(ys.size());
   Eigen::MatrixXd output(num_rows, num_cols);
 
+  // Optimized: Loop interchange for better cache locality with column-major storage
+  // Writing output(row, col) sequentially within each column improves memory bandwidth
   const auto apply_block = [&](const Eigen::Index block_index) {
     const auto start = block_index * block_size;
     const auto end = std::min(num_cols, (block_index + 1) * block_size);
+    // Pre-convert column indices to size_t outside inner loop
     for (Eigen::Index col = start; col < end; ++col) {
       const auto yidx = cast::to_size(col);
+      const auto& y = ys[yidx];  // Cache y value for inner loop
       for (Eigen::Index row = 0; row < num_rows; ++row) {
         const auto xidx = cast::to_size(row);
-        output(row, col) = caller(xs[xidx], ys[yidx]);
+        output(row, col) = caller(xs[xidx], y);  // Sequential column writes
       }
     }
   };

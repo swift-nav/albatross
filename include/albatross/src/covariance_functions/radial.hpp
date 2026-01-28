@@ -22,14 +22,23 @@ constexpr std::size_t MAX_NEWTON_ITERATIONS = 50;
 constexpr double MAX_LENGTH_SCALE_RATIO = 1e7;
 constexpr double MIN_LENGTH_SCALE_RATIO = 1e-7;
 
+// Template version for mixed precision (parameters stay as double for precision)
+template <typename Scalar = double>
+inline Scalar squared_exponential_covariance(Scalar distance,
+                                             Scalar length_scale,
+                                             Scalar sigma = Scalar(1.)) {
+  if (length_scale <= Scalar(0.)) {
+    return Scalar(0.);
+  }
+  ALBATROSS_ASSERT(distance >= Scalar(0.));
+  return sigma * sigma * std::exp(-std::pow(distance / length_scale, 2));
+}
+
+// Backward compatibility: non-template version
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
-                                             double sigma = 1.) {
-  if (length_scale <= 0.) {
-    return 0.;
-  }
-  ALBATROSS_ASSERT(distance >= 0.);
-  return sigma * sigma * exp(-pow(distance / length_scale, 2));
+                                             double sigma) {
+  return squared_exponential_covariance<double>(distance, length_scale, sigma);
 }
 
 template <typename RadialFunction>
@@ -188,13 +197,21 @@ public:
   DistanceMetricType distance_metric_;
 };
 
-inline double exponential_covariance(double distance, double length_scale,
-                                     double sigma = 1.) {
-  if (length_scale <= 0.) {
-    return 0.;
+// Template version for mixed precision
+template <typename Scalar = double>
+inline Scalar exponential_covariance(Scalar distance, Scalar length_scale,
+                                     Scalar sigma = Scalar(1.)) {
+  if (length_scale <= Scalar(0.)) {
+    return Scalar(0.);
   }
-  ALBATROSS_ASSERT(distance >= 0.);
-  return sigma * sigma * exp(-fabs(distance / length_scale));
+  ALBATROSS_ASSERT(distance >= Scalar(0.));
+  return sigma * sigma * std::exp(-std::fabs(distance / length_scale));
+}
+
+// Backward compatibility
+inline double exponential_covariance(double distance, double length_scale,
+                                     double sigma) {
+  return exponential_covariance<double>(distance, length_scale, sigma);
 }
 
 inline double derive_exponential_length_scale(double reference_distance,
@@ -286,14 +303,22 @@ public:
   DistanceMetricType distance_metric_;
 };
 
-inline double matern_32_covariance(double distance, double length_scale,
-                                   double sigma = 1.) {
-  if (length_scale <= 0.) {
-    return 0.;
+// Template version for mixed precision
+template <typename Scalar = double>
+inline Scalar matern_32_covariance(Scalar distance, Scalar length_scale,
+                                   Scalar sigma = Scalar(1.)) {
+  if (length_scale <= Scalar(0.)) {
+    return Scalar(0.);
   }
-  assert(distance >= 0.);
-  const double sqrt_3_d = sqrt(3.) * distance / length_scale;
-  return sigma * sigma * (1 + sqrt_3_d) * exp(-sqrt_3_d);
+  assert(distance >= Scalar(0.));
+  const Scalar sqrt_3_d = std::sqrt(Scalar(3.)) * distance / length_scale;
+  return sigma * sigma * (Scalar(1.) + sqrt_3_d) * std::exp(-sqrt_3_d);
+}
+
+// Backward compatibility
+inline double matern_32_covariance(double distance, double length_scale,
+                                   double sigma) {
+  return matern_32_covariance<double>(distance, length_scale, sigma);
 }
 
 namespace detail {
@@ -458,15 +483,23 @@ public:
   DistanceMetricType distance_metric_;
 };
 
-inline double matern_52_covariance(double distance, double length_scale,
-                                   double sigma = 1.) {
-  if (length_scale <= 0.) {
-    return 0.;
+// Template version for mixed precision
+template <typename Scalar = double>
+inline Scalar matern_52_covariance(Scalar distance, Scalar length_scale,
+                                   Scalar sigma = Scalar(1.)) {
+  if (length_scale <= Scalar(0.)) {
+    return Scalar(0.);
   }
-  assert(distance >= 0.);
-  const double sqrt_5_d = sqrt(5.) * distance / length_scale;
-  return sigma * sigma * (1 + sqrt_5_d + sqrt_5_d * sqrt_5_d / 3.) *
-         exp(-sqrt_5_d);
+  assert(distance >= Scalar(0.));
+  const Scalar sqrt_5_d = std::sqrt(Scalar(5.)) * distance / length_scale;
+  return sigma * sigma * (Scalar(1.) + sqrt_5_d + sqrt_5_d * sqrt_5_d / Scalar(3.)) *
+         std::exp(-sqrt_5_d);
+}
+
+// Backward compatibility
+inline double matern_52_covariance(double distance, double length_scale,
+                                   double sigma) {
+  return matern_52_covariance<double>(distance, length_scale, sigma);
 }
 
 inline double derive_matern_52_length_scale(double reference_distance,

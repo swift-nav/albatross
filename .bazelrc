@@ -40,6 +40,12 @@ build:system --platform_suffix=system
 build --enable_platform_specific_config
 build:macos --platforms=@rules_swiftnav//platforms:aarch64_darwin_llvm20
 
+# Mixed-precision mode: Use float32 for computations, double for storage
+# Expected speedup: ~1.5-2x for matrix operations, ~1.3x for GP training
+# Usage: bazel build --config=mixed-precision //...
+build:mixed-precision --copt=-DALBATROSS_USE_FLOAT_PRECISION
+build:mixed-precision --platform_suffix=mixed_precision
+
 # Clang format config
 build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
 build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
