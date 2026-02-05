@@ -424,6 +424,18 @@ swift_cc_test(
 )
 
 swift_cc_test(
+    name = "albatross-test-stats-scores",
+    srcs = [
+        "tests/test_stats_scores.cc",
+    ],
+    includes = ["tests"],
+    local_defines = ["CSV_IO_NO_THREAD"],
+    type = UNIT,
+    deps = TEST_DEPS,
+    standard=17,
+)
+
+swift_cc_test(
     name = "albatross-test-samplers",
     srcs = [
         "tests/test_samplers.cc",
@@ -482,6 +494,7 @@ test_suite(
         ":albatross-test-serialization",
         ":albatross-test-stats",
         ":albatross-test-stats-wasserstein",
+        ":albatross-test-stats-scores",
         ":albatross-test-samplers",
         ":albatross-test-tune",
         ":albatross-test-misc",
