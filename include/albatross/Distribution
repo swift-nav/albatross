@@ -16,6 +16,9 @@
 #include "Common"
 
 #include <albatross/src/core/distribution.hpp>
+
+#include "utils/AsyncUtils"
+
 #include <albatross/src/eigen/serializable_ldlt.hpp>
 #include <albatross/src/core/transformed_distribution.hpp>
 
