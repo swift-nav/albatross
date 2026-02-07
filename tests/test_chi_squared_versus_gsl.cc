@@ -24,6 +24,10 @@ namespace albatross {
   need to be sure we have good precision on the tails. What follows were a bunch
   of comparisons to the GSL implementations which were generated using:
 
+  Here's a code snippet which can be used to generate the unit tests below. We
+  decided not to include GSL in albatross (to serve as a direct comparison in
+  tests) because the GSL license is too restrictive for albatross's MIT license.
+
   #include <gsl/gsl_sf_gamma.h>
 
   double dof = 1.0;
