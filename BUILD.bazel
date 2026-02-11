@@ -1,4 +1,5 @@
 load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 alias(
     name = "clang_format",
