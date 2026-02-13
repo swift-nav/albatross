@@ -230,6 +230,7 @@ swift_cc_test(
 swift_cc_test(
     name = "albatross-test-covariance",
     srcs = [
+        "tests/test_batch_covariance.cc",
         "tests/test_covariance_function.cc",
         "tests/test_covariance_functions.cc",
         "tests/test_distance_metrics.cc",
