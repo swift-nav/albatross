@@ -456,7 +456,8 @@ public:
           int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    Eigen::MatrixXd result;
+    Eigen::Index n{albatross::cast::to_index(xs.size())};
+    Eigen::MatrixXd result(n, n);
     result.triangularView<Eigen::Lower>() =
         DefaultCaller::call_vector(lhs_, xs, pool);
     result.triangularView<Eigen::Lower>() +=
@@ -688,7 +689,8 @@ public:
           int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    Eigen::MatrixXd ret;
+    Eigen::Index n = albatross::cast::to_index(xs.size());
+    Eigen::MatrixXd ret(n, n);
     ret.triangularView<Eigen::Lower>() =
         DefaultCaller::call_vector(lhs_, xs, pool);
     ret.triangularView<Eigen::Lower>() =
