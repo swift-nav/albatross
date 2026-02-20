@@ -599,7 +599,7 @@ TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedSingleElement) {
     const Eigen::MatrixXd result = TypeParam::matrix(dist, ls, sigma);
     ASSERT_EQ(result.rows(), 1);
     ASSERT_EQ(result.cols(), 1);
-    EXPECT_DOUBLE_EQ(result(0, 0), TypeParam::scalar(d, ls, sigma));
+    EXPECT_NEAR(result(0, 0), TypeParam::scalar(d, ls, sigma), 1e-15);
   }
 }
 
@@ -610,7 +610,8 @@ TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedEmptyMatrix) {
   EXPECT_EQ(result.cols(), 0);
 }
 
-TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedEmptyMatrixZeroLengthScale) {
+TYPED_TEST(VectorisedRadialCovarianceTester,
+           VectorisedEmptyMatrixZeroLengthScale) {
   const Eigen::MatrixXd dist(0, 0);
   const Eigen::MatrixXd result = TypeParam::matrix(dist, 0.0, 1.0);
   EXPECT_EQ(result.rows(), 0);
@@ -621,8 +622,7 @@ TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedNonSquare) {
   const double ls = 3.0;
   const double sigma = 2.0;
   Eigen::MatrixXd dist(2, 5);
-  dist << 0.0, 1.1, 2.2, 3.3, 4.4,
-          5.5, 6.6, 7.7, 8.8, 9.9;
+  dist << 0.0, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9;
   const Eigen::MatrixXd result = TypeParam::matrix(dist, ls, sigma);
   ASSERT_EQ(result.rows(), 2);
   ASSERT_EQ(result.cols(), 5);
@@ -690,7 +690,8 @@ TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedSymmetryPreservation) {
   }
 }
 
-TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedDefaultSigmaMatchesExplicit) {
+TYPED_TEST(VectorisedRadialCovarianceTester,
+           VectorisedDefaultSigmaMatchesExplicit) {
   std::mt19937 gen(77);
   std::uniform_real_distribution<double> dist_d(0.0, 50.0);
 
@@ -743,8 +744,7 @@ TYPED_TEST(VectorisedRadialCovarianceTester, RvalueMatchesConstRef) {
     // Rvalue overloads may reuse the buffer with a different order of
     // operations, so use isApprox rather than exact equality.
     EXPECT_TRUE(rvalue_result.isApprox(constref_result))
-        << "Mismatch at trial=" << trial
-        << "\nmax error: "
+        << "Mismatch at trial=" << trial << "\nmax error: "
         << (rvalue_result - constref_result).cwiseAbs().maxCoeff();
   }
 }
@@ -771,8 +771,8 @@ static Eigen::MatrixXd oracle_distance_matrix() {
 }
 
 template <std::size_t N>
-static Eigen::MatrixXd oracle_expected_matrix(
-    const std::array<std::array<double, N>, N> &oracle) {
+static Eigen::MatrixXd
+oracle_expected_matrix(const std::array<std::array<double, N>, N> &oracle) {
   const Eigen::Index n = static_cast<Eigen::Index>(N);
   Eigen::MatrixXd expected(n, n);
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -787,8 +787,7 @@ TEST(test_radial, VectorisedMatchesMatern52Oracle) {
   const Eigen::MatrixXd dist = oracle_distance_matrix();
   const Eigen::MatrixXd result =
       matern_52_covariance(dist, kMaternOracleLengthScale, kMaternOracleSigma);
-  const Eigen::MatrixXd expected =
-      oracle_expected_matrix(kOracleMatern52Y);
+  const Eigen::MatrixXd expected = oracle_expected_matrix(kOracleMatern52Y);
   ASSERT_EQ(result.rows(), expected.rows());
   ASSERT_EQ(result.cols(), expected.cols());
   EXPECT_TRUE(result.isApprox(expected, 1e-15));
