@@ -132,9 +132,9 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
  * Cross covariance between all elements of a vector.
  */
 template <typename CovFuncCaller, typename X>
-inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
-                                                 const std::vector<X> &xs,
-                                                 ThreadPool *pool) {
+inline Eigen::MatrixXd compute_covariance_matrix_lower_triangle(
+    CovFuncCaller caller, const std::vector<X> &xs,
+    ThreadPool *pool = serial_thread_pool) {
   static_assert(is_invocable<CovFuncCaller, X, X>::value,
                 "caller does not support the required arguments");
   static_assert(is_invocable_with_result<CovFuncCaller, double, X, X>::value,
@@ -160,8 +160,19 @@ inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
   const auto blocks = detail::partition_triangular(size, block_count);
   apply(blocks, apply_block, pool);
 
-  // Copy upper triangle to lower.
-  output.triangularView<Eigen::Lower>() = output.transpose();
+  return output.transpose();
+}
+
+/*
+ * Cross covariance between all elements of a vector.
+ */
+template <typename CovFuncCaller, typename X>
+inline Eigen::MatrixXd compute_covariance_matrix(CovFuncCaller caller,
+                                                 const std::vector<X> &xs,
+                                                 ThreadPool *pool) {
+  Eigen::MatrixXd output{
+      compute_covariance_matrix_lower_triangle(caller, xs, pool)};
+  output.triangularView<Eigen::Upper>() = output.transpose();
   return output;
 }
 
@@ -1915,7 +1926,12 @@ template <typename SubCaller> struct BatchCaller {
     return compute_covariance_matrix(caller, xs, ys, pool);
   }
 
-  // Symmetric batch Priority 1: single-vector method exists - use it
+  // Symmetric batch Priority 1: single-vector method exists - use it.
+  //
+  // Contract: _call_impl_vector(xs, pool) for the symmetric (single-arg)
+  // case may return a matrix with only the lower triangle and diagonal
+  // filled.  We mirror the strictly-upper triangle here so that callers
+  // always receive a full symmetric matrix.
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 has_valid_call_impl_vector_single_arg<CovFunc, X>::value,
@@ -1923,7 +1939,10 @@ template <typename SubCaller> struct BatchCaller {
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
                                      ThreadPool *pool = nullptr) {
-    return cov_func._call_impl_vector(xs, pool);  // Single-vector call
+    Eigen::MatrixXd result = cov_func._call_impl_vector(xs, pool);
+    result.triangularView<Eigen::StrictlyUpper>() =
+        result.transpose().triangularView<Eigen::StrictlyUpper>();
+    return result;
   }
 
   // Symmetric batch Priority 2: two-vector symmetric method exists (no single-vector)
@@ -1979,6 +1998,11 @@ template <typename SubCaller> struct BatchCaller {
   // Synthesize scalar from single-arg batch (for single-arg-only covariances)
   // This handles covariances that define _call_impl_vector(xs, pool) but NOT
   // _call_impl_vector(xs, ys, pool) or _call_impl.
+  //
+  // We read element (1,0) from the lower triangle because
+  // _call_impl_vector(xs, pool) may only fill the lower triangle and diagonal.
+  // Element (0,1) is in the strictly-upper triangle and may be uninitialized.
+  // By symmetry, cov(y,x) at (1,0) equals cov(x,y) at (0,1).
   template <typename CovFunc, typename X, typename Y,
             typename std::enable_if<
                 std::is_same<X, Y>::value &&
@@ -1987,10 +2011,8 @@ template <typename SubCaller> struct BatchCaller {
                     !has_valid_cov_caller<CovFunc, SubCaller, X, X>::value,
                 int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
-    // For single-arg-only covariances, create a 2-element vector and extract
-    // the cross element (0,1) for the scalar result
     const std::vector<X> both{x, y};
-    return cov_func._call_impl_vector(both, nullptr)(0, 1);
+    return cov_func._call_impl_vector(both, nullptr)(1, 0);
   }
 
   // Mean function pass-through

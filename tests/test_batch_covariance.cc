@@ -14,6 +14,9 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <limits>
+
 namespace albatross {
 
 /*
@@ -3694,13 +3697,18 @@ public:
   std::shared_ptr<SingleArgBatchCallStats> stats =
       std::make_shared<SingleArgBatchCallStats>();
 
+  // Returns lower-triangle-only (upper = NaN) to exercise the contract.
   Eigen::MatrixXd _call_impl_vector(const std::vector<double> &xs,
                                     ThreadPool *pool) const {
     stats->single_arg_count++;
     stats->last_xs_size = static_cast<int>(xs.size());
     stats->pool_was_nonnull = (pool != nullptr);
-    return Eigen::MatrixXd::Constant(cast::to_index(xs.size()),
-                                     cast::to_index(xs.size()), 777.0);
+    const auto n = cast::to_index(xs.size());
+    Eigen::MatrixXd result = Eigen::MatrixXd::Constant(
+        n, n, std::numeric_limits<double>::quiet_NaN());
+    result.triangularView<Eigen::Lower>() =
+        Eigen::MatrixXd::Constant(n, n, 777.0);
+    return result;
   }
 
   Eigen::MatrixXd _call_impl_vector(const std::vector<double> &xs,
@@ -3719,13 +3727,18 @@ public:
   std::shared_ptr<SingleArgBatchCallStats> stats =
       std::make_shared<SingleArgBatchCallStats>();
 
+  // Returns lower-triangle-only (upper = NaN) to exercise the contract.
   Eigen::MatrixXd _call_impl_vector(const std::vector<double> &xs,
                                     ThreadPool *pool) const {
     stats->single_arg_count++;
     stats->last_xs_size = static_cast<int>(xs.size());
     stats->pool_was_nonnull = (pool != nullptr);
-    return Eigen::MatrixXd::Constant(cast::to_index(xs.size()),
-                                     cast::to_index(xs.size()), 333.0);
+    const auto n = cast::to_index(xs.size());
+    Eigen::MatrixXd result = Eigen::MatrixXd::Constant(
+        n, n, std::numeric_limits<double>::quiet_NaN());
+    result.triangularView<Eigen::Lower>() =
+        Eigen::MatrixXd::Constant(n, n, 333.0);
+    return result;
   }
 };
 
@@ -4087,6 +4100,109 @@ TEST(test_single_arg_symmetric, test_variant_through_mixed_sum) {
 
   // Result: 777 + 100 = 877
   EXPECT_EQ(result(0, 0), 877.0);
+}
+
+/*
+ * ============================================================
+ * Lower-Triangle Contract Tests
+ *
+ * Verify that the framework correctly handles _call_impl_vector(xs, pool)
+ * implementations that only fill the lower triangle and diagonal.
+ * ============================================================
+ */
+
+class LowerTriangleOnlyCovariance
+    : public CovarianceFunction<LowerTriangleOnlyCovariance> {
+public:
+  std::string name() const { return "lower_triangle_only"; }
+
+  // Only fills lower triangle + diagonal; upper triangle is NaN.
+  Eigen::MatrixXd _call_impl_vector(const std::vector<double> &xs,
+                                    ThreadPool * /*pool*/) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::MatrixXd result = Eigen::MatrixXd::Constant(
+        n, n, std::numeric_limits<double>::quiet_NaN());
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        const double d = xs[cast::to_size(i)] - xs[cast::to_size(j)];
+        result(i, j) = std::exp(-d * d);
+      }
+    }
+    return result;
+  }
+};
+
+TEST(test_lower_triangle_contract, test_symmetric_batch) {
+  LowerTriangleOnlyCovariance cov;
+  std::vector<double> xs = {0.0, 1.0, 2.0, 3.0};
+
+  Eigen::MatrixXd C = cov(xs);
+
+  EXPECT_EQ(C.rows(), 4);
+  EXPECT_EQ(C.cols(), 4);
+  for (Eigen::Index i = 0; i < C.rows(); ++i) {
+    for (Eigen::Index j = 0; j < C.cols(); ++j) {
+      EXPECT_TRUE(std::isfinite(C(i, j)))
+          << "Element (" << i << "," << j << ") should be finite";
+    }
+  }
+  EXPECT_LT((C - C.transpose()).norm(), 1e-10) << "Should be symmetric";
+}
+
+TEST(test_lower_triangle_contract, test_scalar_synthesis) {
+  LowerTriangleOnlyCovariance cov;
+
+  double self_cov = cov(1.0, 1.0);
+  EXPECT_NEAR(self_cov, 1.0, 1e-10) << "Self-covariance: exp(0) = 1";
+
+  double cross_cov = cov(0.0, 1.0);
+  EXPECT_NEAR(cross_cov, std::exp(-1.0), 1e-10) << "Cross-covariance: exp(-1)";
+}
+
+TEST(test_lower_triangle_contract, test_diagonal) {
+  LowerTriangleOnlyCovariance cov;
+  std::vector<double> xs = {0.0, 1.0, 2.0};
+
+  Eigen::VectorXd diag = cov.diagonal(xs);
+  for (Eigen::Index i = 0; i < diag.size(); ++i) {
+    EXPECT_NEAR(diag[i], 1.0, 1e-10) << "Diagonal should be 1.0";
+  }
+}
+
+TEST(test_lower_triangle_contract, test_sum) {
+  LowerTriangleOnlyCovariance cov1;
+  LowerTriangleOnlyCovariance cov2;
+  auto sum = cov1 + cov2;
+
+  std::vector<double> xs = {0.0, 1.0, 2.0};
+  Eigen::MatrixXd C = sum(xs);
+
+  EXPECT_LT((C - C.transpose()).norm(), 1e-10) << "Sum should be symmetric";
+  for (Eigen::Index i = 0; i < C.rows(); ++i) {
+    for (Eigen::Index j = 0; j < C.cols(); ++j) {
+      EXPECT_TRUE(std::isfinite(C(i, j)));
+    }
+  }
+  // Diagonal should be 2.0 (1.0 + 1.0)
+  EXPECT_NEAR(C(0, 0), 2.0, 1e-10);
+}
+
+TEST(test_lower_triangle_contract, test_product) {
+  LowerTriangleOnlyCovariance cov1;
+  LowerTriangleOnlyCovariance cov2;
+  auto product = cov1 * cov2;
+
+  std::vector<double> xs = {0.0, 1.0, 2.0};
+  Eigen::MatrixXd C = product(xs);
+
+  EXPECT_LT((C - C.transpose()).norm(), 1e-10) << "Product should be symmetric";
+  for (Eigen::Index i = 0; i < C.rows(); ++i) {
+    for (Eigen::Index j = 0; j < C.cols(); ++j) {
+      EXPECT_TRUE(std::isfinite(C(i, j)));
+    }
+  }
+  // Diagonal should be 1.0 (1.0 * 1.0)
+  EXPECT_NEAR(C(0, 0), 1.0, 1e-10);
 }
 
 } // namespace albatross
