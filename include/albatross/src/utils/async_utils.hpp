@@ -220,6 +220,14 @@ make_shared_thread_pool(std::size_t num_threads = 0,
   return std::make_shared<ThreadPool>(num_threads, init, stack_size);
 }
 
+inline std::size_t get_thread_count(const ThreadPool *pool) {
+  if (nullptr == pool) {
+    return 1;
+  }
+
+  return pool->thread_count();
+}
+
 inline std::size_t get_thread_count(const std::shared_ptr<ThreadPool> &pool) {
   if (nullptr == pool) {
     return 1;

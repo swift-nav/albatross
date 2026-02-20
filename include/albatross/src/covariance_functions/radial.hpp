@@ -22,6 +22,80 @@ constexpr std::size_t MAX_NEWTON_ITERATIONS = 50;
 constexpr double MAX_LENGTH_SCALE_RATIO = 1e7;
 constexpr double MIN_LENGTH_SCALE_RATIO = 1e-7;
 
+namespace expr {
+// For serious customers only!
+//
+// Here you can get an Eigen expression back from your distance
+// matrix.  If you play your cards right, you can compute the
+// covariance only for whatever part of the matrix you assign the
+// resulting expression to.  For example, you can compute only the
+// lower triangle and diagonal of your distance matrix, pass it in,
+// assign the result to a lower triangle and do only half the array
+// ops.
+//
+// With great power comes great footgun potential, including the following
+// caveats:
+//
+//  - You are responsible for ensuring that `length_scale` is positive
+//    and any elements of `distance` that get evaluated are
+//    nonnegative; we cannot check these in this function without
+//    destroying laziness
+//
+//  - The same caveats apply as in any other time you assign an Eigen
+//    expression to type `auto`: it's easy to accidentally follow
+//    dangling references and blow everything up
+// 
+//  - You are at the mercy of Eigen's dispatch system when you use
+//    this; if your matrix is not big enough, it may be faster to do
+//    the full matrix via SIMD than to do a (non-vectorised) loop
+//    through the triangle
+// 
+// Handle with care!  Benchmark twice, commit once!
+
+template <typename Derived>
+auto squared_exponential_covariance(const Eigen::MatrixBase<Derived> &distance,
+                                    double length_scale, double sigma = 1.0) {
+  using Scalar = typename Derived::Scalar;
+  const Scalar s2 = Scalar(sigma * sigma);
+  return (s2 *
+          (-(distance.derived().array() / Scalar(length_scale)).square()).exp())
+      .matrix();
+}
+
+template <typename Derived>
+auto exponential_covariance(const Eigen::MatrixBase<Derived> &distance,
+                            double length_scale, double sigma = 1.0) {
+  using Scalar = typename Derived::Scalar;
+  const Scalar s2 = Scalar(sigma * sigma);
+  return (s2 *
+          (-(distance.derived().array() / Scalar(length_scale)).abs()).exp())
+      .matrix();
+}
+
+template <typename Derived>
+auto matern_32_covariance(const Eigen::MatrixBase<Derived> &distance,
+                          double length_scale, double sigma = 1.0) {
+  using Scalar = typename Derived::Scalar;
+  const Scalar a = Scalar(std::sqrt(3.0) / length_scale);
+  const Scalar s2 = Scalar(sigma * sigma);
+
+  const auto t = distance.derived().array() * a;
+  return (s2 * (Scalar(1) + t) * (-t).exp()).matrix();
+}
+
+template <typename Derived>
+auto matern_52_covariance(const Eigen::MatrixBase<Derived> &distance,
+                          double length_scale, double sigma = 1.0) {
+  using Scalar = typename Derived::Scalar;
+  const Scalar a = Scalar(std::sqrt(5.0) / length_scale);
+  const Scalar s2 = Scalar(sigma * sigma);
+
+  const auto t = distance.derived().array() * a;
+  return (s2 * (Scalar(1) + t + t.square() / Scalar(3)) * (-t).exp()).matrix();
+}
+
+} // namespace expr
+
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
@@ -30,6 +104,30 @@ inline double squared_exponential_covariance(double distance,
   }
   ALBATROSS_ASSERT(distance >= 0.);
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+squared_exponential_covariance(Eigen::Matrix<Scalar, Rows, Cols> &&distance,
+                               double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
+                   "Cannot compute covariance with negative distance!");
+  distance.array() /= static_cast<Scalar>(length_scale);
+  distance.array() =
+      static_cast<Scalar>(sigma * sigma) * (-distance.array().square()).exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols> squared_exponential_covariance(
+    const Eigen::Matrix<Scalar, Rows, Cols> &distance, double length_scale,
+    double sigma = 1.) {
+  return squared_exponential_covariance(
+      Eigen::Matrix<Scalar, Rows, Cols>{distance}, length_scale, sigma);
 }
 
 template <typename RadialFunction>
@@ -197,6 +295,30 @@ inline double exponential_covariance(double distance, double length_scale,
   return sigma * sigma * exp(-fabs(distance / length_scale));
 }
 
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+exponential_covariance(Eigen::Matrix<Scalar, Rows, Cols> &&distance,
+                       double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
+                   "Cannot compute covariance with negative distance!");
+  distance.array() =
+      static_cast<Scalar>(sigma * sigma) *
+      (-(distance.array() / static_cast<Scalar>(length_scale)).abs()).exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+exponential_covariance(const Eigen::Matrix<Scalar, Rows, Cols> &distance,
+                       double length_scale, double sigma = 1.) {
+  return exponential_covariance(Eigen::Matrix<Scalar, Rows, Cols>{distance},
+                                length_scale, sigma);
+}
+
 inline double derive_exponential_length_scale(double reference_distance,
                                               double prior_sigma,
                                               double std_dev_increase) {
@@ -294,6 +416,32 @@ inline double matern_32_covariance(double distance, double length_scale,
   assert(distance >= 0.);
   const double sqrt_3_d = sqrt(3.) * distance / length_scale;
   return sigma * sigma * (1 + sqrt_3_d) * exp(-sqrt_3_d);
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+matern_32_covariance(Eigen::Matrix<Scalar, Rows, Cols> &&distance,
+                     double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return std::move(distance);
+  }
+
+  ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
+                   "Cannot compute covariance for negative distance!");
+  distance.array() *= static_cast<Scalar>(sqrt(3.) / length_scale);
+  distance.array() = static_cast<Scalar>(sigma * sigma) *
+                     (Scalar{1.0} + distance.array()) *
+                     (-distance.array()).exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+matern_32_covariance(const Eigen::Matrix<Scalar, Rows, Cols> &distance,
+                     double length_scale, double sigma = 1.) {
+  return matern_32_covariance(Eigen::Matrix<Scalar, Rows, Cols>{distance},
+                              length_scale, sigma);
 }
 
 namespace detail {
@@ -467,6 +615,40 @@ inline double matern_52_covariance(double distance, double length_scale,
   const double sqrt_5_d = sqrt(5.) * distance / length_scale;
   return sigma * sigma * (1 + sqrt_5_d + sqrt_5_d * sqrt_5_d / 3.) *
          exp(-sqrt_5_d);
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+matern_52_covariance(Eigen::Matrix<Scalar, Rows, Cols> &&distance,
+                     double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
+                   "Cannot compute covariance with negative distance!");
+
+  distance.array() *= static_cast<Scalar>(sqrt(5.0) / length_scale);
+  distance.array() = static_cast<Scalar>(sigma * sigma) *
+                     (Scalar{1.0} + distance.array() +
+                      distance.array().square() / Scalar{3.0}) *
+                     (-distance).array().exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Matrix<Scalar, Rows, Cols>
+matern_52_covariance(const Eigen::Matrix<Scalar, Rows, Cols> &distance,
+                     double length_scale, double sigma = 1.) {
+  return matern_52_covariance(Eigen::Matrix<Scalar, Rows, Cols>{distance},
+                              length_scale, sigma);
+  // ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
+  //                  "Cannot compute covariance with negative distance!");
+  // if (length_scale <= 0.) {
+  //   return Eigen::Matrix<Scalar, Rows, Cols>::Zero(distance.rows(),
+  //                                                  distance.cols());
+  // }
+  // return expr::matern_52_covariance(distance, length_scale, sigma);
 }
 
 inline double derive_matern_52_length_scale(double reference_distance,
