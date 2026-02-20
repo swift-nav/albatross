@@ -351,8 +351,9 @@ public:
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     const std::vector<Y> &ys,
                                     ThreadPool *pool = nullptr) const {
-    return DefaultCaller::call_vector(lhs_, xs, ys, pool) +
-           DefaultCaller::call_vector(rhs_, xs, ys, pool);
+    Eigen::MatrixXd result = DefaultCaller::call_vector(lhs_, xs, ys, pool);
+    result += DefaultCaller::call_vector(rhs_, xs, ys, pool);
+    return result;
   }
 
   // Case 2: Only LHS has batch support (direct or via Measurement)
@@ -441,15 +442,26 @@ public:
   // DefaultCaller::call_vector(child, xs, pool) dispatches to the best
   // available path for each child independently (single-arg if available,
   // two-arg fallback otherwise).
-  template <typename X,
-            typename std::enable_if<
-                (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
-                 has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
-                int>::type = 0>
+  //
+  // Note: each child's result is mirrored by BatchCaller, so the sum is
+  // already a full symmetric matrix.  BatchCaller then mirrors *this*
+  // result again — a redundant O(n^2/2) write that we accept for
+  // simplicity (avoiding it would require a parallel non-mirroring
+  // dispatch path through the entire caller chain).
+  template <
+      typename X,
+      typename std::enable_if<
+          (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
+           has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
+          int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    return DefaultCaller::call_vector(lhs_, xs, pool) +
-           DefaultCaller::call_vector(rhs_, xs, pool);
+    Eigen::MatrixXd result;
+    result.triangularView<Eigen::Lower>() =
+        DefaultCaller::call_vector(lhs_, xs, pool);
+    result.triangularView<Eigen::Lower>() +=
+        DefaultCaller::call_vector(rhs_, xs, pool);
+    return result;
   }
 
 protected:
@@ -567,8 +579,9 @@ public:
                                     const std::vector<Y> &ys,
                                     ThreadPool *pool = nullptr) const {
     // Element-wise multiplication using Eigen array operations
-    return DefaultCaller::call_vector(lhs_, xs, ys, pool).array() *
-           DefaultCaller::call_vector(rhs_, xs, ys, pool).array();
+    Eigen::MatrixXd result = DefaultCaller::call_vector(lhs_, xs, ys, pool);
+    result.array() *= DefaultCaller::call_vector(rhs_, xs, ys, pool).array();
+    return result;
   }
 
   // Case 2: Only LHS has batch support (direct or via Measurement)
@@ -661,15 +674,29 @@ public:
   // DefaultCaller::call_vector(child, xs, pool) dispatches to the best
   // available path for each child independently (single-arg if available,
   // two-arg fallback otherwise).
-  template <typename X,
-            typename std::enable_if<
-                (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
-                 has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
-                int>::type = 0>
+  //
+  // Note: each child's result is mirrored by BatchCaller, so the product
+  // is already a full symmetric matrix.  BatchCaller then mirrors *this*
+  // result again — a redundant O(n^2/2) write that we accept for
+  // simplicity (avoiding it would require a parallel non-mirroring
+  // dispatch path through the entire caller chain).
+  template <
+      typename X,
+      typename std::enable_if<
+          (has_valid_batch_or_measurement_batch_single_arg<LHS, X>::value ||
+           has_valid_batch_or_measurement_batch_single_arg<RHS, X>::value),
+          int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    return DefaultCaller::call_vector(lhs_, xs, pool).array() *
-           DefaultCaller::call_vector(rhs_, xs, pool).array();
+    Eigen::MatrixXd ret;
+    ret.triangularView<Eigen::Lower>() =
+        DefaultCaller::call_vector(lhs_, xs, pool);
+    ret.triangularView<Eigen::Lower>() =
+        (ret.array() * DefaultCaller::call_vector(rhs_, xs, pool).array())
+            .matrix();
+    return ret;
+    // return DefaultCaller::call_vector(lhs_, xs, pool).array() *
+    // DefaultCaller::call_vector(rhs_, xs, pool).array();
   }
 
 protected:
