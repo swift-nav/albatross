@@ -2001,26 +2001,25 @@ template <typename SubCaller> struct BatchCaller {
     return compute_covariance_matrix(caller, xs, pool);
   }
 
-  // Primary: use batch when available (synthesize scalar from batch)
-  // This ensures consistency between scalar and matrix calls.
-  template <
-      typename CovFunc, typename X, typename Y,
-      typename std::enable_if<has_valid_call_impl_vector<CovFunc, X, Y>::value,
-                              int>::type = 0>
+  // Primary: use pointwise when available
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value,
+                int>::type = 0>
+  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
+    return SubCaller::call(cov_func, x, y);
+  }
+
+  // Fallback: synthesize scalar from two-arg batch when no pointwise exists
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value &&
+                 has_valid_call_impl_vector<CovFunc, X, Y>::value),
+                int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     const std::vector<X> xs{x};
     const std::vector<Y> ys{y};
     return cov_func._call_impl_vector(xs, ys, nullptr)(0, 0);
-  }
-
-  // Fallback: use pointwise when batch is not available
-  template <typename CovFunc, typename X, typename Y,
-            typename std::enable_if<
-                (!has_valid_call_impl_vector<CovFunc, X, Y>::value &&
-                 has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value),
-                int>::type = 0>
-  static double call(const CovFunc &cov_func, const X &x, const Y &y) {
-    return SubCaller::call(cov_func, x, y);
   }
 
   // Synthesize scalar from single-arg batch (for single-arg-only covariances)
