@@ -443,11 +443,9 @@ public:
   // available path for each child independently (single-arg if available,
   // two-arg fallback otherwise).
   //
-  // Note: each child's result is mirrored by BatchCaller, so the sum is
-  // already a full symmetric matrix.  BatchCaller then mirrors *this*
-  // result again — a redundant O(n^2/2) write that we accept for
-  // simplicity (avoiding it would require a parallel non-mirroring
-  // dispatch path through the entire caller chain).
+  // We pass SkipMirror so that BatchCaller does not mirror each child's
+  // result — we only read the lower triangle here, and our own result
+  // will be mirrored by the outer BatchCaller.
   template <
       typename X,
       typename std::enable_if<
@@ -459,9 +457,11 @@ public:
     Eigen::Index n{albatross::cast::to_index(xs.size())};
     Eigen::MatrixXd result(n, n);
     result.triangularView<Eigen::Lower>() =
-        DefaultCaller::call_vector(lhs_, xs, pool);
+        DefaultCaller::call_vector(lhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
     result.triangularView<Eigen::Lower>() +=
-        DefaultCaller::call_vector(rhs_, xs, pool);
+        DefaultCaller::call_vector(rhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
     return result;
   }
 
@@ -676,11 +676,9 @@ public:
   // available path for each child independently (single-arg if available,
   // two-arg fallback otherwise).
   //
-  // Note: each child's result is mirrored by BatchCaller, so the product
-  // is already a full symmetric matrix.  BatchCaller then mirrors *this*
-  // result again — a redundant O(n^2/2) write that we accept for
-  // simplicity (avoiding it would require a parallel non-mirroring
-  // dispatch path through the entire caller chain).
+  // We pass SkipMirror so that BatchCaller does not mirror each child's
+  // result — we only read the lower triangle here, and our own result
+  // will be mirrored by the outer BatchCaller.
   template <
       typename X,
       typename std::enable_if<
@@ -692,13 +690,15 @@ public:
     Eigen::Index n = albatross::cast::to_index(xs.size());
     Eigen::MatrixXd ret(n, n);
     ret.triangularView<Eigen::Lower>() =
-        DefaultCaller::call_vector(lhs_, xs, pool);
+        DefaultCaller::call_vector(lhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
     ret.triangularView<Eigen::Lower>() =
-        (ret.array() * DefaultCaller::call_vector(rhs_, xs, pool).array())
+        (ret.array() *
+         DefaultCaller::call_vector(rhs_, xs, pool,
+                                    internal::MirrorPolicy::SkipMirror)
+             .array())
             .matrix();
     return ret;
-    // return DefaultCaller::call_vector(lhs_, xs, pool).array() *
-    // DefaultCaller::call_vector(rhs_, xs, pool).array();
   }
 
 protected:

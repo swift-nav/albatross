@@ -251,6 +251,14 @@ unwrap_measurements(const std::vector<Measurement<X>> &measurements) {
 
 namespace internal {
 
+// Controls whether BatchCaller mirrors the lower triangle into the
+// strictly-upper triangle after a symmetric single-arg call_vector.
+// Composites (Sum, Product) that only read the lower triangle of child
+// results pass SkipMirror to avoid redundant O(n²/2) copies at each
+// nesting level.  The default (Mirror) preserves the current
+// always-correct behavior for any caller that forgets to forward it.
+enum class MirrorPolicy { Mirror, SkipMirror };
+
 /*
  * This Caller just directly call the underlying CovFunc.
  */
@@ -584,8 +592,9 @@ template <typename SubCaller> struct MeasurementForwarder {
             typename std::enable_if<!is_measurement<X>::value, int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
-    return SubCaller::call_vector(cov_func, xs, pool);
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+    return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
   // Symmetric Measurement: delegate to SubCaller if _call_impl_vector exists for Measurement directly
@@ -596,8 +605,9 @@ template <typename SubCaller> struct MeasurementForwarder {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
-    return SubCaller::call_vector(cov_func, xs, pool);
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+    return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
   // Symmetric Measurement: unwrap and delegate if single-arg OR two-arg exists for inner type (no Measurement-specific _call_impl_vector)
@@ -613,9 +623,10 @@ template <typename SubCaller> struct MeasurementForwarder {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
     auto unwrapped_xs = unwrap_measurements(xs);
-    return SubCaller::call_vector(cov_func, unwrapped_xs, pool);
+    return SubCaller::call_vector(cov_func, unwrapped_xs, pool, mirror);
   }
 
   // Symmetric Measurement: unwrap if no single-arg, no _call_impl_vector, no _call_impl
@@ -632,9 +643,10 @@ template <typename SubCaller> struct MeasurementForwarder {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
     auto unwrapped_xs = unwrap_measurements(xs);
-    return SubCaller::call_vector(cov_func, unwrapped_xs, pool);
+    return SubCaller::call_vector(cov_func, unwrapped_xs, pool, mirror);
   }
 
   // Symmetric Measurement: pointwise if _call_impl exists for Measurement
@@ -646,7 +658,8 @@ template <typename SubCaller> struct MeasurementForwarder {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return MeasurementForwarder::call(cov_func, x, y);
     };
@@ -799,8 +812,9 @@ template <typename SubCaller> struct LinearCombinationCaller {
       typename std::enable_if<!is_linear_combination<X>::value, int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
-    return SubCaller::call_vector(cov_func, xs, pool);
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+    return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
   // Symmetric: pointwise for LinearCombinations
@@ -809,7 +823,8 @@ template <typename SubCaller> struct LinearCombinationCaller {
       typename std::enable_if<is_linear_combination<X>::value, int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return LinearCombinationCaller::call(cov_func, x, y);
     };
@@ -1747,8 +1762,9 @@ template <typename SubCaller> struct VariantForwarder {
             typename std::enable_if<!is_variant<X>::value, int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
-    return SubCaller::call_vector(cov_func, xs, pool);
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+    return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
   // Symmetric: use heterogeneous batch dispatch for all variant cases
@@ -1756,7 +1772,8 @@ template <typename SubCaller> struct VariantForwarder {
   template <typename CovFunc, typename... Ts>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<variant<Ts...>> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy = MirrorPolicy::Mirror) {
     // Use heterogeneous dispatch for all cases
     return variant_batch_detail::dispatch_heterogeneous_variant_batch_symmetric<
         CovFunc, SubCaller>(cov_func, xs, pool);
@@ -1938,10 +1955,13 @@ template <typename SubCaller> struct BatchCaller {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
     Eigen::MatrixXd result = cov_func._call_impl_vector(xs, pool);
-    result.triangularView<Eigen::StrictlyUpper>() =
-        result.transpose().triangularView<Eigen::StrictlyUpper>();
+    if (mirror == MirrorPolicy::Mirror) {
+      result.triangularView<Eigen::StrictlyUpper>() =
+          result.transpose().triangularView<Eigen::StrictlyUpper>();
+    }
     return result;
   }
 
@@ -1953,7 +1973,8 @@ template <typename SubCaller> struct BatchCaller {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy = MirrorPolicy::Mirror) {
     return cov_func._call_impl_vector(xs, xs, pool);  // Two-vector call
   }
 
@@ -1966,7 +1987,8 @@ template <typename SubCaller> struct BatchCaller {
                 int>::type = 0>
   static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
                                      const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr) {
+                                     ThreadPool *pool = nullptr,
+                                     MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return SubCaller::call(cov_func, x, y);
     };

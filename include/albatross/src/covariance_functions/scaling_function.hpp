@@ -277,15 +277,22 @@ public:
     return this->rhs_(xs, ys, pool);
   }
 
-  // Symmetric batch: both LHS and RHS apply
+  // Symmetric batch: both LHS and RHS apply.
+  // We pass SkipMirror to avoid redundant mirroring of each child's
+  // result — cwiseProduct only reads the lower triangle (the upper
+  // triangle is garbage), and our caller will mirror the final result.
   template <typename X,
             typename std::enable_if<(has_equivalent_caller<LHS, X, X>::value &&
                                      has_equivalent_caller<RHS, X, X>::value),
                                     int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    const Eigen::MatrixXd scale_mat = this->lhs_(xs, pool);
-    const Eigen::MatrixXd cov_mat = this->rhs_(xs, pool);
+    const Eigen::MatrixXd scale_mat =
+        DefaultCaller::call_vector(this->lhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
+    const Eigen::MatrixXd cov_mat =
+        DefaultCaller::call_vector(this->rhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
     return scale_mat.cwiseProduct(cov_mat);
   }
 
@@ -393,15 +400,22 @@ public:
     return this->lhs_(xs, ys, pool);
   }
 
-  // Symmetric batch: both LHS and RHS apply
+  // Symmetric batch: both LHS and RHS apply.
+  // We pass SkipMirror to avoid redundant mirroring of each child's
+  // result — cwiseProduct only reads the lower triangle (the upper
+  // triangle is garbage), and our caller will mirror the final result.
   template <typename X,
             typename std::enable_if<(has_equivalent_caller<LHS, X, X>::value &&
                                      has_equivalent_caller<RHS, X, X>::value),
                                     int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    const Eigen::MatrixXd cov_mat = this->lhs_(xs, pool);
-    const Eigen::MatrixXd scale_mat = this->rhs_(xs, pool);
+    const Eigen::MatrixXd cov_mat =
+        DefaultCaller::call_vector(this->lhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
+    const Eigen::MatrixXd scale_mat =
+        DefaultCaller::call_vector(this->rhs_, xs, pool,
+                                   internal::MirrorPolicy::SkipMirror);
     return cov_mat.cwiseProduct(scale_mat);
   }
 
