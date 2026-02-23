@@ -109,33 +109,24 @@ public:
     return ss.str();
   }
 
-  /*
-   * Scalar covariance evaluation.
-   *
-   * When _call_impl_vector exists, we ALWAYS use it (synthesizing scalar
-   * from batch). This ensures consistency between scalar and matrix calls.
-   * Only when batch is not available do we fall back to pointwise _call_impl.
-   */
+  // Primary: use pointwise when available
+  template <typename X, typename Y,
+            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
+                                    int>::type = 0>
+  auto operator()(const X &x, const Y &y) const {
+    return call(x, y);
+  }
 
-  // Primary: use batch when available (synthesize scalar from batch)
-  template <
-      typename X, typename Y,
-      typename std::enable_if<has_valid_call_impl_vector<Derived, X, Y>::value,
-                              int>::type = 0>
+  // Fallback: synthesize scalar from batch when no pointwise exists
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_caller<Derived, X, Y>::value &&
+                 has_valid_call_impl_vector<Derived, X, Y>::value),
+                int>::type = 0>
   double operator()(const X &x, const Y &y) const {
     const std::vector<X> xs{x};
     const std::vector<Y> ys{y};
     return derived()._call_impl_vector(xs, ys, nullptr)(0, 0);
-  }
-
-  // Fallback: use pointwise when batch is not available
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (!has_valid_call_impl_vector<Derived, X, Y>::value &&
-                 has_valid_caller<Derived, X, Y>::value),
-                int>::type = 0>
-  auto operator()(const X &x, const Y &y) const {
-    return call(x, y);
   }
 
   /*
