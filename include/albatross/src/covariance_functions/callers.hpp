@@ -149,7 +149,7 @@ inline Eigen::MatrixXd compute_covariance_matrix_lower_triangle(
   const auto apply_block = [&](const auto indices) {
     for (Eigen::Index col = indices.first; col < indices.second; ++col) {
       const auto vcol = cast::to_size(col);
-      for (Eigen::Index row = 0; row <= col; ++row) {
+      for (Eigen::Index row = col; row < size; ++row) {
         const auto vrow = cast::to_size(row);
         output(row, col) = caller(xs[vrow], xs[vcol]);
       }
@@ -158,9 +158,15 @@ inline Eigen::MatrixXd compute_covariance_matrix_lower_triangle(
 
   const auto block_count = cast::to_index(pool->thread_count());
   const auto blocks = detail::partition_triangular(size, block_count);
-  apply(blocks, apply_block, pool);
+  // Reflect: convert upper-triangle-growing partitions to lower-triangle-shrinking
+  std::vector<std::pair<Eigen::Index, Eigen::Index>> lower_blocks;
+  lower_blocks.reserve(blocks.size());
+  for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
+    lower_blocks.emplace_back(size - it->second, size - it->first);
+  }
+  apply(lower_blocks, apply_block, pool);
 
-  return output.transpose();
+  return output;
 }
 
 /*
