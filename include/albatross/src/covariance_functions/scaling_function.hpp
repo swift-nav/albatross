@@ -123,60 +123,6 @@ public:
     return scales;
   }
 
-  // Both X and Y have scaling: outer product of scale vectors
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (has_valid_call_impl<ScalingFunction, X &>::value &&
-                 has_valid_call_impl<ScalingFunction, Y &>::value),
-                int>::type = 0>
-  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
-                                    const std::vector<Y> &ys,
-                                    ThreadPool * /*pool*/ = nullptr) const {
-    const Eigen::VectorXd scale_x = compute_scale_vector(xs);
-    const Eigen::VectorXd scale_y = compute_scale_vector(ys);
-    return scale_x * scale_y.transpose();
-  }
-
-  // Only X has scaling: replicate scale_x across columns
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (has_valid_call_impl<ScalingFunction, X &>::value &&
-                 !has_valid_call_impl<ScalingFunction, Y &>::value),
-                int>::type = 0>
-  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
-                                    const std::vector<Y> &ys,
-                                    ThreadPool * /*pool*/ = nullptr) const {
-    const Eigen::VectorXd scale_x = compute_scale_vector(xs);
-    const Eigen::Index m = cast::to_index(ys.size());
-    // Each row i is filled with scale_x[i]
-    return scale_x.replicate(1, m);
-  }
-
-  // Only Y has scaling: replicate scale_y across rows
-  template <typename X, typename Y,
-            typename std::enable_if<
-                (!has_valid_call_impl<ScalingFunction, X &>::value &&
-                 has_valid_call_impl<ScalingFunction, Y &>::value),
-                int>::type = 0>
-  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
-                                    const std::vector<Y> &ys,
-                                    ThreadPool * /*pool*/ = nullptr) const {
-    const Eigen::VectorXd scale_y = compute_scale_vector(ys);
-    const Eigen::Index n = cast::to_index(xs.size());
-    // Each column j is filled with scale_y[j]
-    return scale_y.transpose().replicate(n, 1);
-  }
-
-  // Symmetric batch: outer product of scale vector with itself
-  template <typename X,
-            typename std::enable_if<
-                has_valid_call_impl<ScalingFunction, X &>::value, int>::type = 0>
-  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
-                                    ThreadPool * /*pool*/ = nullptr) const {
-    const Eigen::VectorXd scale_x = compute_scale_vector(xs);
-    return scale_x * scale_x.transpose();
-  }
-
   // Diagonal batch: squared scaling factors
   template <typename X,
             typename std::enable_if<
@@ -250,20 +196,54 @@ public:
    * These delegate to the RHS batch method and then apply scaling element-wise.
    */
 
-  // Cross-covariance batch: both LHS and RHS apply
+  // Cross-covariance batch: both X and Y have scaling
   template <typename X, typename Y,
-            typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
-                                     has_equivalent_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<RHS, X, Y>::value),
+                int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     const std::vector<Y> &ys,
                                     ThreadPool *pool = nullptr) const {
-    // Get the scaling matrix from LHS
-    const Eigen::MatrixXd scale_mat = this->lhs_(xs, ys, pool);
-    // Get the covariance matrix from RHS
-    const Eigen::MatrixXd cov_mat = this->rhs_(xs, ys, pool);
-    // Element-wise product
-    return scale_mat.cwiseProduct(cov_mat);
+    const Eigen::VectorXd s_x = this->lhs_.compute_scale_vector(xs);
+    const Eigen::VectorXd s_y = this->lhs_.compute_scale_vector(ys);
+    Eigen::MatrixXd result = this->rhs_(xs, ys, pool);
+    result.array().colwise() *= s_x.array();
+    result.array().rowwise() *= s_y.transpose().array();
+    return result;
+  }
+
+  // Cross-covariance batch: only X has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    const Eigen::VectorXd s_x = this->lhs_.compute_scale_vector(xs);
+    Eigen::MatrixXd result = this->rhs_(xs, ys, pool);
+    result.array().colwise() *= s_x.array();
+    return result;
+  }
+
+  // Cross-covariance batch: only Y has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<RHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    const Eigen::VectorXd s_y = this->lhs_.compute_scale_vector(ys);
+    Eigen::MatrixXd result = this->rhs_(xs, ys, pool);
+    result.array().rowwise() *= s_y.transpose().array();
+    return result;
   }
 
   // Cross-covariance batch: only RHS applies (LHS doesn't apply to these types)
@@ -278,22 +258,21 @@ public:
   }
 
   // Symmetric batch: both LHS and RHS apply.
-  // We pass SkipMirror to avoid redundant mirroring of each child's
-  // result — cwiseProduct only reads the lower triangle (the upper
-  // triangle is garbage), and our caller will mirror the final result.
+  // We compute the scale vector once and apply it in-place to avoid
+  // materializing the full n-by-n scale matrix.
   template <typename X,
             typename std::enable_if<(has_equivalent_caller<LHS, X, X>::value &&
                                      has_equivalent_caller<RHS, X, X>::value),
                                     int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    const Eigen::MatrixXd scale_mat =
-        DefaultCaller::call_vector(this->lhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
-    const Eigen::MatrixXd cov_mat =
+    const Eigen::VectorXd s = this->lhs_.compute_scale_vector(xs);
+    Eigen::MatrixXd result =
         DefaultCaller::call_vector(this->rhs_, xs, pool,
                                    internal::MirrorPolicy::SkipMirror);
-    return scale_mat.cwiseProduct(cov_mat);
+    result.array().colwise() *= s.array();
+    result.array().rowwise() *= s.transpose().array();
+    return result;
   }
 
   // Diagonal batch: both LHS and RHS apply
@@ -373,20 +352,54 @@ public:
    * These delegate to the LHS batch method and then apply scaling element-wise.
    */
 
-  // Cross-covariance batch: both LHS and RHS apply
+  // Cross-covariance batch: both X and Y have scaling
   template <typename X, typename Y,
-            typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
-                                     has_equivalent_caller<RHS, X, Y>::value),
-                                    int>::type = 0>
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<LHS, X, Y>::value),
+                int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     const std::vector<Y> &ys,
                                     ThreadPool *pool = nullptr) const {
-    // Get the covariance matrix from LHS
-    const Eigen::MatrixXd cov_mat = this->lhs_(xs, ys, pool);
-    // Get the scaling matrix from RHS
-    const Eigen::MatrixXd scale_mat = this->rhs_(xs, ys, pool);
-    // Element-wise product
-    return cov_mat.cwiseProduct(scale_mat);
+    const Eigen::VectorXd s_x = this->rhs_.compute_scale_vector(xs);
+    const Eigen::VectorXd s_y = this->rhs_.compute_scale_vector(ys);
+    Eigen::MatrixXd result = this->lhs_(xs, ys, pool);
+    result.array().colwise() *= s_x.array();
+    result.array().rowwise() *= s_y.transpose().array();
+    return result;
+  }
+
+  // Cross-covariance batch: only X has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<LHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    const Eigen::VectorXd s_x = this->rhs_.compute_scale_vector(xs);
+    Eigen::MatrixXd result = this->lhs_(xs, ys, pool);
+    result.array().colwise() *= s_x.array();
+    return result;
+  }
+
+  // Cross-covariance batch: only Y has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 has_equivalent_caller<LHS, X, Y>::value),
+                int>::type = 0>
+  Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys,
+                                    ThreadPool *pool = nullptr) const {
+    const Eigen::VectorXd s_y = this->rhs_.compute_scale_vector(ys);
+    Eigen::MatrixXd result = this->lhs_(xs, ys, pool);
+    result.array().rowwise() *= s_y.transpose().array();
+    return result;
   }
 
   // Cross-covariance batch: only LHS applies (RHS doesn't apply to these types)
@@ -401,22 +414,21 @@ public:
   }
 
   // Symmetric batch: both LHS and RHS apply.
-  // We pass SkipMirror to avoid redundant mirroring of each child's
-  // result — cwiseProduct only reads the lower triangle (the upper
-  // triangle is garbage), and our caller will mirror the final result.
+  // We compute the scale vector once and apply it in-place to avoid
+  // materializing the full n-by-n scale matrix.
   template <typename X,
             typename std::enable_if<(has_equivalent_caller<LHS, X, X>::value &&
                                      has_equivalent_caller<RHS, X, X>::value),
                                     int>::type = 0>
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
-    const Eigen::MatrixXd cov_mat =
+    const Eigen::VectorXd s = this->rhs_.compute_scale_vector(xs);
+    Eigen::MatrixXd result =
         DefaultCaller::call_vector(this->lhs_, xs, pool,
                                    internal::MirrorPolicy::SkipMirror);
-    const Eigen::MatrixXd scale_mat =
-        DefaultCaller::call_vector(this->rhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
-    return cov_mat.cwiseProduct(scale_mat);
+    result.array().colwise() *= s.array();
+    result.array().rowwise() *= s.transpose().array();
+    return result;
   }
 
   // Diagonal batch: both LHS and RHS apply
