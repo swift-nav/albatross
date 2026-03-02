@@ -240,7 +240,7 @@ public:
   }
 
   inline bool finished() const {
-    return rows() > 0 && cols() > 0 & info() == Success;
+    return rows() > 0 && cols() > 0 && info() == Success;
   }
 
   inline MatrixType reconstructedMatrix() const {

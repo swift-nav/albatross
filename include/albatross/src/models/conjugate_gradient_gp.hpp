@@ -66,6 +66,18 @@ make_shared_solver_with_options(const Eigen::MatrixXd &m,
   options.configure_solver(*solver);
   return solver;
 }
+
+template <typename SolverType, typename Preconditioner>
+std::shared_ptr<std::decay_t<SolverType>>
+make_shared_solver_from_config(const IterativeSolverOptions &options,
+                               const Preconditioner &preconditioner) {
+  auto solver = std::make_shared<std::decay_t<SolverType>>();
+  options.configure_solver(*solver);
+  solver->preconditioner() = preconditioner;
+
+  return solver;
+}
+
 } // namespace detail
 
 template <typename FeatureType, typename Preconditioner>
@@ -94,13 +106,16 @@ struct Fit<ConjugateGradientGPFit<FeatureType, Preconditioner>> {
     options.configure_solver(*solver);
   }
 
+  static_assert(!std::is_reference_v<Preconditioner>, "Mustn't be a reference!");
+  static_assert(!std::is_const_v<Preconditioner>, "Mustn't be const!");
+
   Fit(const std::vector<FeatureType> &train_features_, Eigen::MatrixXd &&K_ff_,
       const MarginalDistribution &targets_)
       : train_features{train_features_}, K_ff{std::move(K_ff_)},
         // N.B. we give the CG solver a reference to our local member
         // matrix.
-        solver{std::make_shared<SolverType>(K_ff)}, information{solver->solve(
-                                                        targets_.mean)} {
+        solver{std::make_shared<SolverType>(K_ff)},
+        information{solver->solve(targets_.mean)} {
     if (solver->info() != Eigen::Success) {
       information.setConstant(std::numeric_limits<double>::quiet_NaN());
     }
@@ -108,13 +123,15 @@ struct Fit<ConjugateGradientGPFit<FeatureType, Preconditioner>> {
 
   Fit(const std::vector<FeatureType> &train_features_, Eigen::MatrixXd &&K_ff_,
       const MarginalDistribution &targets_,
-      const IterativeSolverOptions &options)
+      const IterativeSolverOptions &options,
+      const Preconditioner &preconditioner = Preconditioner{})
       : train_features{train_features_}, K_ff{std::move(K_ff_)},
-        // N.B. we give the CG solver a reference to our local member
-        // matrix.
         solver{
-            detail::make_shared_solver_with_options<SolverType>(K_ff, options)},
-        information{solver->solve(targets_.mean)} {
+            detail::make_shared_solver_from_config<SolverType, Preconditioner>(
+                options, preconditioner)},
+        information{} {
+    solver->compute(K_ff);
+    information = solver->solve(targets_.mean);
     if (solver->info() != Eigen::Success) {
       information.setConstant(std::numeric_limits<double>::quiet_NaN());
     }
@@ -169,7 +186,7 @@ public:
   using Base::covariance_function_;
   using Base::mean_function_;
 
-  ConjugateGradientGaussianProcessRegression() : Base(){};
+  ConjugateGradientGaussianProcessRegression() : Base() {};
 
   template <typename Cov,
             std::enable_if_t<std::is_same<std::decay_t<Cov>, CovFunc>::value,
@@ -184,14 +201,17 @@ public:
                                              const std::string &model_name)
       : Base(std::forward<CovFunc>(covariance_function), model_name) {}
 
-  template <typename Cov,
-            std::enable_if_t<std::is_same<std::decay_t<Cov>, CovFunc>::value,
-                             int> = 0>
+  template <typename Cov, typename Precond,
+            std::enable_if_t<
+                std::is_same_v<std::decay_t<Cov>, CovFunc> &&
+                    std::is_same_v<std::decay_t<Precond>, Preconditioner>,
+                int> = 0>
   ConjugateGradientGaussianProcessRegression(
       Cov &&covariance_function, const std::string &model_name,
-      const IterativeSolverOptions &options)
+      const IterativeSolverOptions &options, Precond &&preconditioner)
       : Base(std::forward<CovFunc>(covariance_function), model_name),
-        options_{options} {}
+        options_{options},
+        preconditioner_{std::forward<Preconditioner>(preconditioner)} {}
 
   template <
       typename Cov, typename Mean,
@@ -204,17 +224,20 @@ public:
       : Base(std::forward<CovFunc>(covariance_function),
              std::forward<MeanFunc>(mean_function), model_name) {}
 
-  template <
-      typename Cov, typename Mean,
-      std::enable_if_t<std::is_same<std::decay_t<Cov>, CovFunc>::value &&
-                           std::is_same<std::decay_t<Mean>, MeanFunc>::value,
-                       int> = 0>
+  template <typename Cov, typename Mean, typename Precond,
+            std::enable_if_t<
+                std::is_same_v<std::decay_t<Cov>, CovFunc> &&
+                    std::is_same_v<std::decay_t<Mean>, MeanFunc> &&
+                    std::is_same_v<std::decay_t<Precond>, Preconditioner>,
+                int> = 0>
   ConjugateGradientGaussianProcessRegression(
       Cov &&covariance_function, Mean &&mean_function,
-      const std::string &model_name, const IterativeSolverOptions &options)
+      const std::string &model_name, const IterativeSolverOptions &options,
+      Precond &&preconditioner)
       : Base(std::forward<CovFunc>(covariance_function),
              std::forward<MeanFunc>(mean_function), model_name),
-        options_{options} {}
+        options_{options},
+        preconditioner_{std::forward<Preconditioner>(preconditioner)} {}
 
   template <
       typename FeatureType,
@@ -230,9 +253,12 @@ public:
     // Clamp this so that we never try to iterate more than the
     // theoretical max of CG
     auto options = options_;
-    options.max_iterations = std::min(options_.max_iterations, K_ff.rows());
+    if (options_.max_iterations < 1 || options_.max_iterations > K_ff.rows()) {
+      options.max_iterations = K_ff.rows();
+    }
     return Fit<ConjugateGradientGPFit<FeatureType, Preconditioner>>{
-        features, std::move(K_ff), std::move(zero_mean_targets), options};
+        features, std::move(K_ff), std::move(zero_mean_targets), options,
+        preconditioner_};
   }
 
   template <
@@ -305,6 +331,7 @@ public:
 
 private:
   IterativeSolverOptions options_{};
+  Preconditioner preconditioner_{};
 };
 
 // TODO(@peddie): this is known not to have any effect for stationary
@@ -317,10 +344,11 @@ template <typename CovFunc,
 auto cg_gp_from_covariance(
     CovFunc &&covariance_function, const std::string &model_name,
     const IterativeSolverOptions &options = IterativeSolverOptions{},
-    Preconditioner && = Preconditioner{}) {
+    Preconditioner &&preconditioner = Preconditioner{}) {
   return ConjugateGradientGaussianProcessRegression<
       typename std::decay<CovFunc>::type, decltype(ZeroMean()), Preconditioner>(
-      std::forward<CovFunc>(covariance_function), model_name, options);
+      std::forward<CovFunc>(covariance_function), model_name, options,
+      std::forward<Preconditioner>(preconditioner));
 }
 
 template <typename CovFunc, typename MeanFunc,
