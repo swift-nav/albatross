@@ -15,26 +15,9 @@ git_override(
     commit = "b1e6c763b6906c0e77cb26bc6ab5adba481c715e",
 )
 
-swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
-use_repo(
-    swift_cc_toolchain_ext,
-    "aarch64-darwin-llvm",
-    "aarch64-linux-llvm",
-    "aarch64-sysroot",
-    "x86_64-darwin-llvm",
-    "x86_64-linux-llvm",
-    "x86_64-sysroot",
-)
+bazel_dep(name = "llvm", version = "0.6.0")
 
-register_toolchains(
-    "@rules_swiftnav//cc/toolchains/llvm20/aarch64-darwin:cc-toolchain-aarch64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-darwin:cc-toolchain-x86_64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm/aarch64-linux:cc-toolchain-aarch64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-x86_64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-intel-mkl",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
-)
+register_toolchains("@llvm//toolchain:all")
 
 bazel_dep(name = "eigen", version = "0.1.0.swiftnav")
 local_path_override(
