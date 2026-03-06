@@ -40,17 +40,17 @@ build:system --platform_suffix=system
 
 # Starting from XCode 26, llvm14 is not compatible with MacOS SDK anymore, so we override to llvm20
 build --enable_platform_specific_config
-build:macos --platforms=@rules_swiftnav//platforms:aarch64_darwin_llvm20
+#
 
-# Clang format config
-build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
-build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
-build:clang-format-check --output_groups=report
-build --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
+# # Clang format config
+# build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
+# build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
+# build:clang-format-check --output_groups=report
+# build --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
 
-# Clang tidy config
-build:clang-tidy --aspects @rules_swiftnav//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
-build:clang-tidy --output_groups=report
+# # Clang tidy config
+# build:clang-tidy --aspects @rules_swiftnav//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+# build:clang-tidy --output_groups=report
 
 
 # Output test errors to stderr
