@@ -10,13 +10,15 @@
     "https://bcr.bazel.build/modules/abseil-cpp/20250127.0/MODULE.bazel": "d1086e248cda6576862b4b3fe9ad76a214e08c189af5b42557a6e1888812c5d5",
     "https://bcr.bazel.build/modules/abseil-cpp/20250127.0/source.json": "1b996859f840d8efc7c720efc61dcf2a84b1261cb3974cbbe9b6666ebf567775",
     "https://bcr.bazel.build/modules/apple_support/1.15.1/MODULE.bazel": "a0556fefca0b1bb2de8567b8827518f94db6a6e7e7d632b4c48dc5f865bc7c85",
-    "https://bcr.bazel.build/modules/apple_support/1.15.1/source.json": "517f2b77430084c541bc9be2db63fdcbb7102938c5f64c17ee60ffda2e5cf07b",
+    "https://bcr.bazel.build/modules/apple_support/1.23.1/MODULE.bazel": "53763fed456a968cf919b3240427cf3a9d5481ec5466abc9d5dc51bc70087442",
+    "https://bcr.bazel.build/modules/apple_support/1.23.1/source.json": "d888b44312eb0ad2c21a91d026753f330caa48a25c9b2102fae75eb2b0dcfdd2",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.14.0/MODULE.bazel": "2b31ffcc9bdc8295b2167e07a757dbbc9ac8906e7028e5170a3708cecaac119f",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.19.3/MODULE.bazel": "253d739ba126f62a5767d832765b12b59e9f8d2bc88cc1572f4a73e46eb298ca",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.22.5/MODULE.bazel": "004ba890363d05372a97248c37205ae64b6fa31047629cd2c0895a9d0c7779e8",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.22.5/source.json": "ac2c3213df8f985785f1d0aeb7f0f73d5324e6e67d593d9b9470fb74a25d4a9b",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.7.2/MODULE.bazel": "780d1a6522b28f5edb7ea09630748720721dfe27690d65a2d33aa7509de77e07",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.8.1/MODULE.bazel": "812d2dd42f65dca362152101fbec418029cc8fd34cbad1a2fde905383d705838",
+    "https://bcr.bazel.build/modules/bazel_features/1.0.0/MODULE.bazel": "d7f022dc887efb96e1ee51cec7b2e48d41e36ff59a6e4f216c40e4029e1585bf",
     "https://bcr.bazel.build/modules/bazel_features/1.1.1/MODULE.bazel": "27b8c79ef57efe08efccbd9dd6ef70d61b4798320b8d3c134fd571f78963dbcd",
     "https://bcr.bazel.build/modules/bazel_features/1.10.0/MODULE.bazel": "f75e8807570484a99be90abcd52b5e1f390362c258bcb73106f4544957a48101",
     "https://bcr.bazel.build/modules/bazel_features/1.11.0/MODULE.bazel": "f9382337dd5a474c3b7d334c2f83e50b6eaedc284253334cf823044a26de03e8",
@@ -26,6 +28,7 @@
     "https://bcr.bazel.build/modules/bazel_features/1.19.0/MODULE.bazel": "59adcdf28230d220f0067b1f435b8537dd033bfff8db21335ef9217919c7fb58",
     "https://bcr.bazel.build/modules/bazel_features/1.21.0/MODULE.bazel": "675642261665d8eea09989aa3b8afb5c37627f1be178382c320d1b46afba5e3b",
     "https://bcr.bazel.build/modules/bazel_features/1.24.0/MODULE.bazel": "4796b4c25b47053e9bbffa792b3792d07e228ff66cd0405faef56a978708acd4",
+    "https://bcr.bazel.build/modules/bazel_features/1.27.0/MODULE.bazel": "621eeee06c4458a9121d1f104efb80f39d34deff4984e778359c60eaf1a8cb65",
     "https://bcr.bazel.build/modules/bazel_features/1.28.0/MODULE.bazel": "4b4200e6cbf8fa335b2c3f43e1d6ef3e240319c33d43d60cc0fbd4b87ece299d",
     "https://bcr.bazel.build/modules/bazel_features/1.30.0/MODULE.bazel": "a14b62d05969a293b80257e72e597c2da7f717e1e69fa8b339703ed6731bec87",
     "https://bcr.bazel.build/modules/bazel_features/1.34.0/MODULE.bazel": "e8475ad7c8965542e0c7aac8af68eb48c4af904be3d614b6aa6274c092c2ea1e",
@@ -50,6 +53,8 @@
     "https://bcr.bazel.build/modules/bazel_skylib/1.8.1/MODULE.bazel": "88ade7293becda963e0e3ea33e7d54d3425127e0a326e0d17da085a5f1f03ff6",
     "https://bcr.bazel.build/modules/bazel_skylib/1.8.2/MODULE.bazel": "69ad6927098316848b34a9142bcc975e018ba27f08c4ff403f50c1b6e646ca67",
     "https://bcr.bazel.build/modules/bazel_skylib/1.8.2/source.json": "34a3c8bcf233b835eb74be9d628899bb32999d3e0eadef1947a0a562a2b16ffb",
+    "https://bcr.bazel.build/modules/bazelrc-preset.bzl/1.9.2/MODULE.bazel": "9354bc3d91ee66e804642419af601b853e3228f6493f9263d51c5cd7b25c2a55",
+    "https://bcr.bazel.build/modules/bazelrc-preset.bzl/1.9.2/source.json": "d78791185eae5a8af3a5793f312f0ba21185bd8a115b9419fb99527d03ab112b",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/MODULE.bazel": "2e8dd40ede9c454042645fd8d8d0cd1527966aa5c919de86661e62953cd73d84",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/gawk/5.3.2.bcr.1/MODULE.bazel": "cdf8cbe5ee750db04b78878c9633cc76e80dcf4416cbe982ac3a9222f80713c8",
@@ -115,8 +120,8 @@
     "https://bcr.bazel.build/modules/rules_java/7.2.0/MODULE.bazel": "06c0334c9be61e6cef2c8c84a7800cef502063269a5af25ceb100b192453d4ab",
     "https://bcr.bazel.build/modules/rules_java/7.3.2/MODULE.bazel": "50dece891cfdf1741ea230d001aa9c14398062f2b7c066470accace78e412bc2",
     "https://bcr.bazel.build/modules/rules_java/7.6.1/MODULE.bazel": "2f14b7e8a1aa2f67ae92bc69d1ec0fa8d9f827c4e17ff5e5f02e91caa3b2d0fe",
-    "https://bcr.bazel.build/modules/rules_java/8.12.0/MODULE.bazel": "8e6590b961f2defdfc2811c089c75716cb2f06c8a4edeb9a8d85eaa64ee2a761",
-    "https://bcr.bazel.build/modules/rules_java/8.12.0/source.json": "cbd5d55d9d38d4008a7d00bee5b5a5a4b6031fcd4a56515c9accbcd42c7be2ba",
+    "https://bcr.bazel.build/modules/rules_java/8.14.0/MODULE.bazel": "717717ed40cc69994596a45aec6ea78135ea434b8402fb91b009b9151dd65615",
+    "https://bcr.bazel.build/modules/rules_java/8.14.0/source.json": "8a88c4ca9e8759da53cddc88123880565c520503321e2566b4e33d0287a3d4bc",
     "https://bcr.bazel.build/modules/rules_java/8.3.2/MODULE.bazel": "7336d5511ad5af0b8615fdc7477535a2e4e723a357b6713af439fe8cf0195017",
     "https://bcr.bazel.build/modules/rules_java/8.5.1/MODULE.bazel": "d8a9e38cc5228881f7055a6079f6f7821a073df3744d441978e7a43e20226939",
     "https://bcr.bazel.build/modules/rules_java/8.6.0/MODULE.bazel": "9c064c434606d75a086f15ade5edb514308cccd1544c2b2a89bbac4310e41c71",
@@ -193,11 +198,13 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/abseil-cpp/20240116.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/abseil-cpp/20250127.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/apple_support/1.15.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/apple_support/1.23.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/aspect_bazel_lib/2.14.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/aspect_bazel_lib/2.19.3/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/aspect_bazel_lib/2.22.5/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/aspect_bazel_lib/2.7.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/aspect_bazel_lib/2.8.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.0.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.1.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.10.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.11.0/MODULE.bazel": "not found",
@@ -207,6 +214,7 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.19.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.21.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.24.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.27.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.28.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.30.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_features/1.34.0/MODULE.bazel": "not found",
@@ -228,6 +236,7 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_skylib/1.7.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_skylib/1.8.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazel_skylib/1.8.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/bazelrc-preset.bzl/1.9.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/buildozer/7.1.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/cereal/1.2.2-81.swiftnav/MODULE.bazel": "18e65761aed28e219503225876804a7e6b244ae64bba5d2bc530c82d92c96fa8",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/cereal/1.2.2-81.swiftnav/source.json": "d8c3445e7feb12dc4b10011b83eec671e32ce7926578ff5b27bc3d9d62a83120",
@@ -282,7 +291,7 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/7.2.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/7.3.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/7.6.1/MODULE.bazel": "not found",
-    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/8.12.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/8.14.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/8.3.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/8.5.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/modules/rules_java/8.6.0/MODULE.bazel": "not found",
@@ -342,37 +351,6 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
-    "@@apple_support+//crosstool:setup.bzl%apple_cc_configure_extension": {
-      "general": {
-        "bzlTransitiveDigest": "JxuYb2AtfNO78yM+Q5Uk73ioaGhKHP5Al8qrOCfHYOY=",
-        "usagesDigest": "aYRVMk+1OupIp+5hdBlpzT36qgd6ntgSxYTzMLW5K4U=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "local_config_apple_cc_toolchains": {
-            "repoRuleId": "@@apple_support+//crosstool:setup.bzl%_apple_cc_autoconf_toolchains",
-            "attributes": {}
-          },
-          "local_config_apple_cc": {
-            "repoRuleId": "@@apple_support+//crosstool:setup.bzl%_apple_cc_autoconf",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "apple_support+",
-            "bazel_tools",
-            "bazel_tools"
-          ],
-          [
-            "bazel_tools",
-            "rules_cc",
-            "rules_cc+"
-          ]
-        ]
-      }
-    },
     "@@eigen+//extensions:mkl_extension.bzl%mkl_extension": {
       "general": {
         "bzlTransitiveDigest": "VmDxfDz/B94W+3z8Va+FXceJcKQfFzkH3EfkhGFa84Q=",
@@ -577,7 +555,7 @@
     },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "hUTp2w+RUVdL7ma5esCXZJAFnX7vLbVfLd7FwnQI6bU=",
+        "bzlTransitiveDigest": "OlvsB0HsvxbR8ZN+J9Vf00X/+WVz/Y/5Xrq2LgcVfdo=",
         "usagesDigest": "QI2z8ZUR+mqtbwsf2fLqYdJAkPOHdOV+tF2yVAUgRzw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -641,7 +619,7 @@
     },
     "@@rules_oci+//oci:extensions.bzl%oci": {
       "general": {
-        "bzlTransitiveDigest": "3SrifR/OvdLMPuY3KOVmVjrdQNErEKumyIRVqiBpcl8=",
+        "bzlTransitiveDigest": "gQJLu0Z/1QlJv4USkKRXt4n4JY+ZPu7j2P5R0xeXgqg=",
         "usagesDigest": "/O1PwnnkqSBmI9Oe08ZYYqjM4IS8JR+/9rjgzVTNDaQ=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -798,7 +776,7 @@
     },
     "@@rules_python+//python/extensions:config.bzl%config": {
       "general": {
-        "bzlTransitiveDigest": "eiSb8rvYtQxkHrv21QvQS7dfARy3jxXMfeNCo69m0xg=",
+        "bzlTransitiveDigest": "xaCns8Qt+8bJqVLy8r6nc/eL2AjEIX/vOdjqoh5xYac=",
         "usagesDigest": "ZVSXMAGpD+xzVNPuvF1IoLBkty7TROO0+akMapt1pAg=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1033,7 +1011,7 @@
     },
     "@@rules_python+//python/uv:uv.bzl%uv": {
       "general": {
-        "bzlTransitiveDigest": "85utVTiuGY4Ut0FgpNLZvwD42nCeVn+J4Cit6fSR5OM=",
+        "bzlTransitiveDigest": "N8SCcKcL6KnzBLApxvY2jR9vhXjA2VCBZMLZfY3sDRA=",
         "usagesDigest": "H8dQoNZcoqP+Mu0tHZTi4KHATzvNkM5ePuEqoQdklIU=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1070,220 +1048,6 @@
             "platforms"
           ]
         ]
-      }
-    },
-    "@@rules_swiftnav+//cc:extensions.bzl%swift_cc_toolchain_extension": {
-      "general": {
-        "bzlTransitiveDigest": "12yxB33CfN0W3lUInFcfNacHnoMCa5xr0Kc+SXv/k4o=",
-        "usagesDigest": "rTiZWXyPROaadBBgwNDFMUUiylw/UwbPYD1lPSpkL8k=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "aarch64-darwin-llvm": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm:llvm.BUILD.bzl",
-              "patch_args": [
-                "-p1"
-              ],
-              "patches": [
-                "@@rules_swiftnav+//cc/toolchains/llvm:llvm.patch"
-              ],
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/llvm-14.0.0/clang%2Bllvm-14.0.0-arm64-apple-darwin.tar.gz",
-              "strip_prefix": "clang+llvm-14.0.0-arm64-apple-darwin",
-              "sha256": "f826ee92c3fedb92bad2f9f834d96f6b9db3192871bfe434124bca848ba9a2a3"
-            }
-          },
-          "x86_64-darwin-llvm": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "patch_args": [
-                "-p1"
-              ],
-              "patches": [
-                "@@rules_swiftnav+//cc/toolchains/llvm:llvm.patch"
-              ],
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang%2Bllvm-14.0.0-x86_64-apple-darwin.tar.xz",
-              "strip_prefix": "clang+llvm-14.0.0-x86_64-apple-darwin",
-              "sha256": "cf5af0f32d78dcf4413ef6966abbfd5b1445fe80bba57f2ff8a08f77e672b9b3"
-            }
-          },
-          "aarch64-linux-llvm": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "patch_args": [
-                "-p1"
-              ],
-              "patches": [
-                "@@rules_swiftnav+//cc/toolchains/llvm:llvm.patch"
-              ],
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang%2Bllvm-14.0.0-aarch64-linux-gnu.tar.xz",
-              "strip_prefix": "clang+llvm-14.0.0-aarch64-linux-gnu",
-              "sha256": "1792badcd44066c79148ffeb1746058422cc9d838462be07e3cb19a4b724a1ee"
-            }
-          },
-          "x86_64-linux-llvm": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm:llvm.BUILD.bzl",
-              "patch_args": [
-                "-p1"
-              ],
-              "patches": [
-                "@@rules_swiftnav+//cc/toolchains/llvm:llvm.patch"
-              ],
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang%2Bllvm-14.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz",
-              "strip_prefix": "clang+llvm-14.0.0-x86_64-linux-gnu-ubuntu-18.04",
-              "sha256": "61582215dafafb7b576ea30cc136be92c877ba1f1c31ddbbd372d6d65622fef5"
-            }
-          },
-          "aarch64-darwin-llvm20": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm20:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.7/LLVM-20.1.7-macOS-ARM64.tar.xz",
-              "strip_prefix": "LLVM-20.1.7-macOS-ARM64",
-              "sha256": "6aa75de00575ad0663183b00f00f39992ded611b5136e57649ace1e6a53c0d16"
-            }
-          },
-          "x86_64-darwin-llvm20": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm20:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.7/LLVM-20.1.7-macOS-X64.tar.xz",
-              "strip_prefix": "LLVM-20.1.7-macOS-X64",
-              "sha256": "8494c98a774051a40bfe1187a2d6442f4bc107598998bbe1673d9bb1572cfd6f"
-            }
-          },
-          "aarch64-linux-llvm20": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm20:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.7/LLVM-20.1.7-Linux-ARM64.tar.xz",
-              "strip_prefix": "LLVM-20.1.7-Linux-ARM64",
-              "sha256": "832f2802a29457dc758f56e26e98558c6cd0e45fcd07186f540cb6e7f4e59385"
-            }
-          },
-          "x86_64-linux-llvm20": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm20:llvm.BUILD.bzl",
-              "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.7/LLVM-20.1.7-Linux-X64.tar.xz",
-              "strip_prefix": "LLVM-20.1.7-Linux-X64",
-              "sha256": "8494c98a774051a40bfe1187a2d6442f4bc107598998bbe1673d9bb1572cfd6f"
-            }
-          },
-          "aarch64-sysroot": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "sha256": "edb3599237a755287a3ca3c94bdd64eb7552b768e927a9d125473d0b846f91f4",
-              "build_file_content": "\nfilegroup(\n    name = \"aarch64-sysroot\",\n    srcs = glob([\"*/**\"]),\n    visibility = [\"//visibility:public\"],\n)\n    ",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/bullseye-sysroot-v4/debian_bullseye_aarch64_sysroot.tar.xz"
-            }
-          },
-          "llvm_mingw_toolchain": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/llvm_x86_64_windows:toolchain.BUILD",
-              "sha256": "21458febf5d2c918df922dd0da60137a8787e5e6b427925a1977c882fc79b550",
-              "strip_prefix": "llvm-mingw-20241203-ucrt-ubuntu-20.04-x86_64",
-              "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20241203/llvm-mingw-20241203-ucrt-ubuntu-20.04-x86_64.tar.xz"
-            }
-          },
-          "x86_64-sysroot": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "sha256": "4235d41632c677d0c71e8e3b40abcf2b67e991e6b66a08cdf9d1e54a54de8869",
-              "build_file_content": "\nfilegroup(\n    name = \"x86_64-sysroot\",\n    srcs = glob([\"*/**\"]),\n    visibility = [\"//visibility:public\"],\n)\n    ",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/bullseye-sysroot-v4/debian_bullseye_x86_64_sysroot.tar.xz"
-            }
-          },
-          "aarch64-linux-musl": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/musl/aarch64:musl.BUILD.bzl",
-              "sha256": "a6650541dcc778b79add1dd7369869d5d38ddefa9362b7e32d4cc1267fa7977e",
-              "strip_prefix": "output",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/musl-cross-11.2.0/aarch64-linux-musl-cross.tar.gz"
-            }
-          },
-          "arm-linux-musleabihf": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/musl/armhf:musl.BUILD.bzl",
-              "sha256": "7b310a8bf70500a4072f87c3292321fc4f7b91cc67a85a31e7cf13508fa24a3c",
-              "strip_prefix": "output",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/musl-cross-11.2.0/arm-linux-musleabihf-cross.tar.gz"
-            }
-          },
-          "x86_64-linux-musl": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/musl/x86_64:musl.BUILD.bzl",
-              "sha256": "594395e60bc93acd7eb049f6d8c28a9c5ad5b6060b230e94f19cd8c005cd3a91",
-              "strip_prefix": "output",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/musl-cross-11.2.0/x86_64-linux-musl-cross.tar.gz"
-            }
-          },
-          "gcc_arm_gnu_8_3_toolchain": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/gcc_arm_gnu_8_3:toolchain.BUILD",
-              "sha256": "8ce3e7688a47d8cd2d8e8323f147104ae1c8139520eca50ccf8a7fa933002731",
-              "strip_prefix": "gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/gcc-arm-gnu-8.3/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz"
-            }
-          },
-          "x86_64_linux_gcc_arm_embedded_toolchain": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/gcc_arm_embedded:toolchain.BUILD",
-              "sha256": "97dbb4f019ad1650b732faffcc881689cedc14e2b7ee863d390e0a41ef16c9a3",
-              "strip_prefix": "gcc-arm-none-eabi-10.3-2021.10",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/gcc-arm-none-eabi-10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2"
-            }
-          },
-          "darwin_gcc_arm_embedded_toolchain": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@rules_swiftnav+//cc/toolchains/gcc_arm_embedded:toolchain.BUILD",
-              "sha256": "fb613dacb25149f140f73fe9ff6c380bb43328e6bf813473986e9127e2bc283b",
-              "strip_prefix": "gcc-arm-none-eabi-10.3-2021.10",
-              "url": "https://github.com/swift-nav/swift-toolchains/releases/download/gcc-arm-none-eabi-10/gcc-arm-none-eabi-10.3-2021.10-mac.tar.bz2"
-            }
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "rules_swiftnav+",
-            "bazel_tools",
-            "bazel_tools"
-          ],
-          [
-            "rules_swiftnav+",
-            "rules_swiftnav",
-            "rules_swiftnav+"
-          ]
-        ]
-      }
-    },
-    "@@rules_swiftnav+//cc/toolchains/yocto_generic:yocto_generic_extension.bzl%yocto_generic_extension": {
-      "general": {
-        "bzlTransitiveDigest": "Q4v/HN5Wh/W0JsPpeExQzSqIslfepuWsd75kvW+25FI=",
-        "usagesDigest": "4bi3xAosSaVcWVTkRFsK0c4mCQEpQbIi8LDyPcbAPio=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "yocto_generic": {
-            "repoRuleId": "@@rules_swiftnav+//cc/toolchains/yocto_generic:yocto_generic.bzl%yocto_generic",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": []
       }
     },
     "@@suitesparse+//:extensions.bzl%blas_lapack_extension": {

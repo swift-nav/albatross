@@ -11,8 +11,8 @@ bazel_dep(name = "rules_cc", version = "0.2.16")
 bazel_dep(name = "rules_swiftnav", version = "0.16.0")
 git_override(
     module_name = "rules_swiftnav",
-    remote = "https://github.com/swift-nav/rules_swiftnav.git",
     commit = "bc82a952a2f4298636dc844e9783b555e2a068f6",
+    remote = "https://github.com/swift-nav/rules_swiftnav.git",
 )
 
 bazel_dep(name = "llvm", version = "0.6.1")
@@ -77,3 +77,5 @@ local_path_override(
     module_name = "nlopt",
     path = "third_party/nlopt",
 )
+
+bazel_dep(name = "bazelrc-preset.bzl", version = "1.9.2")
