@@ -8,33 +8,20 @@ bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 bazel_dep(name = "rules_cc", version = "0.2.16")
-bazel_dep(name = "rules_swiftnav", version = "0.11.0")
+bazel_dep(name = "rules_swiftnav", version = "0.16.0")
 git_override(
     module_name = "rules_swiftnav",
+    commit = "bc82a952a2f4298636dc844e9783b555e2a068f6",
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
-    commit = "b1e6c763b6906c0e77cb26bc6ab5adba481c715e",
 )
 
-swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
-use_repo(
-    swift_cc_toolchain_ext,
-    "aarch64-darwin-llvm",
-    "aarch64-linux-llvm",
-    "aarch64-sysroot",
-    "x86_64-darwin-llvm",
-    "x86_64-linux-llvm",
-    "x86_64-sysroot",
-)
+bazel_dep(name = "llvm", version = "0.6.1")
 
-register_toolchains(
-    "@rules_swiftnav//cc/toolchains/llvm20/aarch64-darwin:cc-toolchain-aarch64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-darwin:cc-toolchain-x86_64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm/aarch64-linux:cc-toolchain-aarch64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-x86_64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-linux:cc-toolchain-intel-mkl",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
-    "@rules_swiftnav//cc/toolchains/llvm/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
-)
+register_toolchains("@llvm//toolchain:all")
+
+osx = use_extension("@llvm//extensions:osx.bzl", "osx")
+osx.framework(name = "Accelerate")
+use_repo(osx, "macos_sdk")
 
 bazel_dep(name = "eigen", version = "0.1.0.swiftnav")
 local_path_override(
@@ -82,7 +69,7 @@ local_path_override(
     path = "third_party/ThreadPool",
 )
 
-bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.1")
+bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.2")
 bazel_dep(name = "gflags", version = "2.2.2.swiftnav")
 local_path_override(
     module_name = "gflags",
@@ -94,3 +81,5 @@ local_path_override(
     module_name = "nlopt",
     path = "third_party/nlopt",
 )
+
+bazel_dep(name = "bazelrc-preset.bzl", version = "1.9.2")

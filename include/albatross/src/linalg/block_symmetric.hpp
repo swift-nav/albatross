@@ -122,12 +122,12 @@ BlockSymmetric<Solver> build_block_symmetric(const Solver &A,
   return BlockSymmetric<Solver>(A, B, S);
 }
 
-template <typename Solver>
-BlockSymmetric<Solver> build_block_symmetric(const Solver &A,
-                                             const Eigen::MatrixXd &B,
-                                             const Eigen::MatrixXd &C) {
-  return BlockSymmetric<Solver>(A, B, C);
-}
+// template <typename Solver>
+// BlockSymmetric<Solver> build_block_symmetric(const Solver &A,
+//                                              const Eigen::MatrixXd &B,
+//                                              const Eigen::MatrixXd &C) {
+//   return BlockSymmetric<Solver>(A, B, C);
+// }
 
 } // namespace albatross
 

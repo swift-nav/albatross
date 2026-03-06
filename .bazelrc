@@ -1,19 +1,26 @@
-# Enable bzl_mod support
+########################
+# Import bazelrc presets
+import %workspace%/tools/preset/preset.bazelrc
+
+########################
+# Project-specific flags
+
 # In order to properly use the swiftnav-bazel-registry your local netrc needs to be configured
-common --enable_bzlmod
-common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/
+common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/martin4861/suitesparse-with-blas-lapack/
 common --registry=https://bcr.bazel.build
 common --@rules_swiftnav//cc:enable_bzlmod=true
-# Preparation for Bazel 8 behavior of paths in external (plus instead of tilde)
-common --incompatible_use_plus_in_repo_names
 
-# Don't let environment variables pollute the build
-# PATH is part of the action input and can lead to massive cache misses
-build --incompatible_strict_action_env
+# This is an open source project and we want to test BuildBuddy integration
+build --bes_results_url=https://app.buildbuddy.io/invocation/
+build --bes_backend=grpcs://remote.buildbuddy.io
 
-# Sets read only permission to the remote cache
-# to avoid cache poisening
-build --remote_upload_local_results=false
+build:rbe --platforms=//:docker_image_platform
+build:rbe --host_platform=//:docker_image_platform
+build:rbe --remote_cache=grpcs://remote.buildbuddy.io
+build:rbe --remote_timeout=10m
+
+build:rbe_readonly --config=rbe
+build:rbe_readonly --noremote_upload_local_results
 
 # Uses the default cc toolchain config even if xcode is installed
 build --repo_env=BAZEL_USE_CPP_ONLY_TOOLCHAIN="1"
@@ -24,8 +31,7 @@ build --repo_env=BAZEL_CXXOPTS="-std=c++14"
 # Enables using implementation_deps attribute of cc rules
 build --experimental_cc_implementation_deps
 
-# Causes the build to default to the custom toolchain
-build --incompatible_enable_cc_toolchain_resolution
+common --experimental_cc_static_library
 
 # Build with mkl
 common:mkl -c opt
@@ -38,17 +44,17 @@ build:system --platform_suffix=system
 
 # Starting from XCode 26, llvm14 is not compatible with MacOS SDK anymore, so we override to llvm20
 build --enable_platform_specific_config
-build:macos --platforms=@rules_swiftnav//platforms:aarch64_darwin_llvm20
+#
 
-# Clang format config
-build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
-build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
-build:clang-format-check --output_groups=report
-build --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
+# # Clang format config
+# build:clang-format-check --aspects @rules_swiftnav//clang_format:clang_format_check.bzl%clang_format_check_aspect
+# build:clang-format-check --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
+# build:clang-format-check --output_groups=report
+# build --@rules_swiftnav//clang_format:clang_format_config=//:clang_format_config
 
-# Clang tidy config
-build:clang-tidy --aspects @rules_swiftnav//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
-build:clang-tidy --output_groups=report
+# # Clang tidy config
+# build:clang-tidy --aspects @rules_swiftnav//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+# build:clang-tidy --output_groups=report
 
 
 # Output test errors to stderr
