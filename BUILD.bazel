@@ -1,11 +1,6 @@
 load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-alias(
-    name = "clang_format",
-    actual = "@rules_swiftnav//clang_format",
-)
-
 filegroup(
     name = "clang_format_config",
     srcs = [".clang-format"],
@@ -500,4 +495,17 @@ test_suite(
         ":albatross-test-tune",
         ":albatross-test-misc",
     ],
+)
+
+platform(
+    name = "docker_image_platform",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    exec_properties = {
+        "OSFamily": "Linux",
+        "dockerNetwork": "off",
+        "container-image": "docker://gcr.io/flame-public/rbe-ubuntu20-04:latest",
+    },
 )
