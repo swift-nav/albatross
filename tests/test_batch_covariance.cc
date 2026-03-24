@@ -1598,8 +1598,10 @@ TEST(test_vectorization, test_variant_diagonal_batch) {
 
   Eigen::VectorXd result = cov.diagonal(xs);
 
-  EXPECT_EQ(cov.diagonal_call_count, 1) << "Diagonal batch should be called once";
-  EXPECT_EQ(cov.vector_call_count, 0) << "Full matrix batch should not be called";
+  EXPECT_EQ(cov.diagonal_call_count, 1)
+      << "Diagonal batch should be called once";
+  EXPECT_EQ(cov.vector_call_count, 0)
+      << "Full matrix batch should not be called";
   EXPECT_EQ(result.size(), 50);
   EXPECT_DOUBLE_EQ(result[0], 99.0);
 }
@@ -1635,8 +1637,10 @@ TEST(test_vectorization, test_measurement_diagonal_batch) {
 
   Eigen::VectorXd result = cov.diagonal(xs);
 
-  EXPECT_EQ(cov.diagonal_call_count, 1) << "Diagonal batch should be called once";
-  EXPECT_EQ(cov.vector_call_count, 0) << "Full matrix batch should not be called";
+  EXPECT_EQ(cov.diagonal_call_count, 1)
+      << "Diagonal batch should be called once";
+  EXPECT_EQ(cov.vector_call_count, 0)
+      << "Full matrix batch should not be called";
   EXPECT_EQ(result.size(), 60);
   EXPECT_DOUBLE_EQ(result[0], 88.0);
 }
@@ -1924,10 +1928,9 @@ TEST(test_measurement_batch, test_sum_composition_measurement_batch) {
   rhs.stats->reset();
 
   // Verify traits are satisfied
-  static_assert(
-      has_valid_call_impl_vector<MockBatchCovarianceWithPointwise, double,
-                                 double>::value,
-      "MockBatchCovarianceWithPointwise should have batch support");
+  static_assert(has_valid_call_impl_vector<MockBatchCovarianceWithPointwise,
+                                           double, double>::value,
+                "MockBatchCovarianceWithPointwise should have batch support");
   static_assert(
       has_valid_call_impl_vector_symmetric<MockBatchCovarianceWithPointwise,
                                            double>::value,
@@ -1943,10 +1946,9 @@ TEST(test_measurement_batch, test_sum_composition_measurement_batch) {
                 "Sum should have symmetric batch support for double");
 
   // Verify Sum has batch support for Measurement<double>
-  static_assert(
-      has_valid_call_impl_vector<SumType, Measurement<double>,
-                                 Measurement<double>>::value,
-      "Sum should have batch support for Measurement<double>");
+  static_assert(has_valid_call_impl_vector<SumType, Measurement<double>,
+                                           Measurement<double>>::value,
+                "Sum should have batch support for Measurement<double>");
   static_assert(
       has_valid_call_impl_vector_symmetric<SumType, Measurement<double>>::value,
       "Sum should have symmetric batch support for Measurement<double>");
@@ -2045,16 +2047,15 @@ TEST(test_variant_permutation, test_sort_groups_by_type) {
   // Types: [double, int, string, double, int, string]
   // Indices: [0, 1, 2, 3, 4, 5]
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   // Verify block boundaries
   // Order should be: all ints, then all doubles, then all strings (by type
   // index) Type indices: int=0, double=1, string=2
-  EXPECT_EQ(sorted.block_starts[0], 0);  // int starts at 0
-  EXPECT_EQ(sorted.block_starts[1], 2);  // double starts at 2 (2 ints)
-  EXPECT_EQ(sorted.block_starts[2], 4);  // string starts at 4 (2 doubles)
-  EXPECT_EQ(sorted.block_starts[3], 6);  // end sentinel
+  EXPECT_EQ(sorted.block_starts[0], 0); // int starts at 0
+  EXPECT_EQ(sorted.block_starts[1], 2); // double starts at 2 (2 ints)
+  EXPECT_EQ(sorted.block_starts[2], 4); // string starts at 4 (2 doubles)
+  EXPECT_EQ(sorted.block_starts[3], 6); // end sentinel
 
   // Verify sorted vector contains correct elements (grouped by type)
   EXPECT_EQ(sorted.sorted[0].template get<int>(), 42);
@@ -2074,8 +2075,7 @@ TEST(test_variant_permutation, test_permutation_indices) {
   // Types: [double, int, double, int]
   // Original indices: [0, 1, 2, 3]
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   // Sorted order: [42, 99, 1.0, 2.0] (ints first, then doubles)
   // Sorted indices: [0, 1, 2, 3]
@@ -2088,10 +2088,14 @@ TEST(test_variant_permutation, test_permutation_indices) {
   // original[2]=2.0 (double) -> sorted[3]
   // original[3]=99 (int) -> sorted[1]
 
-  EXPECT_EQ(sorted.to_sorted.indices()[0], 2); // original[0]=1.0 goes to sorted[2]
-  EXPECT_EQ(sorted.to_sorted.indices()[1], 0); // original[1]=42 goes to sorted[0]
-  EXPECT_EQ(sorted.to_sorted.indices()[2], 3); // original[2]=2.0 goes to sorted[3]
-  EXPECT_EQ(sorted.to_sorted.indices()[3], 1); // original[3]=99 goes to sorted[1]
+  EXPECT_EQ(sorted.to_sorted.indices()[0],
+            2); // original[0]=1.0 goes to sorted[2]
+  EXPECT_EQ(sorted.to_sorted.indices()[1],
+            0); // original[1]=42 goes to sorted[0]
+  EXPECT_EQ(sorted.to_sorted.indices()[2],
+            3); // original[2]=2.0 goes to sorted[3]
+  EXPECT_EQ(sorted.to_sorted.indices()[3],
+            1); // original[3]=99 goes to sorted[1]
 }
 
 /*
@@ -2102,8 +2106,7 @@ TEST(test_variant_permutation, test_inverse_permutation_roundtrip) {
   std::vector<V> input = {V(1.0), V(42), V(std::string("a")),
                           V(2.0), V(99), V(std::string("b"))};
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   // Create a simple matrix in sorted order
   const Eigen::Index n = cast::to_index(input.size());
@@ -2119,9 +2122,9 @@ TEST(test_variant_permutation, test_inverse_permutation_roundtrip) {
   Eigen::PermutationMatrix<Eigen::Dynamic> P_inv = sorted.to_sorted.inverse();
   Eigen::MatrixXd result = P_inv * sorted_matrix * P_inv.transpose();
 
-  // Verify: result(i,j) should equal sorted_matrix(sorted_idx[i], sorted_idx[j])
-  // where sorted_idx[orig_i] is the position of original[orig_i] in sorted order
-  // With Eigen convention: indices[orig_i] = sorted_i
+  // Verify: result(i,j) should equal sorted_matrix(sorted_idx[i],
+  // sorted_idx[j]) where sorted_idx[orig_i] is the position of original[orig_i]
+  // in sorted order With Eigen convention: indices[orig_i] = sorted_i
   for (Eigen::Index i = 0; i < n; ++i) {
     for (Eigen::Index j = 0; j < n; ++j) {
       // indices[orig_i] directly gives the sorted position
@@ -2139,8 +2142,7 @@ TEST(test_variant_permutation, test_empty_vector) {
   using V = variant<int, double>;
   std::vector<V> input = {};
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   EXPECT_EQ(sorted.sorted.size(), 0u);
   EXPECT_EQ(sorted.block_starts[0], 0);
@@ -2155,8 +2157,7 @@ TEST(test_variant_permutation, test_single_element) {
   using V = variant<int, double>;
   std::vector<V> input = {V(42)};
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   EXPECT_EQ(sorted.sorted.size(), 1u);
   EXPECT_EQ(sorted.sorted[0].template get<int>(), 42);
@@ -2170,8 +2171,7 @@ TEST(test_variant_permutation, test_homogeneous_vector) {
   using V = variant<int, double>;
   std::vector<V> input = {V(1.0), V(2.0), V(3.0)};
 
-  auto sorted =
-      internal::variant_batch_detail::sort_variants_by_type(input);
+  auto sorted = internal::variant_batch_detail::sort_variants_by_type(input);
 
   // All doubles, so no reordering needed
   EXPECT_EQ(sorted.block_starts[0], 0); // int: empty
@@ -2409,7 +2409,8 @@ TEST(test_variant_heterogeneous, test_element_ordering_preserved) {
 
   Eigen::MatrixXd result = cov(xs);
 
-  // Verify result(0,0) corresponds to cov(1, 1), not cov(3, 1) or something else
+  // Verify result(0,0) corresponds to cov(1, 1), not cov(3, 1) or something
+  // else
   EXPECT_DOUBLE_EQ(result(0, 0), cov._call_impl(1, 1))
       << "result(0,0) should be cov(xs[0], xs[0]) = cov(1, 1)";
   EXPECT_DOUBLE_EQ(result(0, 1), cov._call_impl(1, 2.0))
@@ -2440,9 +2441,10 @@ namespace {
 // Helper to compute covariance matrix using only pointwise calls
 // This bypasses all batch dispatch to create a reference result
 template <typename CovFunc, typename... Ts>
-Eigen::MatrixXd compute_pointwise_reference(
-    const CovFunc &cov, const std::vector<variant<Ts...>> &xs,
-    const std::vector<variant<Ts...>> &ys) {
+Eigen::MatrixXd
+compute_pointwise_reference(const CovFunc &cov,
+                            const std::vector<variant<Ts...>> &xs,
+                            const std::vector<variant<Ts...>> &ys) {
   const auto m = cast::to_index(xs.size());
   const auto n = cast::to_index(ys.size());
   Eigen::MatrixXd result(m, n);
@@ -2456,14 +2458,16 @@ Eigen::MatrixXd compute_pointwise_reference(
 }
 
 template <typename CovFunc, typename... Ts>
-Eigen::MatrixXd compute_pointwise_reference_symmetric(
-    const CovFunc &cov, const std::vector<variant<Ts...>> &xs) {
+Eigen::MatrixXd
+compute_pointwise_reference_symmetric(const CovFunc &cov,
+                                      const std::vector<variant<Ts...>> &xs) {
   return compute_pointwise_reference(cov, xs, xs);
 }
 
 template <typename CovFunc, typename... Ts>
-Eigen::VectorXd compute_pointwise_reference_diagonal(
-    const CovFunc &cov, const std::vector<variant<Ts...>> &xs) {
+Eigen::VectorXd
+compute_pointwise_reference_diagonal(const CovFunc &cov,
+                                     const std::vector<variant<Ts...>> &xs) {
   const auto n = cast::to_index(xs.size());
   Eigen::VectorXd result(n);
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -2846,10 +2850,15 @@ TEST(test_batch_vs_pointwise, test_three_type_heterogeneous_equivalence) {
   using V = variant<int, double, std::string>;
 
   // Mix all three types
-  std::vector<V> xs = {V(1),     V(2.0),   V(std::string("abc")),
-                       V(3),     V(4.0),   V(std::string("de")),
+  std::vector<V> xs = {V(1),
+                       V(2.0),
+                       V(std::string("abc")),
+                       V(3),
+                       V(4.0),
+                       V(std::string("de")),
                        V(std::string("f"))};
-  std::vector<V> ys = {V(std::string("gh")), V(5), V(6.0), V(std::string("ijk")), V(7)};
+  std::vector<V> ys = {V(std::string("gh")), V(5), V(6.0),
+                       V(std::string("ijk")), V(7)};
 
   // Batch computation
   Eigen::MatrixXd batch_result = cov(xs, ys);
@@ -2869,7 +2878,8 @@ TEST(test_batch_vs_pointwise, test_three_type_heterogeneous_equivalence) {
 
   // Also test symmetric
   Eigen::MatrixXd sym_batch = cov(xs);
-  Eigen::MatrixXd sym_pointwise = compute_pointwise_reference_symmetric(cov, xs);
+  Eigen::MatrixXd sym_pointwise =
+      compute_pointwise_reference_symmetric(cov, xs);
 
   for (Eigen::Index i = 0; i < sym_batch.rows(); ++i) {
     for (Eigen::Index j = 0; j < sym_batch.cols(); ++j) {
@@ -3085,7 +3095,7 @@ TEST(test_variant_heterogeneous, test_batch_call_counts) {
       << "double-int should NOT be called (filled by transpose)";
 
   // Test cross-covariance case: cov(xs, ys) where ys is different
-  std::vector<V> ys = {V(100), V(200.0), V(300)};  // 2 ints, 1 double
+  std::vector<V> ys = {V(100), V(200.0), V(300)}; // 2 ints, 1 double
 
   cov.reset();
   Eigen::MatrixXd cross_result = cov(xs, ys);
@@ -3095,7 +3105,8 @@ TEST(test_variant_heterogeneous, test_batch_call_counts) {
   // - 1 call for double-double block (2x1)
   // - 1 call for int-double block (3x1)
   // - 1 call for double-int block (2x2)
-  EXPECT_EQ(cov.int_int_calls, 1) << "cross: int-int batch should be called once";
+  EXPECT_EQ(cov.int_int_calls, 1)
+      << "cross: int-int batch should be called once";
   EXPECT_EQ(cov.double_double_calls, 1)
       << "cross: double-double batch should be called once";
   EXPECT_EQ(cov.int_double_calls, 1)
@@ -3124,7 +3135,7 @@ struct PoolCallRecord {
   ThreadPool *pool_received;
   std::size_t thread_count;
   bool was_nonnull;
-  std::string call_type;  // "vector", "diagonal", "symmetric"
+  std::string call_type; // "vector", "diagonal", "symmetric"
 };
 
 /*
@@ -3314,13 +3325,15 @@ TEST(test_pool_propagation, test_no_pool_propagates_nullptr) {
 
   std::vector<double> xs = {1.0, 2.0};
 
-  sum(xs);  // No pool
+  sum(xs); // No pool
 
   // Both should receive nullptr
   ASSERT_EQ(cov1.records->size(), 1u);
   ASSERT_EQ(cov2.records->size(), 1u);
-  EXPECT_FALSE(cov1.records->at(0).was_nonnull) << "cov1 should receive nullptr";
-  EXPECT_FALSE(cov2.records->at(0).was_nonnull) << "cov2 should receive nullptr";
+  EXPECT_FALSE(cov1.records->at(0).was_nonnull)
+      << "cov1 should receive nullptr";
+  EXPECT_FALSE(cov2.records->at(0).was_nonnull)
+      << "cov2 should receive nullptr";
 }
 
 /*
@@ -3432,7 +3445,8 @@ TEST(test_pool_propagation, test_variant_unwrap_propagates_pool) {
 
 /*
  * Test 12: Sum with variant<Measurement<double>> receives pool
- * Complex type unwrapping: variant<Measurement<double>> -> Measurement<double> -> double
+ * Complex type unwrapping: variant<Measurement<double>> -> Measurement<double>
+ * -> double
  */
 TEST(test_pool_propagation, test_sum_with_variant_measurement_receives_pool) {
   PoolTrackingCovariance lhs;
@@ -3445,7 +3459,8 @@ TEST(test_pool_propagation, test_sum_with_variant_measurement_receives_pool) {
   using VariantMeasurement = variant<Measurement<double>>;
   std::vector<VariantMeasurement> ms;
   for (int i = 0; i < 10; ++i) {
-    ms.push_back(VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
+    ms.push_back(
+        VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
   }
 
   ThreadPool pool(4);
@@ -3465,7 +3480,8 @@ TEST(test_pool_propagation, test_sum_with_variant_measurement_receives_pool) {
 /*
  * Test 13: Product with variant<Measurement<double>> receives pool
  */
-TEST(test_pool_propagation, test_product_with_variant_measurement_receives_pool) {
+TEST(test_pool_propagation,
+     test_product_with_variant_measurement_receives_pool) {
   PoolTrackingCovariance lhs;
   PoolTrackingCovariance rhs;
   lhs.reset();
@@ -3476,7 +3492,8 @@ TEST(test_pool_propagation, test_product_with_variant_measurement_receives_pool)
   using VariantMeasurement = variant<Measurement<double>>;
   std::vector<VariantMeasurement> ms;
   for (int i = 0; i < 8; ++i) {
-    ms.push_back(VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
+    ms.push_back(
+        VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
   }
 
   ThreadPool pool(3);
@@ -3494,8 +3511,7 @@ TEST(test_pool_propagation, test_product_with_variant_measurement_receives_pool)
  * Test 14: Nested Sum+Product with variant<Measurement<double>>
  * (cov1 + cov2) * cov3 with complex types
  */
-TEST(test_pool_propagation,
-     test_nested_sum_product_variant_measurement) {
+TEST(test_pool_propagation, test_nested_sum_product_variant_measurement) {
   PoolTrackingCovariance cov1;
   PoolTrackingCovariance cov2;
   PoolTrackingCovariance cov3;
@@ -3508,7 +3524,8 @@ TEST(test_pool_propagation,
   using VariantMeasurement = variant<Measurement<double>>;
   std::vector<VariantMeasurement> ms;
   for (int i = 0; i < 5; ++i) {
-    ms.push_back(VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
+    ms.push_back(
+        VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
   }
 
   ThreadPool pool(7);
@@ -3529,8 +3546,7 @@ TEST(test_pool_propagation,
  * Test 15: Deep composition with variant<Measurement<double>>
  * ((cov1 * cov2) + cov3) * cov4
  */
-TEST(test_pool_propagation,
-     test_deep_composition_variant_measurement) {
+TEST(test_pool_propagation, test_deep_composition_variant_measurement) {
   PoolTrackingCovariance cov1;
   PoolTrackingCovariance cov2;
   PoolTrackingCovariance cov3;
@@ -3545,7 +3561,8 @@ TEST(test_pool_propagation,
   using VariantMeasurement = variant<Measurement<double>>;
   std::vector<VariantMeasurement> ms;
   for (int i = 0; i < 6; ++i) {
-    ms.push_back(VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
+    ms.push_back(
+        VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
   }
 
   ThreadPool pool(9);
@@ -3569,8 +3586,7 @@ TEST(test_pool_propagation,
  * Test 16: Sum cross-covariance with variant<Measurement<double>>
  * sum(xs, ys, pool) where xs and ys are vectors of variant<Measurement<double>>
  */
-TEST(test_pool_propagation,
-     test_sum_cross_covariance_variant_measurement) {
+TEST(test_pool_propagation, test_sum_cross_covariance_variant_measurement) {
   PoolTrackingCovariance lhs;
   PoolTrackingCovariance rhs;
   lhs.reset();
@@ -3582,7 +3598,8 @@ TEST(test_pool_propagation,
   std::vector<VariantMeasurement> xs;
   std::vector<VariantMeasurement> ys;
   for (int i = 0; i < 4; ++i) {
-    xs.push_back(VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
+    xs.push_back(
+        VariantMeasurement(Measurement<double>{static_cast<double>(i)}));
   }
   for (int i = 0; i < 6; ++i) {
     ys.push_back(
@@ -3750,7 +3767,7 @@ TEST(test_single_arg_symmetric, test_prefers_single_arg_over_two_arg) {
   cov.stats->reset();
 
   std::vector<double> xs = {1.0, 2.0, 3.0};
-  Eigen::MatrixXd result = cov(xs);  // Symmetric call
+  Eigen::MatrixXd result = cov(xs); // Symmetric call
 
   EXPECT_EQ(cov.stats->single_arg_count, 1) << "Single-arg should be called";
   EXPECT_EQ(cov.stats->two_arg_count, 0) << "Two-arg should NOT be called";
@@ -3780,9 +3797,10 @@ TEST(test_single_arg_symmetric, test_cross_uses_two_arg) {
 
   std::vector<double> xs = {1.0, 2.0};
   std::vector<double> ys = {3.0, 4.0, 5.0};
-  Eigen::MatrixXd result = cov(xs, ys);  // Cross-covariance
+  Eigen::MatrixXd result = cov(xs, ys); // Cross-covariance
 
-  EXPECT_EQ(cov.stats->single_arg_count, 0) << "Single-arg should NOT be called";
+  EXPECT_EQ(cov.stats->single_arg_count, 0)
+      << "Single-arg should NOT be called";
   EXPECT_EQ(cov.stats->two_arg_count, 1) << "Two-arg should be called";
   EXPECT_EQ(result(0, 0), 888.0);
 }
@@ -3923,8 +3941,9 @@ TEST(test_single_arg_symmetric, test_product_propagates_single_arg) {
 
   // Verify Product has single-arg batch support
   using ProductType = decltype(product);
-  static_assert(has_valid_call_impl_vector_single_arg<ProductType, double>::value,
-                "Product should have single-arg batch support");
+  static_assert(
+      has_valid_call_impl_vector_single_arg<ProductType, double>::value,
+      "Product should have single-arg batch support");
 
   std::vector<double> xs = {1.0, 2.0, 3.0};
   Eigen::MatrixXd result = product(xs);
@@ -3954,8 +3973,9 @@ TEST(test_single_arg_symmetric, test_nested_composition_single_arg) {
 
   // Verify nested composition has single-arg batch support
   using NestedType = decltype(nested);
-  static_assert(has_valid_call_impl_vector_single_arg<NestedType, double>::value,
-                "Nested composition should have single-arg batch support");
+  static_assert(
+      has_valid_call_impl_vector_single_arg<NestedType, double>::value,
+      "Nested composition should have single-arg batch support");
 
   std::vector<double> xs = {1.0, 2.0};
   Eigen::MatrixXd result = nested(xs);
@@ -3973,11 +3993,12 @@ TEST(test_single_arg_symmetric, test_nested_composition_single_arg) {
 }
 
 /*
- * EXTENDED TEST 13: Mixed composition - one has single-arg, one has two-arg only
+ * EXTENDED TEST 13: Mixed composition - one has single-arg, one has two-arg
+ * only
  */
 TEST(test_single_arg_symmetric, test_mixed_sum_single_and_two_arg) {
-  MockSingleArgBatchCov single_arg_cov;  // Has single-arg
-  BatchTestCovariance two_arg_cov(100.0);  // Has only two-arg
+  MockSingleArgBatchCov single_arg_cov;   // Has single-arg
+  BatchTestCovariance two_arg_cov(100.0); // Has only two-arg
 
   single_arg_cov.stats->reset();
 
@@ -3999,8 +4020,8 @@ TEST(test_single_arg_symmetric, test_mixed_sum_single_and_two_arg) {
  * Sum should NOT expose single-arg batch method.
  */
 TEST(test_single_arg_symmetric, test_sum_neither_child_has_single_arg) {
-  MockBatchCovariance cov1;  // two-arg only
-  MockBatchCovariance cov2;  // two-arg only
+  MockBatchCovariance cov1; // two-arg only
+  MockBatchCovariance cov2; // two-arg only
 
   auto sum = cov1 + cov2;
 
@@ -4022,11 +4043,12 @@ TEST(test_single_arg_symmetric, test_sum_neither_child_has_single_arg) {
 }
 
 /*
- * EXTENDED TEST 15: Mixed product - one child has single-arg, other two-arg only
+ * EXTENDED TEST 15: Mixed product - one child has single-arg, other two-arg
+ * only
  */
 TEST(test_single_arg_symmetric, test_mixed_product_single_and_two_arg) {
-  MockSingleArgBatchCov single_arg_cov;  // Has single-arg
-  BatchTestCovariance two_arg_cov(100.0);  // Has only two-arg
+  MockSingleArgBatchCov single_arg_cov;   // Has single-arg
+  BatchTestCovariance two_arg_cov(100.0); // Has only two-arg
 
   single_arg_cov.stats->reset();
 
@@ -4034,8 +4056,9 @@ TEST(test_single_arg_symmetric, test_mixed_product_single_and_two_arg) {
 
   // Product should have single-arg batch support (at least one child has it)
   using ProductType = decltype(product);
-  static_assert(has_valid_call_impl_vector_single_arg<ProductType, double>::value,
-                "Product should have single-arg when one child does");
+  static_assert(
+      has_valid_call_impl_vector_single_arg<ProductType, double>::value,
+      "Product should have single-arg when one child does");
 
   std::vector<double> xs = {1.0, 2.0};
   Eigen::MatrixXd result = product(xs);
@@ -4052,8 +4075,8 @@ TEST(test_single_arg_symmetric, test_mixed_product_single_and_two_arg) {
  * EXTENDED TEST 16: Single-arg-only child + two-arg-only child in Sum
  */
 TEST(test_single_arg_symmetric, test_sum_single_arg_only_plus_two_arg_only) {
-  MockSingleArgOnlyCov single_only;  // only single-arg, no two-arg, no pointwise
-  MockBatchCovariance two_arg_only;  // only two-arg
+  MockSingleArgOnlyCov single_only; // only single-arg, no two-arg, no pointwise
+  MockBatchCovariance two_arg_only; // only two-arg
 
   single_only.stats->reset();
 

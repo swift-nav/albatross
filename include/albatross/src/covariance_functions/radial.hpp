@@ -44,12 +44,12 @@ namespace expr {
 //  - The same caveats apply as in any other time you assign an Eigen
 //    expression to type `auto`: it's easy to accidentally follow
 //    dangling references and blow everything up
-// 
+//
 //  - You are at the mercy of Eigen's dispatch system when you use
 //    this; if your matrix is not big enough, it may be faster to do
 //    the full matrix via SIMD than to do a (non-vectorised) loop
 //    through the triangle
-// 
+//
 // Handle with care!  Benchmark twice, commit once!
 
 template <typename Derived>
