@@ -447,12 +447,10 @@ public:
                                     ThreadPool *pool = nullptr) const {
     Eigen::Index n{albatross::cast::to_index(xs.size())};
     Eigen::MatrixXd result(n, n);
-    result.triangularView<Eigen::Lower>() =
-        DefaultCaller::call_vector(lhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
-    result.triangularView<Eigen::Lower>() +=
-        DefaultCaller::call_vector(rhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
+    result.triangularView<Eigen::Lower>() = DefaultCaller::call_vector(
+        lhs_, xs, pool, internal::MirrorPolicy::SkipMirror);
+    result.triangularView<Eigen::Lower>() += DefaultCaller::call_vector(
+        rhs_, xs, pool, internal::MirrorPolicy::SkipMirror);
     return result;
   }
 
@@ -680,14 +678,12 @@ public:
                                     ThreadPool *pool = nullptr) const {
     Eigen::Index n = albatross::cast::to_index(xs.size());
     Eigen::MatrixXd ret(n, n);
+    ret.triangularView<Eigen::Lower>() = DefaultCaller::call_vector(
+        lhs_, xs, pool, internal::MirrorPolicy::SkipMirror);
     ret.triangularView<Eigen::Lower>() =
-        DefaultCaller::call_vector(lhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
-    ret.triangularView<Eigen::Lower>() =
-        (ret.array() *
-         DefaultCaller::call_vector(rhs_, xs, pool,
-                                    internal::MirrorPolicy::SkipMirror)
-             .array())
+        (ret.array() * DefaultCaller::call_vector(
+                           rhs_, xs, pool, internal::MirrorPolicy::SkipMirror)
+                           .array())
             .matrix();
     return ret;
   }

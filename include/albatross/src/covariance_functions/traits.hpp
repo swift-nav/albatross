@@ -53,7 +53,8 @@ class has_valid_call_impl_vector_symmetric
           typename const_ref<std::vector<X>>::type, ThreadPool *> {};
 
 // Detect _call_impl_vector for optimized symmetric case (single vector arg)
-// Signature: Eigen::MatrixXd _call_impl_vector(const std::vector<X>&, ThreadPool*) const
+// Signature: Eigen::MatrixXd _call_impl_vector(const std::vector<X>&,
+// ThreadPool*) const
 template <typename U, typename X>
 class has_valid_call_impl_vector_single_arg
     : public has__call_impl_vector_with_return_type<
@@ -75,8 +76,7 @@ template <typename T, typename = void> struct measurement_inner {
   using type = T;
 };
 
-template <typename X>
-struct measurement_inner<Measurement<X>, void> {
+template <typename X> struct measurement_inner<Measurement<X>, void> {
   using type = X;
 };
 
@@ -114,13 +114,15 @@ public:
 /*
  * has_valid_batch_or_measurement_batch_single_arg
  *
- * Checks if a covariance function has single-arg symmetric batch support for type X, either:
+ * Checks if a covariance function has single-arg symmetric batch support for
+ * type X, either:
  * 1. Directly via _call_impl_vector(vector<X>, pool), OR
  * 2. Via Measurement unwrapping: if X=Measurement<X'>,
  *    check for _call_impl_vector(vector<X'>, pool)
  *
- * This trait is used by Sum/Product compositions to enable single-arg batch methods
- * when the underlying covariance has single-arg batch support for unwrapped types.
+ * This trait is used by Sum/Product compositions to enable single-arg batch
+ * methods when the underlying covariance has single-arg batch support for
+ * unwrapped types.
  */
 template <typename CovFunc, typename X>
 class has_valid_batch_or_measurement_batch_single_arg {
@@ -131,7 +133,8 @@ public:
   static constexpr bool value =
       // Direct single-arg batch support for X
       has_valid_call_impl_vector_single_arg<CovFunc, X>::value ||
-      // Single-arg batch support for unwrapped type (only relevant if X is a Measurement)
+      // Single-arg batch support for unwrapped type (only relevant if X is a
+      // Measurement)
       (!std::is_same<X, InnerX>::value &&
        has_valid_call_impl_vector_single_arg<CovFunc, InnerX>::value);
 };

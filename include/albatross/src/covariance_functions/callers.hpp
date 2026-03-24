@@ -158,7 +158,8 @@ inline Eigen::MatrixXd compute_covariance_matrix_lower_triangle(
 
   const auto block_count = cast::to_index(pool->thread_count());
   const auto blocks = detail::partition_triangular(size, block_count);
-  // Reflect: convert upper-triangle-growing partitions to lower-triangle-shrinking
+  // Reflect: convert upper-triangle-growing partitions to
+  // lower-triangle-shrinking
   std::vector<std::pair<Eigen::Index, Eigen::Index>> lower_blocks;
   lower_blocks.reserve(blocks.size());
   for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
@@ -596,61 +597,63 @@ template <typename SubCaller> struct MeasurementForwarder {
   // Symmetric: passthrough for non-Measurements
   template <typename CovFunc, typename X,
             typename std::enable_if<!is_measurement<X>::value, int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
-  // Symmetric Measurement: delegate to SubCaller if _call_impl_vector exists for Measurement directly
+  // Symmetric Measurement: delegate to SubCaller if _call_impl_vector exists
+  // for Measurement directly
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 is_measurement<X>::value &&
                     has_valid_call_impl_vector_symmetric<CovFunc, X>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
-  // Symmetric Measurement: unwrap and delegate if single-arg OR two-arg exists for inner type (no Measurement-specific _call_impl_vector)
+  // Symmetric Measurement: unwrap and delegate if single-arg OR two-arg exists
+  // for inner type (no Measurement-specific _call_impl_vector)
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 is_measurement<X>::value &&
                     !has_valid_call_impl_vector_symmetric<CovFunc, X>::value &&
                     !has_valid_call_impl<CovFunc, X, X>::value &&
-                    (has_valid_call_impl_vector_single_arg<CovFunc,
-                         measurement_inner_t<X>>::value ||
-                     has_valid_call_impl_vector_symmetric<CovFunc,
-                         measurement_inner_t<X>>::value),
+                    (has_valid_call_impl_vector_single_arg<
+                         CovFunc, measurement_inner_t<X>>::value ||
+                     has_valid_call_impl_vector_symmetric<
+                         CovFunc, measurement_inner_t<X>>::value),
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     auto unwrapped_xs = unwrap_measurements(xs);
     return SubCaller::call_vector(cov_func, unwrapped_xs, pool, mirror);
   }
 
-  // Symmetric Measurement: unwrap if no single-arg, no _call_impl_vector, no _call_impl
-  // but inner type has pointwise support
+  // Symmetric Measurement: unwrap if no single-arg, no _call_impl_vector, no
+  // _call_impl but inner type has pointwise support
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 is_measurement<X>::value &&
                     !has_valid_call_impl_vector_symmetric<CovFunc, X>::value &&
                     !has_valid_call_impl<CovFunc, X, X>::value &&
-                    !has_valid_call_impl_vector_single_arg<CovFunc,
-                         measurement_inner_t<X>>::value &&
-                    !has_valid_call_impl_vector_symmetric<CovFunc,
-                         measurement_inner_t<X>>::value,
+                    !has_valid_call_impl_vector_single_arg<
+                        CovFunc, measurement_inner_t<X>>::value &&
+                    !has_valid_call_impl_vector_symmetric<
+                        CovFunc, measurement_inner_t<X>>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     auto unwrapped_xs = unwrap_measurements(xs);
     return SubCaller::call_vector(cov_func, unwrapped_xs, pool, mirror);
   }
@@ -662,10 +665,9 @@ template <typename SubCaller> struct MeasurementForwarder {
                     !has_valid_call_impl_vector_symmetric<CovFunc, X>::value &&
                     has_valid_call_impl<CovFunc, X, X>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr, MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return MeasurementForwarder::call(cov_func, x, y);
     };
@@ -681,12 +683,13 @@ template <typename SubCaller> struct MeasurementForwarder {
     return SubCaller::call_vector_diagonal(cov_func, xs, pool);
   }
 
-  // Diagonal Measurement: unwrap ONLY if no explicit _call_impl for Measurement types
-  template <typename CovFunc, typename X,
-            typename std::enable_if<
-                is_measurement<X>::value &&
-                    !has_valid_call_impl<CovFunc, X, X>::value,
-                int>::type = 0>
+  // Diagonal Measurement: unwrap ONLY if no explicit _call_impl for Measurement
+  // types
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<is_measurement<X>::value &&
+                                  !has_valid_call_impl<CovFunc, X, X>::value,
+                              int>::type = 0>
   static Eigen::VectorXd call_vector_diagonal(const CovFunc &cov_func,
                                               const std::vector<X> &xs,
                                               ThreadPool *pool = nullptr) {
@@ -694,12 +697,13 @@ template <typename SubCaller> struct MeasurementForwarder {
     return SubCaller::call_vector_diagonal(cov_func, unwrapped_xs, pool);
   }
 
-  // Diagonal Measurement: pointwise if explicit _call_impl exists for Measurement types
-  template <typename CovFunc, typename X,
-            typename std::enable_if<
-                is_measurement<X>::value &&
-                    has_valid_call_impl<CovFunc, X, X>::value,
-                int>::type = 0>
+  // Diagonal Measurement: pointwise if explicit _call_impl exists for
+  // Measurement types
+  template <
+      typename CovFunc, typename X,
+      typename std::enable_if<is_measurement<X>::value &&
+                                  has_valid_call_impl<CovFunc, X, X>::value,
+                              int>::type = 0>
   static Eigen::VectorXd
   call_vector_diagonal(const CovFunc &cov_func, const std::vector<X> &xs,
                        [[maybe_unused]] ThreadPool *pool = nullptr) {
@@ -816,10 +820,10 @@ template <typename SubCaller> struct LinearCombinationCaller {
   template <
       typename CovFunc, typename X,
       typename std::enable_if<!is_linear_combination<X>::value, int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
@@ -827,10 +831,9 @@ template <typename SubCaller> struct LinearCombinationCaller {
   template <
       typename CovFunc, typename X,
       typename std::enable_if<is_linear_combination<X>::value, int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr, MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return LinearCombinationCaller::call(cov_func, x, y);
     };
@@ -1012,21 +1015,26 @@ Eigen::MatrixXd dispatch_variant_batch_left_impl(
 
   // Fold expression: match runtime index to compile-time type
   ((Is == runtime_index
-        ? (found = true,
-           result = [&]() {
-             using ConcreteType = std::tuple_element_t<Is, std::tuple<Ts...>>;
-             auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
-             // Check if this type pair is supported; if not, return zeros
-             // (matches pointwise visitor behavior)
-             if constexpr (has_valid_cov_caller<CovFunc, SubCaller, ConcreteType,
-                                                Y>::value) {
-               return SubCaller::call_vector(cov_func, concrete_xs, ys, pool);
-             } else {
-               return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
-                                            cast::to_index(ys.size()));
-             }
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using ConcreteType =
+                        std::tuple_element_t<Is, std::tuple<Ts...>>;
+                    auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
+                    // Check if this type pair is supported; if not, return
+                    // zeros (matches pointwise visitor behavior)
+                    if constexpr (has_valid_cov_caller<CovFunc, SubCaller,
+                                                       ConcreteType,
+                                                       Y>::value) {
+                      return SubCaller::call_vector(cov_func, concrete_xs, ys,
+                                                    pool);
+                    } else {
+                      return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
+                                                   cast::to_index(ys.size()));
+                    }
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1062,21 +1070,25 @@ Eigen::MatrixXd dispatch_variant_batch_right_impl(
   bool found = false;
 
   ((Is == runtime_index
-        ? (found = true,
-           result = [&]() {
-             using ConcreteType = std::tuple_element_t<Is, std::tuple<Ts...>>;
-             auto concrete_ys = extract_homogeneous<ConcreteType>(ys);
-             // Check if this type pair is supported; if not, return zeros
-             // (matches pointwise visitor behavior)
-             if constexpr (has_valid_cov_caller<CovFunc, SubCaller, X,
-                                                ConcreteType>::value) {
-               return SubCaller::call_vector(cov_func, xs, concrete_ys, pool);
-             } else {
-               return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
-                                            cast::to_index(ys.size()));
-             }
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using ConcreteType =
+                        std::tuple_element_t<Is, std::tuple<Ts...>>;
+                    auto concrete_ys = extract_homogeneous<ConcreteType>(ys);
+                    // Check if this type pair is supported; if not, return
+                    // zeros (matches pointwise visitor behavior)
+                    if constexpr (has_valid_cov_caller<CovFunc, SubCaller, X,
+                                                       ConcreteType>::value) {
+                      return SubCaller::call_vector(cov_func, xs, concrete_ys,
+                                                    pool);
+                    } else {
+                      return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
+                                                   cast::to_index(ys.size()));
+                    }
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1113,21 +1125,25 @@ Eigen::MatrixXd dispatch_variant_batch_both_y_impl(
   bool found = false;
 
   ((YIs == y_index
-        ? (found = true,
-           result = [&]() {
-             using YType = std::tuple_element_t<YIs, std::tuple<Ys...>>;
-             auto concrete_ys = extract_homogeneous<YType>(ys);
-             // Check if this type pair is supported; if not, return zeros
-             if constexpr (has_valid_cov_caller<CovFunc, SubCaller, XType,
-                                                YType>::value) {
-               return SubCaller::call_vector(cov_func, concrete_xs, concrete_ys,
-                                             pool);
-             } else {
-               return Eigen::MatrixXd::Zero(cast::to_index(concrete_xs.size()),
-                                            cast::to_index(ys.size()));
-             }
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using YType = std::tuple_element_t<YIs, std::tuple<Ys...>>;
+                    auto concrete_ys = extract_homogeneous<YType>(ys);
+                    // Check if this type pair is supported; if not, return
+                    // zeros
+                    if constexpr (has_valid_cov_caller<CovFunc, SubCaller,
+                                                       XType, YType>::value) {
+                      return SubCaller::call_vector(cov_func, concrete_xs,
+                                                    concrete_ys, pool);
+                    } else {
+                      return Eigen::MatrixXd::Zero(
+                          cast::to_index(concrete_xs.size()),
+                          cast::to_index(ys.size()));
+                    }
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1147,16 +1163,18 @@ Eigen::MatrixXd dispatch_variant_batch_both_x_impl(
   bool found = false;
 
   ((XIs == x_index
-        ? (found = true,
-           result = [&]() {
-             using XType = std::tuple_element_t<XIs, std::tuple<Xs...>>;
-             auto concrete_xs = extract_homogeneous<XType>(xs);
-             return dispatch_variant_batch_both_y_impl<CovFunc, SubCaller,
-                                                       XType>(
-                 cov_func, concrete_xs, ys, pool, y_index,
-                 std::index_sequence_for<Ys...>{});
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using XType = std::tuple_element_t<XIs, std::tuple<Xs...>>;
+                    auto concrete_xs = extract_homogeneous<XType>(xs);
+                    return dispatch_variant_batch_both_y_impl<CovFunc,
+                                                              SubCaller, XType>(
+                        cov_func, concrete_xs, ys, pool, y_index,
+                        std::index_sequence_for<Ys...>{});
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1165,11 +1183,9 @@ Eigen::MatrixXd dispatch_variant_batch_both_x_impl(
 }
 
 template <typename CovFunc, typename SubCaller, typename... Xs, typename... Ys>
-Eigen::MatrixXd
-dispatch_variant_batch_both(const CovFunc &cov_func,
-                            const std::vector<variant<Xs...>> &xs,
-                            const std::vector<variant<Ys...>> &ys,
-                            ThreadPool *pool) {
+Eigen::MatrixXd dispatch_variant_batch_both(
+    const CovFunc &cov_func, const std::vector<variant<Xs...>> &xs,
+    const std::vector<variant<Ys...>> &ys, ThreadPool *pool) {
   if (xs.empty()) {
     return Eigen::MatrixXd(0, cast::to_index(ys.size()));
   }
@@ -1198,21 +1214,26 @@ Eigen::MatrixXd dispatch_variant_batch_symmetric_impl(
   bool found = false;
 
   ((Is == runtime_index
-        ? (found = true,
-           result = [&]() {
-             using ConcreteType = std::tuple_element_t<Is, std::tuple<Ts...>>;
-             auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
-             // Check if this type is supported; if not, return zeros
-             // (matches pointwise visitor behavior)
-             if constexpr (has_valid_cov_caller<CovFunc, SubCaller, ConcreteType,
-                                                ConcreteType>::value) {
-               return SubCaller::call_vector(cov_func, concrete_xs, pool);
-             } else {
-               return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
-                                            cast::to_index(xs.size()));
-             }
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using ConcreteType =
+                        std::tuple_element_t<Is, std::tuple<Ts...>>;
+                    auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
+                    // Check if this type is supported; if not, return zeros
+                    // (matches pointwise visitor behavior)
+                    if constexpr (has_valid_cov_caller<CovFunc, SubCaller,
+                                                       ConcreteType,
+                                                       ConcreteType>::value) {
+                      return SubCaller::call_vector(cov_func, concrete_xs,
+                                                    pool);
+                    } else {
+                      return Eigen::MatrixXd::Zero(cast::to_index(xs.size()),
+                                                   cast::to_index(xs.size()));
+                    }
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1247,21 +1268,25 @@ Eigen::VectorXd dispatch_variant_batch_diagonal_impl(
   bool found = false;
 
   ((Is == runtime_index
-        ? (found = true,
-           result = [&]() {
-             using ConcreteType = std::tuple_element_t<Is, std::tuple<Ts...>>;
-             auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
-             // Check if this type is supported; if not, return zeros
-             // (matches pointwise visitor behavior)
-             if constexpr (has_valid_cov_caller<CovFunc, SubCaller, ConcreteType,
-                                                ConcreteType>::value) {
-               return SubCaller::call_vector_diagonal(cov_func, concrete_xs,
-                                                      pool);
-             } else {
-               return Eigen::VectorXd::Zero(cast::to_index(xs.size()));
-             }
-           }(),
-           0)
+        ? (
+              found = true,
+              result =
+                  [&]() {
+                    using ConcreteType =
+                        std::tuple_element_t<Is, std::tuple<Ts...>>;
+                    auto concrete_xs = extract_homogeneous<ConcreteType>(xs);
+                    // Check if this type is supported; if not, return zeros
+                    // (matches pointwise visitor behavior)
+                    if constexpr (has_valid_cov_caller<CovFunc, SubCaller,
+                                                       ConcreteType,
+                                                       ConcreteType>::value) {
+                      return SubCaller::call_vector_diagonal(cov_func,
+                                                             concrete_xs, pool);
+                    } else {
+                      return Eigen::VectorXd::Zero(cast::to_index(xs.size()));
+                    }
+                  }(),
+              0)
         : 0),
    ...);
 
@@ -1391,11 +1416,9 @@ Eigen::MatrixXd compute_sorted_covariance_cross_impl(
 }
 
 template <typename CovFunc, typename SubCaller, typename... Ts>
-Eigen::MatrixXd
-compute_sorted_covariance_cross(const CovFunc &cov_func,
-                                const SortedVariantData<Ts...> &x_sorted,
-                                const SortedVariantData<Ts...> &y_sorted,
-                                ThreadPool *pool) {
+Eigen::MatrixXd compute_sorted_covariance_cross(
+    const CovFunc &cov_func, const SortedVariantData<Ts...> &x_sorted,
+    const SortedVariantData<Ts...> &y_sorted, ThreadPool *pool) {
   return compute_sorted_covariance_cross_impl<CovFunc, SubCaller>(
       cov_func, x_sorted, y_sorted, pool, std::index_sequence_for<Ts...>{});
 }
@@ -1445,7 +1468,8 @@ Eigen::MatrixXd dispatch_heterogeneous_variant_batch_cross(
  * and off-diagonal blocks once.
  */
 
-// Helper: process one row block (X type XI) against column blocks (Y types >= XI)
+// Helper: process one row block (X type XI) against column blocks (Y types >=
+// XI)
 template <typename CovFunc, typename SubCaller, std::size_t XI,
           typename TypeListT, std::size_t... YIs>
 struct SymmetricRowBlockProcessor;
@@ -1607,7 +1631,8 @@ Eigen::VectorXd dispatch_heterogeneous_variant_batch_diagonal_impl(
         // Use SubCaller to go through full caller chain for diagonal
         if constexpr (has_valid_cov_caller<CovFunc, SubCaller, XType,
                                            XType>::value) {
-          auto block_diag = SubCaller::call_vector_diagonal(cov_func, block, pool);
+          auto block_diag =
+              SubCaller::call_vector_diagonal(cov_func, block, pool);
           sorted_diag.segment(start, end - start) = block_diag;
         }
         // Unsupported types: leave as zero
@@ -1718,9 +1743,10 @@ template <typename SubCaller> struct VariantForwarder {
   // otherwise fall back to pointwise
   template <typename CovFunc, typename X, typename... Ts,
             typename std::enable_if<!is_variant<X>::value, int>::type = 0>
-  static Eigen::MatrixXd
-  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
-              const std::vector<variant<Ts...>> &ys, ThreadPool *pool = nullptr) {
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<X> &xs,
+                                     const std::vector<variant<Ts...>> &ys,
+                                     ThreadPool *pool = nullptr) {
     if (is_homogeneous_variant_vector(ys)) {
       return variant_batch_detail::dispatch_variant_batch_right<CovFunc,
                                                                 SubCaller>(
@@ -1737,9 +1763,10 @@ template <typename SubCaller> struct VariantForwarder {
   // This handles both homogeneous (single type) and heterogeneous (mixed types)
   // cases efficiently using sort-compute-unpermute.
   template <typename CovFunc, typename... Ts>
-  static Eigen::MatrixXd
-  call_vector(const CovFunc &cov_func, const std::vector<variant<Ts...>> &xs,
-              const std::vector<variant<Ts...>> &ys, ThreadPool *pool = nullptr) {
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<variant<Ts...>> &xs,
+                                     const std::vector<variant<Ts...>> &ys,
+                                     ThreadPool *pool = nullptr) {
     // Use heterogeneous dispatch for all cases - it handles homogeneous
     // efficiently (single non-empty block) and heterogeneous correctly
     return variant_batch_detail::dispatch_heterogeneous_variant_batch_cross<
@@ -1753,9 +1780,10 @@ template <typename SubCaller> struct VariantForwarder {
             typename std::enable_if<
                 !std::is_same<variant<XTs...>, variant<YTs...>>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd
-  call_vector(const CovFunc &cov_func, const std::vector<variant<XTs...>> &xs,
-              const std::vector<variant<YTs...>> &ys, ThreadPool *pool = nullptr) {
+  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
+                                     const std::vector<variant<XTs...>> &xs,
+                                     const std::vector<variant<YTs...>> &ys,
+                                     ThreadPool *pool = nullptr) {
     // Fall back to pointwise computation for mismatched variant types
     auto caller = [&](const auto &x, const auto &y) {
       return VariantForwarder::call(cov_func, x, y);
@@ -1766,20 +1794,19 @@ template <typename SubCaller> struct VariantForwarder {
   // Symmetric: passthrough for non-variants
   template <typename CovFunc, typename X,
             typename std::enable_if<!is_variant<X>::value, int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     return SubCaller::call_vector(cov_func, xs, pool, mirror);
   }
 
   // Symmetric: use heterogeneous batch dispatch for all variant cases
   // This handles both homogeneous and heterogeneous efficiently
   template <typename CovFunc, typename... Ts>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<variant<Ts...>> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<variant<Ts...>> &xs,
+              ThreadPool *pool = nullptr, MirrorPolicy = MirrorPolicy::Mirror) {
     // Use heterogeneous dispatch for all cases
     return variant_batch_detail::dispatch_heterogeneous_variant_batch_symmetric<
         CovFunc, SubCaller>(cov_func, xs, pool);
@@ -1959,10 +1986,10 @@ template <typename SubCaller> struct BatchCaller {
             typename std::enable_if<
                 has_valid_call_impl_vector_single_arg<CovFunc, X>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy mirror = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr,
+              MirrorPolicy mirror = MirrorPolicy::Mirror) {
     Eigen::MatrixXd result = cov_func._call_impl_vector(xs, pool);
     if (mirror == MirrorPolicy::Mirror) {
       result.triangularView<Eigen::StrictlyUpper>() =
@@ -1971,17 +1998,17 @@ template <typename SubCaller> struct BatchCaller {
     return result;
   }
 
-  // Symmetric batch Priority 2: two-vector symmetric method exists (no single-vector)
+  // Symmetric batch Priority 2: two-vector symmetric method exists (no
+  // single-vector)
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 !has_valid_call_impl_vector_single_arg<CovFunc, X>::value &&
                     has_valid_call_impl_vector_symmetric<CovFunc, X>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy = MirrorPolicy::Mirror) {
-    return cov_func._call_impl_vector(xs, xs, pool);  // Two-vector call
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr, MirrorPolicy = MirrorPolicy::Mirror) {
+    return cov_func._call_impl_vector(xs, xs, pool); // Two-vector call
   }
 
   // Symmetric batch Priority 3: pointwise fallback (no batch methods)
@@ -1991,10 +2018,9 @@ template <typename SubCaller> struct BatchCaller {
                     !has_valid_call_impl_vector_symmetric<CovFunc, X>::value &&
                     has_valid_cov_caller<CovFunc, SubCaller, X, X>::value,
                 int>::type = 0>
-  static Eigen::MatrixXd call_vector(const CovFunc &cov_func,
-                                     const std::vector<X> &xs,
-                                     ThreadPool *pool = nullptr,
-                                     MirrorPolicy = MirrorPolicy::Mirror) {
+  static Eigen::MatrixXd
+  call_vector(const CovFunc &cov_func, const std::vector<X> &xs,
+              ThreadPool *pool = nullptr, MirrorPolicy = MirrorPolicy::Mirror) {
     auto caller = [&](const auto &x, const auto &y) {
       return SubCaller::call(cov_func, x, y);
     };
@@ -2002,10 +2028,10 @@ template <typename SubCaller> struct BatchCaller {
   }
 
   // Primary: use pointwise when available
-  template <typename CovFunc, typename X, typename Y,
-            typename std::enable_if<
-                has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value,
-                int>::type = 0>
+  template <
+      typename CovFunc, typename X, typename Y,
+      typename std::enable_if<
+          has_valid_cov_caller<CovFunc, SubCaller, X, Y>::value, int>::type = 0>
   static double call(const CovFunc &cov_func, const X &x, const Y &y) {
     return SubCaller::call(cov_func, x, y);
   }
@@ -2080,7 +2106,8 @@ template <typename SubCaller> struct BatchCaller {
     return diag;
   }
 
-  // Diagonal for two-arg batch-only covariances - synthesize from _call_impl_vector(xs, ys, pool)
+  // Diagonal for two-arg batch-only covariances - synthesize from
+  // _call_impl_vector(xs, ys, pool)
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 !has_valid_call_impl_vector_diagonal<CovFunc, X>::value &&
@@ -2096,7 +2123,8 @@ template <typename SubCaller> struct BatchCaller {
     return cov_func._call_impl_vector(xs, xs, pool).diagonal();
   }
 
-  // Diagonal for single-arg-only covariances - synthesize from _call_impl_vector(xs, pool)
+  // Diagonal for single-arg-only covariances - synthesize from
+  // _call_impl_vector(xs, pool)
   template <typename CovFunc, typename X,
             typename std::enable_if<
                 !has_valid_call_impl_vector_diagonal<CovFunc, X>::value &&
@@ -2144,7 +2172,8 @@ public:
       has_valid_call_impl_vector<CovFunc, X, Y>::value;
 };
 
-// Symmetric version: check if pointwise OR symmetric batch (single-arg or two-arg) is available
+// Symmetric version: check if pointwise OR symmetric batch (single-arg or
+// two-arg) is available
 template <typename CovFunc, typename X>
 class has_valid_caller_or_batch_symmetric {
 public:

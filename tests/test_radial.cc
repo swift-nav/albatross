@@ -12,8 +12,8 @@
 
 #include <albatross/CovarianceFunctions>
 #include <array>
-#include <random>
 #include <gtest/gtest.h>
+#include <random>
 
 #include "test_utils.h"
 
@@ -555,8 +555,7 @@ TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedZeroDistance) {
   const Eigen::MatrixXd result = TypeParam::matrix(dist, ls, sigma);
   ASSERT_EQ(result.rows(), 4);
   ASSERT_EQ(result.cols(), 4);
-  EXPECT_TRUE(result.isApprox(
-      Eigen::MatrixXd::Constant(4, 4, sigma * sigma)));
+  EXPECT_TRUE(result.isApprox(Eigen::MatrixXd::Constant(4, 4, sigma * sigma)));
 }
 
 TYPED_TEST(VectorisedRadialCovarianceTester, VectorisedLargeDistance) {
@@ -797,8 +796,7 @@ TEST(test_radial, VectorisedMatchesMatern32Oracle) {
   const Eigen::MatrixXd dist = oracle_distance_matrix();
   const Eigen::MatrixXd result =
       matern_32_covariance(dist, kMaternOracleLengthScale, kMaternOracleSigma);
-  const Eigen::MatrixXd expected =
-      oracle_expected_matrix(kOracleMatern32Y);
+  const Eigen::MatrixXd expected = oracle_expected_matrix(kOracleMatern32Y);
   ASSERT_EQ(result.rows(), expected.rows());
   ASSERT_EQ(result.cols(), expected.cols());
   EXPECT_TRUE(result.isApprox(expected, 1e-15));

@@ -124,11 +124,12 @@ public:
   }
 
   // Diagonal batch: squared scaling factors
-  template <typename X,
-            typename std::enable_if<
-                has_valid_call_impl<ScalingFunction, X &>::value, int>::type = 0>
-  Eigen::VectorXd _call_impl_vector_diagonal(const std::vector<X> &xs,
-                                             ThreadPool * /*pool*/ = nullptr) const {
+  template <typename X, typename std::enable_if<
+                            has_valid_call_impl<ScalingFunction, X &>::value,
+                            int>::type = 0>
+  Eigen::VectorXd
+  _call_impl_vector_diagonal(const std::vector<X> &xs,
+                             ThreadPool * /*pool*/ = nullptr) const {
     const Eigen::VectorXd scale_x = compute_scale_vector(xs);
     return scale_x.array().square().matrix();
   }
@@ -267,9 +268,8 @@ public:
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
     const Eigen::VectorXd s = this->lhs_.compute_scale_vector(xs);
-    Eigen::MatrixXd result =
-        DefaultCaller::call_vector(this->rhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
+    Eigen::MatrixXd result = DefaultCaller::call_vector(
+        this->rhs_, xs, pool, internal::MirrorPolicy::SkipMirror);
     result.array().colwise() *= s.array();
     result.array().rowwise() *= s.transpose().array();
     return result;
@@ -423,9 +423,8 @@ public:
   Eigen::MatrixXd _call_impl_vector(const std::vector<X> &xs,
                                     ThreadPool *pool = nullptr) const {
     const Eigen::VectorXd s = this->rhs_.compute_scale_vector(xs);
-    Eigen::MatrixXd result =
-        DefaultCaller::call_vector(this->lhs_, xs, pool,
-                                   internal::MirrorPolicy::SkipMirror);
+    Eigen::MatrixXd result = DefaultCaller::call_vector(
+        this->lhs_, xs, pool, internal::MirrorPolicy::SkipMirror);
     result.array().colwise() *= s.array();
     result.array().rowwise() *= s.transpose().array();
     return result;
