@@ -104,7 +104,7 @@ TEST(TestConjugateGradientGP, TestMean) {
 
   begin = std::chrono::steady_clock::now();
   auto direct_pred =
-    direct_fit.predict_with_measurement_noise(test_features).joint();
+      direct_fit.predict_with_measurement_noise(test_features).joint();
   report_seconds_till_now("direct predict");
 
   begin = std::chrono::steady_clock::now();
@@ -123,12 +123,12 @@ TEST(TestConjugateGradientGP, TestMean) {
 
   begin = std::chrono::steady_clock::now();
   auto direct_marginal =
-    direct_fit.predict_with_measurement_noise(test_features).marginal();
+      direct_fit.predict_with_measurement_noise(test_features).marginal();
   report_seconds_till_now("direct marginal");
 
   begin = std::chrono::steady_clock::now();
   auto cg_marginal =
-    cg_fit.predict_with_measurement_noise(test_features).marginal();
+      cg_fit.predict_with_measurement_noise(test_features).marginal();
   report_seconds_till_now("cg marginal");
   describe_fit(cg_fit.get_fit());
   double marginal_error = (direct_marginal.covariance.diagonal() -
@@ -228,7 +228,6 @@ TEST(TestConjugateGradientGP, ParameterSweep) {
         auto direct_pred =
             direct_fit.predict_with_measurement_noise(test_features).joint();
         report_seconds_till_now("direct predict");
-
 
         auto begin = std::chrono::steady_clock::now();
         auto cg_fit = cg.fit(dataset);

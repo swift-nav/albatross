@@ -106,7 +106,8 @@ struct Fit<ConjugateGradientGPFit<FeatureType, Preconditioner>> {
     options.configure_solver(*solver);
   }
 
-  static_assert(!std::is_reference_v<Preconditioner>, "Mustn't be a reference!");
+  static_assert(!std::is_reference_v<Preconditioner>,
+                "Mustn't be a reference!");
   static_assert(!std::is_const_v<Preconditioner>, "Mustn't be const!");
 
   Fit(const std::vector<FeatureType> &train_features_, Eigen::MatrixXd &&K_ff_,
@@ -114,8 +115,8 @@ struct Fit<ConjugateGradientGPFit<FeatureType, Preconditioner>> {
       : train_features{train_features_}, K_ff{std::move(K_ff_)},
         // N.B. we give the CG solver a reference to our local member
         // matrix.
-        solver{std::make_shared<SolverType>(K_ff)},
-        information{solver->solve(targets_.mean)} {
+        solver{std::make_shared<SolverType>(K_ff)}, information{solver->solve(
+                                                        targets_.mean)} {
     if (solver->info() != Eigen::Success) {
       information.setConstant(std::numeric_limits<double>::quiet_NaN());
     }
@@ -186,7 +187,7 @@ public:
   using Base::covariance_function_;
   using Base::mean_function_;
 
-  ConjugateGradientGaussianProcessRegression() : Base() {};
+  ConjugateGradientGaussianProcessRegression() : Base(){};
 
   template <typename Cov,
             std::enable_if_t<std::is_same<std::decay_t<Cov>, CovFunc>::value,
@@ -210,8 +211,8 @@ public:
       Cov &&covariance_function, const std::string &model_name,
       const IterativeSolverOptions &options, Precond &&preconditioner)
       : Base(std::forward<CovFunc>(covariance_function), model_name),
-        options_{options},
-        preconditioner_{std::forward<Preconditioner>(preconditioner)} {}
+        options_{options}, preconditioner_{
+                               std::forward<Preconditioner>(preconditioner)} {}
 
   template <
       typename Cov, typename Mean,
@@ -236,8 +237,8 @@ public:
       Precond &&preconditioner)
       : Base(std::forward<CovFunc>(covariance_function),
              std::forward<MeanFunc>(mean_function), model_name),
-        options_{options},
-        preconditioner_{std::forward<Preconditioner>(preconditioner)} {}
+        options_{options}, preconditioner_{
+                               std::forward<Preconditioner>(preconditioner)} {}
 
   template <
       typename FeatureType,

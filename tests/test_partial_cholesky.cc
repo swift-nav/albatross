@@ -373,8 +373,7 @@ TEST(PartialCholesky, PreconditionRandomProblems) {
   double dcond = 0;
   for (std::size_t i = 0; i < cNumRandomProblems; ++i) {
     const Eigen::Index problem_size{problem_size_dist(gen)};
-    auto m =
-      random_covariance_matrix(problem_size, gen);
+    auto m = random_covariance_matrix(problem_size, gen);
     m += Eigen::VectorXd::Constant(problem_size, 1.0e-5).asDiagonal();
     const Eigen::VectorXd b{
         Eigen::VectorXd::NullaryExpr(problem_size, [&gen]() {

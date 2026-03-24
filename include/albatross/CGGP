@@ -15,6 +15,9 @@
 
 #include "GP"
 #include <albatross/src/eigen/partial_cholesky.hpp>
+#include <albatross/src/eigen/symmetric_tridiagonal.hpp>
+#include <albatross/src/eigen/batched_preconditioned_conjugate_gradient.hpp>
+#include <albatross/src/eigen/lanczos.hpp>
 #include <albatross/src/models/conjugate_gradient_gp.hpp>
 
 #endif // ALBATROSS_CG_GP_H

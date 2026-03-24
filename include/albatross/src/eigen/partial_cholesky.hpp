@@ -38,6 +38,8 @@ public:
 
   static constexpr const double cDefaultNugget = 1.e-2;
 
+  static constexpr const double cMinEigenvalue = 1.e-10;
+
   PartialCholesky() {}
 
   explicit PartialCholesky(const MatrixType &A)
@@ -194,6 +196,19 @@ public:
     // std::cout << "m_Q (" << m_Q.rows() << "x" << m_Q.cols() << "):\n"
     //           << m_Q << std::endl;
 
+    // now compute eigendecomposition of the inner product for use in
+    // the square root
+    SelfAdjointEigenSolver<MatrixXd> eigs(m_Q.transpose() * m_Q);
+    assert(eigs.info() == Success &&
+           "Failed to compute preconditioner eigenvalues!");
+
+    ArrayXd vals = eigs.eigenvalues().array().min(1.0).max(cMinEigenvalue);
+
+    VectorXd coeffs = vals.inverse() * (1.0 - (1.0 - vals).max(0.0).sqrt());
+
+    m_psi = eigs.eigenvectors() * coeffs.asDiagonal() *
+            eigs.eigenvectors().transpose();
+
     m_info = Success;
     return *this;
   }
@@ -209,14 +224,18 @@ public:
     // std::endl; std::cout << "b - Q Q^T b:\n" << MatrixXd(b - m_Q *
     // (m_Q.transpose() * b)) << std::endl;
 
-    Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
-        1 / n2 * (b - m_Q * (m_Q.transpose() * b));
+    return 1 / n2 * (b - m_Q * (m_Q.transpose() * b));
     // Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime> ret =
     //     1 / n2 *
     //     (b - (m_transpositions * m_L *
     //           m_decomp.solve(m_L.transpose() * m_transpositions.transpose() *
     //                          b / n2)));
-    return ret;
+  }
+
+  template <typename Rhs>
+  Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime>
+  solve_sqrt(const Rhs &b) const {
+    return (b - m_Q * (m_psi * (m_Q.transpose() * b))) / m_nugget;
   }
 
   LDLT<MatrixXd> direct_solve() const {
@@ -274,6 +293,7 @@ private:
   MatrixType m_L{};
   LDLT<MatrixXd> m_decomp{};
   MatrixXd m_Q{};
+  MatrixXd m_psi{};
   HouseholderQR<MatrixXd> m_qr{};
   PermutationType m_transpositions{};
 };
