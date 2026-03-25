@@ -62,7 +62,7 @@ static inline auto make_toy_linear_data(const double a = 5.,
 class MockParameterHandler : public ParameterHandlingMixin {
 public:
   MockParameterHandler(const ParameterStore &params)
-      : ParameterHandlingMixin(params){};
+      : ParameterHandlingMixin(params) {};
 };
 
 class TestParameterHandler : public ParameterHandlingMixin {

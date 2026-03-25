@@ -31,7 +31,7 @@ inline auto make_simple_covariance_function() {
 
 class MakeGaussianProcess {
 public:
-  MakeGaussianProcess(){};
+  MakeGaussianProcess() {};
 
   auto get_model() const {
     auto covariance = make_simple_covariance_function();
@@ -43,7 +43,7 @@ public:
 
 class MakeSparseGaussianProcess {
 public:
-  MakeSparseGaussianProcess(){};
+  MakeSparseGaussianProcess() {};
 
   auto get_model() const {
     LeaveOneOutGrouper loo;
@@ -58,7 +58,7 @@ public:
 
 class MakeSparseQRSparseGaussianProcess {
 public:
-  MakeSparseQRSparseGaussianProcess(){};
+  MakeSparseQRSparseGaussianProcess() {};
 
   auto get_model() const {
     LeaveOneOutGrouper loo;
@@ -77,7 +77,7 @@ class MakeGaussianProcessWithMean {
   const double b = 1.;
 
 public:
-  MakeGaussianProcessWithMean(){};
+  MakeGaussianProcessWithMean() {};
 
   auto get_model() const {
 

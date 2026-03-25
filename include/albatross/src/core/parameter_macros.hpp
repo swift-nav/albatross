@@ -54,8 +54,7 @@
  */
 #define ADD_MAP_ELEMENT(x) {#x, x},
 
-#define BUILD_MAP(...)                                                         \
-  { CALL_MACRO_X_FOR_EACH(ADD_MAP_ELEMENT, ##__VA_ARGS__) }
+#define BUILD_MAP(...) {CALL_MACRO_X_FOR_EACH(ADD_MAP_ELEMENT, ##__VA_ARGS__)}
 
 #define DEFINE_GET_PARAMS(...)                                                 \
   ParameterStore get_params() const override { return BUILD_MAP(__VA_ARGS__); };

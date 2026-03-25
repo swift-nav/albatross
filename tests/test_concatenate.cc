@@ -98,7 +98,7 @@ TEST(test_concatenate, test_different_types_repeated) {
 
 struct ConcatenateTest {
 
-  ConcatenateTest(const int &x_) : x(x_){};
+  ConcatenateTest(const int &x_) : x(x_) {};
 
   bool operator==(const ConcatenateTest &other) const { return x == other.x; }
 

@@ -58,7 +58,7 @@ double obliquity_function(double x) { return 1. / cos(atan(x - 1.)); }
 
 class ObliquityScaling : public ScalingFunction {
 public:
-  ObliquityScaling() : ScalingFunction(){};
+  ObliquityScaling() : ScalingFunction() {};
 
   std::string get_name() const { return "obliquity_scaling"; }
 

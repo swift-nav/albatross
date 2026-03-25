@@ -50,7 +50,7 @@ struct Station {
 template <typename DistanceMetricType>
 class StationDistance : public DistanceMetricType {
 public:
-  StationDistance(){};
+  StationDistance() {};
 
   std::string get_name() const {
     std::ostringstream oss;
@@ -58,7 +58,7 @@ public:
     return oss.str();
   };
 
-  ~StationDistance(){};
+  ~StationDistance() {};
 
   double operator()(const Station &x, const Station &y) const {
     return DistanceMetricType::operator()(x.ecef, y.ecef);

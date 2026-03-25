@@ -260,8 +260,7 @@ set_param_values(const std::map<ParameterKey, ParameterValue> &param_values,
 inline bool set_param_if_exists(const ParameterKey &name,
                                 const Parameter &param,
                                 ParameterStore *params) {
-  return modify_param(
-      name, [&](Parameter *p) { (*p) = param; }, params, false);
+  return modify_param(name, [&](Parameter *p) { (*p) = param; }, params, false);
 }
 
 inline bool set_param_value_if_exists(const ParameterKey &name,

@@ -47,7 +47,9 @@
 namespace albatross {
 
 #define ALBATROSS_FAIL(dummy, msg)                                             \
-  { static_assert(delay_static_assert<dummy>::value, msg); }
+  {                                                                            \
+    static_assert(delay_static_assert<dummy>::value, msg);                     \
+  }
 
 /*
  * Setting ALBATROSS_FAIL to "= delete" as below will slightly
