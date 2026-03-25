@@ -37,9 +37,9 @@ enum InducingFeatureType { ConstantEverywhereType, ConstantPerIntervalType };
 struct ConstantEverywhereFeature {};
 
 struct ConstantPerIntervalFeature {
-  ConstantPerIntervalFeature() : location(){};
+  ConstantPerIntervalFeature() : location() {};
   explicit ConstantPerIntervalFeature(const long &location_)
-      : location(location_){};
+      : location(location_) {};
   long location;
 };
 
@@ -67,8 +67,8 @@ create_inducing_points(const std::vector<double> &features) {
 
 class ConstantEverywhere : public CovarianceFunction<ConstantEverywhere> {
 public:
-  ConstantEverywhere(){};
-  ~ConstantEverywhere(){};
+  ConstantEverywhere() {};
+  ~ConstantEverywhere() {};
 
   double variance = 10.;
 
@@ -96,8 +96,8 @@ public:
 
 class ConstantPerInterval : public CovarianceFunction<ConstantPerInterval> {
 public:
-  ConstantPerInterval(){};
-  ~ConstantPerInterval(){};
+  ConstantPerInterval() {};
+  ~ConstantPerInterval() {};
 
   double variance = 5.;
 

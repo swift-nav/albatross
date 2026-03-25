@@ -17,7 +17,9 @@ namespace albatross {
 
 // This is effectively just a container that allows us to develop methods
 // which behave different conditional on the type of predictions desired.
-template <typename T> struct PredictTypeIdentity { typedef T type; };
+template <typename T> struct PredictTypeIdentity {
+  typedef T type;
+};
 
 /*
  * MeanPredictor is responsible for determining if a valid form of

@@ -39,7 +39,7 @@ struct TestFeature {
 
   TestFeature()
       : foo(1.), bar(2), feature(), has_other(false), other(nullptr),
-        double_or_feature(1.){};
+        double_or_feature(1.) {};
 
   TestFeature(double foo_, int bar_, const SubFeature &feature_, long *other_,
               const variant<double, SubFeature> &double_or_feature_)

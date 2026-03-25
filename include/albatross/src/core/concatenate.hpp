@@ -21,7 +21,9 @@ template <typename X, typename Y, typename = void> struct concatenation_type {
   using type = variant<X, Y>;
 };
 
-template <typename X> struct concatenation_type<X, X> { using type = X; };
+template <typename X> struct concatenation_type<X, X> {
+  using type = X;
+};
 
 template <typename X, typename... Ts>
 struct concatenation_type<

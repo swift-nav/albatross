@@ -87,25 +87,25 @@ protected:
 // that does not appear in later versions.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
-  template <
-      typename PredictFeatureType, typename FitType, typename PredictType,
-      typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
-                                                 FitType, PredictType>::value,
-                              int>::type = 0>
-  PredictType
-  predict_(const std::vector<PredictFeatureType> &features ALBATROSS_UNUSED,
-           const FitType &fit ALBATROSS_UNUSED,
-           PredictTypeIdentity<PredictType> &&) const
-      ALBATROSS_FAIL(PredictFeatureType,
-                     "The ModelType is missing a _predict_impl method for "
-                     "PredictFeatureType, FitType, PredictType.")
+template <
+    typename PredictFeatureType, typename FitType, typename PredictType,
+    typename std::enable_if<!has_valid_predict<ModelType, PredictFeatureType,
+                                               FitType, PredictType>::value,
+                            int>::type = 0>
+PredictType
+predict_(const std::vector<PredictFeatureType> &features ALBATROSS_UNUSED,
+         const FitType &fit ALBATROSS_UNUSED,
+         PredictTypeIdentity<PredictType> &&) const
+    ALBATROSS_FAIL(PredictFeatureType,
+                   "The ModelType is missing a _predict_impl method for "
+                   "PredictFeatureType, FitType, PredictType.")
 #pragma GCC diagnostic pop
 
-          public :
-      /*
-       * CRTP Helpers
-       */
-      ModelType &derived() {
+        public :
+    /*
+     * CRTP Helpers
+     */
+    ModelType &derived() {
     return *static_cast<ModelType *>(this);
   }
   const ModelType &derived() const {

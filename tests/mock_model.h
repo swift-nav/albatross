@@ -21,8 +21,8 @@ class MockModel;
 struct MockFeature {
   int value;
 
-  MockFeature() : value(){};
-  MockFeature(int v) : value(v){};
+  MockFeature() : value() {};
+  MockFeature(int v) : value(v) {};
 
   bool operator==(const MockFeature &other) const {
     return value == other.value;

@@ -67,14 +67,16 @@ TEST(Compress, StringRoundtripsAlternateCompressionLevels) {
 
 TEST(Compress, DecompressEmpty) {
   std::string inputs;
-  ASSERT_DEATH({ const auto result = albatross::zstd::decompress(inputs); },
-               "error determining");
+  ASSERT_DEATH(
+      { const auto result = albatross::zstd::decompress(inputs); },
+      "error determining");
 }
 
 TEST(Compress, DecompressInvalidZstd) {
   std::string inputs = "albatross";
-  ASSERT_DEATH({ const auto result = albatross::zstd::decompress(inputs); },
-               "error determining");
+  ASSERT_DEATH(
+      { const auto result = albatross::zstd::decompress(inputs); },
+      "error determining");
 }
 
 TEST(Compress, MaybeDecompressEmpty) {
@@ -141,8 +143,9 @@ TYPED_TEST_P(IntegerArray, IntegerWrongSizeAsserts) {
     std::generate(inputs.begin(), inputs.end(), [&generator, &distribution]() {
       return distribution(generator);
     });
-    ASSERT_DEATH({ const auto outputs = this->roundtrip_wrong_size(inputs); },
-                 "zstd expected decompressed size");
+    ASSERT_DEATH(
+        { const auto outputs = this->roundtrip_wrong_size(inputs); },
+        "zstd expected decompressed size");
   }
 }
 
@@ -185,8 +188,9 @@ TYPED_TEST_P(FloatingArray, FloatingWrongSizeAsserts) {
     std::generate(inputs.begin(), inputs.end(), [&generator, &distribution]() {
       return distribution(generator);
     });
-    ASSERT_DEATH({ const auto outputs = this->roundtrip_wrong_size(inputs); },
-                 "expected decompressed size");
+    ASSERT_DEATH(
+        { const auto outputs = this->roundtrip_wrong_size(inputs); },
+        "expected decompressed size");
   }
 }
 

@@ -20,8 +20,8 @@ std::vector<double> test_double_vector() { return linspace(0., 10., 11); }
 double square(double x) { return x * x; }
 
 struct Foo {
-  Foo() : value(){};
-  Foo(const double &x) : value(x){};
+  Foo() : value() {};
+  Foo(const double &x) : value(x) {};
 
   bool operator==(const Foo &other) const {
     return fabs(other.value - value) < std::numeric_limits<double>::epsilon();
@@ -136,7 +136,7 @@ TEST(test_apply, test_vector_apply_void) {
 }
 
 struct AutoApplyTest {
-  AutoApplyTest(int x_) : x(x_){};
+  AutoApplyTest(int x_) : x(x_) {};
   int x;
 };
 

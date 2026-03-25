@@ -22,19 +22,19 @@ struct NullArchive {};
 
 class ValidInOutSerializer {
 public:
-  template <typename Archive> void serialize(Archive &){};
+  template <typename Archive> void serialize(Archive &) {};
 };
 
 class ValidSaveLoadSerializer {
 public:
   template <typename Archive> void save(Archive &) const {};
 
-  template <typename Archive> void load(Archive &){};
+  template <typename Archive> void load(Archive &) {};
 };
 
 class ValidInSerializer {
 public:
-  template <typename Archive> void load(Archive &){};
+  template <typename Archive> void load(Archive &) {};
 };
 
 class ValidOutSerializer {
