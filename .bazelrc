@@ -54,5 +54,116 @@ test --experimental_ui_max_stdouterr_bytes=10048576
 # Default timeout of 20 minutes
 test --test_timeout=2000
 
+## Runtime sanitizers
+
+# Shared sanitizer configuration
+common:sanitize -c opt
+common:sanitize --cxxopt=-g1
+common:sanitize --copt=-g1
+common:sanitize --linkopt=-g1
+common:sanitize --cxxopt=-fno-sanitize-recover=all
+common:sanitize --copt=-fno-sanitize-recover=all
+common:sanitize --linkopt=-fno-sanitize-recover=all
+common:sanitize --cxxopt=-fno-omit-frame-pointer
+common:sanitize --copt=-fno-omit-frame-pointer
+common:sanitize --linkopt=-fno-omit-frame-pointer
+common:sanitize --@rules_swiftnav//cc:enable_symbolizer=true
+# Sanitizer overhead can cause some functions to become so large that
+# the compiler falls back to a linear register allocator.  This
+# shouldn't cause a sanitizer build to fail.
+common:sanitize --cxxopt=-Wno-error=disabled-optimization
+common:sanitize --copt=-Wno-error=disabled-optimization
+common:sanitize --linkopt=-Wno-error=disabled-optimization
+common:sanitize --linkopt='-z undefs'
+# https://github.com/bazelbuild/bazel/issues/12797#issuecomment-980641064
+common:sanitize --linkopt='-fsanitize-link-c++-runtime'
+common:sanitize --cxxopt=-fPIC
+common:sanitize --copt=-fPIC
+common:sanitize --linkopt=-fPIC
+
+# Address sanitizer
+common:asan --config=sanitize
+common:asan --cxxopt=-fsanitize=address
+common:asan --copt=-fsanitize=address
+common:asan --linkopt=-fsanitize=address
+common:asan --cxxopt=-fno-optimize-sibling-calls
+common:asan --copt=-fno-optimize-sibling-calls
+common:asan --linkopt=-fno-optimize-sibling-calls
+common:asan --cxxopt=-fsanitize-address-use-after-scope
+common:asan --copt=-fsanitize-address-use-after-scope
+common:asan --linkopt=-fsanitize-address-use-after-scope
+test:asan --action_env="ASAN_OPTIONS=check_initialization_order=true:detect_stack_use_after_return=true:strict_string_checks=true:halt_on_error=false"
+run:asan --action_env="ASAN_OPTIONS=check_initialization_order=true:detect_stack_use_after_return=true:strict_string_checks=true:halt_on_error=false"
+common:asan --platform_suffix=asan
+
+# Undefined behavior sanitizer
+common:ubsan --config=sanitize
+common:ubsan --cxxopt=-fsanitize=undefined
+common:ubsan --copt=-fsanitize=undefined
+common:ubsan --linkopt=-fsanitize=undefined
+common:ubsan --cxxopt=-fsanitize=local-bounds
+common:ubsan --copt=-fsanitize=local-bounds
+common:ubsan --linkopt=-fsanitize=local-bounds
+test:ubsan --action_env="UBSAN_OPTIONS=print_stacktrace=1"
+run:ubsan --action_env="UBSAN_OPTIONS=print_stacktrace=1"
+common:ubsan --platform_suffix=ubsan
+
+# Helpful aliases
+common:asan_ubsan --config=asan
+common:asan_ubsan --config=ubsan
+common:asan_ubsan --platform_suffix=asan_ubsan
+common:ubsan_asan --config=asan_ubsan
+
+# Dynamic memory sanitizer
+# Warning: takes an incredible amount of space!  Try testing only one
+# target at a time.
+common:msan --config=sanitize
+common:msan --cxxopt=-fsanitize=memory
+common:msan --copt=-fsanitize=memory
+common:msan --linkopt=-fsanitize=memory
+common:msan --cxxopt=-fsanitize-memory-track-origins=2
+common:msan --copt=-fsanitize-memory-track-origins=2
+common:msan --linkopt=-fsanitize-memory-track-origins=2
+common:msan --cxxopt=-fsanitize-memory-use-after-dtor
+common:msan --copt=-fsanitize-memory-use-after-dtor
+common:msan --linkopt=-fsanitize-memory-use-after-dtor
+common:msan --platform_suffix=msan
+
+# Thread sanitizer
+common:tsan --config=sanitize
+common:tsan --cxxopt=-fsanitize=thread
+common:tsan --copt=-fsanitize=thread
+common:tsan --linkopt=-fsanitize=thread
+test:tsan --action_env="TSAN_OPTIONS=force_seq_cst_atomics=1:halt_on_error=1"
+run:tsan --action_env="TSAN_OPTIONS=force_seq_cst_atomics=1:halt_on_error=1"
+common:tsan --platform_suffix=tsan
+
+## Debug sanitizers with recovery
+common:sanitize_debug --config=sanitize
+common:sanitize_debug --cxxopt=-g3
+common:sanitize_debug --copt=-g3
+common:sanitize_debug --linkopt=-g3
+common:sanitize_debug --cxxopt=-fsanitize-recover=all
+common:sanitize_debug --copt=-fsanitize-recover=all
+common:sanitize_debug --linkopt=-fsanitize-recover=all
+
+common:asan_debug --config=asan
+common:asan_debug --config=sanitize_debug
+test:asan_debug --action_env="ASAN_OPTIONS=check_initialization_order=true:detect_stack_use_after_return=true:strict_string_checks=true:halt_on_error=true"
+run:asan_debug --action_env="ASAN_OPTIONS=check_initialization_order=true:detect_stack_use_after_return=true:strict_string_checks=true:halt_on_error=true"
+common:asan_debug --platform_suffix=asan_debug
+
+common:ubsan_debug --config=ubsan
+common:ubsan_debug --config=sanitize_debug
+test:ubsan_debug --action_env="UBSAN_OPTIONS=print_stacktrace=1"
+run:ubsan_debug --action_env="UBSAN_OPTIONS=print_stacktrace=1"
+common:ubsan_debug --platform_suffix=ubsan_debug
+
+# Helpful aliases
+common:asan_ubsan_debug --config=asan_debug
+common:asan_ubsan_debug --config=ubsan_debug
+common:asan_ubsan_debug --platform_suffix=asan_ubsan_debug
+common:ubsan_asan_debug --config=asan_ubsan_debug
+
 # Try to load a personal bazelrc
 try-import %workspace%/.bazelrc.user
