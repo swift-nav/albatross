@@ -123,6 +123,16 @@ public:
     return scales;
   }
 
+  template <typename X>
+  Eigen::VectorXd compute_scale_vector(const_span<X> xs) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    Eigen::VectorXd scales(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      scales[i] = this->scaling_function_._call_impl(xs[cast::to_size(i)]);
+    }
+    return scales;
+  }
+
   // Diagonal batch: squared scaling factors
   template <typename X, typename std::enable_if<
                             has_valid_call_impl<ScalingFunction, X &>::value,
@@ -287,6 +297,164 @@ public:
     return scale_diag.cwiseProduct(cov_diag);
   }
 
+  /*
+   * Block covariance: cross-covariance with scaling.
+   * Compute scale vectors, call child with block API, apply scaling in-place.
+   */
+
+  // Both X and Y have scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<RHS, X, Y>::value ||
+                  has_valid_call_impl_block<RHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_x = this->lhs_.compute_scale_vector(xs);
+    const Eigen::VectorXd s_y = this->lhs_.compute_scale_vector(ys);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.colwise() *= s_x.array();
+      out.rowwise() *= s_y.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.colwise() *= s_x.array();
+      h.ref.rowwise() *= s_y.transpose().array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Only X has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<RHS, X, Y>::value ||
+                  has_valid_call_impl_block<RHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_x = this->lhs_.compute_scale_vector(xs);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.colwise() *= s_x.array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.colwise() *= s_x.array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Only Y has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<RHS, X, Y>::value ||
+                  has_valid_call_impl_block<RHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_y = this->lhs_.compute_scale_vector(ys);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.rowwise() *= s_y.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.rowwise() *= s_y.transpose().array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Neither X nor Y has scaling — passthrough to RHS
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<RHS, X, Y>::value ||
+                  has_valid_call_impl_block<RHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    BlockDefaultCaller::call_block(rhs_, xs, ys, out, op, ws);
+  }
+
+  // Symmetric block: both LHS and RHS apply
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 (has_valid_call_impl<RHS, X, X>::value ||
+                  has_valid_call_impl_block_single_arg<RHS, X>::value ||
+                  has_valid_call_impl_block<RHS, X, X>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    const Eigen::VectorXd s = this->lhs_.compute_scale_vector(xs);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(rhs_, xs, out, CovarianceOp::Assign, ws);
+      out.colwise() *= s.array();
+      out.rowwise() *= s.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(n, n);
+      BlockDefaultCaller::call_block(rhs_, xs, h.ref, CovarianceOp::Assign,
+                                     ws);
+      h.ref.colwise() *= s.array();
+      h.ref.rowwise() *= s.transpose().array();
+      // Apply to lower triangle only
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          if (op == CovarianceOp::Add) {
+            out(i, j) += h.ref(i, j);
+          } else {
+            out(i, j) *= h.ref(i, j);
+          }
+        }
+      }
+      break;
+    }
+    }
+  }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -440,6 +608,163 @@ public:
     const Eigen::VectorXd cov_diag = this->lhs_.diagonal(xs, pool);
     const Eigen::VectorXd scale_diag = this->rhs_.diagonal(xs, pool);
     return cov_diag.cwiseProduct(scale_diag);
+  }
+
+  /*
+   * Block covariance for Product(LHS, ScalingTerm).
+   * Same pattern as Product(ScalingTerm, RHS) but scaling comes from rhs_.
+   */
+
+  // Both X and Y have scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<LHS, X, Y>::value ||
+                  has_valid_call_impl_block<LHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_x = this->rhs_.compute_scale_vector(xs);
+    const Eigen::VectorXd s_y = this->rhs_.compute_scale_vector(ys);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.colwise() *= s_x.array();
+      out.rowwise() *= s_y.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(lhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.colwise() *= s_x.array();
+      h.ref.rowwise() *= s_y.transpose().array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Only X has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<LHS, X, Y>::value ||
+                  has_valid_call_impl_block<LHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_x = this->rhs_.compute_scale_vector(xs);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.colwise() *= s_x.array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(lhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.colwise() *= s_x.array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Only Y has scaling
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<LHS, X, Y>::value ||
+                  has_valid_call_impl_block<LHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    const Eigen::VectorXd s_y = this->rhs_.compute_scale_vector(ys);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      out.rowwise() *= s_y.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(lhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      h.ref.rowwise() *= s_y.transpose().array();
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  // Neither has scaling — passthrough to LHS
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (!has_valid_call_impl<ScalingFunction, X &>::value &&
+                 !has_valid_call_impl<ScalingFunction, Y &>::value &&
+                 (has_valid_call_impl<LHS, X, Y>::value ||
+                  has_valid_call_impl_block<LHS, X, Y>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    BlockDefaultCaller::call_block(lhs_, xs, ys, out, op, ws);
+  }
+
+  // Symmetric block
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl<ScalingFunction, X &>::value &&
+                 (has_valid_call_impl<LHS, X, X>::value ||
+                  has_valid_call_impl_block_single_arg<LHS, X>::value ||
+                  has_valid_call_impl_block<LHS, X, X>::value)),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    const Eigen::VectorXd s = this->rhs_.compute_scale_vector(xs);
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, out, CovarianceOp::Assign, ws);
+      out.colwise() *= s.array();
+      out.rowwise() *= s.transpose().array();
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(n, n);
+      BlockDefaultCaller::call_block(lhs_, xs, h.ref, CovarianceOp::Assign,
+                                     ws);
+      h.ref.colwise() *= s.array();
+      h.ref.rowwise() *= s.transpose().array();
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          if (op == CovarianceOp::Add) {
+            out(i, j) += h.ref(i, j);
+          } else {
+            out(i, j) *= h.ref(i, j);
+          }
+        }
+      }
+      break;
+    }
+    }
   }
 
 protected:

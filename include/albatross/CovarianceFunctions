@@ -22,6 +22,8 @@
 #include <albatross/src/core/parameter_handling_mixin.hpp>
 #include <albatross/src/core/parameter_macros.hpp>
 
+#include <albatross/src/utils/const_span.hpp>
+#include <albatross/src/covariance_functions/block_workspace.hpp>
 #include <albatross/src/covariance_functions/traits.hpp>
 #include <albatross/src/covariance_functions/callers.hpp>
 #include <albatross/src/covariance_functions/covariance_function.hpp>

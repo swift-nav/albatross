@@ -69,6 +69,32 @@ class has_valid_call_impl_vector_diagonal
           ThreadPool *> {};
 
 /*
+ * Block covariance traits - detect _call_impl block overloads
+ *
+ * These reuse the existing DEFINE_CLASS_METHOD_TRAITS(_call_impl) output
+ * but check for the block signature (void return, const_span args,
+ * Ref<ArrayXXd> out, CovarianceOp, BlockWorkspace&).
+ */
+
+// Cross-covariance block:
+//   void _call_impl(const_span<X>, const_span<Y>,
+//                   Ref<ArrayXXd>, CovarianceOp, BlockWorkspace&) const
+template <typename U, typename X, typename Y>
+class has_valid_call_impl_block
+    : public has__call_impl_with_return_type<
+          const U, void, const_span<X>, const_span<Y>,
+          Eigen::Ref<Eigen::ArrayXXd>, CovarianceOp, BlockWorkspace &> {};
+
+// Symmetric single-arg block:
+//   void _call_impl(const_span<X>,
+//                   Ref<ArrayXXd>, CovarianceOp, BlockWorkspace&) const
+template <typename U, typename X>
+class has_valid_call_impl_block_single_arg
+    : public has__call_impl_with_return_type<
+          const U, void, const_span<X>, Eigen::Ref<Eigen::ArrayXXd>,
+          CovarianceOp, BlockWorkspace &> {};
+
+/*
  * Measurement inner type extraction - extracts X from Measurement<X>
  * For non-Measurement types, returns the type itself.
  */
@@ -137,6 +163,42 @@ public:
       // Measurement)
       (!std::is_same<X, InnerX>::value &&
        has_valid_call_impl_vector_single_arg<CovFunc, InnerX>::value);
+};
+
+/*
+ * has_valid_block_or_measurement_block
+ *
+ * Checks if a covariance function has block support for types X, Y, either:
+ * 1. Directly via block _call_impl(const_span<X>, const_span<Y>, ...), OR
+ * 2. Via Measurement unwrapping
+ */
+template <typename CovFunc, typename X, typename Y>
+class has_valid_block_or_measurement_block {
+  using InnerX = measurement_inner_t<X>;
+  using InnerY = measurement_inner_t<Y>;
+
+public:
+  static constexpr bool value =
+      has_valid_call_impl_block<CovFunc, X, Y>::value ||
+      ((!std::is_same<X, InnerX>::value || !std::is_same<Y, InnerY>::value) &&
+       has_valid_call_impl_block<CovFunc, InnerX, InnerY>::value);
+};
+
+/*
+ * has_valid_block_or_measurement_block_single_arg
+ *
+ * Checks if a covariance function has single-arg symmetric block support
+ * for type X, either directly or via Measurement unwrapping.
+ */
+template <typename CovFunc, typename X>
+class has_valid_block_or_measurement_block_single_arg {
+  using InnerX = measurement_inner_t<X>;
+
+public:
+  static constexpr bool value =
+      has_valid_call_impl_block_single_arg<CovFunc, X>::value ||
+      (!std::is_same<X, InnerX>::value &&
+       has_valid_call_impl_block_single_arg<CovFunc, InnerX>::value);
 };
 
 /*

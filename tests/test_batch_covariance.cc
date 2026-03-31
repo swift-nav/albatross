@@ -4228,4 +4228,799 @@ TEST(test_lower_triangle_contract, test_product) {
   EXPECT_NEAR(C(0, 0), 1.0, 1e-10);
 }
 
+/*
+ * ============================================================================
+ * Block Covariance API Tests
+ *
+ * These tests verify that the block API produces the same results as the
+ * scalar (pointwise) API for all supported compositions.
+ * ============================================================================
+ */
+
+/*
+ * Test covariance that implements the block API.
+ * Uses a simple squared-exponential kernel.
+ */
+class BlockTestCovariance
+    : public CovarianceFunction<BlockTestCovariance> {
+public:
+  BlockTestCovariance() = default;
+
+  std::string name() const { return "block_test"; }
+
+  // Pointwise (scalar) implementation — the reference
+  double _call_impl(const double &x, const double &y) const {
+    const double d = x - y;
+    return std::exp(-d * d);
+  }
+
+  // Block cross-covariance implementation
+  void _call_impl(const_span<double> xs, const_span<double> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    auto h = ws.acquire(m, n);
+    for (Eigen::Index i = 0; i < m; ++i) {
+      for (Eigen::Index j = 0; j < n; ++j) {
+        const double d = xs[cast::to_size(i)] - ys[cast::to_size(j)];
+        h.ref(i, j) = std::exp(-d * d);
+      }
+    }
+    apply_op(out, h.ref, op);
+  }
+
+  // Block symmetric single-arg implementation (lower triangle only)
+  void _call_impl(const_span<double> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    auto h = ws.acquire(n, n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        const double d = xs[cast::to_size(i)] - xs[cast::to_size(j)];
+        h.ref(i, j) = std::exp(-d * d);
+      }
+    }
+    // Apply only to lower triangle
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        switch (op) {
+        case CovarianceOp::Assign:
+          out(i, j) = h.ref(i, j);
+          break;
+        case CovarianceOp::Add:
+          out(i, j) += h.ref(i, j);
+          break;
+        case CovarianceOp::Multiply:
+          out(i, j) *= h.ref(i, j);
+          break;
+        }
+      }
+    }
+  }
+};
+
+/*
+ * A second block covariance for testing compositions.
+ * Uses a linear kernel: cov(x, y) = x * y.
+ */
+class BlockLinearCovariance
+    : public CovarianceFunction<BlockLinearCovariance> {
+public:
+  BlockLinearCovariance() = default;
+
+  std::string name() const { return "block_linear"; }
+
+  double _call_impl(const double &x, const double &y) const {
+    return x * y;
+  }
+
+  void _call_impl(const_span<double> xs, const_span<double> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    auto h = ws.acquire(m, n);
+    for (Eigen::Index i = 0; i < m; ++i) {
+      for (Eigen::Index j = 0; j < n; ++j) {
+        h.ref(i, j) = xs[cast::to_size(i)] * ys[cast::to_size(j)];
+      }
+    }
+    apply_op(out, h.ref, op);
+  }
+
+  void _call_impl(const_span<double> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    auto h = ws.acquire(n, n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        h.ref(i, j) = xs[cast::to_size(i)] * xs[cast::to_size(j)];
+      }
+    }
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        switch (op) {
+        case CovarianceOp::Assign:
+          out(i, j) = h.ref(i, j);
+          break;
+        case CovarianceOp::Add:
+          out(i, j) += h.ref(i, j);
+          break;
+        case CovarianceOp::Multiply:
+          out(i, j) *= h.ref(i, j);
+          break;
+        }
+      }
+    }
+  }
+};
+
+/*
+ * A scaling function for testing ScalingTerm compositions.
+ */
+class TestBlockScaling {
+public:
+  std::string get_name() const { return "test_block_scaling"; }
+  ParameterStore get_params() const { return {}; }
+  void set_param(const ParameterKey &, const Parameter &) {}
+
+  double _call_impl(const double &x) const {
+    return std::abs(x) + 0.5;
+  }
+};
+
+// Helper: compute scalar reference matrix
+template <typename CovFunc>
+Eigen::MatrixXd scalar_cross(const CovFunc &cov, const std::vector<double> &xs,
+                             const std::vector<double> &ys) {
+  const auto m = cast::to_index(xs.size());
+  const auto n = cast::to_index(ys.size());
+  Eigen::MatrixXd result(m, n);
+  for (Eigen::Index i = 0; i < m; ++i) {
+    for (Eigen::Index j = 0; j < n; ++j) {
+      result(i, j) = cov(xs[cast::to_size(i)], ys[cast::to_size(j)]);
+    }
+  }
+  return result;
+}
+
+template <typename CovFunc>
+Eigen::MatrixXd scalar_symmetric(const CovFunc &cov,
+                                 const std::vector<double> &xs) {
+  const auto n = cast::to_index(xs.size());
+  Eigen::MatrixXd result(n, n);
+  for (Eigen::Index i = 0; i < n; ++i) {
+    for (Eigen::Index j = 0; j < n; ++j) {
+      result(i, j) = cov(xs[cast::to_size(i)], xs[cast::to_size(j)]);
+    }
+  }
+  return result;
+}
+
+// ---- Basic block API tests ----
+
+TEST(test_block_covariance, test_block_cross_covariance) {
+  BlockTestCovariance cov;
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5, 5.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Block cross-covariance should match scalar";
+}
+
+TEST(test_block_covariance, test_block_symmetric_covariance) {
+  BlockTestCovariance cov;
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(cov, xs);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance_symmetric(cov, xs, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Block symmetric covariance should match scalar";
+}
+
+TEST(test_block_covariance, test_block_small_block_size) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {2, 2};
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5, 5.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Small block size should still match scalar";
+}
+
+TEST(test_block_covariance, test_block_size_1) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {1, 1};
+  std::vector<double> xs = {1.0, 2.0, 3.0};
+  std::vector<double> ys = {2.5, 3.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Block size 1 should match scalar (degenerate case)";
+}
+
+TEST(test_block_covariance, test_block_symmetric_small_blocks) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {2, 2};
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(cov, xs);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance_symmetric(cov, xs, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Small block symmetric should match scalar";
+}
+
+// ---- Pointwise fallback tests ----
+
+TEST(test_block_covariance, test_pointwise_fallback_through_block_caller) {
+  // EquivalenceTestCovariance has no block _call_impl, only scalar + vector.
+  // The block system should fall back to pointwise.
+  EquivalenceTestCovariance cov;
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0};
+  std::vector<double> ys = {2.5, 3.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, BlockSize{2, 2}, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Pointwise fallback should match scalar";
+}
+
+// ---- operator() dispatch tests ----
+
+TEST(test_block_covariance, test_operator_dispatches_to_block) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {3, 3};
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  // operator() should dispatch to block path since block _call_impl exists
+  Eigen::MatrixXd result = cov(xs, ys);
+  Eigen::MatrixXd scalar_result = scalar_cross(cov, xs, ys);
+
+  EXPECT_TRUE(result.isApprox(scalar_result, 1e-12))
+      << "operator() with block support should match scalar";
+}
+
+TEST(test_block_covariance, test_operator_symmetric_dispatches_to_block) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {3, 3};
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd result = cov(xs);
+  Eigen::MatrixXd scalar_result = scalar_symmetric(cov, xs);
+
+  EXPECT_TRUE(result.isApprox(scalar_result, 1e-12))
+      << "operator() symmetric with block support should match scalar";
+}
+
+// ---- Sum composition tests ----
+
+TEST(test_block_covariance, test_sum_cross_covariance) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto sum = a + b;
+  sum.block_size_ = {3, 3};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(sum, xs, ys);
+  Eigen::MatrixXd block_result = sum(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Sum block cross-covariance should match scalar";
+}
+
+TEST(test_block_covariance, test_sum_symmetric) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto sum = a + b;
+  sum.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(sum, xs);
+  Eigen::MatrixXd block_result = sum(xs);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Sum block symmetric should match scalar";
+}
+
+// ---- Product composition tests ----
+
+TEST(test_block_covariance, test_product_cross_covariance) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto product = a * b;
+  product.block_size_ = {3, 3};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(product, xs, ys);
+  Eigen::MatrixXd block_result = product(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Product block cross-covariance should match scalar";
+}
+
+TEST(test_block_covariance, test_product_symmetric) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto product = a * b;
+  product.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(product, xs);
+  Eigen::MatrixXd block_result = product(xs);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Product block symmetric should match scalar";
+}
+
+// ---- Nested composition tests ----
+
+TEST(test_block_covariance, test_sum_of_products) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto nested = (a * b) + a;
+  nested.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(nested, xs, ys);
+  Eigen::MatrixXd block_result = nested(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Sum(Product(A, B), A) block should match scalar";
+}
+
+TEST(test_block_covariance, test_product_of_sums) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto nested = (a + b) * a;
+  nested.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(nested, xs, ys);
+  Eigen::MatrixXd block_result = nested(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Product(Sum(A, B), A) block should match scalar";
+}
+
+TEST(test_block_covariance, test_deeply_nested) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  // (a + b) * (a + b) — exercises workspace depth
+  auto nested = (a + b) * (a + b);
+  nested.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(nested, xs);
+  Eigen::MatrixXd block_result = nested(xs);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Deeply nested block should match scalar";
+}
+
+// ---- ScalingTerm composition tests ----
+
+TEST(test_block_covariance, test_scaling_times_covariance) {
+  using TestScalingTerm = ScalingTerm<TestBlockScaling>;
+  TestScalingTerm scaling;
+  BlockTestCovariance cov;
+  auto scaled = scaling * cov;
+  scaled.block_size_ = {3, 3};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(scaled, xs, ys);
+  Eigen::MatrixXd block_result = scaled(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "ScalingTerm * Covariance block should match scalar";
+}
+
+TEST(test_block_covariance, test_scaling_times_covariance_symmetric) {
+  using TestScalingTerm = ScalingTerm<TestBlockScaling>;
+  TestScalingTerm scaling;
+  BlockTestCovariance cov;
+  auto scaled = scaling * cov;
+  scaled.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric(scaled, xs);
+  Eigen::MatrixXd block_result = scaled(xs);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "ScalingTerm * Covariance symmetric block should match scalar";
+}
+
+TEST(test_block_covariance, test_covariance_times_scaling) {
+  using TestScalingTerm = ScalingTerm<TestBlockScaling>;
+  TestScalingTerm scaling;
+  BlockTestCovariance cov;
+  auto scaled = cov * scaling;
+  scaled.block_size_ = {3, 3};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> ys = {2.5, 3.5, 4.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(scaled, xs, ys);
+  Eigen::MatrixXd block_result = scaled(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Covariance * ScalingTerm block should match scalar";
+}
+
+TEST(test_block_covariance, test_scaling_nested_with_sum) {
+  using TestScalingTerm = ScalingTerm<TestBlockScaling>;
+  TestScalingTerm scaling;
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto nested = scaling * (a + b);
+  nested.block_size_ = {2, 2};
+
+  std::vector<double> xs = {1.0, 2.0, 3.0, 4.0};
+  std::vector<double> ys = {2.5, 3.5};
+
+  Eigen::MatrixXd scalar_result = scalar_cross(nested, xs, ys);
+  Eigen::MatrixXd block_result = nested(xs, ys);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "ScalingTerm * Sum(A, B) block should match scalar";
+}
+
+// ---- Block size sweep test ----
+
+TEST(test_block_covariance, test_block_size_invariance) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto composed = (a + b) * a;
+
+  std::vector<double> xs = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5};
+  std::vector<double> ys = {0.75, 1.25, 1.75, 2.25, 2.75};
+
+  Eigen::MatrixXd ref = scalar_cross(composed, xs, ys);
+
+  for (Eigen::Index bs = 1; bs <= 8; ++bs) {
+    Eigen::MatrixXd result =
+        compute_blocked_covariance(composed, xs, ys, BlockSize{bs, bs},
+                                   nullptr);
+    EXPECT_TRUE(result.isApprox(ref, 1e-12))
+        << "Block size " << bs << " should match scalar reference";
+  }
+}
+
+TEST(test_block_covariance, test_block_size_invariance_symmetric) {
+  BlockTestCovariance a;
+  BlockLinearCovariance b;
+  auto composed = a + b;
+
+  std::vector<double> xs = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5};
+
+  Eigen::MatrixXd ref = scalar_symmetric(composed, xs);
+
+  for (Eigen::Index bs = 1; bs <= 8; ++bs) {
+    Eigen::MatrixXd result =
+        compute_blocked_covariance_symmetric(composed, xs, BlockSize{bs, bs},
+                                             nullptr);
+    EXPECT_TRUE(result.isApprox(ref, 1e-12))
+        << "Symmetric block size " << bs << " should match scalar reference";
+  }
+}
+
+// ---- apply_op and BlockWorkspace unit tests ----
+
+TEST(test_block_covariance, test_apply_op_assign) {
+  Eigen::ArrayXXd out = Eigen::ArrayXXd::Constant(2, 3, 99.0);
+  Eigen::ArrayXXd val = Eigen::ArrayXXd::Constant(2, 3, 5.0);
+  apply_op(out, val, CovarianceOp::Assign);
+  EXPECT_TRUE((out == 5.0).all());
+}
+
+TEST(test_block_covariance, test_apply_op_add) {
+  Eigen::ArrayXXd out = Eigen::ArrayXXd::Constant(2, 3, 10.0);
+  Eigen::ArrayXXd val = Eigen::ArrayXXd::Constant(2, 3, 5.0);
+  apply_op(out, val, CovarianceOp::Add);
+  EXPECT_TRUE((out == 15.0).all());
+}
+
+TEST(test_block_covariance, test_apply_op_multiply) {
+  Eigen::ArrayXXd out = Eigen::ArrayXXd::Constant(2, 3, 10.0);
+  Eigen::ArrayXXd val = Eigen::ArrayXXd::Constant(2, 3, 3.0);
+  apply_op(out, val, CovarianceOp::Multiply);
+  EXPECT_TRUE((out == 30.0).all());
+}
+
+TEST(test_block_covariance, test_workspace_lifo) {
+  BlockWorkspace ws(4, 4, 2);
+  {
+    auto h1 = ws.acquire(3, 3);
+    EXPECT_EQ(h1.ref.rows(), 3);
+    EXPECT_EQ(h1.ref.cols(), 3);
+    {
+      auto h2 = ws.acquire(2, 2);
+      EXPECT_EQ(h2.ref.rows(), 2);
+      EXPECT_EQ(h2.ref.cols(), 2);
+      // h2 destroyed here
+    }
+    // h1 still alive
+    auto h3 = ws.acquire(4, 4);
+    EXPECT_EQ(h3.ref.rows(), 4);
+    EXPECT_EQ(h3.ref.cols(), 4);
+    // h3 destroyed, then h1 destroyed
+  }
+}
+
+TEST(test_block_covariance, test_workspace_auto_grow) {
+  BlockWorkspace ws(4, 4, 1); // Start with depth 1
+  auto h1 = ws.acquire(2, 2);
+  auto h2 = ws.acquire(3, 3); // Should auto-grow
+  EXPECT_EQ(h2.ref.rows(), 3);
+  EXPECT_EQ(h2.ref.cols(), 3);
+}
+
+// ---- const_span tests ----
+
+TEST(test_block_covariance, test_const_span_from_vector) {
+  std::vector<double> v = {1.0, 2.0, 3.0, 4.0, 5.0};
+  const_span<double> s(v);
+  EXPECT_EQ(s.size(), 5u);
+  EXPECT_EQ(s[0], 1.0);
+  EXPECT_EQ(s[4], 5.0);
+}
+
+TEST(test_block_covariance, test_const_span_subspan) {
+  std::vector<double> v = {1.0, 2.0, 3.0, 4.0, 5.0};
+  const_span<double> s(v);
+  auto sub = s.subspan(1, 3);
+  EXPECT_EQ(sub.size(), 3u);
+  EXPECT_EQ(sub[0], 2.0);
+  EXPECT_EQ(sub[1], 3.0);
+  EXPECT_EQ(sub[2], 4.0);
+}
+
+TEST(test_block_covariance, test_const_span_iterate) {
+  std::vector<double> v = {10.0, 20.0, 30.0};
+  const_span<double> s(v);
+  double sum = 0;
+  for (const auto &x : s) {
+    sum += x;
+  }
+  EXPECT_EQ(sum, 60.0);
+}
+
+// ---- Trait detection static assertions ----
+
+static_assert(has_valid_call_impl_block<BlockTestCovariance, double, double>::value,
+              "BlockTestCovariance should have block cross-covariance");
+static_assert(has_valid_call_impl_block_single_arg<BlockTestCovariance, double>::value,
+              "BlockTestCovariance should have block symmetric single-arg");
+static_assert(!has_valid_call_impl_block<EquivalenceTestCovariance, double, double>::value,
+              "EquivalenceTestCovariance should NOT have block cross-covariance");
+
+// ---- Variant tests ----
+
+/*
+ * A block covariance on int (for use with variant<double, int>).
+ * cov(x, y) = 1.0 / (1.0 + abs(x - y))
+ */
+class BlockIntCovariance
+    : public CovarianceFunction<BlockIntCovariance> {
+public:
+  BlockIntCovariance() = default;
+  std::string name() const { return "block_int"; }
+
+  double _call_impl(const int &x, const int &y) const {
+    return 1.0 / (1.0 + std::abs(x - y));
+  }
+
+  void _call_impl(const_span<int> xs, const_span<int> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    auto h = ws.acquire(m, n);
+    for (Eigen::Index i = 0; i < m; ++i) {
+      for (Eigen::Index j = 0; j < n; ++j) {
+        h.ref(i, j) = 1.0 / (1.0 + std::abs(xs[cast::to_size(i)] -
+                                              ys[cast::to_size(j)]));
+      }
+    }
+    apply_op(out, h.ref, op);
+  }
+
+  void _call_impl(const_span<int> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    auto h = ws.acquire(n, n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        h.ref(i, j) = 1.0 / (1.0 + std::abs(xs[cast::to_size(i)] -
+                                              xs[cast::to_size(j)]));
+      }
+    }
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        switch (op) {
+        case CovarianceOp::Assign: out(i, j) = h.ref(i, j); break;
+        case CovarianceOp::Add:    out(i, j) += h.ref(i, j); break;
+        case CovarianceOp::Multiply: out(i, j) *= h.ref(i, j); break;
+        }
+      }
+    }
+  }
+};
+
+/*
+ * A covariance supporting both double and int via Sum.
+ * BlockTestCovariance handles double, BlockIntCovariance handles int.
+ * Their sum handles variant<double, int>.
+ */
+using TestVariant = variant<double, int>;
+
+// Helper: compute scalar reference for variant vectors
+template <typename CovFunc>
+Eigen::MatrixXd scalar_cross_variant(const CovFunc &cov,
+                                     const std::vector<TestVariant> &xs,
+                                     const std::vector<TestVariant> &ys) {
+  const auto m = cast::to_index(xs.size());
+  const auto n = cast::to_index(ys.size());
+  Eigen::MatrixXd result(m, n);
+  for (Eigen::Index i = 0; i < m; ++i) {
+    for (Eigen::Index j = 0; j < n; ++j) {
+      result(i, j) = cov(xs[cast::to_size(i)], ys[cast::to_size(j)]);
+    }
+  }
+  return result;
+}
+
+template <typename CovFunc>
+Eigen::MatrixXd scalar_symmetric_variant(const CovFunc &cov,
+                                         const std::vector<TestVariant> &xs) {
+  const auto n = cast::to_index(xs.size());
+  Eigen::MatrixXd result(n, n);
+  for (Eigen::Index i = 0; i < n; ++i) {
+    for (Eigen::Index j = 0; j < n; ++j) {
+      result(i, j) = cov(xs[cast::to_size(i)], xs[cast::to_size(j)]);
+    }
+  }
+  return result;
+}
+
+TEST(test_block_covariance, test_variant_homogeneous_double) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {2, 2};
+
+  // All doubles — homogeneous
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2.0),
+                                 TestVariant(3.0), TestVariant(4.0)};
+  std::vector<TestVariant> ys = {TestVariant(2.5), TestVariant(3.5)};
+
+  Eigen::MatrixXd scalar_result = scalar_cross_variant(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Homogeneous double variant block should match scalar";
+}
+
+TEST(test_block_covariance, test_variant_homogeneous_symmetric) {
+  BlockTestCovariance cov;
+  cov.block_size_ = {2, 2};
+
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2.0),
+                                 TestVariant(3.0)};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric_variant(cov, xs);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance_symmetric(cov, xs, cov.block_size_, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Homogeneous symmetric variant block should match scalar";
+}
+
+TEST(test_block_covariance, test_variant_heterogeneous_cross) {
+  // Sum of double-cov and int-cov handles both types
+  auto cov = BlockTestCovariance() + BlockIntCovariance();
+  BlockSize bs{2, 2};
+
+  // Mixed types
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2),
+                                 TestVariant(3.0), TestVariant(4)};
+  std::vector<TestVariant> ys = {TestVariant(2.5), TestVariant(3),
+                                 TestVariant(4.5)};
+
+  Eigen::MatrixXd scalar_result = scalar_cross_variant(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, bs, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Heterogeneous variant cross-covariance block should match scalar";
+}
+
+TEST(test_block_covariance, test_variant_heterogeneous_symmetric) {
+  auto cov = BlockTestCovariance() + BlockIntCovariance();
+  BlockSize bs{2, 2};
+
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2),
+                                 TestVariant(3.0), TestVariant(4),
+                                 TestVariant(5.0)};
+
+  Eigen::MatrixXd scalar_result = scalar_symmetric_variant(cov, xs);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance_symmetric(cov, xs, bs, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Heterogeneous variant symmetric block should match scalar";
+}
+
+TEST(test_block_covariance, test_variant_with_scaling) {
+  using TestScalingTerm = ScalingTerm<TestBlockScaling>;
+  TestScalingTerm scaling;
+  auto cov = scaling * (BlockTestCovariance() + BlockIntCovariance());
+  BlockSize bs{2, 2};
+
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2),
+                                 TestVariant(3.0)};
+  std::vector<TestVariant> ys = {TestVariant(2.5), TestVariant(3)};
+
+  Eigen::MatrixXd scalar_result = scalar_cross_variant(cov, xs, ys);
+  Eigen::MatrixXd block_result =
+      compute_blocked_covariance(cov, xs, ys, bs, nullptr);
+
+  EXPECT_TRUE(block_result.isApprox(scalar_result, 1e-12))
+      << "Variant + ScalingTerm block should match scalar";
+}
+
+TEST(test_block_covariance, test_variant_empty) {
+  BlockTestCovariance cov;
+  BlockSize bs{2, 2};
+
+  std::vector<TestVariant> empty;
+  std::vector<TestVariant> xs = {TestVariant(1.0), TestVariant(2.0)};
+
+  Eigen::MatrixXd result1 =
+      compute_blocked_covariance(cov, empty, xs, bs, nullptr);
+  EXPECT_EQ(result1.rows(), 0);
+  EXPECT_EQ(result1.cols(), 2);
+
+  Eigen::MatrixXd result2 =
+      compute_blocked_covariance(cov, xs, empty, bs, nullptr);
+  EXPECT_EQ(result2.rows(), 2);
+  EXPECT_EQ(result2.cols(), 0);
+
+  Eigen::MatrixXd result3 =
+      compute_blocked_covariance_symmetric(cov, empty, bs, nullptr);
+  EXPECT_EQ(result3.rows(), 0);
+  EXPECT_EQ(result3.cols(), 0);
+}
+
 } // namespace albatross

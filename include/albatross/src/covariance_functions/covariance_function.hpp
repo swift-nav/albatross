@@ -77,6 +77,8 @@ private:
   }
 
 public:
+  BlockSize block_size_;
+
   static_assert(!is_complete<Derived>::value,
                 "\n\nPassing a complete type in as template parameter "
                 "implies you aren't using CRTP.  Implementations "
@@ -131,7 +133,8 @@ public:
 
   /*
    * Covariance between each element and every other in a vector.
-   * Enabled if EITHER pointwise OR symmetric batch is defined.
+   * Enabled if EITHER pointwise OR symmetric batch OR block is defined.
+   * Dispatches to the blocked path when block support is available.
    */
   template <typename X,
             typename std::enable_if<
@@ -139,20 +142,31 @@ public:
                 int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              ThreadPool *pool = nullptr) const {
-    return DefaultCaller::call_vector(derived(), xs, pool);
+    if constexpr (has_valid_call_impl_block_single_arg<Derived, X>::value ||
+                  has_valid_call_impl_block<Derived, X, X>::value) {
+      return compute_blocked_covariance_symmetric(derived(), xs, block_size_,
+                                                  pool);
+    } else {
+      return DefaultCaller::call_vector(derived(), xs, pool);
+    }
   }
 
   /*
    * Cross covariance between two vectors of (possibly) different types.
-   * Enabled if EITHER pointwise (_call_impl) OR batch (_call_impl_vector) is
-   * defined.
+   * Enabled if EITHER pointwise (_call_impl) OR batch (_call_impl_vector)
+   * OR block is defined.
+   * Dispatches to the blocked path when block support is available.
    */
   template <typename X, typename Y,
             typename std::enable_if<
                 has_valid_caller_or_batch<Derived, X, Y>::value, int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
                              ThreadPool *pool = nullptr) const {
-    return DefaultCaller::call_vector(derived(), xs, ys, pool);
+    if constexpr (has_valid_call_impl_block<Derived, X, Y>::value) {
+      return compute_blocked_covariance(derived(), xs, ys, block_size_, pool);
+    } else {
+      return DefaultCaller::call_vector(derived(), xs, ys, pool);
+    }
   }
 
   /*
@@ -454,6 +468,85 @@ public:
     return result;
   }
 
+  /*
+   * Block covariance: cross-covariance
+   * Sum dispatches A with the incoming op (or Assign), then B with Add.
+   * Only needs a temp when op == Multiply.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<LHS, X, Y>::value ||
+                 has_valid_call_impl_block<LHS, X, Y>::value) &&
+                    (has_valid_call_impl<RHS, X, Y>::value ||
+                     has_valid_call_impl_block<RHS, X, Y>::value),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Add, ws);
+      break;
+    case CovarianceOp::Add:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Add, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Add, ws);
+      break;
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(lhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, h.ref, CovarianceOp::Add,
+                                     ws);
+      out *= h.ref;
+      break;
+    }
+    }
+  }
+
+  /*
+   * Block covariance: symmetric single-arg (lower triangle only)
+   */
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl<LHS, X, X>::value ||
+                 has_valid_call_impl_block_single_arg<LHS, X>::value ||
+                 has_valid_call_impl_block<LHS, X, X>::value) &&
+                    (has_valid_call_impl<RHS, X, X>::value ||
+                     has_valid_call_impl_block_single_arg<RHS, X>::value ||
+                     has_valid_call_impl_block<RHS, X, X>::value),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, out, CovarianceOp::Assign, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, out, CovarianceOp::Add, ws);
+      break;
+    case CovarianceOp::Add:
+      BlockDefaultCaller::call_block(lhs_, xs, out, CovarianceOp::Add, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, out, CovarianceOp::Add, ws);
+      break;
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(n, n);
+      BlockDefaultCaller::call_block(lhs_, xs, h.ref, CovarianceOp::Assign,
+                                     ws);
+      BlockDefaultCaller::call_block(rhs_, xs, h.ref, CovarianceOp::Add, ws);
+      // Only multiply lower triangle
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          out(i, j) *= h.ref(i, j);
+        }
+      }
+      break;
+    }
+    }
+  }
+
 protected:
   LHS lhs_;
   RHS rhs_;
@@ -686,6 +779,86 @@ public:
                            .array())
             .matrix();
     return ret;
+  }
+
+  /*
+   * Block covariance: cross-covariance
+   * Product dispatches A with Assign, then B with Multiply.
+   * Only needs a temp when op == Add or Multiply.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<
+                (has_valid_call_impl<LHS, X, Y>::value ||
+                 has_valid_call_impl_block<LHS, X, Y>::value) &&
+                    (has_valid_call_impl<RHS, X, Y>::value ||
+                     has_valid_call_impl_block<RHS, X, Y>::value),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, ys, out, CovarianceOp::Assign,
+                                     ws);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, out, CovarianceOp::Multiply,
+                                     ws);
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(m, n);
+      BlockDefaultCaller::call_block(lhs_, xs, ys, h.ref,
+                                     CovarianceOp::Assign, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, ys, h.ref,
+                                     CovarianceOp::Multiply, ws);
+      apply_op(out, h.ref, op);
+      break;
+    }
+    }
+  }
+
+  /*
+   * Block covariance: symmetric single-arg (lower triangle only)
+   */
+  template <typename X,
+            typename std::enable_if<
+                (has_valid_call_impl<LHS, X, X>::value ||
+                 has_valid_call_impl_block_single_arg<LHS, X>::value ||
+                 has_valid_call_impl_block<LHS, X, X>::value) &&
+                    (has_valid_call_impl<RHS, X, X>::value ||
+                     has_valid_call_impl_block_single_arg<RHS, X>::value ||
+                     has_valid_call_impl_block<RHS, X, X>::value),
+                int>::type = 0>
+  void _call_impl(const_span<X> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    const Eigen::Index n = cast::to_index(xs.size());
+    switch (op) {
+    case CovarianceOp::Assign:
+      BlockDefaultCaller::call_block(lhs_, xs, out, CovarianceOp::Assign, ws);
+      BlockDefaultCaller::call_block(rhs_, xs, out, CovarianceOp::Multiply,
+                                     ws);
+      break;
+    case CovarianceOp::Add:
+    case CovarianceOp::Multiply: {
+      auto h = ws.acquire(n, n);
+      BlockDefaultCaller::call_block(lhs_, xs, h.ref, CovarianceOp::Assign,
+                                     ws);
+      BlockDefaultCaller::call_block(rhs_, xs, h.ref, CovarianceOp::Multiply,
+                                     ws);
+      // Only apply to lower triangle
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          if (op == CovarianceOp::Add) {
+            out(i, j) += h.ref(i, j);
+          } else {
+            out(i, j) *= h.ref(i, j);
+          }
+        }
+      }
+      break;
+    }
+    }
   }
 
 protected:

@@ -256,6 +256,17 @@ unwrap_measurements(const std::vector<Measurement<X>> &measurements) {
   return values;
 }
 
+template <typename X>
+inline std::vector<X>
+unwrap_measurements(const_span<Measurement<X>> measurements) {
+  std::vector<X> values;
+  values.reserve(measurements.size());
+  for (const auto &m : measurements) {
+    values.push_back(m.value);
+  }
+  return values;
+}
+
 namespace internal {
 
 // Controls whether BatchCaller mirrors the lower triangle into the
@@ -1672,6 +1683,175 @@ Eigen::VectorXd dispatch_heterogeneous_variant_batch_diagonal(
   return result;
 }
 
+/*
+ * ============================================================================
+ * Blocked Variant Dispatch
+ *
+ * These mirror the heterogeneous variant batch dispatch above, but use
+ * compute_blocked_covariance for each type-pair block instead of
+ * SubCaller::call_vector.  Variant splitting happens here (top level),
+ * so the block caller chain never sees variant types.
+ * ============================================================================
+ */
+
+// Cross-covariance: process one X-type row against all Y-type columns
+template <typename CovFunc, std::size_t XI, typename TypeListT,
+          std::size_t... YIs>
+struct BlockedCrossRowProcessor;
+
+template <typename CovFunc, std::size_t XI, typename... Ts,
+          std::size_t... YIs>
+struct BlockedCrossRowProcessor<CovFunc, XI, TypeList<Ts...>, YIs...> {
+  static void process(const CovFunc &cov_func,
+                      const SortedVariantData<Ts...> &x_sorted,
+                      const SortedVariantData<Ts...> &y_sorted,
+                      Eigen::MatrixXd &result, const BlockSize &bs,
+                      ThreadPool *pool) {
+    using XType = std::tuple_element_t<XI, std::tuple<Ts...>>;
+    const Eigen::Index x_start = x_sorted.block_starts[XI];
+    const Eigen::Index x_end = x_sorted.block_starts[XI + 1];
+    if (x_start == x_end)
+      return;
+
+    auto x_block = extract_block<XType>(x_sorted, XI);
+
+    (
+        [&]() {
+          using YType = std::tuple_element_t<YIs, std::tuple<Ts...>>;
+          const Eigen::Index y_start = y_sorted.block_starts[YIs];
+          const Eigen::Index y_end = y_sorted.block_starts[YIs + 1];
+          if (y_start == y_end)
+            return;
+
+          if constexpr (has_valid_call_impl<CovFunc, XType, YType>::value ||
+                        has_valid_call_impl_block<CovFunc, XType,
+                                                  YType>::value) {
+            auto y_block = extract_block<YType>(y_sorted, YIs);
+            auto block_result = compute_blocked_covariance(cov_func, x_block,
+                                                           y_block, bs, pool);
+            result.block(x_start, y_start, x_end - x_start, y_end - y_start) =
+                block_result;
+          }
+        }(),
+        ...);
+  }
+};
+
+template <typename CovFunc, std::size_t XI, typename... Ts,
+          std::size_t... YIs>
+void compute_blocked_cross_row(const CovFunc &cov_func,
+                               const SortedVariantData<Ts...> &x_sorted,
+                               const SortedVariantData<Ts...> &y_sorted,
+                               Eigen::MatrixXd &result, const BlockSize &bs,
+                               ThreadPool *pool,
+                               std::index_sequence<YIs...>) {
+  BlockedCrossRowProcessor<CovFunc, XI, TypeList<Ts...>, YIs...>::process(
+      cov_func, x_sorted, y_sorted, result, bs, pool);
+}
+
+template <typename CovFunc, typename... Ts, std::size_t... XIs>
+Eigen::MatrixXd compute_blocked_sorted_cross_impl(
+    const CovFunc &cov_func, const SortedVariantData<Ts...> &x_sorted,
+    const SortedVariantData<Ts...> &y_sorted, const BlockSize &bs,
+    ThreadPool *pool, std::index_sequence<XIs...>) {
+
+  const Eigen::Index m = cast::to_index(x_sorted.sorted.size());
+  const Eigen::Index n = cast::to_index(y_sorted.sorted.size());
+  Eigen::MatrixXd result = Eigen::MatrixXd::Zero(m, n);
+
+  (compute_blocked_cross_row<CovFunc, XIs>(
+       cov_func, x_sorted, y_sorted, result, bs, pool,
+       std::index_sequence_for<Ts...>{}),
+   ...);
+
+  return result;
+}
+
+// Symmetric: process one X-type row against Y-type columns >= XI
+template <typename CovFunc, std::size_t XI, typename TypeListT,
+          std::size_t... YIs>
+struct BlockedSymmetricRowProcessor;
+
+template <typename CovFunc, std::size_t XI, typename... Ts,
+          std::size_t... YIs>
+struct BlockedSymmetricRowProcessor<CovFunc, XI, TypeList<Ts...>, YIs...> {
+  static void process(const CovFunc &cov_func,
+                      const SortedVariantData<Ts...> &sorted,
+                      Eigen::MatrixXd &result, const BlockSize &bs,
+                      ThreadPool *pool) {
+    using XType = std::tuple_element_t<XI, std::tuple<Ts...>>;
+    const Eigen::Index x_start = sorted.block_starts[XI];
+    const Eigen::Index x_end = sorted.block_starts[XI + 1];
+    if (x_start == x_end)
+      return;
+
+    auto x_block = extract_block<XType>(sorted, XI);
+
+    (
+        [&]() {
+          using YType = std::tuple_element_t<YIs, std::tuple<Ts...>>;
+          const Eigen::Index y_start = sorted.block_starts[YIs];
+          const Eigen::Index y_end = sorted.block_starts[YIs + 1];
+          if (y_start == y_end)
+            return;
+
+          if constexpr (YIs < XI)
+            return;
+
+          if constexpr (has_valid_call_impl<CovFunc, XType, YType>::value ||
+                        has_valid_call_impl_block<CovFunc, XType,
+                                                  YType>::value) {
+            Eigen::MatrixXd block_result;
+
+            if constexpr (XI == YIs) {
+              block_result = compute_blocked_covariance_symmetric(
+                  cov_func, x_block, bs, pool);
+            } else {
+              auto y_block = extract_block<YType>(sorted, YIs);
+              block_result = compute_blocked_covariance(cov_func, x_block,
+                                                        y_block, bs, pool);
+            }
+
+            result.block(x_start, y_start, x_end - x_start, y_end - y_start) =
+                block_result;
+
+            if constexpr (XI != YIs) {
+              result.block(y_start, x_start, y_end - y_start,
+                           x_end - x_start) = block_result.transpose();
+            }
+          }
+        }(),
+        ...);
+  }
+};
+
+template <typename CovFunc, std::size_t XI, typename... Ts,
+          std::size_t... YIs>
+void compute_blocked_symmetric_row(const CovFunc &cov_func,
+                                   const SortedVariantData<Ts...> &sorted,
+                                   Eigen::MatrixXd &result, const BlockSize &bs,
+                                   ThreadPool *pool,
+                                   std::index_sequence<YIs...>) {
+  BlockedSymmetricRowProcessor<CovFunc, XI, TypeList<Ts...>, YIs...>::process(
+      cov_func, sorted, result, bs, pool);
+}
+
+template <typename CovFunc, typename... Ts, std::size_t... XIs>
+Eigen::MatrixXd compute_blocked_sorted_symmetric_impl(
+    const CovFunc &cov_func, const SortedVariantData<Ts...> &sorted,
+    const BlockSize &bs, ThreadPool *pool, std::index_sequence<XIs...>) {
+
+  const Eigen::Index n = cast::to_index(sorted.sorted.size());
+  Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
+
+  (compute_blocked_symmetric_row<CovFunc, XIs>(
+       cov_func, sorted, result, bs, pool,
+       std::index_sequence_for<Ts...>{}),
+   ...);
+
+  return result;
+}
+
 } // namespace variant_batch_detail
 
 /*
@@ -2140,6 +2320,331 @@ template <typename SubCaller> struct BatchCaller {
   }
 };
 
+/*
+ * ============================================================================
+ * Block Callers
+ *
+ * These callers implement the block covariance API, which computes covariance
+ * in cache-friendly tiles and writes in-place via CovarianceOp accumulation.
+ * The block caller chain is simpler than the vector caller chain:
+ *
+ *   BlockDefaultCaller = MeasurementBlockForwarder<
+ *       BlockDispatch<
+ *           SymmetricBlockCaller<
+ *               DirectBlockCaller>>>
+ *
+ * Variant dispatch is handled at the top level (before blocking), so the
+ * block caller chain does not include a VariantForwarder.
+ * ============================================================================
+ */
+
+/*
+ * DirectBlockCaller: calls the block _call_impl overload if it exists,
+ * otherwise falls back to a pointwise loop.
+ */
+struct DirectBlockCaller {
+  // Has block impl — call it directly
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                has_valid_call_impl_block<CovFunc, X, Y>::value, int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    cov_func._call_impl(xs, ys, out, op, ws);
+  }
+
+  // No block impl — pointwise fallback
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !has_valid_call_impl_block<CovFunc, X, Y>::value &&
+                    has_valid_call_impl<CovFunc, X, Y>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    if (op == CovarianceOp::Assign) {
+      for (Eigen::Index i = 0; i < m; ++i) {
+        for (Eigen::Index j = 0; j < n; ++j) {
+          out(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
+                                           ys[cast::to_size(j)]);
+        }
+      }
+    } else {
+      auto h = ws.acquire(m, n);
+      for (Eigen::Index i = 0; i < m; ++i) {
+        for (Eigen::Index j = 0; j < n; ++j) {
+          h.ref(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
+                                             ys[cast::to_size(j)]);
+        }
+      }
+      apply_op(out, h.ref, op);
+    }
+  }
+
+  // Symmetric single-arg: has block impl
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                has_valid_call_impl_block_single_arg<CovFunc, X>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    cov_func._call_impl(xs, out, op, ws);
+  }
+
+  // Symmetric single-arg: pointwise fallback (lower triangle only)
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_block_single_arg<CovFunc, X>::value &&
+                    has_valid_call_impl<CovFunc, X, X>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    const Eigen::Index n = cast::to_index(xs.size());
+    if (op == CovarianceOp::Assign) {
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          out(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
+                                           xs[cast::to_size(j)]);
+        }
+      }
+    } else {
+      auto h = ws.acquire(n, n);
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          h.ref(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
+                                             xs[cast::to_size(j)]);
+        }
+      }
+      // Only apply to lower triangle
+      for (Eigen::Index i = 0; i < n; ++i) {
+        for (Eigen::Index j = 0; j <= i; ++j) {
+          if (op == CovarianceOp::Add) {
+            out(i, j) += h.ref(i, j);
+          } else {
+            out(i, j) *= h.ref(i, j);
+          }
+        }
+      }
+    }
+  }
+};
+
+/*
+ * SymmetricBlockCaller: tries (X,Y) then (Y,X), mirroring SymmetricCaller.
+ */
+template <typename SubCaller> struct SymmetricBlockCaller {
+  // Direct pair exists
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                has_valid_call_impl_block<CovFunc, X, Y>::value ||
+                    has_valid_call_impl<CovFunc, X, Y>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, ys, out, op, ws);
+  }
+
+  // Reverse pair only (Y,X but not X,Y)
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !has_valid_call_impl_block<CovFunc, X, Y>::value &&
+                    !has_valid_call_impl<CovFunc, X, Y>::value &&
+                    (has_valid_call_impl_block<CovFunc, Y, X>::value ||
+                     has_valid_call_impl<CovFunc, Y, X>::value),
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    // Compute cov(ys, xs) into a temp and transpose into out
+    const Eigen::Index m = cast::to_index(xs.size());
+    const Eigen::Index n = cast::to_index(ys.size());
+    auto h = ws.acquire(n, m);
+    SubCaller::call_block(cov_func, ys, xs, h.ref, CovarianceOp::Assign, ws);
+    apply_op(out, h.ref.matrix().transpose().array(), op);
+  }
+
+  // Symmetric single-arg: passthrough
+  template <typename CovFunc, typename X>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, out, op, ws);
+  }
+};
+
+/*
+ * BlockDispatch: priority dispatch for block calls.
+ *   1. Block _call_impl exists → delegate to SubCaller
+ *   2. _call_impl_vector exists → call it, apply op
+ *   3. Pointwise _call_impl → delegate to SubCaller (pointwise fallback)
+ */
+template <typename SubCaller> struct BlockDispatch {
+  // Priority 1: block impl exists — delegate to SubCaller chain
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                has_valid_call_impl_block<CovFunc, X, Y>::value, int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, ys, out, op, ws);
+  }
+
+  // Priority 2: _call_impl_vector exists — call it, apply op to output
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !has_valid_call_impl_block<CovFunc, X, Y>::value &&
+                    has_valid_call_impl_vector<CovFunc, X, Y>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, [[maybe_unused]] BlockWorkspace &ws) {
+    // _call_impl_vector takes std::vector, so we need to copy
+    const std::vector<X> xs_vec(xs.begin(), xs.end());
+    const std::vector<Y> ys_vec(ys.begin(), ys.end());
+    Eigen::MatrixXd mat = cov_func._call_impl_vector(xs_vec, ys_vec, nullptr);
+    apply_op(out, mat.array(), op);
+  }
+
+  // Priority 3: pointwise fallback — delegate to SubCaller
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<
+                !has_valid_call_impl_block<CovFunc, X, Y>::value &&
+                    !has_valid_call_impl_vector<CovFunc, X, Y>::value &&
+                    has_valid_call_impl<CovFunc, X, Y>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, ys, out, op, ws);
+  }
+
+  // Symmetric Priority 1: block single-arg exists
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                has_valid_call_impl_block_single_arg<CovFunc, X>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, out, op, ws);
+  }
+
+  // Symmetric Priority 2: _call_impl_vector single-arg exists
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_block_single_arg<CovFunc, X>::value &&
+                    has_valid_call_impl_vector_single_arg<CovFunc, X>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         [[maybe_unused]] BlockWorkspace &ws) {
+    const std::vector<X> xs_vec(xs.begin(), xs.end());
+    Eigen::MatrixXd mat = cov_func._call_impl_vector(xs_vec, nullptr);
+    // mat may only have lower triangle filled
+    apply_op(out, mat.array(), op);
+  }
+
+  // Symmetric Priority 3: pointwise fallback
+  template <typename CovFunc, typename X,
+            typename std::enable_if<
+                !has_valid_call_impl_block_single_arg<CovFunc, X>::value &&
+                    !has_valid_call_impl_vector_single_arg<CovFunc, X>::value &&
+                    has_valid_call_impl<CovFunc, X, X>::value,
+                int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, out, op, ws);
+  }
+};
+
+/*
+ * MeasurementBlockForwarder: unwraps Measurement<X> types for block calls.
+ * Simplified version of MeasurementForwarder for the block API.
+ */
+template <typename SubCaller> struct MeasurementBlockForwarder {
+  // Non-Measurement passthrough
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<!is_measurement<X>::value &&
+                                        !is_measurement<Y>::value,
+                                    int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, ys, out, op, ws);
+  }
+
+  // Both sides Measurement: unwrap (block API doesn't support direct
+  // Measurement-specific _call_impl_block — those would be unusual)
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<is_measurement<X>::value &&
+                                        is_measurement<Y>::value,
+                                    int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    using InnerX = measurement_inner_t<X>;
+    using InnerY = measurement_inner_t<Y>;
+    auto inner_xs = unwrap_measurements(xs);
+    auto inner_ys = unwrap_measurements(ys);
+    SubCaller::call_block(cov_func, const_span<InnerX>(inner_xs),
+                          const_span<InnerY>(inner_ys), out, op, ws);
+  }
+
+  // Left side Measurement only
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<is_measurement<X>::value &&
+                                        !is_measurement<Y>::value,
+                                    int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    using InnerX = measurement_inner_t<X>;
+    auto inner_xs = unwrap_measurements(xs);
+    SubCaller::call_block(cov_func, const_span<InnerX>(inner_xs), ys, out, op,
+                          ws);
+  }
+
+  // Right side Measurement only
+  template <typename CovFunc, typename X, typename Y,
+            typename std::enable_if<!is_measurement<X>::value &&
+                                        is_measurement<Y>::value,
+                                    int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         const_span<Y> ys, Eigen::Ref<Eigen::ArrayXXd> out,
+                         CovarianceOp op, BlockWorkspace &ws) {
+    using InnerY = measurement_inner_t<Y>;
+    auto inner_ys = unwrap_measurements(ys);
+    SubCaller::call_block(cov_func, xs, const_span<InnerY>(inner_ys), out, op,
+                          ws);
+  }
+
+  // Symmetric: non-Measurement passthrough
+  template <typename CovFunc, typename X,
+            typename std::enable_if<!is_measurement<X>::value, int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    SubCaller::call_block(cov_func, xs, out, op, ws);
+  }
+
+  // Symmetric: Measurement unwrap
+  template <typename CovFunc, typename X,
+            typename std::enable_if<is_measurement<X>::value, int>::type = 0>
+  static void call_block(const CovFunc &cov_func, const_span<X> xs,
+                         Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                         BlockWorkspace &ws) {
+    using InnerX = measurement_inner_t<X>;
+    auto inner_xs = unwrap_measurements(xs);
+    SubCaller::call_block(cov_func, const_span<InnerX>(inner_xs), out, op, ws);
+  }
+};
+
 } // namespace internal
 
 /*
@@ -2149,6 +2654,15 @@ using DefaultCaller = internal::VariantForwarder<
     internal::MeasurementForwarder<internal::LinearCombinationCaller<
         internal::BatchCaller<internal::VariantForwarder<
             internal::SymmetricCaller<internal::DirectCaller>>>>>>;
+
+/*
+ * Block caller chain: used for the blocked covariance API.
+ * No VariantForwarder (variants handled at top level before blocking).
+ * No LinearCombinationCaller (falls back to pointwise).
+ */
+using BlockDefaultCaller = internal::MeasurementBlockForwarder<
+    internal::BlockDispatch<
+        internal::SymmetricBlockCaller<internal::DirectBlockCaller>>>;
 
 template <typename Caller, typename CovFunc, typename... Args>
 class caller_has_valid_call
@@ -2224,6 +2738,219 @@ using EquivalentCaller = internal::MeasurementForwarder<
 template <typename CovFunc, typename... Args>
 class has_equivalent_caller
     : public caller_has_valid_call<EquivalentCaller, CovFunc, Args...> {};
+
+/*
+ * ============================================================================
+ * Top-level blocked covariance computation
+ *
+ * These functions partition the full covariance matrix into tiles and
+ * dispatch each tile through BlockDefaultCaller.  Threading is handled
+ * via the existing apply() + ThreadPool infrastructure.
+ * ============================================================================
+ */
+
+namespace internal {
+
+struct BlockTask {
+  Eigen::Index row_start, row_count, col_start, col_count;
+};
+
+inline std::vector<BlockTask>
+partition_into_blocks(Eigen::Index m, Eigen::Index n, const BlockSize &bs) {
+  std::vector<BlockTask> tasks;
+  for (Eigen::Index r = 0; r < m; r += bs.rows) {
+    const Eigen::Index rcount = std::min(bs.rows, m - r);
+    for (Eigen::Index c = 0; c < n; c += bs.cols) {
+      const Eigen::Index ccount = std::min(bs.cols, n - c);
+      tasks.push_back({r, rcount, c, ccount});
+    }
+  }
+  return tasks;
+}
+
+// Lower-triangular tile grid for symmetric matrices.
+// Returns pairs of (block_row_idx, block_col_idx) for the lower triangle
+// including diagonal.
+inline std::vector<std::pair<Eigen::Index, Eigen::Index>>
+partition_lower_triangular_blocks(Eigen::Index n, Eigen::Index block_size) {
+  std::vector<std::pair<Eigen::Index, Eigen::Index>> tasks;
+  const Eigen::Index num_blocks = (n + block_size - 1) / block_size;
+  for (Eigen::Index bi = 0; bi < num_blocks; ++bi) {
+    for (Eigen::Index bj = 0; bj <= bi; ++bj) {
+      tasks.emplace_back(bi, bj);
+    }
+  }
+  return tasks;
+}
+
+} // namespace internal
+
+/*
+ * Compute cross-covariance using the block API.
+ */
+template <typename CovFunc, typename X, typename Y>
+Eigen::MatrixXd
+compute_blocked_covariance(const CovFunc &cov_func, const std::vector<X> &xs,
+                           const std::vector<Y> &ys, const BlockSize &bs,
+                           ThreadPool *pool) {
+  const auto m = cast::to_index(xs.size());
+  const auto n = cast::to_index(ys.size());
+  Eigen::MatrixXd result(m, n);
+  const const_span<X> xs_span(xs);
+  const const_span<Y> ys_span(ys);
+
+  auto tasks = internal::partition_into_blocks(m, n, bs);
+
+  auto process_block = [&](const internal::BlockTask &task) {
+    thread_local BlockWorkspace ws(bs.rows, bs.cols, 8);
+    ws.ensure_capacity(bs.rows, bs.cols);
+    Eigen::Ref<Eigen::ArrayXXd> out =
+        result.block(task.row_start, task.col_start, task.row_count,
+                     task.col_count)
+            .array();
+    BlockDefaultCaller::call_block(
+        cov_func,
+        xs_span.subspan(cast::to_size(task.row_start),
+                        cast::to_size(task.row_count)),
+        ys_span.subspan(cast::to_size(task.col_start),
+                        cast::to_size(task.col_count)),
+        out, CovarianceOp::Assign, ws);
+  };
+
+  if (detail::should_serial_apply(pool)) {
+    for (const auto &task : tasks) {
+      process_block(task);
+    }
+  } else {
+    apply(tasks, process_block, pool);
+  }
+  return result;
+}
+
+/*
+ * Compute symmetric covariance using the block API.
+ * Iterates over lower-triangular tile grid; diagonal tiles use
+ * the single-arg block call (lower triangle only), off-diagonal tiles
+ * use the cross-covariance call and are transposed to the mirror position.
+ */
+template <typename CovFunc, typename X>
+Eigen::MatrixXd compute_blocked_covariance_symmetric(
+    const CovFunc &cov_func, const std::vector<X> &xs, const BlockSize &bs,
+    ThreadPool *pool) {
+  const auto n = cast::to_index(xs.size());
+  // Use square blocks for symmetric case; tile must fit in workspace
+  // which has dimensions (bs.rows, bs.cols), so use the smaller dimension.
+  const Eigen::Index tile = std::min(bs.rows, bs.cols);
+  Eigen::MatrixXd result(n, n);
+  const const_span<X> xs_span(xs);
+
+  auto tasks =
+      internal::partition_lower_triangular_blocks(n, tile);
+
+  auto process_block =
+      [&](const std::pair<Eigen::Index, Eigen::Index> &idx) {
+        thread_local BlockWorkspace ws(tile, tile, 8);
+        ws.ensure_capacity(tile, tile);
+        const Eigen::Index bi = idx.first;
+        const Eigen::Index bj = idx.second;
+        const Eigen::Index row_start = bi * tile;
+        const Eigen::Index col_start = bj * tile;
+        const Eigen::Index row_count = std::min(tile, n - row_start);
+        const Eigen::Index col_count = std::min(tile, n - col_start);
+
+        if (bi == bj) {
+          // Diagonal block: symmetric single-arg
+          Eigen::Ref<Eigen::ArrayXXd> out =
+              result.block(row_start, col_start, row_count, col_count).array();
+          BlockDefaultCaller::call_block(
+              cov_func,
+              xs_span.subspan(cast::to_size(row_start),
+                              cast::to_size(row_count)),
+              out, CovarianceOp::Assign, ws);
+          // Mirror lower triangle to upper within this diagonal block
+          for (Eigen::Index i = 0; i < row_count; ++i) {
+            for (Eigen::Index j = 0; j < i; ++j) {
+              out(j, i) = out(i, j);
+            }
+          }
+        } else {
+          // Off-diagonal block: cross-covariance
+          Eigen::Ref<Eigen::ArrayXXd> out =
+              result.block(row_start, col_start, row_count, col_count).array();
+          BlockDefaultCaller::call_block(
+              cov_func,
+              xs_span.subspan(cast::to_size(row_start),
+                              cast::to_size(row_count)),
+              xs_span.subspan(cast::to_size(col_start),
+                              cast::to_size(col_count)),
+              out, CovarianceOp::Assign, ws);
+          // Transpose to mirror position
+          result.block(col_start, row_start, col_count, row_count) =
+              result.block(row_start, col_start, row_count, col_count)
+                  .transpose();
+        }
+      };
+
+  if (detail::should_serial_apply(pool)) {
+    for (const auto &task : tasks) {
+      process_block(task);
+    }
+  } else {
+    apply(tasks, process_block, pool);
+  }
+  return result;
+}
+
+/*
+ * Variant overloads of blocked covariance.
+ * Sort by type, compute each type-pair block using the concrete-type
+ * blocked covariance, then unpermute.
+ */
+template <typename CovFunc, typename... Ts>
+Eigen::MatrixXd
+compute_blocked_covariance(const CovFunc &cov_func,
+                           const std::vector<variant<Ts...>> &xs,
+                           const std::vector<variant<Ts...>> &ys,
+                           const BlockSize &bs, ThreadPool *pool) {
+  if (xs.empty()) {
+    return Eigen::MatrixXd(0, cast::to_index(ys.size()));
+  }
+  if (ys.empty()) {
+    return Eigen::MatrixXd(cast::to_index(xs.size()), 0);
+  }
+
+  using namespace internal::variant_batch_detail;
+  auto x_sorted = sort_variants_by_type(xs);
+  auto y_sorted = sort_variants_by_type(ys);
+
+  Eigen::MatrixXd sorted_result =
+      compute_blocked_sorted_cross_impl<CovFunc>(
+          cov_func, x_sorted, y_sorted, bs, pool,
+          std::index_sequence_for<Ts...>{});
+
+  Eigen::PermutationMatrix<Eigen::Dynamic> x_inv = x_sorted.to_sorted.inverse();
+  Eigen::PermutationMatrix<Eigen::Dynamic> y_inv = y_sorted.to_sorted.inverse();
+  return x_inv * sorted_result * y_inv.transpose();
+}
+
+template <typename CovFunc, typename... Ts>
+Eigen::MatrixXd compute_blocked_covariance_symmetric(
+    const CovFunc &cov_func, const std::vector<variant<Ts...>> &xs,
+    const BlockSize &bs, ThreadPool *pool) {
+  if (xs.empty()) {
+    return Eigen::MatrixXd(0, 0);
+  }
+
+  using namespace internal::variant_batch_detail;
+  auto sorted = sort_variants_by_type(xs);
+
+  Eigen::MatrixXd sorted_result =
+      compute_blocked_sorted_symmetric_impl<CovFunc>(
+          cov_func, sorted, bs, pool, std::index_sequence_for<Ts...>{});
+
+  Eigen::PermutationMatrix<Eigen::Dynamic> P_inv = sorted.to_sorted.inverse();
+  return P_inv * sorted_result * P_inv.transpose();
+}
 
 } // namespace albatross
 
