@@ -217,6 +217,14 @@ template <typename T>
 struct is_measurement : public is_templated_type<Measurement, T> {};
 
 /*
+ * is_linear_combination
+ */
+
+template <typename T>
+struct is_linear_combination : public is_templated_type<LinearCombination, T> {
+};
+
+/*
  * is_streamable
  */
 
