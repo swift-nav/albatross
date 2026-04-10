@@ -79,6 +79,31 @@ private:
 public:
   BlockSize block_size_;
 
+  /*
+   * Evaluate this covariance function on spans of data, writing the
+   * result into `out` according to `op`.  Dispatches through the block
+   * caller chain (block > vector > pointwise).
+   *
+   * The workspace must already be large enough for the requested block
+   * dimensions — this does NOT do tile partitioning or resizing.
+   */
+  template <typename X, typename Y>
+  void block_eval(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  BlockWorkspace &ws) const {
+    BlockDefaultCaller::call_block(derived(), xs, ys, out, op, ws);
+  }
+
+  /*
+   * Symmetric single-arg variant: populates only the lower triangle
+   * of `out`.
+   */
+  template <typename X>
+  void block_eval(const_span<X> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  CovarianceOp op, BlockWorkspace &ws) const {
+    BlockDefaultCaller::call_block(derived(), xs, out, op, ws);
+  }
+
   static_assert(!is_complete<Derived>::value,
                 "\n\nPassing a complete type in as template parameter "
                 "implies you aren't using CRTP.  Implementations "
@@ -536,12 +561,7 @@ public:
       BlockDefaultCaller::call_block(lhs_, xs, h.ref, CovarianceOp::Assign,
                                      ws);
       BlockDefaultCaller::call_block(rhs_, xs, h.ref, CovarianceOp::Add, ws);
-      // Only multiply lower triangle
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          out(i, j) *= h.ref(i, j);
-        }
-      }
+      apply_op_lower(out, h.ref, CovarianceOp::Multiply);
       break;
     }
     }
@@ -846,16 +866,7 @@ public:
                                      ws);
       BlockDefaultCaller::call_block(rhs_, xs, h.ref, CovarianceOp::Multiply,
                                      ws);
-      // Only apply to lower triangle
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          if (op == CovarianceOp::Add) {
-            out(i, j) += h.ref(i, j);
-          } else {
-            out(i, j) *= h.ref(i, j);
-          }
-        }
-      }
+      apply_op_lower(out, h.ref, op);
       break;
     }
     }

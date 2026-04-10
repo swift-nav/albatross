@@ -5023,4 +5023,133 @@ TEST(test_block_covariance, test_variant_empty) {
   EXPECT_EQ(result3.cols(), 0);
 }
 
+// ============================================================================
+// In-place Ref<ArrayXXd> covariance overload tests
+//
+// Each test builds a distance matrix, applies the Ref overload in-place,
+// and compares element-by-element to the scalar function.
+// ============================================================================
+
+namespace {
+
+Eigen::ArrayXXd make_test_distances() {
+  // A small matrix of non-negative distances.
+  Eigen::ArrayXXd d(4, 3);
+  d << 0.0, 0.1, 0.5,
+       0.1, 0.0, 1.0,
+       0.5, 1.0, 0.0,
+       1.5, 2.0, 0.3;
+  return d;
+}
+
+// Build reference by looping over the scalar function.
+template <typename ScalarFn>
+Eigen::ArrayXXd scalar_reference(const Eigen::ArrayXXd &distances,
+                                 double length_scale, double sigma,
+                                 ScalarFn fn) {
+  Eigen::ArrayXXd ref(distances.rows(), distances.cols());
+  for (Eigen::Index i = 0; i < distances.rows(); ++i) {
+    for (Eigen::Index j = 0; j < distances.cols(); ++j) {
+      ref(i, j) = fn(distances(i, j), length_scale, sigma);
+    }
+  }
+  return ref;
+}
+
+}  // namespace
+
+TEST(test_radial_ref, squared_exponential_ref_matches_scalar) {
+  const auto distances = make_test_distances();
+  for (double ls : {0.1, 0.5, 1.0, 5.0}) {
+    for (double sigma : {0.5, 1.0, 3.0}) {
+      Eigen::ArrayXXd d = distances;
+      ref::squared_exponential_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), ls,
+                                          sigma);
+      auto reference = scalar_reference(
+          distances, ls, sigma,
+          [](double dist, double l, double s) {
+            return squared_exponential_covariance(dist, l, s);
+          });
+      EXPECT_TRUE(d.isApprox(reference, 1e-12))
+          << "squared_exponential ref:: failed for ls=" << ls
+          << " sigma=" << sigma;
+    }
+  }
+}
+
+TEST(test_radial_ref, exponential_ref_matches_scalar) {
+  const auto distances = make_test_distances();
+  for (double ls : {0.1, 0.5, 1.0, 5.0}) {
+    for (double sigma : {0.5, 1.0, 3.0}) {
+      Eigen::ArrayXXd d = distances;
+      ref::exponential_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), ls, sigma);
+      auto reference = scalar_reference(
+          distances, ls, sigma,
+          [](double dist, double l, double s) {
+            return exponential_covariance(dist, l, s);
+          });
+      EXPECT_TRUE(d.isApprox(reference, 1e-12))
+          << "exponential ref:: failed for ls=" << ls << " sigma=" << sigma;
+    }
+  }
+}
+
+TEST(test_radial_ref, matern_32_ref_matches_scalar) {
+  const auto distances = make_test_distances();
+  for (double ls : {0.1, 0.5, 1.0, 5.0}) {
+    for (double sigma : {0.5, 1.0, 3.0}) {
+      Eigen::ArrayXXd d = distances;
+      ref::matern_32_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), ls, sigma);
+      auto reference = scalar_reference(
+          distances, ls, sigma,
+          [](double dist, double l, double s) {
+            return matern_32_covariance(dist, l, s);
+          });
+      EXPECT_TRUE(d.isApprox(reference, 1e-12))
+          << "matern_32 ref:: failed for ls=" << ls << " sigma=" << sigma;
+    }
+  }
+}
+
+TEST(test_radial_ref, matern_52_ref_matches_scalar) {
+  const auto distances = make_test_distances();
+  for (double ls : {0.1, 0.5, 1.0, 5.0}) {
+    for (double sigma : {0.5, 1.0, 3.0}) {
+      Eigen::ArrayXXd d = distances;
+      ref::matern_52_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), ls, sigma);
+      auto reference = scalar_reference(
+          distances, ls, sigma,
+          [](double dist, double l, double s) {
+            return matern_52_covariance(dist, l, s);
+          });
+      EXPECT_TRUE(d.isApprox(reference, 1e-12))
+          << "matern_52 ref:: failed for ls=" << ls << " sigma=" << sigma;
+    }
+  }
+}
+
+TEST(test_radial_ref, zero_length_scale_gives_zero) {
+  {
+    Eigen::ArrayXXd d = make_test_distances();
+    ref::squared_exponential_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), 0.0,
+                                        1.0);
+    EXPECT_TRUE((d == 0.0).all()) << "sq_exp: zero ls should give all zeros";
+  }
+  {
+    Eigen::ArrayXXd d = make_test_distances();
+    ref::exponential_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), 0.0, 1.0);
+    EXPECT_TRUE((d == 0.0).all()) << "exp: zero ls should give all zeros";
+  }
+  {
+    Eigen::ArrayXXd d = make_test_distances();
+    ref::matern_32_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), 0.0, 1.0);
+    EXPECT_TRUE((d == 0.0).all()) << "m32: zero ls should give all zeros";
+  }
+  {
+    Eigen::ArrayXXd d = make_test_distances();
+    ref::matern_52_covariance(Eigen::Ref<Eigen::ArrayXXd>(d), 0.0, 1.0);
+    EXPECT_TRUE((d == 0.0).all()) << "m52: zero ls should give all zeros";
+  }
+}
+
 } // namespace albatross

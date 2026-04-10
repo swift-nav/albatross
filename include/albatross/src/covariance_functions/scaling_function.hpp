@@ -440,16 +440,7 @@ public:
                                      ws);
       h.ref.colwise() *= s.array();
       h.ref.rowwise() *= s.transpose().array();
-      // Apply to lower triangle only
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          if (op == CovarianceOp::Add) {
-            out(i, j) += h.ref(i, j);
-          } else {
-            out(i, j) *= h.ref(i, j);
-          }
-        }
-      }
+      apply_op_lower(out, h.ref, op);
       break;
     }
     }
@@ -753,15 +744,7 @@ public:
                                      ws);
       h.ref.colwise() *= s.array();
       h.ref.rowwise() *= s.transpose().array();
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          if (op == CovarianceOp::Add) {
-            out(i, j) += h.ref(i, j);
-          } else {
-            out(i, j) *= h.ref(i, j);
-          }
-        }
-      }
+      apply_op_lower(out, h.ref, op);
       break;
     }
     }

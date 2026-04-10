@@ -28,19 +28,47 @@ enum class CovarianceOp { Assign, Add, Multiply };
 
 /*
  * Apply a CovarianceOp element-wise: out op= value.
+ *
+ * Templated on the value expression type so that lazy Eigen expressions
+ * (e.g. from albatross::expr::squared_exponential_covariance) are
+ * evaluated directly into the output without allocating a temporary.
  */
-inline void apply_op(Eigen::Ref<Eigen::ArrayXXd> out,
-                     const Eigen::Ref<const Eigen::ArrayXXd> &value,
-                     CovarianceOp op) {
+template <typename Derived>
+void apply_op(Eigen::Ref<Eigen::ArrayXXd> out,
+              const Eigen::ArrayBase<Derived> &value, CovarianceOp op) {
   switch (op) {
   case CovarianceOp::Assign:
-    out = value;
+    out = value.derived();
     break;
   case CovarianceOp::Add:
-    out += value;
+    out += value.derived();
     break;
   case CovarianceOp::Multiply:
-    out *= value;
+    out *= value.derived();
+    break;
+  }
+}
+
+/*
+ * Apply a CovarianceOp to only the lower triangle (including diagonal).
+ * Uses Eigen triangular views so that the branch is checked once and
+ * the loop/vectorisation is left to Eigen.
+ *
+ * Templated on the value expression type to avoid temporary allocation.
+ */
+template <typename Derived>
+void apply_op_lower(Eigen::Ref<Eigen::ArrayXXd> out,
+                    const Eigen::ArrayBase<Derived> &value, CovarianceOp op) {
+  switch (op) {
+  case CovarianceOp::Assign:
+    out.matrix().triangularView<Eigen::Lower>() = value.derived().matrix();
+    break;
+  case CovarianceOp::Add:
+    out.matrix().triangularView<Eigen::Lower>() += value.derived().matrix();
+    break;
+  case CovarianceOp::Multiply:
+    out.matrix().triangularView<Eigen::Lower>() =
+        (out * value.derived()).matrix().template triangularView<Eigen::Lower>();
     break;
   }
 }

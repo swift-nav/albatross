@@ -58,6 +58,48 @@ public:
                     const Y &y __attribute__((unused))) const {
     return sigma_constant.value * sigma_constant.value;
   }
+
+  template <typename X, typename Y>
+  void _call_impl(const_span<X> xs, const_span<Y> ys,
+                  Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
+                  [[maybe_unused]] BlockWorkspace &ws) const {
+    const double c = sigma_constant.value * sigma_constant.value;
+    switch (op) {
+    case CovarianceOp::Multiply:
+      out *= c;
+      return;
+    case CovarianceOp::Add:
+      out += c;
+      return;
+    case CovarianceOp::Assign:
+      out.setConstant(c);
+      return;
+    default:
+      ALBATROSS_ASSERT(false && "Invalid CovarianceOp!");
+    }
+  }
+
+  template <typename X, typename Y>
+  void _call_impl(const_span<Y> xs, Eigen::Ref<Eigen::ArrayXXd> out,
+                  albatross::CovarianceOp op,
+                  [[maybe_unused]] albatross::BlockWorkspace &ws) const {
+    const Eigen::Index n = albatross::cast::to_index(xs.size());
+    const double c = sigma_constant.value * sigma_constant.value;
+    auto tri = out.matrix().triangularView<Eigen::Lower>();
+    switch (op) {
+    case CovarianceOp::Multiply:
+      tri *= c;
+      return;
+    case CovarianceOp::Add:
+      tri += Eigen::MatrixXd::Constant(n, n, c);
+      return;
+    case CovarianceOp::Assign:
+      tri.setConstant(c);
+      return;
+    default:
+      ALBATROSS_ASSERT(false && "Invalid CovarianceOp!");
+    }
+  }
 };
 
 template <int order>

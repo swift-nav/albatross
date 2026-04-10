@@ -96,6 +96,76 @@ auto matern_52_covariance(const Eigen::MatrixBase<Derived> &distance,
 
 } // namespace expr
 
+/*
+ * In-place Ref<ArrayXXd> covariance functions.
+ *
+ * These modify a distance array in place, replacing each element with
+ * the corresponding covariance value.  They live in their own namespace
+ * to avoid overload resolution ambiguity with the scalar, Matrix&& and
+ * expr:: versions.
+ */
+namespace ref {
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> squared_exponential_covariance(
+    Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> distance, double length_scale,
+    double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  distance /= static_cast<Scalar>(length_scale);
+  distance = static_cast<Scalar>(sigma * sigma) * (-distance.square()).exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> exponential_covariance(
+    Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> distance, double length_scale,
+    double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  distance =
+      static_cast<Scalar>(sigma * sigma) *
+      (-(distance / static_cast<Scalar>(length_scale)).abs()).exp();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> matern_32_covariance(
+    Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> distance, double length_scale,
+    double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  distance *= static_cast<Scalar>(std::sqrt(3.) / length_scale);
+  distance =
+      (static_cast<Scalar>(sigma * sigma) *
+       (Scalar{1.0} + distance) * (-distance).exp()).eval();
+  return distance;
+}
+
+template <typename Scalar, int Rows, int Cols>
+Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> matern_52_covariance(
+    Eigen::Ref<Eigen::Array<Scalar, Rows, Cols>> distance, double length_scale,
+    double sigma = 1.) {
+  if (length_scale <= 0.) {
+    distance.setZero();
+    return distance;
+  }
+  distance *= static_cast<Scalar>(std::sqrt(5.0) / length_scale);
+  distance =
+      (static_cast<Scalar>(sigma * sigma) *
+       (Scalar{1.0} + distance + distance.square() / Scalar{3.0}) *
+       (-distance).exp()).eval();
+  return distance;
+}
+
+} // namespace ref
+
 inline double squared_exponential_covariance(double distance,
                                              double length_scale,
                                              double sigma = 1.) {
@@ -318,6 +388,10 @@ exponential_covariance(const Eigen::Matrix<Scalar, Rows, Cols> &distance,
   return exponential_covariance(Eigen::Matrix<Scalar, Rows, Cols>{distance},
                                 length_scale, sigma);
 }
+
+// Note: exponential has no aliasing issue since it's a single assignment.
+// matern_32 and matern_52 below DO have aliasing because they modify
+// distance in a first step and then read it in a second step.
 
 inline double derive_exponential_length_scale(double reference_distance,
                                               double prior_sigma,
@@ -642,13 +716,6 @@ matern_52_covariance(const Eigen::Matrix<Scalar, Rows, Cols> &distance,
                      double length_scale, double sigma = 1.) {
   return matern_52_covariance(Eigen::Matrix<Scalar, Rows, Cols>{distance},
                               length_scale, sigma);
-  // ALBATROSS_ASSERT((distance.array() >= 0.).all() &&
-  //                  "Cannot compute covariance with negative distance!");
-  // if (length_scale <= 0.) {
-  //   return Eigen::Matrix<Scalar, Rows, Cols>::Zero(distance.rows(),
-  //                                                  distance.cols());
-  // }
-  // return expr::matern_52_covariance(distance, length_scale, sigma);
 }
 
 inline double derive_matern_52_length_scale(double reference_distance,

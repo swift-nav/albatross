@@ -2404,32 +2404,14 @@ struct DirectBlockCaller {
                          Eigen::Ref<Eigen::ArrayXXd> out, CovarianceOp op,
                          BlockWorkspace &ws) {
     const Eigen::Index n = cast::to_index(xs.size());
-    if (op == CovarianceOp::Assign) {
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          out(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
+    auto h = ws.acquire(n, n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      for (Eigen::Index j = 0; j <= i; ++j) {
+        h.ref(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
                                            xs[cast::to_size(j)]);
-        }
-      }
-    } else {
-      auto h = ws.acquire(n, n);
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          h.ref(i, j) = cov_func._call_impl(xs[cast::to_size(i)],
-                                             xs[cast::to_size(j)]);
-        }
-      }
-      // Only apply to lower triangle
-      for (Eigen::Index i = 0; i < n; ++i) {
-        for (Eigen::Index j = 0; j <= i; ++j) {
-          if (op == CovarianceOp::Add) {
-            out(i, j) += h.ref(i, j);
-          } else {
-            out(i, j) *= h.ref(i, j);
-          }
-        }
       }
     }
+    apply_op_lower(out, h.ref, op);
   }
 };
 
@@ -2545,8 +2527,9 @@ template <typename SubCaller> struct BlockDispatch {
                          [[maybe_unused]] BlockWorkspace &ws) {
     const std::vector<X> xs_vec(xs.begin(), xs.end());
     Eigen::MatrixXd mat = cov_func._call_impl_vector(xs_vec, nullptr);
-    // mat may only have lower triangle filled
-    apply_op(out, mat.array(), op);
+    // mat may only have lower triangle filled; only apply lower triangle
+    // since the symmetric block contract requires populating lower only.
+    apply_op_lower(out, mat.array(), op);
   }
 
   // Symmetric Priority 3: pointwise fallback
