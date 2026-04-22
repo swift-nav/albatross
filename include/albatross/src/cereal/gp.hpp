@@ -16,6 +16,7 @@
 using albatross::Fit;
 using albatross::GaussianProcessBase;
 using albatross::GPFit;
+using albatross::GPRemoveCache;
 using albatross::LinearCombination;
 using albatross::SparseGPFit;
 
@@ -25,6 +26,23 @@ using albatross::SparseGPFit;
 
 namespace cereal {
 
+// All four fields are serialized: the cached matrices are
+// deterministic functions of `indices` plus the fit's
+// covariance/information, so we could rebuild them on load, but
+// doing so would require re-running a solve against the full
+// training covariance.  Persisting them directly keeps deserialized
+// fits equivalent to their originals without extra setup.
+template <typename Archive>
+inline void serialize(Archive &archive, GPRemoveCache &removed,
+                      const std::uint32_t) {
+  archive(cereal::make_nvp("indices", removed.indices));
+  archive(cereal::make_nvp("precision_train_removed",
+                           removed.precision_train_removed));
+  archive(cereal::make_nvp("conditional_cov_removed",
+                           removed.conditional_cov_removed));
+  archive(cereal::make_nvp("delta_removed", removed.delta_removed));
+}
+
 template <typename Archive, typename CovarianceRepresentation,
           typename FeatureType>
 inline void serialize(Archive &archive,
@@ -33,6 +51,7 @@ inline void serialize(Archive &archive,
   archive(cereal::make_nvp("information", fit.information));
   archive(cereal::make_nvp("train_ldlt", fit.train_covariance));
   archive(cereal::make_nvp("train_features", fit.train_features));
+  archive(cereal::make_nvp("removed", fit.removed));
 }
 
 template <typename Archive, typename FeatureType>

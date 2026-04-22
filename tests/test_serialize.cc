@@ -453,6 +453,114 @@ TEST(test_serialize, test_gp_serialize_version) {
   EXPECT_EQ(actual_version, expected_version);
 }
 
+template <typename InputArchiveType, typename OutputArchiveType, typename T>
+T roundtrip_archive(const T &original) {
+  std::ostringstream os;
+  {
+    OutputArchiveType oarchive(os);
+    oarchive(original);
+  }
+  T out;
+  {
+    std::istringstream is(os.str());
+    InputArchiveType iarchive(is);
+    iarchive(out);
+  }
+  return out;
+}
+
+TEST(test_serialize, test_gp_remove_cache_roundtrip_json) {
+  MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto fit = test_case.get_model().fit(dataset);
+
+  const std::vector<std::size_t> prune_positions = {2, 5};
+  const auto pruned = albatross::prune(fit, prune_positions);
+  ASSERT_EQ(pruned.get_fit().removed.indices, prune_positions);
+
+  const auto &original_cache = pruned.get_fit().removed;
+  const auto cache_out =
+      roundtrip_archive<cereal::JSONInputArchive, cereal::JSONOutputArchive>(
+          original_cache);
+
+  EXPECT_EQ(cache_out, original_cache);
+}
+
+// End-to-end round-trip of a FitModel carrying a non-empty remove
+// cache. Compares equality via operator==, reserializes to check for
+// byte stability, and verifies that every prediction type produces
+// the same output off the deserialized fit as off the original.
+template <typename InputArchiveType, typename OutputArchiveType>
+void expect_pruned_fit_model_roundtrip() {
+  MakeGaussianProcess test_case;
+  auto dataset = test_case.get_dataset();
+  auto fit = test_case.get_model().fit(dataset);
+
+  const std::vector<std::size_t> prune_positions = {1, 4, 7};
+  const auto pruned = albatross::prune(fit, prune_positions);
+  ASSERT_EQ(pruned.get_fit().removed.indices, prune_positions);
+
+  std::ostringstream os;
+  {
+    OutputArchiveType oarchive(os);
+    oarchive(pruned);
+  }
+
+  using FitModelType = std::decay_t<decltype(pruned)>;
+  FitModelType deserialized;
+  {
+    std::istringstream is(os.str());
+    InputArchiveType iarchive(is);
+    iarchive(deserialized);
+  }
+
+  EXPECT_TRUE(deserialized == pruned);
+  EXPECT_FALSE(deserialized.get_fit().removed.indices.empty());
+
+  std::ostringstream os_again;
+  {
+    OutputArchiveType oarchive(os_again);
+    oarchive(deserialized);
+  }
+  EXPECT_EQ(os_again.str(), os.str());
+
+  // Predictions must survive the round-trip for all three output
+  // types; if the cache had silently dropped its cached matrices
+  // during serialization these would diverge from the pre-serialize
+  // predictions.
+  const std::vector<double> test_features = {0.5, 2.5, 5.5, 8.5};
+
+  const Eigen::VectorXd pre_mean = pruned.predict(test_features).mean();
+  const Eigen::VectorXd post_mean = deserialized.predict(test_features).mean();
+  EXPECT_TRUE(pre_mean.isApprox(post_mean));
+
+  const auto pre_marginal = pruned.predict(test_features).marginal();
+  const auto post_marginal = deserialized.predict(test_features).marginal();
+  EXPECT_TRUE(pre_marginal.mean.isApprox(post_marginal.mean));
+  EXPECT_TRUE(pre_marginal.covariance.diagonal().isApprox(
+      post_marginal.covariance.diagonal()));
+
+  const auto pre_joint = pruned.predict(test_features).joint();
+  const auto post_joint = deserialized.predict(test_features).joint();
+  EXPECT_TRUE(pre_joint.mean.isApprox(post_joint.mean));
+  EXPECT_TRUE(pre_joint.covariance.isApprox(post_joint.covariance));
+}
+
+TEST(test_serialize, test_pruned_fit_model_roundtrip_json) {
+  expect_pruned_fit_model_roundtrip<cereal::JSONInputArchive,
+                                    cereal::JSONOutputArchive>();
+}
+
+TEST(test_serialize, test_pruned_fit_model_roundtrip_binary) {
+  expect_pruned_fit_model_roundtrip<cereal::BinaryInputArchive,
+                                    cereal::BinaryOutputArchive>();
+}
+
+TEST(test_serialize, test_pruned_fit_model_roundtrip_portable_binary) {
+  expect_pruned_fit_model_roundtrip<cereal::PortableBinaryInputArchive,
+                                    cereal::PortableBinaryOutputArchive>();
+}
+
 } // namespace albatross
 
 namespace other {

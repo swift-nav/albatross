@@ -218,6 +218,259 @@ TEST(test_gp, test_update_model_same_types) {
   EXPECT_GE((split_pred.covariance - first_pred.covariance).norm(), 1e-6);
 }
 
+TEST(test_gp, test_update_then_prune_same_as_first) {
+  const auto dataset = test_unobservable_dataset();
+
+  // Deliberately pick |test|=3, |train|=7, |first|=5, |second|=2 so every
+  // size is distinct.  A bug in the post-prune correction path that
+  // silently transposes the (|test| x |second|) matrix - or
+  // mis-parenthesizes a cwiseProduct against the (|second| x |second|)
+  // conditional covariance - would only compile when those dimensions
+  // coincide, so keeping them apart turns the bug into a build-time or
+  // assertion failure instead of wrong numerics.
+  std::vector<std::size_t> train_inds = {0, 1, 3, 4, 6, 7, 9};
+  std::vector<std::size_t> test_inds = {2, 5, 8};
+
+  const auto train = albatross::subset(dataset, train_inds);
+  const auto test = albatross::subset(dataset, test_inds);
+
+  std::vector<std::size_t> first_inds = {0, 2, 4, 5, 6};
+  std::vector<std::size_t> second_inds = {1, 3};
+  const auto first = albatross::subset(train, first_inds);
+  const auto second = albatross::subset(train, second_inds);
+
+  const auto model = test_unobservable_model();
+
+  const auto first_model = model.fit(first);
+  const auto first_pred = first_model.predict(test.features).joint();
+
+  const auto updated = update(first_model, second);
+  // After an update, `second` lives at the tail of the concatenated
+  // training features; demonstrate composing match_features with the
+  // index-based prune instead of open-coding the positions.
+  const auto round_tripped = prune(
+      updated, match_features(updated.get_fit().train_features, second.features));
+  const auto round_tripped_pred = round_tripped.predict(test.features).joint();
+
+  EXPECT_TRUE(round_tripped_pred.mean.isApprox(first_pred.mean));
+  EXPECT_LE((round_tripped_pred.covariance - first_pred.covariance).norm(),
+            1e-6);
+}
+
+TEST(test_gp, test_prune_then_update_same_as_full) {
+  const auto dataset = test_unobservable_dataset();
+
+  std::vector<std::size_t> train_inds = {0, 1, 3, 4, 6, 7, 9};
+  std::vector<std::size_t> test_inds = {2, 5, 8};
+
+  const auto train = albatross::subset(dataset, train_inds);
+  const auto test = albatross::subset(dataset, test_inds);
+
+  std::vector<std::size_t> second_inds = {1, 3};
+  const auto second = albatross::subset(train, second_inds);
+
+  const auto model = test_unobservable_model();
+
+  const auto full_model = model.fit(train);
+  const auto full_pred = full_model.predict(test.features).joint();
+
+  const auto pruned = prune(full_model, second_inds);
+  const auto round_tripped = update(pruned, second);
+  const auto round_tripped_pred = round_tripped.predict(test.features).joint();
+
+  EXPECT_TRUE(round_tripped_pred.mean.isApprox(full_pred.mean));
+  EXPECT_LE((round_tripped_pred.covariance - full_pred.covariance).norm(),
+            1e-6);
+}
+
+TEST(test_gp, test_partition_update_against_removed_no_cache) {
+  const std::vector<double> train = {0.0, 1.0, 2.0, 3.0};
+  const std::vector<std::size_t> remove = {};
+  const std::vector<double> update = {1.0, 4.0};
+
+  const auto p = partition_update_against_removed(train, remove, update);
+  EXPECT_TRUE(p.reduced_remove_indices.empty());
+  EXPECT_EQ(p.truly_new_update_indices, (std::vector<std::size_t>{0, 1}));
+}
+
+TEST(test_gp, test_partition_update_against_removed_full_overlap) {
+  const std::vector<double> train = {0.0, 1.0, 2.0, 3.0};
+  const std::vector<std::size_t> remove = {1, 3};
+  const std::vector<double> update = {1.0, 3.0};
+
+  const auto p = partition_update_against_removed(train, remove, update);
+  EXPECT_TRUE(p.reduced_remove_indices.empty());
+  EXPECT_TRUE(p.truly_new_update_indices.empty());
+}
+
+TEST(test_gp, test_partition_update_against_removed_partial_overlap) {
+  const std::vector<double> train = {0.0, 1.0, 2.0, 3.0};
+  const std::vector<std::size_t> remove = {1, 3};
+  const std::vector<double> update = {1.0, 4.0, 5.0};
+
+  const auto p = partition_update_against_removed(train, remove, update);
+  EXPECT_EQ(p.reduced_remove_indices, (std::vector<std::size_t>{3}));
+  EXPECT_EQ(p.truly_new_update_indices, (std::vector<std::size_t>{1, 2}));
+}
+
+TEST(test_gp, test_partition_update_against_removed_different_types) {
+  const std::vector<double> train = {0.0, 1.0, 2.0, 3.0};
+  const std::vector<std::size_t> remove = {1, 3};
+  const std::vector<int> update = {1, 4, 5};
+
+  const auto p = partition_update_against_removed(train, remove, update);
+  EXPECT_EQ(p.reduced_remove_indices, remove);
+  EXPECT_EQ(p.truly_new_update_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
+// Round-trip test for a genuine partial-overlap update: some incoming
+// features resurrect previously-pruned rows while others are truly new
+// and must be folded into the fit.  The post-round-trip predictions
+// must match a fresh fit whose training set is exactly
+// (original_train \ still_pruned) ∪ truly_new.
+TEST(test_gp, test_update_partial_overlap_matches_expected_fit) {
+  const auto dataset = test_unobservable_dataset();
+
+  // |train| = 7, |test| = 3.
+  const std::vector<std::size_t> train_inds = {0, 1, 3, 4, 6, 7, 9};
+  const std::vector<std::size_t> test_inds = {2, 5, 8};
+
+  const auto train = albatross::subset(dataset, train_inds);
+  const auto test = albatross::subset(dataset, test_inds);
+
+  // Prune two rows from train.  These are positions 1 and 3 within
+  // train, i.e. dataset indices {1, 4}.
+  const std::vector<std::size_t> prune_positions = {1, 3};
+
+  // Update with 3 features: dataset[1] overlaps the remove-cache and
+  // should be resurrected; dataset[5] and dataset[8] are outside
+  // train and need to be folded in.
+  const std::vector<std::size_t> update_inds = {1, 5, 8};
+  const auto update_data = albatross::subset(dataset, update_inds);
+
+  const auto model = test_unobservable_model();
+
+  const auto trained = model.fit(train);
+  const auto pruned_fit = prune(trained, prune_positions);
+  const auto round_tripped = update(pruned_fit, update_data);
+  const auto round_tripped_pred = round_tripped.predict(test.features).joint();
+
+  // Expected: fit on (train \ {dataset[4]}) ∪ {dataset[5], dataset[8]}
+  // = dataset rows {0, 1, 3, 5, 6, 7, 8, 9}.
+  const std::vector<std::size_t> expected_inds = {0, 1, 3, 5, 6, 7, 8, 9};
+  const auto expected_data = albatross::subset(dataset, expected_inds);
+  const auto expected_fit = model.fit(expected_data);
+  const auto expected_pred = expected_fit.predict(test.features).joint();
+
+  EXPECT_TRUE(round_tripped_pred.mean.isApprox(expected_pred.mean));
+  EXPECT_LE((round_tripped_pred.covariance - expected_pred.covariance).norm(),
+            1e-6);
+}
+
+// Each of mean / marginal / joint prediction must apply the
+// removal correction.  Compare the pruned fit's predictions against
+// a fresh fit on the kept subset of the training data.  Sizes are
+// intentionally distinct (|test|=3, |train|=7, |second|=2) so that
+// any transpose / cwiseProduct shape bug in the correction path
+// manifests as an assertion rather than garbage numerics.
+namespace {
+struct PrunedPredictionFixture {
+  RegressionDataset<double> train;
+  RegressionDataset<double> test;
+  RegressionDataset<double> kept;
+  std::vector<std::size_t> second_inds;
+};
+
+PrunedPredictionFixture make_pruned_prediction_fixture() {
+  const auto dataset = test_unobservable_dataset();
+  const std::vector<std::size_t> train_inds = {0, 1, 3, 4, 6, 7, 9};
+  const std::vector<std::size_t> test_inds = {2, 5, 8};
+  const auto train = albatross::subset(dataset, train_inds);
+  const auto test = albatross::subset(dataset, test_inds);
+  const std::vector<std::size_t> second_inds = {1, 3};
+  const std::vector<std::size_t> kept_positions = {0, 2, 4, 5, 6};
+  const auto kept = albatross::subset(train, kept_positions);
+  return {train, test, kept, second_inds};
+}
+} // namespace
+
+TEST(test_gp, test_pruned_mean_matches_refit) {
+  const auto f = make_pruned_prediction_fixture();
+  const auto model = test_unobservable_model();
+  const auto pruned_fit = prune(model.fit(f.train), f.second_inds);
+  const auto kept_fit = model.fit(f.kept);
+
+  const Eigen::VectorXd pruned_mean =
+      pruned_fit.predict(f.test.features).mean();
+  const Eigen::VectorXd kept_mean = kept_fit.predict(f.test.features).mean();
+
+  EXPECT_TRUE(pruned_mean.isApprox(kept_mean));
+}
+
+TEST(test_gp, test_pruned_marginal_matches_refit) {
+  const auto f = make_pruned_prediction_fixture();
+  const auto model = test_unobservable_model();
+  const auto pruned_fit = prune(model.fit(f.train), f.second_inds);
+  const auto kept_fit = model.fit(f.kept);
+
+  const auto pruned_marg = pruned_fit.predict(f.test.features).marginal();
+  const auto kept_marg = kept_fit.predict(f.test.features).marginal();
+
+  EXPECT_TRUE(pruned_marg.mean.isApprox(kept_marg.mean));
+  EXPECT_LE(
+      (pruned_marg.covariance.diagonal() - kept_marg.covariance.diagonal())
+          .norm(),
+      1e-6);
+}
+
+TEST(test_gp, test_pruned_joint_matches_refit) {
+  const auto f = make_pruned_prediction_fixture();
+  const auto model = test_unobservable_model();
+  const auto pruned_fit = prune(model.fit(f.train), f.second_inds);
+  const auto kept_fit = model.fit(f.kept);
+
+  const auto pruned_joint = pruned_fit.predict(f.test.features).joint();
+  const auto kept_joint = kept_fit.predict(f.test.features).joint();
+
+  EXPECT_TRUE(pruned_joint.mean.isApprox(kept_joint.mean));
+  EXPECT_LE((pruned_joint.covariance - kept_joint.covariance).norm(), 1e-6);
+}
+
+// Pruning every training feature should leave the posterior equal
+// to the GP's prior at the query locations: the correction exactly
+// cancels the "explained" components of mean and covariance, so the
+// mean drops to mean_function_(test) (zero here) and the covariance
+// reduces to covariance_function_(test).  Covers mean / marginal /
+// joint predictions.
+TEST(test_gp, test_prune_all_features_gives_prior) {
+  const auto dataset = test_unobservable_dataset();
+  const std::vector<double> test_features = {0.15, 0.9, 1.65, 2.4};
+
+  const auto model = test_unobservable_model();
+  const auto full_fit = model.fit(dataset);
+  std::vector<std::size_t> all_inds(dataset.features.size());
+  std::iota(all_inds.begin(), all_inds.end(), std::size_t{0});
+  const auto all_pruned = prune(full_fit, all_inds);
+  ASSERT_EQ(all_pruned.get_fit().removed.indices.size(),
+            dataset.features.size());
+
+  // The mean function is ZeroMean, so the expected posterior mean
+  // is exactly zero; use an absolute tolerance since isApprox's
+  // relative tolerance degenerates when the reference is zero.
+  const Eigen::MatrixXd expected_cov = model.compute_covariance(test_features);
+
+  const auto joint = all_pruned.predict(test_features).joint();
+  EXPECT_TRUE(joint.mean.isZero(1e-8));
+  EXPECT_TRUE(joint.covariance.isApprox(expected_cov));
+
+  const auto marginal = all_pruned.predict(test_features).marginal();
+  EXPECT_TRUE(marginal.mean.isZero(1e-8));
+  EXPECT_TRUE(marginal.covariance.diagonal().isApprox(expected_cov.diagonal()));
+
+  const Eigen::VectorXd mean_pred = all_pruned.predict(test_features).mean();
+  EXPECT_TRUE(mean_pred.isZero(1e-8));
+}
+
 TEST(test_gp, test_update_model_different_types) {
   const auto dataset = test_unobservable_dataset();
 

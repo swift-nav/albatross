@@ -84,6 +84,13 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
   Eigen::Index n = A.rows() + S.rows();
   ALBATROSS_ASSERT(rhs.rows() == n);
 
+  // With an empty bottom block the block-matrix inversion reduces to
+  // solving A directly; short-circuit to avoid invoking an
+  // uninitialized LDLT on the empty S.
+  if (S.rows() == 0) {
+    return A.solve(rhs);
+  }
+
   const Eigen::MatrixXd rhs_a = rhs.topRows(A.rows());
   const Eigen::MatrixXd rhs_b = rhs.bottomRows(S.rows());
 

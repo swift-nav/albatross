@@ -262,6 +262,153 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
   }
 }
 
+// When the fit carries an empty GPRemoveCache, the fit-driven
+// cross-validation entry point must reduce exactly to the stock
+// model-driven closed form so no caller ends up with different
+// numerics depending on which entry they reached through.
+TEST(test_crossvalidation, test_fit_cv_empty_cache_matches_model_driven) {
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+  const auto fit_model = model.fit(dataset);
+  ASSERT_FALSE(fit_model.get_fit().removed);
+
+  const auto indexer = dataset.group_by(group_by_interval<double>).indexers();
+
+  const auto fit_means =
+      gp_cross_validated_predictions(fit_model, dataset.targets, indexer,
+                                     PredictTypeIdentity<Eigen::VectorXd>());
+  const auto fit_marginals = gp_cross_validated_predictions(
+      fit_model, dataset.targets, indexer,
+      PredictTypeIdentity<MarginalDistribution>());
+  const auto fit_joints =
+      gp_cross_validated_predictions(fit_model, dataset.targets, indexer,
+                                     PredictTypeIdentity<JointDistribution>());
+
+  const auto cv_means = model.cross_validate()
+                            .predict(dataset, group_by_interval<double>)
+                            .means();
+  const auto cv_marginals = model.cross_validate()
+                                .predict(dataset, group_by_interval<double>)
+                                .marginals();
+  const auto cv_joints = model.cross_validate()
+                             .predict(dataset, group_by_interval<double>)
+                             .joints();
+
+  for (const auto &kv : cv_joints) {
+    const auto &key = kv.first;
+    EXPECT_EQ(fit_means.at(key), cv_means.at(key));
+    EXPECT_EQ(fit_marginals.at(key).mean, cv_marginals.at(key).mean);
+    EXPECT_EQ(fit_marginals.at(key).covariance.diagonal(),
+              cv_marginals.at(key).covariance.diagonal());
+    EXPECT_EQ(fit_joints.at(key).mean, cv_joints.at(key).mean);
+    EXPECT_EQ(fit_joints.at(key).covariance, cv_joints.at(key).covariance);
+  }
+}
+
+// Fit-driven CV on a pruned fit must match a from-scratch refit on
+// the complement of (removed-set ∪ held-out-group) for every group,
+// covering both disjoint groups and groups that overlap the removed
+// set.  LOO grouping gives us single-index groups which cleanly
+// exercises both: indices in R overlap the cache, indices outside
+// don't.
+TEST(test_crossvalidation, test_fit_cv_with_remove_cache_matches_refit) {
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  // Prune three rows; the rest are expected to match vanilla LOO, the
+  // pruned ones must match "refit without the prune set" predictions.
+  const std::vector<std::size_t> prune_inds = {1, 4, 7};
+  const auto full_fit = model.fit(dataset);
+  const auto pruned = albatross::prune(full_fit, prune_inds);
+  ASSERT_EQ(pruned.get_fit().removed.indices, prune_inds);
+
+  LeaveOneOutGrouper loo;
+  const auto indexer = dataset.group_by(loo).indexers();
+
+  const auto fit_means = gp_cross_validated_predictions(
+      pruned, dataset.targets, indexer, PredictTypeIdentity<Eigen::VectorXd>());
+  const auto fit_marginals = gp_cross_validated_predictions(
+      pruned, dataset.targets, indexer,
+      PredictTypeIdentity<MarginalDistribution>());
+  const auto fit_joints =
+      gp_cross_validated_predictions(pruned, dataset.targets, indexer,
+                                     PredictTypeIdentity<JointDistribution>());
+
+  // The block-inverse LOO closed form returns a posterior that still
+  // carries the per-observation measurement noise (it inverts
+  // K + noise). Wrap the brute-force prediction in
+  // Measurement<...> so its covariance matches.
+  const auto brute_force = [&](const std::vector<std::size_t> &group_inds) {
+    std::vector<std::size_t> leave_out;
+    leave_out.reserve(group_inds.size() + prune_inds.size());
+    std::set_union(group_inds.begin(), group_inds.end(), prune_inds.begin(),
+                   prune_inds.end(), std::back_inserter(leave_out));
+    const auto train_inds =
+        indices_complement(leave_out, dataset.features.size());
+    const auto train_subset = albatross::subset(dataset, train_inds);
+    const auto test_features = albatross::subset(dataset.features, group_inds);
+    return model.fit(train_subset)
+        .predict_with_measurement_noise(test_features)
+        .joint();
+  };
+
+  for (const auto &kv : indexer) {
+    const auto &key = kv.first;
+    const auto expected = brute_force(kv.second);
+
+    EXPECT_LE((fit_means.at(key) - expected.mean).norm(), 1e-6);
+    EXPECT_LE((fit_marginals.at(key).mean - expected.mean).norm(), 1e-6);
+    EXPECT_LE((fit_marginals.at(key).covariance.diagonal() -
+               expected.covariance.diagonal())
+                  .norm(),
+              1e-6);
+    EXPECT_LE((fit_joints.at(key).mean - expected.mean).norm(), 1e-6);
+    EXPECT_LE((fit_joints.at(key).covariance - expected.covariance).norm(),
+              1e-6);
+  }
+}
+
+// With group_by_interval each group straddles the remove set, so
+// every group hits the overlap branch ("some of z_g is already in R").
+// The union-and-subset machinery is supposed to turn this into "leave
+// R ∪ z_g out of X, predict at z_g" regardless of the overlap -- this
+// test pins that down against a from-scratch refit.
+TEST(test_crossvalidation, test_fit_cv_group_overlapping_cache_matches_refit) {
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  // One prune index per group_by_interval bucket to guarantee overlap.
+  const std::vector<std::size_t> prune_inds = {2, 5, 8};
+  const auto full_fit = model.fit(dataset);
+  const auto pruned = albatross::prune(full_fit, prune_inds);
+
+  const auto indexer = dataset.group_by(group_by_interval<double>).indexers();
+
+  const auto fit_joints =
+      gp_cross_validated_predictions(pruned, dataset.targets, indexer,
+                                     PredictTypeIdentity<JointDistribution>());
+
+  for (const auto &kv : indexer) {
+    std::vector<std::size_t> group_sorted = kv.second;
+    std::sort(group_sorted.begin(), group_sorted.end());
+    std::vector<std::size_t> leave_out;
+    std::set_union(group_sorted.begin(), group_sorted.end(), prune_inds.begin(),
+                   prune_inds.end(), std::back_inserter(leave_out));
+    const auto train_inds =
+        indices_complement(leave_out, dataset.features.size());
+    const auto train_subset = albatross::subset(dataset, train_inds);
+    const auto test_features = albatross::subset(dataset.features, kv.second);
+    // Match the CV formula's noise-inclusive posterior.
+    const auto expected = model.fit(train_subset)
+                              .predict_with_measurement_noise(test_features)
+                              .joint();
+
+    EXPECT_LE((fit_joints.at(kv.first).mean - expected.mean).norm(), 1e-6);
+    EXPECT_LE((fit_joints.at(kv.first).covariance - expected.covariance).norm(),
+              1e-6);
+  }
+}
+
 class MakeLargeGaussianProcess {
 public:
   auto get_model() const {
