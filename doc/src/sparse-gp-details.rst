@@ -338,3 +338,35 @@ However, we found that while the posterior mean predictions were numerically sta
 
 You should be able to find this implementation and details using git history.
 
+--------------
+Cool trick we should use
+--------------
+
+This is due to the GPyTorch team.  To compute the predictive covariance, we need to compute
+
+.. math::
+
+   E &= K_{*u} \Sigma^{-1} K_{u*} \\
+     &= K_{*u} \left(K_{uu} + K_{uf} \Lambda K_{fu})^{-1} K_{u*}
+     
+
+Consider again the stacked cross-plus-prior matrix
+
+.. math::
+
+   B &= \begin{bmatrix} \Lambda^{-1/2} K_{fu} \\ L^T_{uu} \end{bmatrix} \\
+   &= \begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix} R P^T
+
+For now, let's ignore the permutation matrix :math:`P` and assume a naive Householder-based decomposition.  Observe that if :math:`\Lambda^{-1/2} K_{fu} = Q_1 R` then :math:`Q_1 = \Lambda^{-1/2} K_{fu} R^{-1}`.  Now
+
+.. math::
+
+   QQ^T &= \Lambda^{-1/2} K_{fu} R^{-1} R^{-T} K_{uf} \Lambda^{-1/2} \\
+        &= \Lambda^{-1/2} K_{fu} \left(R^T R\right)^{-1} K_{uf} \Lambda^{-1/2} \\
+        &= \Lambda^{-1/2} K_{fu} \left(K_{uf} \Lambda K_{fu} + K_uu\right)^{-1} K_{uf} \Lambda^{-1/2}
+
+Gentle reader, if you have made it this far, you know the next step.  As always, it is Woodbury's lemma:
+
+.. math::
+
+   \left(K_{uu} + K_{uf} \Lambda K_{fu}\right)^{-1} &= K_{uu}
