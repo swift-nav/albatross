@@ -16,6 +16,7 @@ albatross_add_test(albatross_unit_tests
   test_block_utils.cc
   test_call_trace.cc
   test_callers.cc
+  test_cholmod_representation.cc
   test_compression.cc
   test_conditional_gaussian.cc
   test_concatenate.cc
