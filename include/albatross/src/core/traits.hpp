@@ -265,6 +265,52 @@ public:
   typedef FitModel<ModelType, UpdatedFitType> type;
 };
 
+// Prune traits
+
+template <typename T, typename ExistingFitType> class fit_model_prune_traits {
+
+  template <typename C,
+            typename FitType = decltype(std::declval<const C>()._prune_impl(
+                std::declval<const ExistingFitType &>(),
+                std::declval<const std::vector<std::size_t> &>()))>
+  static FitType test(C *);
+  template <typename> static void test(...);
+
+public:
+  using PruneFitType = decltype(test<T>(0));
+  static constexpr bool has_valid_prune =
+      is_valid_fit_type<PruneFitType>::value;
+  static constexpr bool can_prune_in_place =
+      std::is_same<PruneFitType, ExistingFitType>::value;
+};
+
+template <typename T, typename ExistingFitType> struct has_valid_prune {
+  static constexpr bool value =
+      fit_model_prune_traits<T, ExistingFitType>::has_valid_prune;
+};
+
+template <typename T, typename ExistingFitType> struct can_prune_in_place {
+  static constexpr bool value =
+      fit_model_prune_traits<T, ExistingFitType>::can_prune_in_place;
+};
+
+/*
+ * Determines the type of pruned_fit in a call along the lines of :
+ *
+ *   auto fit_model = model.fit(dataset);
+ *   auto pruned_fit_model = fit_model.prune(indices_to_remove);
+ */
+template <typename T> class pruned_fit_model_type {
+
+  using ModelType = typename T::model_type;
+  using FitType = typename T::fit_type;
+  using PrunedFitType =
+      typename fit_model_prune_traits<ModelType, FitType>::PruneFitType;
+
+public:
+  typedef FitModel<ModelType, PrunedFitType> type;
+};
+
 } // namespace albatross
 
 #endif

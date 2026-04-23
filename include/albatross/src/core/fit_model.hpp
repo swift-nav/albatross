@@ -94,6 +94,22 @@ public:
     update_in_place(dataset.features, dataset.targets);
   }
 
+  template <typename M = ModelType,
+            typename std::enable_if<has_valid_prune<M, Fit>::value, int>::type =
+                0>
+  auto prune(const std::vector<std::size_t> &indices) const {
+    auto pruned_fit = model_._prune_impl(Fit(fit_), indices);
+    return FitModel<ModelType, decltype(pruned_fit)>(model_,
+                                                     std::move(pruned_fit));
+  }
+
+  template <typename M = ModelType,
+            typename std::enable_if<can_prune_in_place<M, Fit>::value,
+                                    int>::type = 0>
+  void prune_in_place(const std::vector<std::size_t> &indices) {
+    fit_ = model_._prune_impl(fit_, indices);
+  }
+
   Fit get_fit() const { return fit_; }
 
   Fit &get_fit() { return fit_; }
@@ -115,6 +131,12 @@ template <typename ModelType, typename FitType, typename FeatureType>
 auto update(const FitModel<ModelType, FitType> &fit_model,
             const RegressionDataset<FeatureType> &dataset) {
   return fit_model.update(dataset);
+}
+
+template <typename ModelType, typename FitType>
+auto prune(const FitModel<ModelType, FitType> &fit_model,
+           const std::vector<std::size_t> &indices) {
+  return fit_model.prune(indices);
 }
 
 } // namespace albatross

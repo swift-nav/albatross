@@ -386,4 +386,52 @@ TEST(test_traits_core, update_traits) {
                               X>::can_update_in_place));
 }
 
+class HasValidPruneImpl : public ModelBase<HasValidPruneImpl> {
+public:
+  Fit<HasValidPruneImpl>
+  _prune_impl(const Fit<HasValidPruneImpl> &,
+              const std::vector<std::size_t> &) const {
+    return {};
+  };
+};
+
+class HasInValidPruneImpl : public ModelBase<HasValidPruneImpl> {
+public:
+  double _prune_impl(const Fit<HasValidPruneImpl> &,
+                     const std::vector<std::size_t> &) const {
+    return 0.;
+  };
+};
+
+class HasModifiedPruneImpl : public ModelBase<HasValidPruneImpl> {
+public:
+  Fit<X> _prune_impl(const Fit<HasModifiedPruneImpl> &,
+                     const std::vector<std::size_t> &) const {
+    return {};
+  };
+};
+
+TEST(test_traits_core, prune_traits) {
+  EXPECT_TRUE(bool(
+      fit_model_prune_traits<HasValidPruneImpl,
+                             Fit<HasValidPruneImpl>>::has_valid_prune));
+  EXPECT_TRUE(bool(
+      fit_model_prune_traits<HasValidPruneImpl,
+                             Fit<HasValidPruneImpl>>::can_prune_in_place));
+
+  EXPECT_FALSE(bool(
+      fit_model_prune_traits<HasInValidPruneImpl,
+                             Fit<HasValidPruneImpl>>::has_valid_prune));
+  EXPECT_FALSE(bool(
+      fit_model_prune_traits<HasInValidPruneImpl,
+                             Fit<HasValidPruneImpl>>::can_prune_in_place));
+
+  EXPECT_TRUE(bool(
+      fit_model_prune_traits<HasModifiedPruneImpl,
+                             Fit<HasModifiedPruneImpl>>::has_valid_prune));
+  EXPECT_FALSE(bool(
+      fit_model_prune_traits<HasModifiedPruneImpl,
+                             Fit<HasModifiedPruneImpl>>::can_prune_in_place));
+}
+
 } // namespace albatross
