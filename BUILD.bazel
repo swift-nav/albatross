@@ -17,6 +17,7 @@ cc_library(
     hdrs = [
         "include/albatross/Common",
         "include/albatross/Core",
+        "include/albatross/CholmodSupport",
         "include/albatross/CovarianceFunctions",
         "include/albatross/Dataset",
         "include/albatross/Distribution",
@@ -43,6 +44,7 @@ cc_library(
         "include/albatross/serialize/Ransac",
         "include/albatross/src/cereal/ThreadPool.hpp",
         "include/albatross/src/cereal/block_utils.hpp",
+        "include/albatross/src/cereal/cholmod_representation.hpp",
         "include/albatross/src/cereal/dataset.hpp",
         "include/albatross/src/cereal/distribution.hpp",
         "include/albatross/src/cereal/eigen.hpp",
@@ -55,6 +57,7 @@ cc_library(
         "include/albatross/src/cereal/priors.hpp",
         "include/albatross/src/cereal/ransac.hpp",
         "include/albatross/src/cereal/representations.hpp",
+        "include/albatross/src/cereal/serializable_cholmod.hpp",
         "include/albatross/src/cereal/serializable_ldlt.hpp",
         "include/albatross/src/cereal/serializable_spqr.hpp",
         "include/albatross/src/cereal/suitesparse.hpp",
@@ -85,6 +88,7 @@ cc_library(
         "include/albatross/src/covariance_functions/nugget.hpp",
         "include/albatross/src/covariance_functions/polynomials.hpp",
         "include/albatross/src/covariance_functions/radial.hpp",
+        "include/albatross/src/covariance_functions/cholmod_representation.hpp",
         "include/albatross/src/covariance_functions/representations.hpp",
         "include/albatross/src/covariance_functions/scaling_function.hpp",
         "include/albatross/src/covariance_functions/traits.hpp",
@@ -93,6 +97,7 @@ cc_library(
         "include/albatross/src/details/traits.hpp",
         "include/albatross/src/details/typecast.hpp",
         "include/albatross/src/details/unused.hpp",
+        "include/albatross/src/eigen/serializable_cholmod.hpp",
         "include/albatross/src/eigen/serializable_ldlt.hpp",
         "include/albatross/src/eigen/serializable_spqr.hpp",
         "include/albatross/src/evaluation/cross_validation.hpp",
@@ -172,6 +177,7 @@ cc_library(
         "@zlib",
         "@variant",
         "@zstd",
+        "@suitesparse//:cholmod",
         "@suitesparse//:spqr",
     ],
 )
@@ -207,6 +213,7 @@ TEST_DEPS = [
     ":albatross-test-common",
     "@zlib",
     "@gtest//:gtest_main",
+    "@suitesparse//:cholmod",
     "@suitesparse//:spqr",
 ]
 
@@ -389,6 +396,7 @@ swift_cc_test(
 swift_cc_test(
     name = "albatross-test-serialization",
     srcs = [
+        "tests/test_cholmod_representation.cc",
         "tests/test_serialize.cc",
         "tests/test_serializable_ldlt.cc",
     ],

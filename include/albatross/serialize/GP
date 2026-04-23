@@ -15,11 +15,14 @@
 
 #include "Core"
 #include <albatross/SparseGP>
+#include <albatross/CholmodSupport>
 
 #include "../src/cereal/block_utils.hpp"
 #include "../src/cereal/serializable_ldlt.hpp"
 #include "../src/cereal/gp.hpp"
 #include "../src/cereal/representations.hpp"
 #include "../src/cereal/serializable_spqr.hpp"
+#include "../src/cereal/serializable_cholmod.hpp"
+#include "../src/cereal/cholmod_representation.hpp"
 
 #endif

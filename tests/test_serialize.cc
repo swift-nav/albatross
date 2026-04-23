@@ -276,6 +276,15 @@ struct LinearCombo : public SerializableType<LinearCombination<double>> {
   }
 };
 
+// Note: Eigen's Cholmod wrapper classes (and therefore CholmodCovariance) are
+// non-copyable and non-movable -- their user-defined destructor frees the
+// cholmod_factor, which suppresses implicit copy/move generation. They
+// can't plug into the generic SerializableType typed-test harness (whose
+// base virtual `create()` returns the representation by value). Raw
+// round-trip tests for the Cholmod wrappers live in namespace `other`
+// below, and end-to-end Fit<GPFit<CholmodCovariance<...>, ...>> round-trip
+// coverage lives in tests/test_cholmod_representation.cc.
+
 REGISTER_TYPED_TEST_SUITE_P(SerializeTest, test_roundtrip_serialize_json,
                             test_roundtrip_serialize_binary,
                             test_roundtrip_serialize_portable_binary);
@@ -557,6 +566,107 @@ TEST(test_serialize, serialize_spqr_simple) {
   }
   const auto x_out = spqr_out.solve(b);
   EXPECT_EQ(x, x_out);
+}
+
+// --- Raw CHOLMOD LLT/LDLT round-trip tests (parallels the SPQR ones). ---
+
+template <typename CholmodSolver> void expect_cholmod_roundtrip_simple() {
+  Eigen::MatrixXd Adense(3, 3);
+  // clang-format off
+  Adense <<
+     4,  1,  0,
+     1,  3,  1,
+     0,  1,  2;
+  // clang-format on
+  Eigen::VectorXd b(3);
+  b << 2, 4, 99;
+
+  CholmodSolver solver;
+  solver.compute(Adense.sparseView());
+  EXPECT_EQ(solver.info(), Eigen::Success);
+  const Eigen::VectorXd x = solver.solve(b);
+
+  std::ostringstream os;
+  {
+    cereal::JSONOutputArchive oarchive(os);
+    solver.save(oarchive, 0);
+  }
+  CholmodSolver solver_out;
+  {
+    std::istringstream is(os.str());
+    cereal::JSONInputArchive iarchive(is);
+    solver_out.load(iarchive, 0);
+  }
+  const Eigen::VectorXd x_out = solver_out.solve(b);
+  EXPECT_EQ(x, x_out);
+}
+
+TEST(test_serialize, serialize_cholmod_supernodal_llt_simple) {
+  expect_cholmod_roundtrip_simple<
+      Eigen::SerializableCholmodSupernodalLLT<Eigen::SparseMatrix<double>>>();
+}
+
+TEST(test_serialize, serialize_cholmod_simplicial_llt_simple) {
+  expect_cholmod_roundtrip_simple<
+      Eigen::SerializableCholmodSimplicialLLT<Eigen::SparseMatrix<double>>>();
+}
+
+TEST(test_serialize, serialize_cholmod_simplicial_ldlt_simple) {
+  expect_cholmod_roundtrip_simple<
+      Eigen::SerializableCholmodSimplicialLDLT<Eigen::SparseMatrix<double>>>();
+}
+
+template <typename CholmodSolver> void expect_cholmod_roundtrip_random() {
+  // Smaller than the SPQR version: SPD factorization is more expensive per
+  // matrix, and the point here is coverage across sizes / sparsity, not
+  // stress.
+  constexpr Eigen::Index kMeanSize = 20;
+  constexpr std::size_t kNumIters = 50;
+  std::seed_seq seed{17};
+  std::default_random_engine gen{seed};
+  const auto gen_size = [&gen]() {
+    std::poisson_distribution<Eigen::Index> size_dist{kMeanSize};
+    return std::max(Eigen::Index{2}, size_dist(gen));
+  };
+  CholmodSolver solver_out;
+  for (std::size_t iter = 0; iter < kNumIters; ++iter) {
+    const auto n = gen_size();
+    const Eigen::MatrixXd A = albatross::random_covariance_matrix(n, gen);
+    const Eigen::VectorXd B = Eigen::VectorXd::Random(n);
+
+    CholmodSolver solver;
+    solver.compute(A.sparseView());
+    EXPECT_EQ(solver.info(), Eigen::Success);
+    const Eigen::VectorXd x = solver.solve(B);
+
+    std::ostringstream os;
+    {
+      cereal::JSONOutputArchive oarchive(os);
+      solver.save(oarchive, 0);
+    }
+    {
+      std::istringstream is(os.str());
+      cereal::JSONInputArchive iarchive(is);
+      solver_out.load(iarchive, 0);
+    }
+    const Eigen::VectorXd x_out = solver_out.solve(B);
+    EXPECT_EQ(x, x_out);
+  }
+}
+
+TEST(test_serialize, serialize_cholmod_supernodal_llt_random) {
+  expect_cholmod_roundtrip_random<
+      Eigen::SerializableCholmodSupernodalLLT<Eigen::SparseMatrix<double>>>();
+}
+
+TEST(test_serialize, serialize_cholmod_simplicial_llt_random) {
+  expect_cholmod_roundtrip_random<
+      Eigen::SerializableCholmodSimplicialLLT<Eigen::SparseMatrix<double>>>();
+}
+
+TEST(test_serialize, serialize_cholmod_simplicial_ldlt_random) {
+  expect_cholmod_roundtrip_random<
+      Eigen::SerializableCholmodSimplicialLDLT<Eigen::SparseMatrix<double>>>();
 }
 
 TEST(test_serialize, serialize_spqr_random) {

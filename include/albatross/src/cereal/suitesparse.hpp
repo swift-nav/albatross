@@ -276,7 +276,15 @@ inline void load(Archive &ar, cholmod_common &cc,
   ar(CEREAL_NVP(cc.metis_dswitch));
   ar(CEREAL_NVP(cc.metis_nswitch));
   ar(CEREAL_NVP(cc.mark));
-  ALBATROSS_ASSERT(cholmod_l_free_work(&cc) == 1);
+  // Eigen's CholmodSupport runs cholmod_start (itype = CHOLMOD_INT);
+  // SPQR runs cholmod_l_start (itype = CHOLMOD_LONG). Pick the matching
+  // cleanup based on the common's current itype.
+  if (cc.itype == CHOLMOD_LONG) {
+    ALBATROSS_ASSERT(cholmod_l_free_work(&cc) == 1);
+  } else {
+    ALBATROSS_ASSERT(cc.itype == CHOLMOD_INT);
+    ALBATROSS_ASSERT(cholmod_free_work(&cc) == 1);
+  }
   ar(CEREAL_NVP(cc.itype));
 
 #if CHOLMOD_VERSION < CHOLMOD_VER_CODE(5, 0)
@@ -489,6 +497,160 @@ inline void load(Archive &ar, cholmod_dense &m,
   detail::decode_array(ar, "m.x", m.x, x_elements * element_size_bytes);
   // "zomplex" only
   ALBATROSS_ASSERT(nullptr == m.z);
+}
+
+// cholmod_factor holds an LL' or LDL' factor produced by CHOLMOD.  The layout
+// is a tagged union on `is_super`: in the simplicial branch columns of L are
+// stored as CSC (p / i / x, plus nz / next / prev when !is_monotonic); in the
+// supernodal branch L is stored as a packed list of dense column-major blocks
+// described by super / pi / px / s with values in x.  We serialize every
+// pointer that is part of the persistent state and leave workspace
+// (Flag/Head, only present in the `cholmod_common`) alone.
+template <class Archive>
+inline void save(Archive &ar, cholmod_factor const &f,
+                 std::uint32_t version ALBATROSS_UNUSED) {
+  assert((f.itype == CHOLMOD_INT || f.itype == CHOLMOD_LONG) &&
+         "we only support int and long indices");
+  ALBATROSS_ASSERT(f.xtype != CHOLMOD_COMPLEX &&
+                   "complex factors are not supported");
+  ALBATROSS_ASSERT(f.z == nullptr && "zomplex factors are not supported");
+
+  ar(CEREAL_NVP(f.n));
+  ar(CEREAL_NVP(f.minor));
+  ar(CEREAL_NVP(f.nzmax));
+  ar(CEREAL_NVP(f.nsuper));
+  ar(CEREAL_NVP(f.ssize));
+  ar(CEREAL_NVP(f.xsize));
+  ar(CEREAL_NVP(f.maxcsize));
+  ar(CEREAL_NVP(f.maxesize));
+  ar(CEREAL_NVP(f.ordering));
+  ar(CEREAL_NVP(f.is_ll));
+  ar(CEREAL_NVP(f.is_super));
+  ar(CEREAL_NVP(f.is_monotonic));
+  ar(CEREAL_NVP(f.itype));
+  ar(CEREAL_NVP(f.xtype));
+  ar(CEREAL_NVP(f.dtype));
+  ar(CEREAL_NVP(f.useGPU));
+
+  const std::size_t integer_size_bytes = get_integer_size_bytes(f);
+  const std::size_t element_size_bytes = get_element_size_bytes(f);
+
+  // Always-present symbolic state.
+  detail::encode_array(ar, "f.Perm", f.Perm, f.n * integer_size_bytes);
+  detail::encode_array(ar, "f.ColCount", f.ColCount, f.n * integer_size_bytes);
+
+  // IPerm is created lazily by cholmod_solve2; emit a presence flag so load
+  // can decide whether to allocate.
+  const bool have_iperm = (f.IPerm != nullptr);
+  ar(CEREAL_NVP(have_iperm));
+  if (have_iperm) {
+    detail::encode_array(ar, "f.IPerm", f.IPerm, f.n * integer_size_bytes);
+  }
+
+  if (f.is_super) {
+    // Supernodal layout.
+    detail::encode_array(ar, "f.super", f.super,
+                         (f.nsuper + 1) * integer_size_bytes);
+    detail::encode_array(ar, "f.pi", f.pi, (f.nsuper + 1) * integer_size_bytes);
+    detail::encode_array(ar, "f.px", f.px, (f.nsuper + 1) * integer_size_bytes);
+    detail::encode_array(ar, "f.s", f.s, f.ssize * integer_size_bytes);
+    if (f.xtype != CHOLMOD_PATTERN) {
+      detail::encode_array(ar, "f.x", f.x, f.xsize * element_size_bytes);
+    }
+  } else {
+    // Simplicial layout.
+    detail::encode_array(ar, "f.p", f.p, (f.n + 1) * integer_size_bytes);
+    if (f.xtype != CHOLMOD_PATTERN) {
+      detail::encode_array(ar, "f.i", f.i, f.nzmax * integer_size_bytes);
+      detail::encode_array(ar, "f.x", f.x, f.nzmax * element_size_bytes);
+      // nz / next / prev only exist for numeric simplicial factors.
+      detail::encode_array(ar, "f.nz", f.nz, f.n * integer_size_bytes);
+      detail::encode_array(ar, "f.next", f.next,
+                           (f.n + 2) * integer_size_bytes);
+      detail::encode_array(ar, "f.prev", f.prev,
+                           (f.n + 2) * integer_size_bytes);
+    }
+  }
+}
+
+template <class Archive>
+inline void load(Archive &ar, cholmod_factor &f,
+                 std::uint32_t version ALBATROSS_UNUSED) {
+  ar(CEREAL_NVP(f.n));
+  ar(CEREAL_NVP(f.minor));
+  ar(CEREAL_NVP(f.nzmax));
+  ar(CEREAL_NVP(f.nsuper));
+  ar(CEREAL_NVP(f.ssize));
+  ar(CEREAL_NVP(f.xsize));
+  ar(CEREAL_NVP(f.maxcsize));
+  ar(CEREAL_NVP(f.maxesize));
+  ar(CEREAL_NVP(f.ordering));
+  ar(CEREAL_NVP(f.is_ll));
+  ar(CEREAL_NVP(f.is_super));
+  ar(CEREAL_NVP(f.is_monotonic));
+  ar(CEREAL_NVP(f.itype));
+  ar(CEREAL_NVP(f.xtype));
+  ar(CEREAL_NVP(f.dtype));
+  ar(CEREAL_NVP(f.useGPU));
+
+  assert((f.itype == CHOLMOD_INT || f.itype == CHOLMOD_LONG) &&
+         "we only support int and long indices");
+  ALBATROSS_ASSERT(f.xtype != CHOLMOD_COMPLEX &&
+                   "complex factors are not supported");
+
+  const std::size_t integer_size_bytes = get_integer_size_bytes(f);
+  const std::size_t element_size_bytes = get_element_size_bytes(f);
+
+  detail::suitesparse_cereal_realloc(&f.Perm, f.n, integer_size_bytes);
+  detail::decode_array(ar, "f.Perm", f.Perm, f.n * integer_size_bytes);
+  detail::suitesparse_cereal_realloc(&f.ColCount, f.n, integer_size_bytes);
+  detail::decode_array(ar, "f.ColCount", f.ColCount, f.n * integer_size_bytes);
+
+  bool have_iperm = false;
+  ar(CEREAL_NVP(have_iperm));
+  if (have_iperm) {
+    detail::suitesparse_cereal_realloc(&f.IPerm, f.n, integer_size_bytes);
+    detail::decode_array(ar, "f.IPerm", f.IPerm, f.n * integer_size_bytes);
+  } else {
+    if (f.IPerm != nullptr) {
+      free(f.IPerm);
+      f.IPerm = nullptr;
+    }
+  }
+
+  if (f.is_super) {
+    detail::suitesparse_cereal_realloc(&f.super, f.nsuper + 1,
+                                       integer_size_bytes);
+    detail::decode_array(ar, "f.super", f.super,
+                         (f.nsuper + 1) * integer_size_bytes);
+    detail::suitesparse_cereal_realloc(&f.pi, f.nsuper + 1, integer_size_bytes);
+    detail::decode_array(ar, "f.pi", f.pi, (f.nsuper + 1) * integer_size_bytes);
+    detail::suitesparse_cereal_realloc(&f.px, f.nsuper + 1, integer_size_bytes);
+    detail::decode_array(ar, "f.px", f.px, (f.nsuper + 1) * integer_size_bytes);
+    detail::suitesparse_cereal_realloc(&f.s, f.ssize, integer_size_bytes);
+    detail::decode_array(ar, "f.s", f.s, f.ssize * integer_size_bytes);
+    if (f.xtype != CHOLMOD_PATTERN) {
+      detail::suitesparse_cereal_realloc(&f.x, f.xsize, element_size_bytes);
+      detail::decode_array(ar, "f.x", f.x, f.xsize * element_size_bytes);
+    }
+  } else {
+    detail::suitesparse_cereal_realloc(&f.p, f.n + 1, integer_size_bytes);
+    detail::decode_array(ar, "f.p", f.p, (f.n + 1) * integer_size_bytes);
+    if (f.xtype != CHOLMOD_PATTERN) {
+      detail::suitesparse_cereal_realloc(&f.i, f.nzmax, integer_size_bytes);
+      detail::decode_array(ar, "f.i", f.i, f.nzmax * integer_size_bytes);
+      detail::suitesparse_cereal_realloc(&f.x, f.nzmax, element_size_bytes);
+      detail::decode_array(ar, "f.x", f.x, f.nzmax * element_size_bytes);
+      detail::suitesparse_cereal_realloc(&f.nz, f.n, integer_size_bytes);
+      detail::decode_array(ar, "f.nz", f.nz, f.n * integer_size_bytes);
+      detail::suitesparse_cereal_realloc(&f.next, f.n + 2, integer_size_bytes);
+      detail::decode_array(ar, "f.next", f.next,
+                           (f.n + 2) * integer_size_bytes);
+      detail::suitesparse_cereal_realloc(&f.prev, f.n + 2, integer_size_bytes);
+      detail::decode_array(ar, "f.prev", f.prev,
+                           (f.n + 2) * integer_size_bytes);
+    }
+  }
 }
 
 } // namespace cereal

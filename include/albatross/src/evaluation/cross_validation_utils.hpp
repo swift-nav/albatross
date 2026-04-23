@@ -129,12 +129,17 @@ cross_validated_scores(const PredictionMetric<Eigen::VectorXd> &metric,
   return cross_validated_scores(metric, folds, predictions.apply(get_mean));
 }
 
-inline Eigen::VectorXd leave_one_out_conditional_variance(
-    const Eigen::SerializableLDLT &covariance_ldlt) {
+// Templated on the CovarianceRepresentation so that dense
+// Eigen::SerializableLDLT, CholmodCovariance<...>, and any future
+// representation that exposes `.inverse_diagonal()` all flow through the
+// same code path.
+template <typename CovarianceRepresentation>
+inline Eigen::VectorXd
+leave_one_out_conditional_variance(const CovarianceRepresentation &covariance) {
   // The leave one out variance will be the inverse of the diagonal of the
   // inverse of covariance (that's a mouthful!) For details see Equation 5.12 of
   // Gaussian Processes for Machine Learning
-  return covariance_ldlt.inverse_diagonal().array().inverse();
+  return covariance.inverse_diagonal().array().inverse();
 }
 
 inline Eigen::VectorXd
@@ -194,9 +199,10 @@ held_out_prediction(const Eigen::MatrixXd &inverse_block,
   return JointDistribution(mean, A_inv);
 }
 
-template <typename GroupKey, typename PredictType>
+template <typename CovarianceRepresentation, typename GroupKey,
+          typename PredictType>
 inline std::map<GroupKey, PredictType>
-held_out_predictions(const Eigen::SerializableLDLT &covariance,
+held_out_predictions(const CovarianceRepresentation &covariance,
                      const Eigen::VectorXd &target_mean,
                      const Eigen::VectorXd &information,
                      const GroupIndexer<GroupKey> &group_indexer,
@@ -238,8 +244,8 @@ leave_one_group_out_conditional(const JointDistribution &prior,
   Eigen::SerializableLDLT ldlt(covariance);
   const Eigen::VectorXd deviation = truth.mean - prior.mean;
   const Eigen::VectorXd information = ldlt.solve(deviation);
-  return held_out_predictions(covariance, truth.mean, information,
-                              group_indexer, predict_type, pool);
+  return held_out_predictions(ldlt, truth.mean, information, group_indexer,
+                              predict_type, pool);
 }
 
 } // namespace details
