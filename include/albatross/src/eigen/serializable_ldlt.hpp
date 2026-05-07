@@ -41,7 +41,9 @@ public:
 
   LDLT<MatrixXd, Lower>::MatrixType &mutable_matrix() { return this->m_matrix; }
 
-  LDLT<MatrixXd, Lower>::MatrixType matrix() const { return this->m_matrix; }
+  const LDLT<MatrixXd, Lower>::MatrixType &matrix() const {
+    return this->m_matrix;
+  }
 
   bool &mutable_is_initialized() { return this->m_isInitialized; }
 
@@ -172,25 +174,19 @@ public:
   /*
    * The diagonal of the inverse of the matrix this LDLT
    * decomposition represents in O(n^2) operations.
+   *
+   * A = P^T L D L^T P, so the inverse cholesky factor is
+   *     R^{-1} = D^{-1/2} L^{-1} P
+   * and A^{-1} = R^{-T} R^{-1}. The diagonal of A^{-1} is the squared
+   * column norm of R^{-1}.
    */
   Eigen::VectorXd inverse_diagonal() const {
-    Eigen::Index n = this->rows();
-
-    const auto size_n = albatross::cast::to_size(n);
-    std::vector<std::vector<std::size_t>> block_indices(size_n);
-    for (std::size_t i = 0; i < size_n; i++) {
-      block_indices[i] = {i};
-    }
-
-    Eigen::VectorXd inv_diag(n);
-    const auto blocks = inverse_blocks(block_indices);
-    for (std::size_t i = 0; i < size_n; i++) {
-      ALBATROSS_ASSERT(blocks[i].rows() == 1);
-      ALBATROSS_ASSERT(blocks[i].cols() == 1);
-      inv_diag[albatross::cast::to_index(i)] = blocks[i](0, 0);
-    }
-
-    return inv_diag;
+    const Eigen::Index n = this->rows();
+    Eigen::MatrixXd inverse_cholesky =
+        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(inverse_cholesky);
+    inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
+    return inverse_cholesky.colwise().squaredNorm().transpose();
   }
 
   bool operator==(const SerializableLDLT &rhs) const {

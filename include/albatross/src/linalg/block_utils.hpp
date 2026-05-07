@@ -85,11 +85,18 @@ block_product(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
   //                                  ...
   //                                  y_2]
   //
-  auto matrix_product = [&](const auto &x, const auto &y) {
-    return (x * y).eval();
-  };
-
-  return block_accumulate(lhs, rhs, matrix_product);
+  ALBATROSS_ASSERT(lhs.size() == rhs.size());
+  ALBATROSS_ASSERT(lhs.size() > 0);
+  const auto keys = lhs.keys();
+  const auto &first_lhs = lhs.at(keys.front());
+  const auto &first_rhs = rhs.at(keys.front());
+  Eigen::MatrixXd output =
+      Eigen::MatrixXd::Zero(first_lhs.rows(), first_rhs.cols());
+  for (const auto &key : keys) {
+    ALBATROSS_ASSERT(map_contains(lhs, key) && map_contains(rhs, key));
+    output.noalias() += lhs.at(key) * rhs.at(key);
+  }
+  return output;
 }
 
 template <typename GroupKey>
@@ -109,11 +116,18 @@ block_inner_product(const Grouped<GroupKey, Eigen::MatrixXd> &lhs,
   //                                        ...
   //                                        y_n]
   //
-  auto matrix_inner_product = [&](const auto &x, const auto &y) {
-    return (x.transpose() * y).eval();
-  };
-
-  return block_accumulate(lhs, rhs, matrix_inner_product);
+  ALBATROSS_ASSERT(lhs.size() == rhs.size());
+  ALBATROSS_ASSERT(lhs.size() > 0);
+  const auto keys = lhs.keys();
+  const auto &first_lhs = lhs.at(keys.front());
+  const auto &first_rhs = rhs.at(keys.front());
+  Eigen::MatrixXd output =
+      Eigen::MatrixXd::Zero(first_lhs.cols(), first_rhs.cols());
+  for (const auto &key : keys) {
+    ALBATROSS_ASSERT(map_contains(lhs, key) && map_contains(rhs, key));
+    output.noalias() += lhs.at(key).transpose() * rhs.at(key);
+  }
+  return output;
 }
 
 template <typename GroupKey, typename Solver, typename Rhs>
