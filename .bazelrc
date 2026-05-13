@@ -1,11 +1,10 @@
-# Enable bzl_mod support
 # In order to properly use the swiftnav-bazel-registry your local netrc needs to be configured
-common --enable_bzlmod
 common --registry=https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/
 common --registry=https://bcr.bazel.build
-common --@rules_swiftnav//cc:enable_bzlmod=true
-# Preparation for Bazel 8 behavior of paths in external (plus instead of tilde)
-common --incompatible_use_plus_in_repo_names
+
+# Compile all swift targets and all other codes with C++17 standards
+build --@rules_swiftnav//cc:cxx_standard=17
+build --@rules_swiftnav//cc:global_cxx_standard=17
 
 build --enable_platform_specific_config
 
@@ -19,9 +18,6 @@ build --remote_upload_local_results=false
 
 # Uses the default cc toolchain config even if xcode is installed
 build --repo_env=BAZEL_USE_CPP_ONLY_TOOLCHAIN="1"
-
-# Sets the c++ standard if we are using the system toolchain
-build --repo_env=BAZEL_CXXOPTS="-std=c++14"
 
 # Enables using implementation_deps attribute of cc rules
 build --experimental_cc_implementation_deps
