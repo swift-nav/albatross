@@ -1,5 +1,5 @@
-load("@rules_swiftnav//cc:defs.bzl", "UNIT", "swift_cc_test", "swift_cc_test_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 alias(
     name = "clang_format",
@@ -11,6 +11,20 @@ filegroup(
     srcs = [".clang-format"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["sanitizers.supp"])
+
+# Clang sanitizer ignorelist applied to every test compile.  Suppressions live
+# in sanitizers.supp; see that file for the rationale behind each entry.  The
+# flag is benign in non-sanitizer builds.
+SANITIZER_IGNORELIST = "//:sanitizers.supp"
+SANITIZER_INPUTS = [SANITIZER_IGNORELIST]
+
+TEST_COPTS = [
+    "-std=c++17",
+    "-Wno-deprecated-declarations",
+    "-fsanitize-ignorelist=$(location " + SANITIZER_IGNORELIST + ")",
+]
 
 cc_library(
     name = "albatross",
@@ -176,27 +190,29 @@ cc_library(
     ],
 )
 
-swift_cc_test_library(
+cc_library(
     name = "serialize-testsuite",
-    srcs = ["tests/test_serialize.h"],
+    hdrs = ["tests/test_serialize.h"],
     includes = [
         "tests",
     ],
-    standard=17,
+    copts = ["-std=c++17"],
+    testonly = True,
     visibility = ["//visibility:public"],
     deps = ["@gtest"],
 )
 
-swift_cc_test_library(
+cc_library(
     name = "albatross-test-common",
-    srcs = [
+    hdrs = [
         "tests/mock_model.h",
         "tests/test_utils.h",
         "tests/test_models.h",
         "tests/test_core_distribution.h",
         "tests/test_covariance_utils.h",
     ],
-    standard=17,
+    copts = ["-std=c++17"],
+    testonly = True,
     includes = ["tests"],
 )
 
@@ -210,7 +226,7 @@ TEST_DEPS = [
     "@suitesparse//:spqr",
 ]
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-traits",
     srcs = [
         "tests/test_traits_cereal.cc",
@@ -222,12 +238,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-covariance",
     srcs = [
         "tests/test_covariance_function.cc",
@@ -238,12 +256,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-indexing",
     srcs = [
         "tests/test_apply.cc",
@@ -253,12 +273,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-core",
     srcs = [
         "tests/test_concatenate.cc",
@@ -271,12 +293,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-models",
     srcs = [
         "tests/test_conditional_gaussian.cc",
@@ -287,36 +311,42 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-async-utils",
     srcs = [
         "tests/test_async_utils.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-polynomials",
     srcs = [
         "tests/test_chebyshev.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-compression",
     srcs = [
         "tests/test_block_utils.cc",
@@ -324,24 +354,28 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-thread-pool",
     srcs = [
         "tests/test_thread_pool.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-utils",
     srcs = [
         "tests/test_block_utils.cc",
@@ -355,12 +389,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-evaluation",
     srcs = [
         "tests/test_evaluate.cc",
@@ -368,25 +404,28 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-cross-validation",
     srcs = [
         "tests/test_cross_validation.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
-    tags = ["exclusive"],
+    tags = ["exclusive", "unit"],
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-serialization",
     srcs = [
         "tests/test_serialize.cc",
@@ -394,12 +433,14 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-stats",
     srcs = [
         "tests/test_chi_squared_versus_gsl.cc",
@@ -407,60 +448,70 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-stats-wasserstein",
     srcs = [
         "tests/test_stats_wasserstein.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-stats-scores",
     srcs = [
         "tests/test_stats_scores.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-samplers",
     srcs = [
         "tests/test_samplers.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-tune",
     srcs = [
         "tests/test_tune.cc",
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
-swift_cc_test(
+cc_test(
     name = "albatross-test-misc",
     srcs = [
         "tests/test_call_trace.cc",
@@ -471,9 +522,11 @@ swift_cc_test(
     ],
     includes = ["tests"],
     local_defines = ["CSV_IO_NO_THREAD"],
-    type = UNIT,
     deps = TEST_DEPS,
-    standard=17,
+    copts = TEST_COPTS,
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    tags = ["unit"],
+    linkstatic = True,
 )
 
 # Meta-target that runs all tests
