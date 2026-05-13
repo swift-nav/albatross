@@ -1,4 +1,3 @@
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 # Clang sanitizer ignorelist applied to every test compile.  Suppressions live
@@ -14,35 +13,11 @@ TEST_COPTS = [
     "-fsanitize-ignorelist=$(location " + SANITIZER_IGNORELIST + ")",
 ]
 
-cc_library(
-    name = "serialize-testsuite",
-    testonly = True,
-    hdrs = ["test_serialize.h"],
-    copts = ["-std=c++17"],
-    includes = ["."],
-    visibility = ["//visibility:public"],
-    deps = ["@gtest"],
-)
-
-cc_library(
-    name = "albatross-test-common",
-    testonly = True,
-    hdrs = [
-        "mock_model.h",
-        "test_core_distribution.h",
-        "test_covariance_utils.h",
-        "test_models.h",
-        "test_utils.h",
-    ],
-    copts = ["-std=c++17"],
-    includes = ["."],
-)
-
 # Common test dependencies
 TEST_DEPS = [
     "//:albatross",
-    ":serialize-testsuite",
-    ":albatross-test-common",
+    "//tests/lib:serialize-testsuite",
+    "//tests/lib:albatross-test-common",
     "@zlib",
     "@gtest//:gtest_main",
     "@suitesparse//:spqr",
@@ -104,7 +79,6 @@ cc_test(
     srcs = [
         "test_concatenate.cc",
         "test_core_dataset.cc",
-        "test_core_distribution.cc",
         "test_core_model.cc",
         "test_linear_combination.cc",
         "test_parameter_handling_mixin.cc",
@@ -123,7 +97,6 @@ cc_test(
     srcs = [
         "test_conditional_gaussian.cc",
         "test_gp.cc",
-        "test_models.cc",
         "test_ransac.cc",
         "test_sparse_gp.cc",
     ],
@@ -234,7 +207,6 @@ cc_test(
     name = "albatross-test-serialization",
     srcs = [
         "test_serializable_ldlt.cc",
-        "test_serialize.cc",
     ],
     additional_compiler_inputs = SANITIZER_INPUTS,
     copts = TEST_COPTS,
