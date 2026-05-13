@@ -6,11 +6,11 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
-bazel_dep(name = "rules_cc", version = "0.2.16")
+bazel_dep(name = "rules_cc", version = "0.2.17")
 bazel_dep(name = "rules_swiftnav", version = "0.19.0")
 git_override(
     module_name = "rules_swiftnav",
-    commit = "74baab3c3dadf83108dd34e4f4fec59e63e953be",
+    commit = "a1a8da8d191e2e743611018236ac886a7c77041d",
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
 )
 
