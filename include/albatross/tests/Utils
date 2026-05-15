@@ -13,7 +13,7 @@
 #ifndef ALBATROSS_TESTS_UTILS_H
 #define ALBATROSS_TESTS_UTILS_H
 
-#include "../../../tests/test_utils.h"
-#include "../../../tests/test_covariance_utils.h"
+#include "../../../tests/lib/albatross/test/test_utils.h"
+#include "../../../tests/lib/albatross/test/test_covariance_utils.h"
 
 #endif
