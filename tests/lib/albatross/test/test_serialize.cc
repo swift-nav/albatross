@@ -19,8 +19,8 @@
 #include <gtest/gtest.h>
 
 #include "albatross/test/test_models.h"
-#include "test_serialize.h"
 #include "albatross/test/test_utils.h"
+#include "test_serialize.h"
 
 namespace cereal {
 
