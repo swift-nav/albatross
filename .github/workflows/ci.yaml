@@ -84,6 +84,13 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
 
       - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
 
       - uses: extractions/netrc@v2
         with:
@@ -111,6 +118,13 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
 
       - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
 
       - uses: extractions/netrc@v3
         with:
@@ -139,6 +153,13 @@ jobs:
           ssh-key: ${{ secrets.SSH_KEY }}
 
       - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
 
       - uses: extractions/netrc@v3
         with:
