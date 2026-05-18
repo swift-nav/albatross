@@ -6,7 +6,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
-bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "rules_cc", version = "0.2.18")
 bazel_dep(name = "rules_swiftnav", version = "0.19.0")
 git_override(
     module_name = "rules_swiftnav",
@@ -14,26 +14,26 @@ git_override(
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
 )
 
-swift_cc_toolchain_ext = use_extension("@rules_swiftnav//cc:extensions.bzl", "swift_cc_toolchain_extension")
-use_repo(
-    swift_cc_toolchain_ext,
-    "aarch64-darwin-llvm20",
-    "aarch64-linux-llvm20",
-    "aarch64-sysroot",
-    "x86_64-darwin-llvm20",
-    "x86_64-linux-llvm20",
-    "x86_64-sysroot",
-)
+bazel_dep(name = "llvm", version = "0.8.3")
 
-register_toolchains(
-    "@rules_swiftnav//cc/toolchains/llvm20/aarch64-darwin:cc-toolchain-aarch64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-darwin:cc-toolchain-x86_64-darwin",
-    "@rules_swiftnav//cc/toolchains/llvm20/aarch64-linux:cc-toolchain-aarch64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-linux:cc-toolchain-x86_64-linux",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-linux:cc-toolchain-intel-mkl",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton2",
-    "@rules_swiftnav//cc/toolchains/llvm20/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
+register_toolchains("@llvm//toolchain:all")
+
+osx = use_extension("@llvm//extensions:osx.bzl", "osx")
+osx.from_archive(
+    sha256 = "edc7ce9b8f09e0c7a39aaa714f941b4c2597f333ec1ffe59a14d67eb36cdb7e7",
+    strip_prefix = "Payload/Library/Developer/CommandLineTools/SDKs/MacOSX26.4.sdk",
+    type = "pkg",
+    urls = [
+        "https://swcdn.apple.com/content/downloads/60/13/122-35686-A_30JUXWIJFR/ck0gzuw5qccefzm3ptlwou3pu6a55d0o02/CLTools_macOSNMOS_SDK.pkg",
+        "https://web.archive.org/web/20260430051604/https://swcdn.apple.com/content/downloads/60/13/122-35686-A_30JUXWIJFR/ck0gzuw5qccefzm3ptlwou3pu6a55d0o02/CLTools_macOSNMOS_SDK.pkg",
+    ],
 )
+osx.frameworks(names = [
+    "Accelerate",
+    "Foundation",
+    "CoreFoundation",
+])
+use_repo(osx, "macos_sdk")
 
 bazel_dep(name = "eigen", version = "3.3.swiftnav.1")
 local_path_override(
@@ -81,7 +81,7 @@ local_path_override(
     path = "third_party/ThreadPool",
 )
 
-bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.1")
+bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.3")
 bazel_dep(name = "gflags", version = "2.2.2.swiftnav")
 local_path_override(
     module_name = "gflags",
@@ -93,3 +93,5 @@ local_path_override(
     module_name = "nlopt",
     path = "third_party/nlopt",
 )
+
+bazel_dep(name = "bazelrc-preset.bzl", version = "1.9.2")
