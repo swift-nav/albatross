@@ -67,13 +67,13 @@ jobs:
           bash ./ci/run_tests.sh
           bash ./ci/ensure_copyright.sh
 
-  ubuntu-clang14-sanitizers:
+  bazel-sanitizers:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        test:
-          - { name: "address-undefined-leak", script: "./ci/run_address_sanitizer_tests.sh" }
-          - { name: "thread", script: "./ci/run_thread_sanitizer_tests.sh" }
+        sanitizer:
+          - { name: "address-undefined", config: "asan_ubsan" }
+          - { name: "thread", config: "tsan" }
           # Memory sanitizer is not run because it requires building a
           # custom instrumented libc.
     steps:
@@ -83,21 +83,22 @@ jobs:
           submodules: recursive
           ssh-key: ${{ secrets.SSH_KEY }}
 
-      - name: Install clang-14
-        run: |
-          sudo apt-get update
-          sudo apt-get install build-essential software-properties-common libsuitesparse-dev -y
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get update
-          sudo apt-get install clang-14 -y
-          clang -v
-      - name: Run (${{ matrix.test.name }}) sanitizer tests
-        env:
-          CC: clang-14
-          CXX: clang++-14
-          TESTENV: clang14
-        run: |
-          bash "${{ matrix.test.script }}"
+      - uses: bazel-contrib/setup-bazel@0.19.0
+
+      - uses: extractions/netrc@v2
+        with:
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Mount bazel cache
+        uses: actions/cache@v5
+        with:
+          path: "~/.cache/bazel"
+          key: bazel-${{ matrix.sanitizer.config }}
+
+      - name: Run (${{ matrix.sanitizer.name }}) sanitizer tests
+        run: bazel test --config=${{ matrix.sanitizer.config }} //...
 
   format:
     runs-on: ubuntu-22.04

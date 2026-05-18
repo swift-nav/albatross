@@ -17,7 +17,7 @@
 #include <albatross/GP>
 #include <albatross/utils/RandomUtils>
 
-#include "test_utils.h"
+#include "albatross/test/test_utils.h"
 
 namespace albatross {
 

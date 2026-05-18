@@ -10,7 +10,7 @@
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "test_models.h"
+#include "albatross/test/test_models.h"
 #include <albatross/Tune>
 #include <gtest/gtest.h>
 #include <nlopt.hpp>

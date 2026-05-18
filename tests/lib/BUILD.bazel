@@ -1,0 +1,41 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "serialize-testsuite",
+    testonly = True,
+    srcs = ["albatross/test/test_serialize.cc"],
+    hdrs = ["albatross/test/test_serialize.h"],
+    copts = ["-std=c++17"],
+    includes = ["."],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":albatross-test-common",
+        "@albatross",
+        "@gtest",
+    ],
+)
+
+cc_library(
+    name = "albatross-test-common",
+    testonly = True,
+    srcs = [
+        "albatross/test/test_core_distribution.cc",
+        "albatross/test/test_models.cc",
+    ],
+    hdrs = [
+        "albatross/test/mock_model.h",
+        "albatross/test/test_core_distribution.h",
+        "albatross/test/test_covariance_utils.h",
+        "albatross/test/test_models.h",
+        "albatross/test/test_utils.h",
+    ],
+    copts = ["-std=c++17"],
+    includes = ["."],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@albatross",
+        "@gtest",
+    ],
+)

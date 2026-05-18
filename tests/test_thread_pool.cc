@@ -13,7 +13,7 @@
 #include <ThreadPool.h>
 #include <gtest/gtest.h>
 
-#include "test_utils.h"
+#include "albatross/test/test_utils.h"
 
 constexpr std::size_t kNumCalls = 10000;
 

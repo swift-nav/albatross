@@ -11,7 +11,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "test_models.h"
+#include "albatross/test/test_models.h"
 
 #include <albatross/Evaluation>
 #include <albatross/Ransac>
