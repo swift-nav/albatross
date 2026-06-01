@@ -182,11 +182,17 @@ public:
    */
   Eigen::VectorXd inverse_diagonal() const {
     const Eigen::Index n = this->rows();
-    Eigen::MatrixXd inverse_cholesky =
-        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
+    // Solve L X = I to get X = L^{-1}; then scale rows by D^{-1/2}.
+    // We deliberately skip the column permutation by P that the full inverse
+    // cholesky would have, because column squared-norms of (D^{-1/2} L^{-1} P)
+    // are just a permutation of the squared-norms of (D^{-1/2} L^{-1}).
+    // Permuting the n-vector at the end is O(n) instead of an extra n^2 pass.
+    Eigen::MatrixXd inverse_cholesky = Eigen::MatrixXd::Identity(n, n);
     this->matrixL().solveInPlace(inverse_cholesky);
     inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
-    return inverse_cholesky.colwise().squaredNorm().transpose();
+    const Eigen::VectorXd pre_perm_norms =
+        inverse_cholesky.colwise().squaredNorm().transpose();
+    return this->transpositionsP().transpose() * pre_perm_norms;
   }
 
   bool operator==(const SerializableLDLT &rhs) const {
