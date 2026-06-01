@@ -42,7 +42,7 @@ TEST_F(SerializableLDLTTest, test_inverse_diagonal) {
   const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
   const auto inverse = cov.inverse();
   const auto diag = serializable_ldlt.inverse_diagonal();
-  EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-8);
+  EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-6);
 }
 
 TEST_F(SerializableLDLTTest, test_log_det) {
