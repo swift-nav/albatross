@@ -90,6 +90,31 @@ static void BM_LDLT_sqrt_solve(benchmark::State &state) {
 }
 BENCHMARK(BM_LDLT_sqrt_solve)->Args({1024, 16})->Args({2048, 32});
 
+// inverse_blocks — exercised by joint-LOO cross validation through
+// cross_validation_utils. Modeled as K equal-width folds across n rows.
+static void BM_LDLT_inverse_blocks(benchmark::State &state) {
+  const auto n = static_cast<Eigen::Index>(state.range(0));
+  const auto k = static_cast<std::size_t>(state.range(1));
+  const auto S = make_spd(n);
+  Eigen::SerializableLDLT ldlt(S);
+  const std::size_t fold_size = static_cast<std::size_t>(n) / k;
+  std::vector<std::vector<std::size_t>> blocks(k);
+  for (std::size_t f = 0; f < k; ++f) {
+    blocks[f].resize(fold_size);
+    for (std::size_t i = 0; i < fold_size; ++i) {
+      blocks[f][i] = f * fold_size + i;
+    }
+  }
+  for (auto _ : state) {
+    auto out = ldlt.inverse_blocks(blocks);
+    benchmark::DoNotOptimize(out);
+  }
+}
+BENCHMARK(BM_LDLT_inverse_blocks)
+    ->Args({512, 10})
+    ->Args({1024, 10})
+    ->Args({1024, 32});
+
 // Fix #2-3: BlockSymmetric ctor double-solves; BlockSymmetric::solve has
 // duplicated S.solve(rhs_b) and eager rhs.topRows/bottomRows copies.
 static void BM_BlockSymmetric_construct(benchmark::State &state) {

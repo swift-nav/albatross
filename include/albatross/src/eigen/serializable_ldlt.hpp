@@ -150,22 +150,34 @@ public:
      */
     Eigen::Index n = this->matrixL().rows();
 
-    // P
-    Eigen::MatrixXd inverse_cholesky =
-        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
-    // L^-1 P
-    this->matrixL().solveInPlace(inverse_cholesky);
+    // Compute the pre-permutation factor D^{-1/2} L^{-1}: solve L X = I, then
+    // row-scale by D^{-1/2}. Skipping the column permutation P that would
+    // finish R^{-1} avoids the O(n^2) eager row-permutation of the identity;
+    // we recover correctness below by translating each block's column indices
+    // through pi.
+    Eigen::MatrixXd pre_perm = Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(pre_perm);
+    pre_perm = diagonal_sqrt_inverse() * pre_perm;
 
-    // D^-1/2 L^-1 P
-    inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
+    ALBATROSS_ASSERT(!pre_perm.hasNaN());
 
-    ALBATROSS_ASSERT(!inverse_cholesky.hasNaN());
+    // pi[k] = source column in pre_perm that lives at output column k of the
+    // fully-permuted inverse cholesky factor R^{-1} = D^{-1/2} L^{-1} P.
+    const Eigen::VectorXi pi =
+        (this->transpositionsP().transpose() *
+         Eigen::VectorXi::LinSpaced(n, 0, static_cast<int>(n) - 1))
+            .eval();
 
     return albatross::apply(
         blocks,
         [&](const auto &block_indices) -> Eigen::MatrixXd {
+          std::vector<std::size_t> permuted_indices(block_indices.size());
+          for (std::size_t i = 0; i < block_indices.size(); ++i) {
+            permuted_indices[i] = static_cast<std::size_t>(
+                pi(static_cast<Eigen::Index>(block_indices[i])));
+          }
           Eigen::MatrixXd sub_matrix =
-              albatross::subset_cols(inverse_cholesky, block_indices);
+              albatross::subset_cols(pre_perm, permuted_indices);
           return sub_matrix.transpose().lazyProduct(sub_matrix);
         },
         pool);
