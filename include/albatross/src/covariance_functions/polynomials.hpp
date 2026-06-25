@@ -65,9 +65,11 @@ class Polynomial : public CovarianceFunction<Polynomial<order>> {
 public:
   Polynomial(double sigma = default_sigma) {
     for (int i = 0; i < order + 1; i++) {
-      std::string param_name = "sigma_polynomial_" + std::to_string(i);
+      const std::string param_name =
+          "sigma_polynomial_" + std::to_string(i);
       param_names_[i] = param_name;
       this->params_[param_name] = {sigma, NonNegativePrior()};
+      sigma_squared_[i] = sigma * sigma;
     }
   }
 
@@ -75,18 +77,34 @@ public:
 
   ~Polynomial() {}
 
+  // The kernel is called O(N^2) times per matrix build. We avoid the per-call
+  // map lookup of the underlying parameter store by caching sigma_i^2 here,
+  // and we replace pow(x, i) with a running product to avoid std::pow.
+  void set_param(const ParameterKey &name, const Parameter &param) override {
+    albatross::set_param(name, param, &this->params_);
+    for (int i = 0; i < order + 1; i++) {
+      if (param_names_[i] == name) {
+        sigma_squared_[i] = param.value * param.value;
+        break;
+      }
+    }
+  }
+
   double _call_impl(const double &x, const double &y) const {
     double cov = 0.;
+    double xp = 1.;
+    double yp = 1.;
     for (int i = 0; i < order + 1; i++) {
-      const double sigma = this->get_param_value(param_names_.at(i));
-      const double p = static_cast<double>(i);
-      cov += sigma * sigma * pow(x, p) * pow(y, p);
+      cov += sigma_squared_[i] * xp * yp;
+      xp *= x;
+      yp *= y;
     }
     return cov;
   }
 
 private:
   std::map<int, std::string> param_names_;
+  std::array<double, order + 1> sigma_squared_;
 };
 
 class LinearMean : public MeanFunction<LinearMean> {
