@@ -198,10 +198,20 @@ inline std::set<X> vector_set_difference(const std::vector<X> &x,
 inline std::vector<std::size_t>
 indices_complement(const std::vector<std::size_t> &indices,
                    const std::size_t n) {
-  std::vector<std::size_t> all_indices(n);
-  std::iota(all_indices.begin(), all_indices.end(), 0);
-  const auto complement = vector_set_difference(all_indices, indices);
-  return std::vector<std::size_t>(complement.begin(), complement.end());
+  std::vector<bool> in_indices(n, false);
+  for (const auto i : indices) {
+    if (i < n) {
+      in_indices[i] = true;
+    }
+  }
+  std::vector<std::size_t> complement;
+  complement.reserve(n - indices.size());
+  for (std::size_t i = 0; i < n; ++i) {
+    if (!in_indices[i]) {
+      complement.push_back(i);
+    }
+  }
+  return complement;
 }
 
 template <typename GroupType>

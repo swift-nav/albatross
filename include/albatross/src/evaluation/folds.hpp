@@ -125,15 +125,15 @@ dataset_size_from_indexer(const GroupIndexer<GroupKey> &indexer) {
     count += pair.second.size();
   };
   ALBATROSS_ASSERT(count == unique_inds.size());
+  ALBATROSS_ASSERT(!unique_inds.empty());
 
-  // Make sure the minimum was zero
-  std::size_t zero = *std::min_element(unique_inds.begin(), unique_inds.end());
+  // unique_inds is a std::set, so begin/rbegin give min/max in O(1).
+  const std::size_t zero = *unique_inds.begin();
   if (zero != 0) {
     ALBATROSS_ASSERT(false);
   }
 
-  // And the maximum agrees with the size;
-  std::size_t n = *std::max_element(unique_inds.begin(), unique_inds.end());
+  const std::size_t n = *unique_inds.rbegin();
   ALBATROSS_ASSERT(unique_inds.size() == n + 1);
 
   return n + 1;
