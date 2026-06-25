@@ -1,0 +1,20 @@
+load("@rules_swiftnav//cc:defs.bzl", "swift_cc_binary")
+
+swift_cc_binary(
+    name = "albatross-bench",
+    srcs = [
+        "bench_cv.cc",
+        "bench_gp.cc",
+        "bench_kernels.cc",
+        "bench_linalg.cc",
+        "bench_main.cc",
+    ],
+    standard = "17",
+    rtti = True,
+    nocopts = ["-Wfloat-equal"],
+    tags = ["manual"],
+    deps = [
+        "//:albatross",
+        "@google_benchmark//:benchmark",
+    ],
+)
