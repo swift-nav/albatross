@@ -14,7 +14,7 @@
 #include <albatross/Core>
 #include <albatross/CovarianceFunctions>
 
-#include "test_covariance_utils.h"
+#include "albatross/test/test_covariance_utils.h"
 
 namespace albatross {
 

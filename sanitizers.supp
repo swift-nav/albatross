@@ -44,4 +44,10 @@ fun:*rapidjson*internal*Stack*Reserve*
 # program may do anything.)
 #
 # The reporter provided a patch for 3.3 if we really care.
-fun:*Eigen*internal*blas_data_mapper*()*
+#
+# The pattern matches every method of blas_data_mapper (operator(),
+# getVectorMapper, getSubMapper, ...).  After inlining, clang's
+# -fsanitize-ignorelist matches against the enclosing function, so
+# operator() inlined into getVectorMapper has to be suppressed under
+# the getVectorMapper name as well.
+fun:*Eigen*internal*blas_data_mapper*

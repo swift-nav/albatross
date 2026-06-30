@@ -1,0 +1,318 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+# Clang sanitizer ignorelist applied to every test compile.  Suppressions live
+# in //:sanitizers.supp; see that file for the rationale behind each entry.
+# The flag is benign in non-sanitizer builds.
+SANITIZER_IGNORELIST = "//:sanitizers.supp"
+
+SANITIZER_INPUTS = [SANITIZER_IGNORELIST]
+
+TEST_COPTS = [
+    "-std=c++17",
+    "-Wno-deprecated-declarations",
+    "-fsanitize-ignorelist=$(location " + SANITIZER_IGNORELIST + ")",
+]
+
+# Common test dependencies
+TEST_DEPS = [
+    "//:albatross",
+    "//tests/lib:serialize-testsuite",
+    "//tests/lib:albatross-test-common",
+    "@zlib",
+    "@gtest//:gtest_main",
+    "@suitesparse//:spqr",
+]
+
+cc_test(
+    name = "albatross-test-traits",
+    srcs = [
+        "test_traits_cereal.cc",
+        "test_traits_core.cc",
+        "test_traits_covariance_functions.cc",
+        "test_traits_details.cc",
+        "test_traits_evaluation.cc",
+        "test_traits_indexing.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-covariance",
+    srcs = [
+        "test_covariance_function.cc",
+        "test_covariance_functions.cc",
+        "test_distance_metrics.cc",
+        "test_radial.cc",
+        "test_scaling_function.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-indexing",
+    srcs = [
+        "test_apply.cc",
+        "test_group_by.cc",
+        "test_indexing.cc",
+        "test_unique.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-core",
+    srcs = [
+        "test_concatenate.cc",
+        "test_core_dataset.cc",
+        "test_core_model.cc",
+        "test_linear_combination.cc",
+        "test_parameter_handling_mixin.cc",
+        "test_prediction.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-models",
+    srcs = [
+        "test_conditional_gaussian.cc",
+        "test_gp.cc",
+        "test_ransac.cc",
+        "test_sparse_gp.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-async-utils",
+    srcs = ["test_async_utils.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-polynomials",
+    srcs = ["test_chebyshev.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-compression",
+    srcs = [
+        "test_block_utils.cc",
+        "test_compression.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-thread-pool",
+    srcs = ["test_thread_pool.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-utils",
+    srcs = [
+        "test_block_utils.cc",
+        "test_csv_utils.cc",
+        "test_eigen_utils.cc",
+        "test_linalg_utils.cc",
+        "test_map_utils.cc",
+        "test_random_utils.cc",
+        "test_variant_utils.cc",
+        "test_vector_utils.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-evaluation",
+    srcs = [
+        "test_evaluate.cc",
+        "test_model_metrics.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-cross-validation",
+    srcs = ["test_cross_validation.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = [
+        "exclusive",
+        "unit",
+    ],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-serialization",
+    srcs = [
+        "test_serializable_ldlt.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-stats",
+    srcs = [
+        "test_chi_squared_versus_gsl.cc",
+        "test_stats.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-stats-wasserstein",
+    srcs = ["test_stats_wasserstein.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-stats-scores",
+    srcs = ["test_stats_scores.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-samplers",
+    srcs = ["test_samplers.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-tune",
+    srcs = ["test_tune.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
+    name = "albatross-test-misc",
+    srcs = [
+        "test_call_trace.cc",
+        "test_callers.cc",
+        "test_error_handling.cc",
+        "test_minimum_spanning_tree.cc",
+        "test_model_adapter.cc",
+    ],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+# Meta-target that runs all tests
+test_suite(
+    name = "albatross-test",
+    tests = [
+        ":albatross-test-async-utils",
+        ":albatross-test-compression",
+        ":albatross-test-core",
+        ":albatross-test-covariance",
+        ":albatross-test-cross-validation",
+        ":albatross-test-evaluation",
+        ":albatross-test-indexing",
+        ":albatross-test-misc",
+        ":albatross-test-models",
+        ":albatross-test-polynomials",
+        ":albatross-test-samplers",
+        ":albatross-test-serialization",
+        ":albatross-test-stats",
+        ":albatross-test-stats-scores",
+        ":albatross-test-stats-wasserstein",
+        ":albatross-test-thread-pool",
+        ":albatross-test-traits",
+        ":albatross-test-tune",
+        ":albatross-test-utils",
+    ],
+)

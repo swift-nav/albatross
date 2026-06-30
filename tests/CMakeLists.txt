@@ -20,7 +20,7 @@ albatross_add_test(albatross_unit_tests
   test_conditional_gaussian.cc
   test_concatenate.cc
   test_core_dataset.cc
-  test_core_distribution.cc
+  lib/albatross/test/test_core_distribution.cc
   test_core_model.cc
   test_covariance_function.cc
   test_covariance_functions.cc
@@ -38,7 +38,7 @@ albatross_add_test(albatross_unit_tests
   test_minimum_spanning_tree.cc
   test_model_adapter.cc
   test_model_metrics.cc
-  test_models.cc
+  lib/albatross/test/test_models.cc
   test_parameter_handling_mixin.cc
   test_prediction.cc
   test_radial.cc
@@ -47,7 +47,7 @@ albatross_add_test(albatross_unit_tests
   test_samplers.cc
   test_scaling_function.cc
   test_serializable_ldlt.cc
-  test_serialize.cc
+  lib/albatross/test/test_serialize.cc
   test_sparse_gp.cc
   test_stats.cc
   test_stats_wasserstein.cc
@@ -72,4 +72,6 @@ albatross_add_test(albatross_unit_tests
   zstd::zstd
   suitesparse::spqr
   suitesparse::cholmod
+  INCLUDE
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib
   )
