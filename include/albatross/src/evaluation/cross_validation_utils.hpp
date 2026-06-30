@@ -189,9 +189,15 @@ inline JointDistribution
 held_out_prediction(const Eigen::MatrixXd &inverse_block,
                     const Eigen::VectorXd &y, const Eigen::VectorXd &v,
                     PredictTypeIdentity<JointDistribution>) {
-  const auto A_inv = inverse_block.inverse();
-  const Eigen::VectorXd mean = y - A_inv * v;
-  return JointDistribution(mean, A_inv);
+  // inverse_block is a covariance sub-block (SPD), so prefer LDLT over
+  // partialPivLu. Factor once and reuse for the mean solve and the explicit
+  // inverse.
+  const Eigen::SerializableLDLT A_ldlt(inverse_block);
+  const Eigen::VectorXd mean = y - A_ldlt.solve(v);
+  Eigen::MatrixXd A_inv =
+      A_ldlt.solve(Eigen::MatrixXd::Identity(inverse_block.rows(),
+                                             inverse_block.cols()));
+  return JointDistribution(mean, std::move(A_inv));
 }
 
 template <typename GroupKey, typename PredictType>

@@ -142,8 +142,10 @@ inline Eigen::MatrixXd BlockDiagonalLDLT::solve(
     const Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel> &rhs_orig)
     const {
   ALBATROSS_ASSERT(cols() == rhs_orig.rows());
-  Eigen::MatrixXd rhs{rhs_orig};
-  return solve(rhs);
+  // Forward to the templated MatrixBase overload — the Block expression is
+  // consumed lazily inside the per-chunk solves, no eager copy needed.
+  return solve(static_cast<const Eigen::MatrixBase<Eigen::Block<
+                   XprType, BlockRows, BlockCols, InnerPanel>> &>(rhs_orig));
 }
 
 template <class _Scalar, int _Options, typename _StorageIndex>
@@ -257,11 +259,11 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockDiagonal::operator*(
     const Eigen::Matrix<_Scalar, _Rows, _Cols> &rhs) const {
   ALBATROSS_ASSERT(cols() == rhs.rows());
   Eigen::Index i = 0;
-  Eigen::Matrix<_Scalar, _Rows, _Cols> output =
-      Eigen::Matrix<_Scalar, _Rows, _Cols>::Zero(rows(), rhs.cols());
+  // Every cell will be written below, so skip the zero-fill of Zero().
+  Eigen::Matrix<_Scalar, _Rows, _Cols> output(rows(), rhs.cols());
   for (const auto &b : blocks) {
     const auto rhs_chunk = rhs.block(i, 0, b.rows(), rhs.cols());
-    output.block(i, 0, b.rows(), rhs.cols()) = b * rhs_chunk;
+    output.block(i, 0, b.rows(), rhs.cols()).noalias() = b * rhs_chunk;
     i += b.rows();
   }
   return output;

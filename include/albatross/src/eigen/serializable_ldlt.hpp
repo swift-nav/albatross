@@ -41,7 +41,9 @@ public:
 
   LDLT<MatrixXd, Lower>::MatrixType &mutable_matrix() { return this->m_matrix; }
 
-  LDLT<MatrixXd, Lower>::MatrixType matrix() const { return this->m_matrix; }
+  const LDLT<MatrixXd, Lower>::MatrixType &matrix() const {
+    return this->m_matrix;
+  }
 
   bool &mutable_is_initialized() { return this->m_isInitialized; }
 
@@ -148,22 +150,34 @@ public:
      */
     Eigen::Index n = this->matrixL().rows();
 
-    // P
-    Eigen::MatrixXd inverse_cholesky =
-        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
-    // L^-1 P
-    this->matrixL().solveInPlace(inverse_cholesky);
+    // Compute the pre-permutation factor D^{-1/2} L^{-1}: solve L X = I, then
+    // row-scale by D^{-1/2}. Skipping the column permutation P that would
+    // finish R^{-1} avoids the O(n^2) eager row-permutation of the identity;
+    // we recover correctness below by translating each block's column indices
+    // through pi.
+    Eigen::MatrixXd pre_perm = Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(pre_perm);
+    pre_perm = diagonal_sqrt_inverse() * pre_perm;
 
-    // D^-1/2 L^-1 P
-    inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
+    ALBATROSS_ASSERT(!pre_perm.hasNaN());
 
-    ALBATROSS_ASSERT(!inverse_cholesky.hasNaN());
+    // pi[k] = source column in pre_perm that lives at output column k of the
+    // fully-permuted inverse cholesky factor R^{-1} = D^{-1/2} L^{-1} P.
+    const Eigen::VectorXi pi =
+        (this->transpositionsP().transpose() *
+         Eigen::VectorXi::LinSpaced(n, 0, static_cast<int>(n) - 1))
+            .eval();
 
     return albatross::apply(
         blocks,
         [&](const auto &block_indices) -> Eigen::MatrixXd {
+          std::vector<std::size_t> permuted_indices(block_indices.size());
+          for (std::size_t i = 0; i < block_indices.size(); ++i) {
+            permuted_indices[i] = static_cast<std::size_t>(
+                pi(static_cast<Eigen::Index>(block_indices[i])));
+          }
           Eigen::MatrixXd sub_matrix =
-              albatross::subset_cols(inverse_cholesky, block_indices);
+              albatross::subset_cols(pre_perm, permuted_indices);
           return sub_matrix.transpose().lazyProduct(sub_matrix);
         },
         pool);
@@ -172,25 +186,25 @@ public:
   /*
    * The diagonal of the inverse of the matrix this LDLT
    * decomposition represents in O(n^2) operations.
+   *
+   * A = P^T L D L^T P, so the inverse cholesky factor is
+   *     R^{-1} = D^{-1/2} L^{-1} P
+   * and A^{-1} = R^{-T} R^{-1}. The diagonal of A^{-1} is the squared
+   * column norm of R^{-1}.
    */
   Eigen::VectorXd inverse_diagonal() const {
-    Eigen::Index n = this->rows();
-
-    const auto size_n = albatross::cast::to_size(n);
-    std::vector<std::vector<std::size_t>> block_indices(size_n);
-    for (std::size_t i = 0; i < size_n; i++) {
-      block_indices[i] = {i};
-    }
-
-    Eigen::VectorXd inv_diag(n);
-    const auto blocks = inverse_blocks(block_indices);
-    for (std::size_t i = 0; i < size_n; i++) {
-      ALBATROSS_ASSERT(blocks[i].rows() == 1);
-      ALBATROSS_ASSERT(blocks[i].cols() == 1);
-      inv_diag[albatross::cast::to_index(i)] = blocks[i](0, 0);
-    }
-
-    return inv_diag;
+    const Eigen::Index n = this->rows();
+    // Solve L X = I to get X = L^{-1}; then scale rows by D^{-1/2}.
+    // We deliberately skip the column permutation by P that the full inverse
+    // cholesky would have, because column squared-norms of (D^{-1/2} L^{-1} P)
+    // are just a permutation of the squared-norms of (D^{-1/2} L^{-1}).
+    // Permuting the n-vector at the end is O(n) instead of an extra n^2 pass.
+    Eigen::MatrixXd inverse_cholesky = Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(inverse_cholesky);
+    inverse_cholesky = diagonal_sqrt_inverse() * inverse_cholesky;
+    const Eigen::VectorXd pre_perm_norms =
+        inverse_cholesky.colwise().squaredNorm().transpose();
+    return this->transpositionsP().transpose() * pre_perm_norms;
   }
 
   bool operator==(const SerializableLDLT &rhs) const {
