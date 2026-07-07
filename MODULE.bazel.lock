@@ -416,8 +416,8 @@
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/stardoc/0.7.0/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/stardoc/0.7.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/stardoc/0.7.2/MODULE.bazel": "not found",
-    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/suitesparse/7.1.0.swiftnav.1/MODULE.bazel": "4add3f7d0f0c9bb6b6e681e47938d0a502e5bcd3848e3e28a82c375da0dc859e",
-    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/suitesparse/7.1.0.swiftnav.1/source.json": "ed9b9ebc86c979ce0c42d1156760f05f32234ef31a5a197c3d76d65adf666d8c",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/suitesparse/7.1.0.swiftnav.3/MODULE.bazel": "43038bbabe5e8975d8307f2d680678a37d19d09aa0602f3d92f5c9d1faf52de9",
+    "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/suitesparse/7.1.0.swiftnav.3/source.json": "93bc8448e25b895bd31564cc98884bf0139dd9194ffca165a8b7b184990af34e",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/swift_argument_parser/1.3.1.1/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/swift_argument_parser/1.3.1.2/MODULE.bazel": "not found",
     "https://raw.githubusercontent.com/swift-nav/swiftnav-bazel-registry/refs/heads/main/modules/tar.bzl/0.10.4/MODULE.bazel": "not found",
@@ -435,6 +435,94 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "@@eigen+//extensions:mkl_extension.bzl%mkl_extension": {
+      "general": {
+        "bzlTransitiveDigest": "SPlAr7tHaoccqJAhszAffumMOYQzReL5pqBo+di7x7s=",
+        "usagesDigest": "7he/BAJWqeUL4bTBDehRmbz95gC2r/X0mm5LQqB+wUI=",
+        "recordedInputs": [
+          "REPO_MAPPING:eigen+,bazel_tools bazel_tools"
+        ],
+        "generatedRepoSpecs": {
+          "mkl_headers": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@eigen+//extensions:mkl_headers.BUILD",
+              "sha256": "b24d12a8e18ba23de5c659a33fb184a7ac6019d4b159e78f628d7c8de225f77a",
+              "urls": [
+                "https://swiftnav-public-mkl-sharedlibs.s3.us-west-2.amazonaws.com/mkl-include-2023.1.0-intel_46342.tar.bz2"
+              ]
+            }
+          },
+          "mkl": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@eigen+//extensions:mkl.BUILD",
+              "sha256": "c63adbfdbdc7c4992384a2d89cd62211e4a9f8061e3e841af1a269699531cb02",
+              "strip_prefix": "lib",
+              "urls": [
+                "https://swiftnav-public-mkl-sharedlibs.s3.us-west-2.amazonaws.com/mkl-static-2023.1.0-intel_46342.tar.bz2"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "@@hedron_compile_commands+//:workspace_setup.bzl%hedron_compile_commands_extension": {
+      "general": {
+        "bzlTransitiveDigest": "xfHREXIOWIcGVzoG9cUsecfHYTs1FeQNomBubjpqjW0=",
+        "usagesDigest": "CbJ2MjubH36j9xaONhhASfhodhpi5fzvuyg/IW2f7Ds=",
+        "recordedInputs": [
+          "REPO_MAPPING:hedron_compile_commands+,bazel_tools bazel_tools"
+        ],
+        "generatedRepoSpecs": {}
+      }
+    },
+    "@@hedron_compile_commands+//:workspace_setup_transitive.bzl%hedron_compile_commands_extension": {
+      "general": {
+        "bzlTransitiveDigest": "IfDf0vEa2jjQ11RNpUM0u4xftPXIs+pyM8IMVkRqVMk=",
+        "usagesDigest": "yxZQbFglJyjpn7JZ9mhIc3EhLzZivlbs6wiHWOKJ/UA=",
+        "recordedInputs": [],
+        "generatedRepoSpecs": {}
+      }
+    },
+    "@@hedron_compile_commands+//:workspace_setup_transitive_transitive.bzl%hedron_compile_commands_extension": {
+      "general": {
+        "bzlTransitiveDigest": "1p58k3o2Jgjt/pBE7cb8WmmkplrSguIKma/h32x7X10=",
+        "usagesDigest": "GkOuy/k8wz0dbKMeEJFKEJB3CWkMZt3DYcPgj4lALkI=",
+        "recordedInputs": [],
+        "generatedRepoSpecs": {}
+      }
+    },
+    "@@hedron_compile_commands+//:workspace_setup_transitive_transitive_transitive.bzl%hedron_compile_commands_extension": {
+      "general": {
+        "bzlTransitiveDigest": "arNWX4EleUjJxqkM5nCRTj+ce05Zz1gSdGH1DCKOoLs=",
+        "usagesDigest": "WZExKK/BI4lqpUZfPpv4YARDE1Y7igQB+wYGKvNoCKs=",
+        "recordedInputs": [],
+        "generatedRepoSpecs": {}
+      }
+    },
+    "@@pybind11_bazel+//:internal_configure.bzl%internal_configure_extension": {
+      "general": {
+        "bzlTransitiveDigest": "b+RP7Sgl8KN0VHamrgTqzGLuYPcQ/Mo4ptNkkHUIIlA=",
+        "usagesDigest": "D1r3lfzMuUBFxgG8V6o0bQTLMk3GkaGOaPzw53wrwyw=",
+        "recordedInputs": [
+          "REPO_MAPPING:pybind11_bazel+,bazel_tools bazel_tools",
+          "FILE:@@pybind11_bazel+//MODULE.bazel e6f4c20442eaa7c90d7190d8dc539d0ab422f95c65a57cc59562170c58ae3d34"
+        ],
+        "generatedRepoSpecs": {
+          "pybind11": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@pybind11_bazel+//:pybind11-BUILD.bazel",
+              "strip_prefix": "pybind11-2.12.0",
+              "urls": [
+                "https://github.com/pybind/pybind11/archive/v2.12.0.zip"
+              ]
+            }
+          }
+        }
+      }
+    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
         "bzlTransitiveDigest": "Ga4z8lQy1YQ5rAMy+dOl0dqcCEBnYNCXku8x3YQmDZI=",
@@ -873,6 +961,19 @@
               "strip_prefix": "gcc-arm-none-eabi-10.3-2021.10",
               "url": "https://github.com/swift-nav/swift-toolchains/releases/download/gcc-arm-none-eabi-10/gcc-arm-none-eabi-10.3-2021.10-mac.tar.bz2"
             }
+          }
+        }
+      }
+    },
+    "@@rules_swiftnav+//cc/toolchains/yocto_generic:yocto_generic_extension.bzl%yocto_generic_extension": {
+      "general": {
+        "bzlTransitiveDigest": "Q4v/HN5Wh/W0JsPpeExQzSqIslfepuWsd75kvW+25FI=",
+        "usagesDigest": "tgvbTGi0gApxHXWyZV05+9BzfUA6IIuudAI8wBXLWAg=",
+        "recordedInputs": [],
+        "generatedRepoSpecs": {
+          "yocto_generic": {
+            "repoRuleId": "@@rules_swiftnav+//cc/toolchains/yocto_generic:yocto_generic.bzl%yocto_generic",
+            "attributes": {}
           }
         }
       }
