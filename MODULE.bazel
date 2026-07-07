@@ -81,7 +81,7 @@ local_path_override(
     path = "third_party/ThreadPool",
 )
 
-bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.1")
+bazel_dep(name = "suitesparse", version = "7.1.0.swiftnav.3")
 bazel_dep(name = "gflags", version = "2.2.2.swiftnav")
 local_path_override(
     module_name = "gflags",
