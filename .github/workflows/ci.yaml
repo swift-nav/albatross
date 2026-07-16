@@ -85,7 +85,7 @@ jobs:
 
       - uses: bazel-contrib/setup-bazel@0.19.0
 
-      - uses: extractions/netrc@v2
+      - uses: extractions/netrc@v3
         with:
           machine: raw.githubusercontent.com
           username: ${{ secrets.GH_NAME }}
