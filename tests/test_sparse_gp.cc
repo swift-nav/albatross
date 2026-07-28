@@ -267,6 +267,31 @@ TEST(test_sparse_gp_sparse_qr, test_update_exists) {
   EXPECT_TRUE(bool(can_update_in_place<SparseGPR, FitType, double>::value));
 }
 
+TEST(test_sparse_gp_sparse_qr, test_alias_forwards_all_template_params) {
+  // Compile-time regression test: the SparseQRSparseGaussianProcessRegression
+  // alias must forward all four of its template parameters into the
+  // corresponding slots of SparseGaussianProcessRegression and select
+  // SPQRImplementation.  A previous version dropped MeanFunc, shifting
+  // every parameter into the wrong slot and silently falling back to
+  // DenseQRImplementation.
+  using CovFunc = SquaredExponential<EuclideanDistance>;
+  using MeanFunc = ZeroMean;
+  using GrouperFunction = LeaveOneIntervalOut;
+  using InducingPointStrategy = UniformlySpacedInducingPoints;
+
+  using Expected =
+      SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
+                                      InducingPointStrategy,
+                                      SPQRImplementation>;
+  using Actual = SparseQRSparseGaussianProcessRegression<
+      CovFunc, MeanFunc, GrouperFunction, InducingPointStrategy>;
+  static_assert(std::is_same<Actual, Expected>::value,
+                "SparseQRSparseGaussianProcessRegression must forward "
+                "CovFunc, MeanFunc, GrouperFunction and "
+                "InducingPointStrategy and use SPQRImplementation");
+  EXPECT_TRUE(bool(std::is_same<Actual, Expected>::value));
+}
+
 TYPED_TEST(SparseGaussianProcessTest, test_update) {
   auto &grouper_ = this->grouper;
   auto &qr_ = this->qr;

@@ -21,7 +21,7 @@ get_predictions(const ModelType &model,
                 const RegressionFolds<GroupKey, FeatureType> &folds) {
 
   const auto predict_group = [&model](const auto &fold) {
-    return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+    return model.fit(fold.train_dataset).predict(fold.test_dataset.features);
   };
 
   return folds.apply(predict_group);

@@ -262,6 +262,26 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
   }
 }
 
+TEST(test_crossvalidation, test_get_predictions_uses_test_features) {
+  // Regression test: get_predictions must predict each fold's held-out
+  // test features (matching predict_fold), not the training features
+  // it was fit on.
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto folds = folds_from_grouper(dataset, group_by_interval<double>);
+  const auto predictions = get_predictions(model, folds);
+
+  for (const auto &pair : folds) {
+    const auto &key = pair.first;
+    const auto &fold = pair.second;
+    const Eigen::VectorXd actual = predictions.at(key).mean();
+    ASSERT_EQ(actual.size(), cast::to_index(fold.test_dataset.size()));
+    const Eigen::VectorXd expected = predict_fold(model, fold).mean();
+    EXPECT_LE((actual - expected).norm(), 1e-12);
+  }
+}
+
 TEST(test_crossvalidation, test_leave_one_group_out_conditional_reference) {
   // Regression test: leave_one_group_out_conditional_* must match a
   // manually computed dense-algebra reference.  This pins the behavior
