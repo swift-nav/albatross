@@ -1,0 +1,66 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+# Micro benchmarks for the hot linear algebra and prediction paths.
+#
+# Always build and run these with optimization, e.g.:
+#
+#   bazel run -c opt //benchmarks:bench_predict
+#
+# A debug build of Eigen is orders of magnitude slower and the numbers
+# are meaningless.
+
+# The swiftnav toolchain does not define NDEBUG at -c opt; without it
+# Eigen bounds/assert checks dominate the small kernels being measured.
+BENCH_COPTS = [
+    "-std=c++17",
+    "-DNDEBUG",
+]
+
+BENCH_DEPS = [
+    "//:albatross",
+    "@google_benchmark//:benchmark_main",
+]
+
+cc_binary(
+    name = "bench_block_symmetric",
+    srcs = [
+        "bench_block_symmetric.cc",
+        "bench_utils.h",
+    ],
+    copts = BENCH_COPTS,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    deps = BENCH_DEPS,
+)
+
+cc_binary(
+    name = "bench_loo_cv",
+    srcs = [
+        "bench_loo_cv.cc",
+        "bench_utils.h",
+    ],
+    copts = BENCH_COPTS,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    deps = BENCH_DEPS,
+)
+
+cc_binary(
+    name = "bench_predict",
+    srcs = [
+        "bench_predict.cc",
+        "bench_utils.h",
+    ],
+    copts = BENCH_COPTS,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    deps = BENCH_DEPS,
+)
+
+cc_binary(
+    name = "bench_gram",
+    srcs = [
+        "bench_gram.cc",
+        "bench_utils.h",
+    ],
+    copts = BENCH_COPTS,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    deps = BENCH_DEPS + ["@suitesparse//:spqr"],
+)
