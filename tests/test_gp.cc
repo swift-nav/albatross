@@ -341,6 +341,25 @@ TEST(test_gp, test_model_from_prediction_low_rank) {
       model_pred.covariance, 1e-8));
 }
 
+TEST(test_gp, test_explained_covariance_precomputed_ldlt) {
+  // Regression test: constructing an ExplainedCovariance from a
+  // precomputed LDLT (which avoids re-factorizing the outer matrix)
+  // must behave identically to constructing it from the dense matrix.
+  const Eigen::Index k = 7;
+  Eigen::MatrixXd outer = Eigen::MatrixXd::Random(k, k);
+  outer = outer * outer.transpose() + Eigen::MatrixXd::Identity(k, k);
+  Eigen::MatrixXd inner = Eigen::MatrixXd::Random(k, k);
+  inner = inner * inner.transpose();
+
+  const ExplainedCovariance from_dense(outer, inner);
+  const ExplainedCovariance from_ldlt(Eigen::SerializableLDLT(outer), inner);
+
+  EXPECT_TRUE(from_dense == from_ldlt);
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(k, 3);
+  EXPECT_EQ(from_dense.solve(rhs), from_ldlt.solve(rhs));
+}
+
 TEST(test_gp, test_unobservablemodel_with_sum_constraint) {
 
   const auto dataset = test_unobservable_dataset();

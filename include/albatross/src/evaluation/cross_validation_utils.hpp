@@ -238,8 +238,11 @@ leave_one_group_out_conditional(const JointDistribution &prior,
   Eigen::SerializableLDLT ldlt(covariance);
   const Eigen::VectorXd deviation = truth.mean - prior.mean;
   const Eigen::VectorXd information = ldlt.solve(deviation);
-  return held_out_predictions(covariance, truth.mean, information,
-                              group_indexer, predict_type, pool);
+  // Pass the already computed LDLT here; passing the dense covariance
+  // would silently re-factorize it (an O(n^3) operation) through
+  // Eigen::SerializableLDLT's implicit converting constructor.
+  return held_out_predictions(ldlt, truth.mean, information, group_indexer,
+                              predict_type, pool);
 }
 
 } // namespace details

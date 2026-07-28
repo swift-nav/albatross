@@ -262,6 +262,45 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
   }
 }
 
+TEST(test_crossvalidation, test_leave_one_group_out_conditional_reference) {
+  // Regression test: leave_one_group_out_conditional_* must match a
+  // manually computed dense-algebra reference.  This pins the behavior
+  // of the internal held_out_predictions path (which reuses a single
+  // LDLT of the covariance rather than re-factorizing it).
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto indexers = dataset.group_by(group_by_interval<double>).indexers();
+  const auto prior = model.prior(dataset.features);
+
+  const auto loo_joints =
+      leave_one_group_out_conditional_joints(prior, dataset.targets, indexers);
+
+  const Eigen::MatrixXd sigma =
+      prior.covariance + Eigen::MatrixXd(dataset.targets.covariance);
+
+  for (const auto &pair : indexers) {
+    const auto &group_inds = pair.second;
+    const auto other_inds = indices_complement(group_inds, prior.size());
+
+    const Eigen::MatrixXd sigma_gg = symmetric_subset(sigma, group_inds);
+    const Eigen::MatrixXd sigma_go = subset(sigma, group_inds, other_inds);
+    const Eigen::MatrixXd sigma_oo = symmetric_subset(sigma, other_inds);
+    const Eigen::VectorXd deviation_o =
+        subset(Eigen::VectorXd(dataset.targets.mean - prior.mean), other_inds);
+
+    const Eigen::VectorXd expected_mean =
+        subset(prior.mean, group_inds) +
+        sigma_go * sigma_oo.ldlt().solve(deviation_o);
+    const Eigen::MatrixXd expected_cov =
+        sigma_gg - sigma_go * sigma_oo.ldlt().solve(sigma_go.transpose());
+
+    const auto &actual = loo_joints.at(pair.first);
+    EXPECT_LE((actual.mean - expected_mean).norm(), 1e-6);
+    EXPECT_LE((actual.covariance - expected_cov).norm(), 1e-6);
+  }
+}
+
 class MakeLargeGaussianProcess {
 public:
   auto get_model() const {
