@@ -527,9 +527,18 @@ public:
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
 
-    const Eigen::MatrixXd max_explained = Q_sqrt.transpose() * Q_sqrt;
-    const Eigen::MatrixXd unexplained = S_sqrt.transpose() * S_sqrt;
-    const Eigen::MatrixXd covariance = prior_cov - max_explained + unexplained;
+    // Both corrections are symmetric Gram products, so accumulate
+    // S_sqrt^T S_sqrt - Q_sqrt^T Q_sqrt in the lower triangle with
+    // rank updates (half the flops, one accumulator, no temporaries
+    // for the two full products).
+    Eigen::MatrixXd correction =
+        Eigen::MatrixXd::Zero(prior_cov.rows(), prior_cov.cols());
+    correction.selfadjointView<Eigen::Lower>().rankUpdate(S_sqrt.transpose(),
+                                                          1.);
+    correction.selfadjointView<Eigen::Lower>().rankUpdate(Q_sqrt.transpose(),
+                                                          -1.);
+    Eigen::MatrixXd covariance = prior_cov;
+    covariance += Eigen::MatrixXd(correction.selfadjointView<Eigen::Lower>());
 
     JointDistribution pred(cross_cov.transpose() * sparse_gp_fit.information,
                            covariance);
@@ -692,7 +701,11 @@ private:
     for (const auto &pair : indexer) {
       Eigen::Index cols = cast::to_index(pair.second.size());
       auto P_cols = P.block(0, i, P.rows(), cols);
-      Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
+      // P_cols^T P_cols is symmetric; use a rank update on the lower
+      // triangle and materialize the full block.
+      Eigen::MatrixXd block = Eigen::MatrixXd::Zero(cols, cols);
+      block.selfadjointView<Eigen::Lower>().rankUpdate(P_cols.transpose());
+      Q_ff_diag.blocks.emplace_back(block.selfadjointView<Eigen::Lower>());
       i += cols;
     }
     auto A = K_ff - Q_ff_diag;

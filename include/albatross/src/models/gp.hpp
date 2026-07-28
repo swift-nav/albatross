@@ -100,6 +100,45 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
   return MarginalDistribution(pred, marginal_variance);
 }
 
+/*
+ * Computes X^T X exploiting symmetry: a BLAS style rank update fills
+ * the lower triangle with half the flops of a general matrix product,
+ * after which the full symmetric matrix is materialized.
+ */
+inline Eigen::MatrixXd symmetric_transpose_product(const Eigen::MatrixXd &X) {
+  Eigen::MatrixXd product = Eigen::MatrixXd::Zero(X.cols(), X.cols());
+  product.selfadjointView<Eigen::Lower>().rankUpdate(X.transpose());
+  return Eigen::MatrixXd(product.selfadjointView<Eigen::Lower>());
+}
+
+/*
+ * The explained covariance, cross_cov^T K^-1 cross_cov, is symmetric.
+ * When the covariance representation provides a matrix square root
+ * solve we can form S = K^-1/2 cross_cov and compute S^T S with a
+ * symmetric rank update (one triangular solve and half the product
+ * flops); otherwise fall back to the generic solve based product.
+ */
+template <typename CovarianceRepresentation,
+          std::enable_if_t<
+              has_sqrt_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
+              int> = 0>
+inline Eigen::MatrixXd
+gp_explained_covariance(const Eigen::MatrixXd &cross_cov,
+                        const CovarianceRepresentation &train_covariance) {
+  const Eigen::MatrixXd sqrt = train_covariance.sqrt_solve(cross_cov);
+  return symmetric_transpose_product(sqrt);
+}
+
+template <typename CovarianceRepresentation,
+          std::enable_if_t<
+              !has_sqrt_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
+              int> = 0>
+inline Eigen::MatrixXd
+gp_explained_covariance(const Eigen::MatrixXd &cross_cov,
+                        const CovarianceRepresentation &train_covariance) {
+  return cross_cov.transpose() * train_covariance.solve(cross_cov);
+}
+
 template <typename CovarianceRepresentation>
 inline JointDistribution
 gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
@@ -107,8 +146,8 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
                     const Eigen::VectorXd &information,
                     const CovarianceRepresentation &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
-  Eigen::MatrixXd explained_cov =
-      cross_cov.transpose() * train_covariance.solve(cross_cov);
+  const Eigen::MatrixXd explained_cov =
+      gp_explained_covariance(cross_cov, train_covariance);
   return JointDistribution(pred, prior_cov - explained_cov);
 }
 
