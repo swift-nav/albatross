@@ -50,11 +50,12 @@ template <typename Solver> struct BlockSymmetric {
                  const Eigen::SerializableLDLT &S_)
       : A(A_), Ai_B(A_.solve(B_)), S(S_) {}
 
+  // Note: Ai_B is initialized before S (member declaration order) so
+  // the Schur complement below can reuse it, computing A^-1 B once.
   BlockSymmetric(const Solver &A_, const Eigen::MatrixXd &B_,
                  const Eigen::MatrixXd &C)
-      : BlockSymmetric(
-            A_, B_,
-            Eigen::SerializableLDLT(C - B_.transpose() * A_.solve(B_))) {}
+      : A(A_), Ai_B(A_.solve(B_)),
+        S(Eigen::SerializableLDLT(C - B_.transpose() * Ai_B)) {}
 
   template <class _Scalar, int _Rows, int _Cols>
   Eigen::Matrix<_Scalar, _Rows, _Cols>
@@ -87,14 +88,16 @@ inline Eigen::Matrix<_Scalar, _Rows, _Cols> BlockSymmetric<Solver>::solve(
   const Eigen::MatrixXd rhs_a = rhs.topRows(A.rows());
   const Eigen::MatrixXd rhs_b = rhs.bottomRows(S.rows());
 
-  const auto Bt_Ai_rhs = Ai_B.transpose() * rhs_a;
-
-  const auto Si_Bt_Ai_rhs = S.solve(Bt_Ai_rhs);
-  const auto upper_left = A.solve(rhs_a) + Ai_B * Si_Bt_Ai_rhs;
+  // Materialize the intermediate products so each is computed exactly
+  // once; with lazy Eigen expressions the S solves would otherwise be
+  // re-evaluated for every use.
+  const Eigen::MatrixXd Bt_Ai_rhs = Ai_B.transpose() * rhs_a;
+  const Eigen::MatrixXd Si_Bt_Ai_rhs = S.solve(Bt_Ai_rhs);
+  const Eigen::MatrixXd Si_rhs_b = S.solve(rhs_b);
 
   Eigen::Matrix<_Scalar, _Rows, _Cols> output(n, rhs.cols());
-  output.topRows(A.rows()) = upper_left - Ai_B * S.solve(rhs_b);
-  output.bottomRows(S.rows()) = S.solve(rhs_b) - Si_Bt_Ai_rhs;
+  output.topRows(A.rows()) = A.solve(rhs_a) + Ai_B * (Si_Bt_Ai_rhs - Si_rhs_b);
+  output.bottomRows(S.rows()) = Si_rhs_b - Si_Bt_Ai_rhs;
 
   return output;
 }

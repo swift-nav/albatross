@@ -189,7 +189,9 @@ inline JointDistribution
 held_out_prediction(const Eigen::MatrixXd &inverse_block,
                     const Eigen::VectorXd &y, const Eigen::VectorXd &v,
                     PredictTypeIdentity<JointDistribution>) {
-  const auto A_inv = inverse_block.inverse();
+  // Materialize the inverse once; `auto` would capture a lazy
+  // Eigen::Inverse expression which is re-evaluated at every use.
+  const Eigen::MatrixXd A_inv = inverse_block.inverse();
   const Eigen::VectorXd mean = y - A_inv * v;
   return JointDistribution(mean, A_inv);
 }

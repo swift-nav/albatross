@@ -467,7 +467,7 @@ gp_cross_validated_predictions(const RegressionDataset<FeatureType> &dataset,
                                const GPType &model,
                                PredictTypeIdentity<PredictType> predict_type) {
   const auto fit_model = model.fit(dataset);
-  const auto gp_fit = fit_model.get_fit();
+  const auto &gp_fit = fit_model.get_fit();
   // Note: it might look like we forgot to apply the mean function here,
   // but we don't actually need to use it, the information vector will
   // have been formed by taking the mean function into account and the

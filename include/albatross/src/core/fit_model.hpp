@@ -67,7 +67,7 @@ public:
           has_valid_update<ModelType, Fit, FeatureType>::value, int>::type = 0>
   auto update(const std::vector<FeatureType> &features,
               const MarginalDistribution &targets) const {
-    auto updated_fit = model_._update_impl(Fit(fit_), features, targets);
+    auto updated_fit = model_._update_impl(fit_, features, targets);
     return FitModel<ModelType, decltype(updated_fit)>(model_,
                                                       std::move(updated_fit));
   }
@@ -94,9 +94,11 @@ public:
     update_in_place(dataset.features, dataset.targets);
   }
 
-  Fit get_fit() const { return fit_; }
+  const Fit &get_fit() const & { return fit_; }
 
-  Fit &get_fit() { return fit_; }
+  Fit &get_fit() & { return fit_; }
+
+  Fit get_fit() && { return std::move(fit_); }
 
   ModelType get_model() const { return model_; };
 
