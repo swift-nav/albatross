@@ -218,8 +218,11 @@ held_out_predictions(const Eigen::SerializableLDLT &covariance,
   return apply(
              group_indexer,
              [&](const auto &key, const auto &indices) {
+               // `blocks` is shared across the pool's workers; use the
+               // const `at()` accessor since the non-const `operator[]`
+               // is a data race.
                return held_out_prediction(
-                   blocks[key], subset(target_mean, indices),
+                   blocks.at(key), subset(target_mean, indices),
                    subset(information, indices), predict_type);
              },
              pool)

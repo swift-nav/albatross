@@ -301,6 +301,47 @@ TEST(test_crossvalidation, test_leave_one_group_out_conditional_reference) {
   }
 }
 
+TEST(test_crossvalidation, test_leave_one_group_out_conditional_threaded) {
+  // Regression test: the held-out prediction path must produce the
+  // same results when run on a real thread pool as when run serially.
+  // (The underlying data race on the shared block map is only
+  // detectable under TSan; this pins correctness of the threaded
+  // path.)
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto indexers = dataset.group_by(group_by_interval<double>).indexers();
+  const auto prior = model.prior(dataset.features);
+
+  auto pool = make_shared_thread_pool(4);
+
+  const auto serial_means =
+      leave_one_group_out_conditional_means(prior, dataset.targets, indexers);
+  const auto threaded_means = leave_one_group_out_conditional_means(
+      prior, dataset.targets, indexers, pool.get());
+
+  const auto serial_marginals = leave_one_group_out_conditional_marginals(
+      prior, dataset.targets, indexers);
+  const auto threaded_marginals = leave_one_group_out_conditional_marginals(
+      prior, dataset.targets, indexers, pool.get());
+
+  const auto serial_joints =
+      leave_one_group_out_conditional_joints(prior, dataset.targets, indexers);
+  const auto threaded_joints = leave_one_group_out_conditional_joints(
+      prior, dataset.targets, indexers, pool.get());
+
+  for (const auto &pair : indexers) {
+    const auto &key = pair.first;
+    EXPECT_EQ(threaded_means.at(key), serial_means.at(key));
+    EXPECT_EQ(threaded_marginals.at(key).mean, serial_marginals.at(key).mean);
+    EXPECT_EQ(Eigen::MatrixXd(threaded_marginals.at(key).covariance),
+              Eigen::MatrixXd(serial_marginals.at(key).covariance));
+    EXPECT_EQ(threaded_joints.at(key).mean, serial_joints.at(key).mean);
+    EXPECT_EQ(threaded_joints.at(key).covariance,
+              serial_joints.at(key).covariance);
+  }
+}
+
 class MakeLargeGaussianProcess {
 public:
   auto get_model() const {
