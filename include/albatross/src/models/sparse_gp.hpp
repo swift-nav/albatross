@@ -469,8 +469,8 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    const auto cross_cov =
-        this->covariance_function_(sparse_gp_fit.train_features, features);
+    const auto cross_cov = this->covariance_function_(
+        sparse_gp_fit.train_features, features, Base::threads_.get());
     Eigen::VectorXd mean =
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
@@ -482,12 +482,14 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
-    const auto cross_cov =
-        this->covariance_function_(sparse_gp_fit.train_features, features);
+    const auto cross_cov = this->covariance_function_(
+        sparse_gp_fit.train_features, features, Base::threads_.get());
     Eigen::VectorXd mean =
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
 
+    // Note: the scalar prior variance calls below intentionally stay
+    // serial; they are cheap relative to the cross covariance.
     Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
       marginal_variance[i] = this->covariance_function_(
@@ -514,9 +516,10 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<JointDistribution> &&) const {
-    const auto cross_cov =
-        this->covariance_function_(sparse_gp_fit.train_features, features);
-    const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
+    const auto cross_cov = this->covariance_function_(
+        sparse_gp_fit.train_features, features, Base::threads_.get());
+    const Eigen::MatrixXd prior_cov =
+        this->covariance_function_(features, Base::threads_.get());
 
     const Eigen::MatrixXd S_sqrt =
         sqrt_solve(sparse_gp_fit.R, sparse_gp_fit.P, cross_cov);
