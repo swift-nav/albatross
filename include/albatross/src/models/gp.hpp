@@ -245,7 +245,7 @@ public:
     using FitType = Fit<GPFit<ExplainedCovariance, FeatureType>>;
     return FitModel<ImplType, FitType>(
         impl(), gp_fit_from_prediction(features, covariance_function_(features),
-                                       prediction));
+                                       zero_mean_prediction));
   }
 
   std::string get_name() const { return model_name_; };
