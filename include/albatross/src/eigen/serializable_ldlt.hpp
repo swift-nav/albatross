@@ -175,27 +175,27 @@ public:
   }
 
   /*
-   * The diagonal of the inverse of the matrix this LDLT
-   * decomposition represents in O(n^2) operations.
+   * The diagonal of the inverse of the matrix this LDLT decomposition
+   * represents.  The triangular solve against the identity makes this
+   * O(n^3) flops (the same as inverse_blocks), but the diagonal is
+   * then read off directly as column squared norms, with no per-entry
+   * index vectors, column subsets or 1x1 block allocations.
    */
   Eigen::VectorXd inverse_diagonal() const {
     Eigen::Index n = this->rows();
 
-    const auto size_n = albatross::cast::to_size(n);
-    std::vector<std::vector<std::size_t>> block_indices(size_n);
-    for (std::size_t i = 0; i < size_n; i++) {
-      block_indices[i] = {i};
-    }
+    // As in inverse_blocks:
+    //   A = P^T L D L^T P  =>  A^-1 = R^-T R^-1 with R^-1 = D^-1/2 L^-1 P
+    // so diag(A^-1)_i is the squared norm of column i of R^-1.
+    Eigen::MatrixXd inverse_cholesky =
+        this->transpositionsP() * Eigen::MatrixXd::Identity(n, n);
+    this->matrixL().solveInPlace(inverse_cholesky);
+    inverse_cholesky.array().colwise() *=
+        diagonal_sqrt_inverse().diagonal().array();
 
-    Eigen::VectorXd inv_diag(n);
-    const auto blocks = inverse_blocks(block_indices);
-    for (std::size_t i = 0; i < size_n; i++) {
-      ALBATROSS_ASSERT(blocks[i].rows() == 1);
-      ALBATROSS_ASSERT(blocks[i].cols() == 1);
-      inv_diag[albatross::cast::to_index(i)] = blocks[i](0, 0);
-    }
+    ALBATROSS_ASSERT(!inverse_cholesky.hasNaN());
 
-    return inv_diag;
+    return inverse_cholesky.colwise().squaredNorm().transpose();
   }
 
   bool operator==(const SerializableLDLT &rhs) const {

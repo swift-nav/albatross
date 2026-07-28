@@ -45,6 +45,25 @@ TEST_F(SerializableLDLTTest, test_inverse_diagonal) {
   EXPECT_LE(fabs((Eigen::VectorXd(inverse.diagonal()) - diag).norm()), 1e-8);
 }
 
+TEST_F(SerializableLDLTTest, test_inverse_diagonal_matches_inverse_blocks) {
+  const auto serializable_ldlt = Eigen::SerializableLDLT(cov.ldlt());
+
+  const auto n = albatross::cast::to_size(cov.rows());
+  std::vector<std::vector<std::size_t>> singletons(n);
+  for (std::size_t i = 0; i < n; i++) {
+    singletons[i] = {i};
+  }
+
+  const auto blocks = serializable_ldlt.inverse_blocks(singletons);
+  const auto diag = serializable_ldlt.inverse_diagonal();
+  ASSERT_EQ(albatross::cast::to_size(diag.size()), n);
+  for (std::size_t i = 0; i < n; i++) {
+    ASSERT_EQ(blocks[i].rows(), 1);
+    ASSERT_EQ(blocks[i].cols(), 1);
+    EXPECT_NEAR(blocks[i](0, 0), diag[albatross::cast::to_index(i)], 1e-12);
+  }
+}
+
 TEST_F(SerializableLDLTTest, test_log_det) {
   auto ldlt = cov.ldlt();
   const auto serializable_ldlt = Eigen::SerializableLDLT(ldlt);
