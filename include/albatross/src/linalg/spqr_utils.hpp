@@ -43,8 +43,8 @@ constexpr Eigen::Index kMinSparsePivotSize = 300;
 // SPQR pivot threshold policy.
 constexpr double kSPQRPivotCoefficient = 0.1;
 
-// Set the pivot threshold of the solver based on the problem to be
-// solved.
+// Compute the pivot threshold of the solver based on the problem to
+// be solved.
 //
 // The default SPQR pivot threshold calculation is oriented towards
 // problems considerably larger than your typical Albatross use case.
@@ -52,13 +52,13 @@ constexpr double kSPQRPivotCoefficient = 0.1;
 // function to choose a smaller threshold than the default and trade a
 // minimal speed reduction for accuracy improvements.
 template <typename MatrixType>
-inline void SPQR_set_pivot_threshold(SPQR *spqr, const MatrixType &m,
-                                     Eigen::Index min_sparse_pivot_size,
-                                     double spqr_pivot_coefficient) {
+inline double SPQR_pivot_threshold(const MatrixType &m,
+                                   Eigen::Index min_sparse_pivot_size,
+                                   double spqr_pivot_coefficient) {
   if (m.rows() < min_sparse_pivot_size || m.cols() < min_sparse_pivot_size) {
     // For small matrices, just use a really tight threshold for pivot
     // detection to reduce the inaccuracy of the sparse method.
-    spqr->setPivotThreshold(1e-15);
+    return 1e-15;
   }
   // For larger matrices, use the default SuiteSparseQR policy to
   // choose the pivot threshold, but accept a user-controlled
@@ -70,9 +70,18 @@ inline void SPQR_set_pivot_threshold(SPQR *spqr, const MatrixType &m,
   if (max2Norm == 0.) {
     max2Norm = 1.;
   }
-  spqr->setPivotThreshold(spqr_pivot_coefficient *
-                          cast::to_double(m.rows() + m.cols()) * max2Norm *
-                          Eigen::NumTraits<double>::epsilon());
+  return spqr_pivot_coefficient * cast::to_double(m.rows() + m.cols()) *
+         max2Norm * Eigen::NumTraits<double>::epsilon();
+}
+
+// Set the pivot threshold of the solver based on the problem to be
+// solved (see `SPQR_pivot_threshold` above).
+template <typename MatrixType>
+inline void SPQR_set_pivot_threshold(SPQR *spqr, const MatrixType &m,
+                                     Eigen::Index min_sparse_pivot_size,
+                                     double spqr_pivot_coefficient) {
+  spqr->setPivotThreshold(
+      SPQR_pivot_threshold(m, min_sparse_pivot_size, spqr_pivot_coefficient));
 }
 
 template <typename MatrixType>

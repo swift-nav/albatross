@@ -31,6 +31,29 @@ TEST(test_linalg_utils, test_qr_sqrt_solve) {
   EXPECT_LT((actual_quad - expected_quad).norm(), 1e-14);
 }
 
+TEST(test_linalg_utils, test_spqr_pivot_threshold_small_matrix) {
+  // Regression test: matrices smaller than the minimum sparse pivot
+  // size must use the tight small-problem threshold (1e-15) instead of
+  // falling through to the large-problem SuiteSparseQR policy.
+  const Eigen::Index small_size = kMinSparsePivotSize - 1;
+  const Eigen::MatrixXd small =
+      Eigen::MatrixXd::Identity(small_size, small_size);
+  EXPECT_EQ(
+      SPQR_pivot_threshold(small, kMinSparsePivotSize, kSPQRPivotCoefficient),
+      1e-15);
+
+  // Large matrices should keep using the (scaled) default policy.
+  const Eigen::Index large_size = kMinSparsePivotSize;
+  const Eigen::MatrixXd large =
+      Eigen::MatrixXd::Identity(large_size, large_size);
+  const double expected_large = kSPQRPivotCoefficient *
+                                cast::to_double(large_size + large_size) *
+                                Eigen::NumTraits<double>::epsilon();
+  EXPECT_DOUBLE_EQ(
+      SPQR_pivot_threshold(large, kMinSparsePivotSize, kSPQRPivotCoefficient),
+      expected_large);
+}
+
 TEST(test_linalg_utils, test_print_eigen_values) {
 
   constexpr Eigen::Index k = 10;
