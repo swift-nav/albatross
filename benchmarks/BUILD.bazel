@@ -33,6 +33,17 @@ cc_binary(
 )
 
 cc_binary(
+    name = "bench_kernel_assembly",
+    srcs = [
+        "bench_kernel_assembly.cc",
+        "bench_utils.h",
+    ],
+    copts = BENCH_COPTS,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    deps = BENCH_DEPS,
+)
+
+cc_binary(
     name = "bench_loo_cv",
     srcs = [
         "bench_loo_cv.cc",
