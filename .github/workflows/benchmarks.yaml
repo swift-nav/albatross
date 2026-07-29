@@ -1,0 +1,67 @@
+name: Benchmarks
+
+# Manual benchmark runs on Linux CI runners, primarily to measure the
+# matrix-level kernel assembly path on x86_64 (wider SIMD than Apple
+# NEON) with and without MKL.  Not part of regular CI: shared runners
+# are noisy, so treat results as indicative, and prefer the relative
+# per-pair vs matrix numbers over absolute timings.
+on:
+  push:
+    branches:
+      - 'feat/matrix-kernel-api'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kernel-assembly:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor:
+          - { name: "eigen", flags: "-c opt" }
+          - { name: "mkl", flags: "--config=mkl" }
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.SSH_KEY }}
+
+      - uses: bazel-contrib/setup-bazel@0.19.0
+
+      - uses: extractions/netrc@v3
+        with:
+          machine: raw.githubusercontent.com
+          username: ${{ secrets.GH_NAME }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Mount bazel cache
+        uses: actions/cache@v5
+        with:
+          path: "~/.cache/bazel"
+          key: bazel-bench-${{ matrix.flavor.name }}
+
+      - name: CPU info
+        run: |
+          lscpu | grep -E 'Model name|^CPU\(s\)' || true
+          grep -o -m1 -E 'avx512[a-z]*|avx2|fma' /proc/cpuinfo | sort -u | tr '\n' ' '; echo
+
+      - name: Run kernel assembly benchmark (${{ matrix.flavor.name }})
+        run: |
+          bazel run ${{ matrix.flavor.flags }} //benchmarks:bench_kernel_assembly -- \
+            --benchmark_repetitions=5 --benchmark_report_aggregates_only=true \
+            | tee bench_kernel_assembly.txt
+
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## Kernel assembly benchmark (${{ matrix.flavor.name }})"
+            echo '```'
+            cat bench_kernel_assembly.txt || echo "benchmark did not produce output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
