@@ -202,11 +202,25 @@ TEST(test_matrix_call, test_matrix_matches_per_pair_double) {
   expect_relatively_equal(cov(xs), per_pair_reference(cov, xs, xs));
 }
 
+TEST(test_matrix_call, test_small_sizes_match_per_pair) {
+  // Outputs smaller than MIN_MATRIX_CALL_COEFFICIENTS stay on the
+  // per-pair path, but the matrix implementation itself must remain
+  // correct for tiny inputs.
+  const SqExp cov(2., 1.5);
+  for (std::size_t n : {1, 2, 3, 5, 8}) {
+    const auto xs = random_vector_features(n, 3, 19);
+    const auto ys = random_vector_features(n + 1, 3, 20);
+    expect_relatively_equal(cov(xs, ys), per_pair_reference(cov, xs, ys));
+    expect_relatively_equal(cov._call_matrix_impl(xs, ys),
+                            per_pair_reference(cov, xs, ys));
+  }
+}
+
 TEST(test_matrix_call, test_thread_pool_argument_is_accepted) {
   // When the matrix path is taken the pool is (deliberately) ignored;
   // passing one must give the same result.
   const SqExp cov(2., 1.5);
-  const auto xs = random_vector_features(11, 3, 5);
+  const auto xs = random_vector_features(20, 3, 5);
   auto pool = std::make_shared<ThreadPool>(2);
   const Eigen::MatrixXd with_pool = cov(xs, pool.get());
   const Eigen::MatrixXd without_pool = cov(xs);
@@ -281,11 +295,15 @@ TEST(test_matrix_call, test_nested_composition) {
 
 TEST(test_matrix_call, test_zero_length_scale_guard) {
   const SqExp cov(0., 1.5);
-  const auto xs = random_double_features(7, 13);
-  const auto vs = random_vector_features(7, 3, 13);
+  const auto xs = random_double_features(30, 13);
+  const auto vs = random_vector_features(30, 3, 13);
 
   EXPECT_TRUE(cov(xs).isZero(0.));
   EXPECT_TRUE(cov(vs).isZero(0.));
+  // also through the matrix implementation directly (small inputs
+  // otherwise stay on the per-pair path)
+  EXPECT_TRUE(cov._call_matrix_impl(xs, xs).isZero(0.));
+  EXPECT_TRUE(cov._call_matrix_impl(vs, vs).isZero(0.));
 }
 
 TEST(test_matrix_call, test_empty_features) {
@@ -298,6 +316,11 @@ TEST(test_matrix_call, test_empty_features) {
   EXPECT_EQ(cov(empty, xs).cols(), 5);
   EXPECT_EQ(cov(xs, empty).rows(), 5);
   EXPECT_EQ(cov(xs, empty).cols(), 0);
+  // and through the matrix implementation directly
+  EXPECT_EQ(cov._call_matrix_impl(empty, xs).rows(), 0);
+  EXPECT_EQ(cov._call_matrix_impl(empty, xs).cols(), 5);
+  EXPECT_EQ(cov._call_matrix_impl(xs, empty).rows(), 5);
+  EXPECT_EQ(cov._call_matrix_impl(xs, empty).cols(), 0);
 }
 
 template <typename CovFunc>

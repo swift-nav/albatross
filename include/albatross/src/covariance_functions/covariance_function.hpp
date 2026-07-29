@@ -60,6 +60,20 @@ namespace albatross {
  * CovarianceFunctions (see operator* and operator+).
  *
  */
+namespace details {
+
+/*
+ * Below this many output coefficients the fixed overhead of the matrix
+ * path (feature stacking, GEMM setup, temporaries) outweighs the
+ * vectorization win; the measured crossover is around a 16 x 16 output
+ * on an Apple M series laptop with plain Eigen (see
+ * benchmarks/bench_kernel_assembly.cc).  Kernels without a scalar
+ * _call_impl always use their matrix implementation.
+ */
+constexpr std::size_t MIN_MATRIX_CALL_COEFFICIENTS = 256;
+
+} // namespace details
+
 template <typename Derived>
 class CovarianceFunction : public ParameterHandlingMixin {
 private:
@@ -136,6 +150,10 @@ public:
    * path is taken any ThreadPool argument is intentionally ignored;
    * matrix implementations are expected to rely on Eigen's internally
    * vectorized (BLAS-like) kernels which don't benefit from the pool.
+   *
+   * For small outputs the fixed overhead of the matrix path exceeds the
+   * vectorization win so (when a scalar fallback exists) tiny requests
+   * stay on the per-pair path, see MIN_MATRIX_CALL_COEFFICIENTS.
    */
   template <typename X,
             typename std::enable_if<
@@ -143,6 +161,14 @@ public:
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              ThreadPool * /* pool: unused, see above */
                              = nullptr) const {
+    if constexpr (has_valid_caller<Derived, X, X>::value) {
+      if (xs.size() * xs.size() < details::MIN_MATRIX_CALL_COEFFICIENTS) {
+        auto caller = [&](const auto &x, const auto &y) {
+          return this->call(x, y);
+        };
+        return compute_covariance_matrix(caller, xs);
+      }
+    }
     Eigen::MatrixXd cov = derived()._call_matrix_impl(xs, xs);
     // The per-pair path guarantees an exactly symmetric matrix; a GEMM
     // based implementation may differ in the last ulp between (i, j)
@@ -209,6 +235,14 @@ public:
   Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
                              ThreadPool * /* pool: unused, see above */
                              = nullptr) const {
+    if constexpr (has_valid_caller<Derived, X, Y>::value) {
+      if (xs.size() * ys.size() < details::MIN_MATRIX_CALL_COEFFICIENTS) {
+        auto caller = [&](const auto &x, const auto &y) {
+          return this->call(x, y);
+        };
+        return compute_covariance_matrix(caller, xs, ys);
+      }
+    }
     return derived()._call_matrix_impl(xs, ys);
   }
 
