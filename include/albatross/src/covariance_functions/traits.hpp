@@ -30,6 +30,27 @@ class has_valid_call_impl
 template <typename U, typename... Args>
 class has_possible_call_impl : public has__call_impl<U, Args &...> {};
 
+DEFINE_CLASS_METHOD_TRAITS(_call_matrix_impl);
+
+/*
+ * has_valid_matrix_caller
+ *
+ * Detects whether a covariance function provides an opt-in matrix-level
+ * evaluation method with signature:
+ *
+ *   Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &,
+ *                                     const std::vector<Y> &) const
+ *
+ * When present, CovarianceFunction::operator()(const std::vector<X>&, ...)
+ * will assemble the covariance matrix with a single (vectorized) call
+ * instead of one scalar _call_impl call per pair of features.
+ */
+template <typename U, typename X, typename Y>
+class has_valid_matrix_caller
+    : public has__call_matrix_impl_with_return_type<
+          const U, Eigen::MatrixXd, typename const_ref<std::vector<X>>::type,
+          typename const_ref<std::vector<Y>>::type> {};
+
 /*
  * has_valid_cov_caller
  */

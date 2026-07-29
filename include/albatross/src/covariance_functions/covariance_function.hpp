@@ -124,10 +124,37 @@ public:
 
   /*
    * Covariance between each element and every other in a vector.
+   *
+   * The default implementation assembles the matrix one scalar
+   * _call_impl call at a time.  Covariance functions can opt in to a
+   * matrix-level (vectorized) assembly by defining:
+   *
+   *   Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &,
+   *                                     const std::vector<Y> &) const
+   *
+   * in which case that method is used directly.  NOTE: when the matrix
+   * path is taken any ThreadPool argument is intentionally ignored;
+   * matrix implementations are expected to rely on Eigen's internally
+   * vectorized (BLAS-like) kernels which don't benefit from the pool.
    */
   template <typename X,
-            typename std::enable_if<has_valid_caller<Derived, X, X>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                has_valid_matrix_caller<Derived, X, X>::value, int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<X> &xs,
+                             ThreadPool * /* pool: unused, see above */
+                             = nullptr) const {
+    Eigen::MatrixXd cov = derived()._call_matrix_impl(xs, xs);
+    // The per-pair path guarantees an exactly symmetric matrix; a GEMM
+    // based implementation may differ in the last ulp between (i, j)
+    // and (j, i), so we enforce symmetry here.
+    cov.template triangularView<Eigen::Lower>() = cov.transpose();
+    return cov;
+  }
+
+  template <typename X, typename std::enable_if<
+                            (has_valid_caller<Derived, X, X>::value &&
+                             !has_valid_matrix_caller<Derived, X, X>::value),
+                            int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs,
                              ThreadPool *pool = nullptr) const {
     auto caller = [&](const auto &x, const auto &y) {
@@ -137,11 +164,59 @@ public:
   }
 
   /*
+   * Measurement<> unwrapping for the matrix path.
+   *
+   * The fit path wraps features in Measurement<> (see as_measurements).
+   * When the derived covariance function has a matrix implementation for
+   * the underlying type and does not distinguish Measurement<X> from X
+   * in any way (no _call_impl mentioning Measurement<X> whatsoever), the
+   * Measurement wrappers are stripped and the matrix path is used.
+   *
+   * NOTE: this deliberately does not apply to composite functions such
+   * as SumOfCovarianceFunctions since those accept Measurement<X> via
+   * their generic _call_impl (one of their terms, e.g. a noise model,
+   * could behave differently for measurements).  Composed kernels
+   * therefore use the per-pair path for Measurement<> features (i.e.
+   * during fit) but still benefit from the matrix path for the plain
+   * feature types used in predict cross covariances.
+   */
+  template <typename X, typename std::enable_if<
+                            (has_valid_matrix_caller<Derived, X, X>::value &&
+                             !has_valid_matrix_caller<Derived, Measurement<X>,
+                                                      Measurement<X>>::value &&
+                             !has_possible_call_impl<Derived, Measurement<X>,
+                                                     Measurement<X>>::value),
+                            int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<Measurement<X>> &xs,
+                             ThreadPool *pool = nullptr) const {
+    std::vector<X> values;
+    values.reserve(xs.size());
+    for (const auto &x : xs) {
+      values.push_back(x.value);
+    }
+    return this->operator()(values, pool);
+  }
+
+  /*
    * Cross covariance between two vectors of (possibly) different types.
+   *
+   * As above, a covariance function with a matrix-level implementation
+   * for (X, Y) bypasses the per-pair loop (and ignores any thread pool).
    */
   template <typename X, typename Y,
-            typename std::enable_if<has_valid_caller<Derived, X, Y>::value,
-                                    int>::type = 0>
+            typename std::enable_if<
+                has_valid_matrix_caller<Derived, X, Y>::value, int>::type = 0>
+  Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
+                             ThreadPool * /* pool: unused, see above */
+                             = nullptr) const {
+    return derived()._call_matrix_impl(xs, ys);
+  }
+
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_valid_caller<Derived, X, Y>::value &&
+                               !has_valid_matrix_caller<Derived, X, Y>::value),
+                              int>::type = 0>
   Eigen::MatrixXd operator()(const std::vector<X> &xs, const std::vector<Y> &ys,
                              ThreadPool *pool = nullptr) const {
     auto caller = [&](const auto &x, const auto &y) {
@@ -215,6 +290,36 @@ public:
 
   const Derived &derived() const { return *static_cast<const Derived *>(this); }
 };
+
+namespace details {
+
+/*
+ * Assemble the covariance block for one term of a composite covariance
+ * function, using the term's matrix-level implementation when it has one
+ * and falling back to the per-pair loop otherwise.  This is what allows
+ * a composed kernel (e.g. k1 * k2 + k3) to benefit from matrix-level
+ * evaluation term by term.
+ */
+template <typename CovFunc, typename X, typename Y,
+          typename std::enable_if<has_valid_matrix_caller<CovFunc, X, Y>::value,
+                                  int>::type = 0>
+inline Eigen::MatrixXd compute_covariance_block(const CovFunc &cov,
+                                                const std::vector<X> &xs,
+                                                const std::vector<Y> &ys) {
+  return cov._call_matrix_impl(xs, ys);
+}
+
+template <typename CovFunc, typename X, typename Y,
+          typename std::enable_if<
+              !has_valid_matrix_caller<CovFunc, X, Y>::value, int>::type = 0>
+inline Eigen::MatrixXd compute_covariance_block(const CovFunc &cov,
+                                                const std::vector<X> &xs,
+                                                const std::vector<Y> &ys) {
+  auto caller = [&](const auto &x, const auto &y) { return cov(x, y); };
+  return compute_covariance_matrix(caller, xs, ys);
+}
+
+} // namespace details
 
 /*
  * SUM
@@ -291,6 +396,52 @@ public:
                                     int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
+  }
+
+  /*
+   * Matrix-level evaluation of the sum.  This is available as soon as at
+   * least one of the two terms has a matrix-level implementation for
+   * (X, Y); the other term is assembled with the per-pair fallback (see
+   * details::compute_covariance_block).  A term only participates when
+   * it would also participate in the scalar _call_impl above
+   * (has_equivalent_caller) so the two paths always agree on which terms
+   * are included.
+   */
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
+                               has_equivalent_caller<RHS, X, Y>::value &&
+                               (has_valid_matrix_caller<LHS, X, Y>::value ||
+                                has_valid_matrix_caller<RHS, X, Y>::value)),
+                              int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->lhs_, xs, ys) +
+           details::compute_covariance_block(this->rhs_, xs, ys);
+  }
+
+  /*
+   * If only LHS is defined for these types (RHS is ignored, as in the
+   * scalar path) the matrix impl is available when LHS has one.
+   */
+  template <typename X, typename Y,
+            typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
+                                     !has_equivalent_caller<RHS, X, Y>::value &&
+                                     has_valid_matrix_caller<LHS, X, Y>::value),
+                                    int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->lhs_, xs, ys);
+  }
+
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_equivalent_caller<LHS, X, Y>::value &&
+                                     has_equivalent_caller<RHS, X, Y>::value &&
+                                     has_valid_matrix_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->rhs_, xs, ys);
   }
 
   template <typename X,
@@ -386,6 +537,46 @@ public:
                                     int>::type = 0>
   double _call_impl(const X &x, const Y &y) const {
     return this->rhs_(x, y);
+  }
+
+  /*
+   * Matrix-level evaluation of the product; see the analogous methods
+   * on SumOfCovarianceFunctions for the reasoning behind the enable_if
+   * conditions.  Note the scalar _call_impl short circuits when the LHS
+   * is zero which is a performance (not correctness) detail; the
+   * element-wise product below is mathematically identical.
+   */
+  template <
+      typename X, typename Y,
+      typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
+                               has_equivalent_caller<RHS, X, Y>::value &&
+                               (has_valid_matrix_caller<LHS, X, Y>::value ||
+                                has_valid_matrix_caller<RHS, X, Y>::value)),
+                              int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->lhs_, xs, ys)
+        .cwiseProduct(details::compute_covariance_block(this->rhs_, xs, ys));
+  }
+
+  template <typename X, typename Y,
+            typename std::enable_if<(has_equivalent_caller<LHS, X, Y>::value &&
+                                     !has_equivalent_caller<RHS, X, Y>::value &&
+                                     has_valid_matrix_caller<LHS, X, Y>::value),
+                                    int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->lhs_, xs, ys);
+  }
+
+  template <typename X, typename Y,
+            typename std::enable_if<(!has_equivalent_caller<LHS, X, Y>::value &&
+                                     has_equivalent_caller<RHS, X, Y>::value &&
+                                     has_valid_matrix_caller<RHS, X, Y>::value),
+                                    int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<X> &xs,
+                                    const std::vector<Y> &ys) const {
+    return details::compute_covariance_block(this->rhs_, xs, ys);
   }
 
   template <typename X,
