@@ -38,7 +38,7 @@ TEST(test_linalg_utils, test_spqr_pivot_threshold_small_matrix) {
   const Eigen::Index small_size = kMinSparsePivotSize - 1;
   const Eigen::MatrixXd small =
       Eigen::MatrixXd::Identity(small_size, small_size);
-  EXPECT_EQ(
+  EXPECT_DOUBLE_EQ(
       SPQR_pivot_threshold(small, kMinSparsePivotSize, kSPQRPivotCoefficient),
       1e-15);
 

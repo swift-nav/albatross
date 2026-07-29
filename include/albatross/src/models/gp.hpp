@@ -144,11 +144,7 @@ gp_fit_from_prediction(const std::vector<FeatureType> &features,
   Fit<GPFit<ExplainedCovariance, FeatureType>> fit;
   fit.train_features = features;
   // Factorize the prior once and share the decomposition between the
-  // covariance representation and the information vector.  Passing the
-  // dense `prior` to ExplainedCovariance (or calling `prior.ldlt()`
-  // again below) would trigger a second O(n^3) factorization, possibly
-  // silently through Eigen::SerializableLDLT's implicit converting
-  // constructor.
+  // covariance representation and the information vector.
   const Eigen::SerializableLDLT prior_ldlt(prior);
   fit.train_covariance =
       ExplainedCovariance(prior_ldlt, prior - prediction.covariance);

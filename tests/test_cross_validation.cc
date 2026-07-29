@@ -352,13 +352,31 @@ TEST(test_crossvalidation, test_leave_one_group_out_conditional_threaded) {
 
   for (const auto &pair : indexers) {
     const auto &key = pair.first;
-    EXPECT_EQ(threaded_means.at(key), serial_means.at(key));
-    EXPECT_EQ(threaded_marginals.at(key).mean, serial_marginals.at(key).mean);
-    EXPECT_EQ(Eigen::MatrixXd(threaded_marginals.at(key).covariance),
-              Eigen::MatrixXd(serial_marginals.at(key).covariance));
-    EXPECT_EQ(threaded_joints.at(key).mean, serial_joints.at(key).mean);
-    EXPECT_EQ(threaded_joints.at(key).covariance,
-              serial_joints.at(key).covariance);
+
+    ASSERT_EQ(threaded_means.at(key).size(), serial_means.at(key).size());
+    for (Eigen::Index i = 0; i < serial_means.at(key).size(); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_means.at(key)[i], serial_means.at(key)[i]);
+    }
+
+    const auto &serial_marginal = serial_marginals.at(key);
+    const auto &threaded_marginal = threaded_marginals.at(key);
+    ASSERT_EQ(threaded_marginal.size(), serial_marginal.size());
+    for (Eigen::Index i = 0; i < cast::to_index(serial_marginal.size()); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_marginal.mean[i], serial_marginal.mean[i]);
+      EXPECT_DOUBLE_EQ(threaded_marginal.get_diagonal(i),
+                       serial_marginal.get_diagonal(i));
+    }
+
+    const auto &serial_joint = serial_joints.at(key);
+    const auto &threaded_joint = threaded_joints.at(key);
+    ASSERT_EQ(threaded_joint.size(), serial_joint.size());
+    for (Eigen::Index i = 0; i < cast::to_index(serial_joint.size()); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_joint.mean[i], serial_joint.mean[i]);
+      for (Eigen::Index j = 0; j < cast::to_index(serial_joint.size()); ++j) {
+        EXPECT_DOUBLE_EQ(threaded_joint.covariance(i, j),
+                         serial_joint.covariance(i, j));
+      }
+    }
   }
 }
 

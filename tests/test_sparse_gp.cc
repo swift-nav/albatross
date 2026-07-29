@@ -271,9 +271,7 @@ TEST(test_sparse_gp_sparse_qr, test_alias_forwards_all_template_params) {
   // Compile-time regression test: the SparseQRSparseGaussianProcessRegression
   // alias must forward all four of its template parameters into the
   // corresponding slots of SparseGaussianProcessRegression and select
-  // SPQRImplementation.  A previous version dropped MeanFunc, shifting
-  // every parameter into the wrong slot and silently falling back to
-  // DenseQRImplementation.
+  // SPQRImplementation.
   using CovFunc = SquaredExponential<EuclideanDistance>;
   using MeanFunc = ZeroMean;
   using GrouperFunction = LeaveOneIntervalOut;
