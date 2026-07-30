@@ -143,9 +143,12 @@ gp_fit_from_prediction(const std::vector<FeatureType> &features,
                        const JointDistribution &prediction) {
   Fit<GPFit<ExplainedCovariance, FeatureType>> fit;
   fit.train_features = features;
+  // Factorize the prior once and share the decomposition between the
+  // covariance representation and the information vector.
+  const Eigen::SerializableLDLT prior_ldlt(prior);
   fit.train_covariance =
-      ExplainedCovariance(prior, prior - prediction.covariance);
-  fit.information = prior.ldlt().solve(prediction.mean);
+      ExplainedCovariance(prior_ldlt, prior - prediction.covariance);
+  fit.information = prior_ldlt.solve(prediction.mean);
   return fit;
 }
 
@@ -238,7 +241,7 @@ public:
     using FitType = Fit<GPFit<ExplainedCovariance, FeatureType>>;
     return FitModel<ImplType, FitType>(
         impl(), gp_fit_from_prediction(features, covariance_function_(features),
-                                       prediction));
+                                       zero_mean_prediction));
   }
 
   std::string get_name() const { return model_name_; };

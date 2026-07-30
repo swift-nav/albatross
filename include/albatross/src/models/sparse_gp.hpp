@@ -727,7 +727,7 @@ auto rebase_inducing_points(
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,
           typename InducingPointStrategy>
 using SparseQRSparseGaussianProcessRegression =
-    SparseGaussianProcessRegression<CovFunc, GrouperFunction,
+    SparseGaussianProcessRegression<CovFunc, MeanFunc, GrouperFunction,
                                     InducingPointStrategy, SPQRImplementation>;
 
 template <typename CovFunc, typename MeanFunc, typename GrouperFunction,

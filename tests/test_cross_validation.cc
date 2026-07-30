@@ -262,6 +262,124 @@ TEST(test_crossvalidation, test_leave_one_out_equivalences) {
   }
 }
 
+TEST(test_crossvalidation, test_get_predictions_uses_test_features) {
+  // Regression test: get_predictions must predict each fold's held-out
+  // test features (matching predict_fold), not the training features
+  // it was fit on.
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto folds = folds_from_grouper(dataset, group_by_interval<double>);
+  const auto predictions = get_predictions(model, folds);
+
+  for (const auto &pair : folds) {
+    const auto &key = pair.first;
+    const auto &fold = pair.second;
+    const Eigen::VectorXd actual = predictions.at(key).mean();
+    ASSERT_EQ(actual.size(), cast::to_index(fold.test_dataset.size()));
+    const Eigen::VectorXd expected = predict_fold(model, fold).mean();
+    EXPECT_LE((actual - expected).norm(), 1e-12);
+  }
+}
+
+TEST(test_crossvalidation, test_leave_one_group_out_conditional_reference) {
+  // Regression test: leave_one_group_out_conditional_* must match a
+  // manually computed dense-algebra reference.  This pins the behavior
+  // of the internal held_out_predictions path (which reuses a single
+  // LDLT of the covariance rather than re-factorizing it).
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto indexers = dataset.group_by(group_by_interval<double>).indexers();
+  const auto prior = model.prior(dataset.features);
+
+  const auto loo_joints =
+      leave_one_group_out_conditional_joints(prior, dataset.targets, indexers);
+
+  const Eigen::MatrixXd sigma =
+      prior.covariance + Eigen::MatrixXd(dataset.targets.covariance);
+
+  for (const auto &pair : indexers) {
+    const auto &group_inds = pair.second;
+    const auto other_inds = indices_complement(group_inds, prior.size());
+
+    const Eigen::MatrixXd sigma_gg = symmetric_subset(sigma, group_inds);
+    const Eigen::MatrixXd sigma_go = subset(sigma, group_inds, other_inds);
+    const Eigen::MatrixXd sigma_oo = symmetric_subset(sigma, other_inds);
+    const Eigen::VectorXd deviation_o =
+        subset(Eigen::VectorXd(dataset.targets.mean - prior.mean), other_inds);
+
+    const Eigen::VectorXd expected_mean =
+        subset(prior.mean, group_inds) +
+        sigma_go * sigma_oo.ldlt().solve(deviation_o);
+    const Eigen::MatrixXd expected_cov =
+        sigma_gg - sigma_go * sigma_oo.ldlt().solve(sigma_go.transpose());
+
+    const auto &actual = loo_joints.at(pair.first);
+    EXPECT_LE((actual.mean - expected_mean).norm(), 1e-6);
+    EXPECT_LE((actual.covariance - expected_cov).norm(), 1e-6);
+  }
+}
+
+TEST(test_crossvalidation, test_leave_one_group_out_conditional_threaded) {
+  // Regression test: the held-out prediction path must produce the
+  // same results when run on a real thread pool as when run serially.
+  // (The underlying data race on the shared block map is only
+  // detectable under TSan; this pins correctness of the threaded
+  // path.)
+  const auto dataset = make_toy_linear_data();
+  auto model = MakeGaussianProcess().get_model();
+
+  const auto indexers = dataset.group_by(group_by_interval<double>).indexers();
+  const auto prior = model.prior(dataset.features);
+
+  auto pool = make_shared_thread_pool(4);
+
+  const auto serial_means =
+      leave_one_group_out_conditional_means(prior, dataset.targets, indexers);
+  const auto threaded_means = leave_one_group_out_conditional_means(
+      prior, dataset.targets, indexers, pool.get());
+
+  const auto serial_marginals = leave_one_group_out_conditional_marginals(
+      prior, dataset.targets, indexers);
+  const auto threaded_marginals = leave_one_group_out_conditional_marginals(
+      prior, dataset.targets, indexers, pool.get());
+
+  const auto serial_joints =
+      leave_one_group_out_conditional_joints(prior, dataset.targets, indexers);
+  const auto threaded_joints = leave_one_group_out_conditional_joints(
+      prior, dataset.targets, indexers, pool.get());
+
+  for (const auto &pair : indexers) {
+    const auto &key = pair.first;
+
+    ASSERT_EQ(threaded_means.at(key).size(), serial_means.at(key).size());
+    for (Eigen::Index i = 0; i < serial_means.at(key).size(); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_means.at(key)[i], serial_means.at(key)[i]);
+    }
+
+    const auto &serial_marginal = serial_marginals.at(key);
+    const auto &threaded_marginal = threaded_marginals.at(key);
+    ASSERT_EQ(threaded_marginal.size(), serial_marginal.size());
+    for (Eigen::Index i = 0; i < cast::to_index(serial_marginal.size()); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_marginal.mean[i], serial_marginal.mean[i]);
+      EXPECT_DOUBLE_EQ(threaded_marginal.get_diagonal(i),
+                       serial_marginal.get_diagonal(i));
+    }
+
+    const auto &serial_joint = serial_joints.at(key);
+    const auto &threaded_joint = threaded_joints.at(key);
+    ASSERT_EQ(threaded_joint.size(), serial_joint.size());
+    for (Eigen::Index i = 0; i < cast::to_index(serial_joint.size()); ++i) {
+      EXPECT_DOUBLE_EQ(threaded_joint.mean[i], serial_joint.mean[i]);
+      for (Eigen::Index j = 0; j < cast::to_index(serial_joint.size()); ++j) {
+        EXPECT_DOUBLE_EQ(threaded_joint.covariance(i, j),
+                         serial_joint.covariance(i, j));
+      }
+    }
+  }
+}
+
 class MakeLargeGaussianProcess {
 public:
   auto get_model() const {

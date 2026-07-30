@@ -341,6 +341,54 @@ TEST(test_gp, test_model_from_prediction_low_rank) {
       model_pred.covariance, 1e-8));
 }
 
+TEST(test_gp, test_model_from_prediction_with_mean) {
+  // Regression test: fit_from_prediction must remove the mean function
+  // from the prediction before building the new fit.  If the original
+  // (mean-included) prediction is used, the mean function ends up
+  // double counted in subsequent predictions.
+  const double a = 5.;
+  const double b = 1.;
+  const auto dataset = make_toy_linear_data(a, b);
+
+  SquaredExponential<EuclideanDistance> squared_exponential(2., 1.);
+  IndependentNoise<double> noise(0.1);
+  const auto covariance = squared_exponential + measurement_only(noise);
+  LinearMean linear_mean;
+  linear_mean.offset.value = a;
+  linear_mean.slope.value = b;
+  const auto model = gp_from_covariance_and_mean(covariance, linear_mean);
+
+  const auto fit_model = model.fit(dataset);
+
+  const std::vector<double> features = {1.3, 4.2, 7.1};
+  const auto pred = fit_model.predict(features).joint();
+
+  const auto from_prediction = model.fit_from_prediction(features, pred);
+  const auto pred_again = from_prediction.predict(features).joint();
+
+  EXPECT_LE((pred_again.mean - pred.mean).norm(), 1e-6);
+  EXPECT_LE((pred_again.covariance - pred.covariance).norm(), 1e-6);
+}
+
+TEST(test_gp, test_explained_covariance_precomputed_ldlt) {
+  // Regression test: constructing an ExplainedCovariance from a
+  // precomputed LDLT (which avoids re-factorizing the outer matrix)
+  // must behave identically to constructing it from the dense matrix.
+  const Eigen::Index k = 7;
+  Eigen::MatrixXd outer = Eigen::MatrixXd::Random(k, k);
+  outer = outer * outer.transpose() + Eigen::MatrixXd::Identity(k, k);
+  Eigen::MatrixXd inner = Eigen::MatrixXd::Random(k, k);
+  inner = inner * inner.transpose();
+
+  const ExplainedCovariance from_dense(outer, inner);
+  const ExplainedCovariance from_ldlt(Eigen::SerializableLDLT(outer), inner);
+
+  EXPECT_TRUE(from_dense == from_ldlt);
+
+  const Eigen::MatrixXd rhs = Eigen::MatrixXd::Random(k, 3);
+  EXPECT_EQ(from_dense.solve(rhs), from_ldlt.solve(rhs));
+}
+
 TEST(test_gp, test_unobservablemodel_with_sum_constraint) {
 
   const auto dataset = test_unobservable_dataset();

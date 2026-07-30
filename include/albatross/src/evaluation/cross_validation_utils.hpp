@@ -21,7 +21,7 @@ get_predictions(const ModelType &model,
                 const RegressionFolds<GroupKey, FeatureType> &folds) {
 
   const auto predict_group = [&model](const auto &fold) {
-    return model.fit(fold.train_dataset).predict(fold.train_dataset.features);
+    return model.fit(fold.train_dataset).predict(fold.test_dataset.features);
   };
 
   return folds.apply(predict_group);
@@ -218,8 +218,11 @@ held_out_predictions(const Eigen::SerializableLDLT &covariance,
   return apply(
              group_indexer,
              [&](const auto &key, const auto &indices) {
+               // `blocks` is shared across the pool's workers; use the
+               // const `at()` accessor since the non-const `operator[]`
+               // is a data race.
                return held_out_prediction(
-                   blocks[key], subset(target_mean, indices),
+                   blocks.at(key), subset(target_mean, indices),
                    subset(information, indices), predict_type);
              },
              pool)
@@ -238,8 +241,11 @@ leave_one_group_out_conditional(const JointDistribution &prior,
   Eigen::SerializableLDLT ldlt(covariance);
   const Eigen::VectorXd deviation = truth.mean - prior.mean;
   const Eigen::VectorXd information = ldlt.solve(deviation);
-  return held_out_predictions(covariance, truth.mean, information,
-                              group_indexer, predict_type, pool);
+  // Pass the already computed LDLT here; passing the dense covariance
+  // would silently re-factorize it (an O(n^3) operation) through
+  // Eigen::SerializableLDLT's implicit converting constructor.
+  return held_out_predictions(ldlt, truth.mean, information, group_indexer,
+                              predict_type, pool);
 }
 
 } // namespace details

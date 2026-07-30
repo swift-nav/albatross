@@ -70,6 +70,12 @@ struct ExplainedCovariance {
     inner = inner_;
   }
 
+  // Use this constructor if the LDLT of the outer matrix has already
+  // been computed; it avoids re-factorizing the outer matrix.
+  ExplainedCovariance(const Eigen::SerializableLDLT &outer_ldlt_,
+                      const Eigen::MatrixXd &inner_)
+      : outer_ldlt(outer_ldlt_), inner(inner_) {}
+
   /*
    * Returns S^-1 rhs by using S^-1 = A^-1 B A^-1
    */
