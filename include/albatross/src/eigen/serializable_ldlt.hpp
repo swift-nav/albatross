@@ -30,7 +30,7 @@ public:
       // Can we get around copying here?
       : LDLT<MatrixXd, Lower>(ldlt) {}
 
-  SerializableLDLT(const LDLT<MatrixXd, Lower> &&ldlt)
+  SerializableLDLT(LDLT<MatrixXd, Lower> &&ldlt)
       : LDLT<MatrixXd, Lower>(std::move(ldlt)) {}
 
   bool is_positive_definite() const { return this->vectorD().minCoeff() > 0.; }
@@ -98,9 +98,14 @@ public:
    *   D^{-1/2} L^-1 P rhs
    */
   template <class Rhs> Eigen::MatrixXd sqrt_solve(const Rhs &rhs) const {
-    return diagonal_sqrt_inverse() *
-           this->matrixL().solve(this->transpositionsP() *
-                                 Eigen::MatrixXd(rhs));
+    // Evaluate the permuted right hand side directly into the output
+    // (avoiding a deep copy when rhs is already a MatrixXd) and apply
+    // the triangular solve and diagonal scaling in place.
+    Eigen::MatrixXd result = this->transpositionsP() * rhs;
+    this->matrixL().solveInPlace(result);
+    // Scale row i by D^{-1/2}(i), in place.
+    result.array().colwise() *= diagonal_sqrt_inverse().diagonal().array();
+    return result;
   }
 
   Eigen::MatrixXd sqrt_transpose() const {
