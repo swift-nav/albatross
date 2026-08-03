@@ -314,9 +314,10 @@ public:
               const std::vector<FeatureType> &features,
               const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
               PredictTypeIdentity<JointDistribution> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
-    Eigen::MatrixXd prior_cov = covariance_function_(features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
+    Eigen::MatrixXd prior_cov =
+        covariance_function_(features, Base::threads_.get());
     auto pred = gp_joint_prediction(cross_cov, prior_cov, gp_fit.information,
                                     gp_fit.train_covariance);
     mean_function_.add_to(features, &pred.mean);
@@ -334,8 +335,10 @@ public:
       const std::vector<FeatureType> &features,
       const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
       PredictTypeIdentity<MarginalDistribution> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
+    // Note: the scalar prior variance calls below intentionally stay
+    // serial; they are cheap relative to the cross covariance.
     Eigen::VectorXd prior_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < prior_variance.size(); ++i) {
       prior_variance[i] = covariance_function_(features[cast::to_size(i)],
@@ -358,8 +361,8 @@ public:
       const std::vector<FeatureType> &features,
       const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
       PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
     auto pred = gp_mean_prediction(cross_cov, gp_fit.information);
     mean_function_.add_to(features, &pred);
     return pred;
@@ -420,14 +423,15 @@ public:
   template <typename FeatureType>
   JointDistribution prior(const std::vector<FeatureType> &features) const {
     const auto measurement_features = as_measurements(features);
-    return JointDistribution(mean_function_(measurement_features),
-                             covariance_function_(measurement_features));
+    return JointDistribution(
+        mean_function_(measurement_features),
+        covariance_function_(measurement_features, Base::threads_.get()));
   }
 
   template <typename FeatureType>
   Eigen::MatrixXd
   compute_covariance(const std::vector<FeatureType> &features) const {
-    return covariance_function_(features);
+    return covariance_function_(features, Base::threads_.get());
   }
 
   template <typename FeatureType,
@@ -444,7 +448,8 @@ public:
     Eigen::VectorXd zero_mean(dataset.targets.mean);
     const auto measurement_features = as_measurements(dataset.features);
     mean_function_.remove_from(measurement_features, &zero_mean);
-    const Eigen::MatrixXd cov = covariance_function_(measurement_features);
+    const Eigen::MatrixXd cov =
+        covariance_function_(measurement_features, Base::threads_.get());
     double ll = -negative_log_likelihood(zero_mean, cov);
     ll += this->prior_log_likelihood();
     return ll;
