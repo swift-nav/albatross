@@ -1,5 +1,5 @@
-load("@rules_swiftnav//cc:defs.bzl", "swift_cc_binary")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_swiftnav//cc:defs.bzl", "swift_cc_binary")
 
 TAGS = ["manual"]
 

@@ -3,14 +3,14 @@ module(
     version = "0.1.0",
 )
 
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
-bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
-bazel_dep(name = "rules_cc", version = "0.2.17")
-bazel_dep(name = "rules_swiftnav", version = "0.19.0")
+bazel_dep(name = "rules_cc", version = "0.2.19")
+bazel_dep(name = "rules_swiftnav", version = "0.24.0")
 git_override(
     module_name = "rules_swiftnav",
-    commit = "a1a8da8d191e2e743611018236ac886a7c77041d",
+    commit = "88d69cc3f6b864db94f437610216531b1d8e9d19",
     remote = "https://github.com/swift-nav/rules_swiftnav.git",
 )
 
@@ -94,4 +94,13 @@ bazel_dep(name = "nlopt", version = "2.6.1.4.swiftnav")
 local_path_override(
     module_name = "nlopt",
     path = "third_party/nlopt",
+)
+
+bazel_dep(name = "rules_go", version = "0.60.0", repo_name = "")
+
+bazel_dep(name = "aspect_rules_lint", version = "2.7.2", dev_dependency = True)
+bazel_dep(
+    name = "buildifier_prebuilt",
+    version = "8.5.1.3",
+    dev_dependency = True,
 )

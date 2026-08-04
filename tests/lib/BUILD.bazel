@@ -8,6 +8,7 @@ cc_library(
     copts = ["-std=c++17"],
     includes = ["."],
     linkstatic = True,
+    tags = ["no-lint"],
     visibility = ["//visibility:public"],
     deps = [
         ":albatross-test-common",

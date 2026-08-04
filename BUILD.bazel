@@ -1,16 +1,5 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-alias(
-    name = "clang_format",
-    actual = "@rules_swiftnav//clang_format",
-)
-
-filegroup(
-    name = "clang_format_config",
-    srcs = [".clang-format"],
-    visibility = ["//visibility:public"],
-)
-
 # Sanitizer ignorelist consumed by every cc_test in //tests.  See that file
 # for the rationale behind each entry.
 exports_files(["sanitizers.supp"])
