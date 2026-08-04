@@ -6,7 +6,7 @@ load("@aspect_rules_lint//lint:lint_test.bzl", "lint_test")
 clang_tidy = lint_clang_tidy_aspect(
     binary = Label("//tools/lint:clang_tidy"),
     configs = [
-        Label("//:clang_tidy_config"),
+        Label("@rules_swiftnav//clang_tidy:clang_tidy_config"),
     ],
     lint_target_headers = False,
     angle_includes_are_system = True,

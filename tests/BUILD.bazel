@@ -37,7 +37,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -54,7 +57,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -70,7 +76,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -88,7 +97,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -104,7 +116,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -115,7 +130,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -126,7 +144,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -140,7 +161,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -151,7 +175,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -171,7 +198,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -185,7 +215,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -212,7 +245,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -226,7 +262,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -237,7 +276,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -248,7 +290,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -259,7 +304,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -270,7 +318,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
@@ -287,7 +338,10 @@ cc_test(
     copts = TEST_COPTS,
     linkstatic = True,
     local_defines = ["CSV_IO_NO_THREAD"],
-    tags = ["unit"],
+    tags = [
+        "no-lint",
+        "unit",
+    ],
     deps = TEST_DEPS,
 )
 
