@@ -32,6 +32,40 @@ inline double squared_exponential_covariance(double distance,
   return sigma * sigma * exp(-pow(distance / length_scale, 2));
 }
 
+/*
+ * Matrix-level evaluation of the squared exponential kernel for feature
+ * coordinate matrices X (d x n) and Y (d x m).
+ *
+ * The pairwise squared distances are formed with a single GEMM via
+ *
+ *   D2(i, j) = ||x_i||^2 + ||y_j||^2 - 2 x_i . y_j
+ *
+ * followed by one vectorized exp, instead of one scalar kernel call per
+ * pair.  The scalar path computes sigma^2 exp(-(d / l)^2) with d the
+ * Euclidean distance, which is exactly d^2 / l^2 in the exponent, so the
+ * two paths agree up to floating point rounding (the GEMM formulation
+ * can differ from the scalar one in the last ulps, and loses accuracy
+ * when feature norms are large relative to their separations).
+ */
+inline Eigen::MatrixXd
+squared_exponential_covariance_matrix(const Eigen::MatrixXd &X,
+                                      const Eigen::MatrixXd &Y,
+                                      double length_scale, double sigma = 1.) {
+  if (length_scale <= 0.) {
+    return Eigen::MatrixXd::Zero(X.cols(), Y.cols());
+  }
+  Eigen::MatrixXd D2 = -2. * (X.transpose() * Y);
+  const Eigen::VectorXd x_sq = X.colwise().squaredNorm().transpose();
+  const Eigen::RowVectorXd y_sq = Y.colwise().squaredNorm();
+  D2.colwise() += x_sq;
+  D2.rowwise() += y_sq;
+  // Cancellation in the GEMM can produce tiny negative squared
+  // distances for (near) identical features; clamp them to zero.
+  D2 = D2.cwiseMax(0.);
+  return (sigma * sigma) *
+         (-D2 / (length_scale * length_scale)).array().exp().matrix();
+}
+
 template <typename RadialFunction>
 inline double process_noise_equivalent(RadialFunction func, double distance) {
   // to get the increase in standard deviation over a given distance we can
@@ -183,6 +217,69 @@ public:
     return squared_exponential_covariance(
         distance, squared_exponential_length_scale.value,
         sigma_squared_exponential.value);
+  }
+
+  /*
+   * Matrix-level (vectorized) evaluation, see
+   * squared_exponential_covariance_matrix and the dispatch in
+   * CovarianceFunction::operator().  Only enabled when the distance
+   * metric is the EuclideanDistance since the GEMM based pairwise
+   * distance formula only holds for that metric.
+   */
+  template <
+      typename _Scalar, int _Rows, typename Metric = DistanceMetricType,
+      typename std::enable_if<(std::is_same<Metric, EuclideanDistance>::value &&
+                               std::is_same<_Scalar, double>::value),
+                              int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(
+      const std::vector<Eigen::Matrix<_Scalar, _Rows, 1>> &xs,
+      const std::vector<Eigen::Matrix<_Scalar, _Rows, 1>> &ys) const {
+    static_assert(std::is_same<Metric, DistanceMetricType>::value,
+                  "Metric is an implementation detail, never override it");
+    const Eigen::Index n = cast::to_index(xs.size());
+    const Eigen::Index m = cast::to_index(ys.size());
+    if (n == 0 || m == 0) {
+      return Eigen::MatrixXd::Zero(n, m);
+    }
+    const Eigen::Index d = xs[0].size();
+    Eigen::MatrixXd X(d, n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+      X.col(i) = xs[cast::to_size(i)];
+    }
+    Eigen::MatrixXd Y(d, m);
+    for (Eigen::Index j = 0; j < m; ++j) {
+      Y.col(j) = ys[cast::to_size(j)];
+    }
+    return squared_exponential_covariance_matrix(
+        X, Y, squared_exponential_length_scale.value,
+        sigma_squared_exponential.value);
+  }
+
+  /*
+   * Matrix-level evaluation for scalar features.  Here the pairwise
+   * differences are formed directly (no cancellation-prone GEMM needed)
+   * and the exponential is applied as one vectorized array expression.
+   */
+  template <typename Metric = DistanceMetricType,
+            typename std::enable_if<
+                std::is_same<Metric, EuclideanDistance>::value, int>::type = 0>
+  Eigen::MatrixXd _call_matrix_impl(const std::vector<double> &xs,
+                                    const std::vector<double> &ys) const {
+    static_assert(std::is_same<Metric, DistanceMetricType>::value,
+                  "Metric is an implementation detail, never override it");
+    const Eigen::Index n = cast::to_index(xs.size());
+    const Eigen::Index m = cast::to_index(ys.size());
+    const double length_scale = squared_exponential_length_scale.value;
+    const double sigma = sigma_squared_exponential.value;
+    if (length_scale <= 0. || n == 0 || m == 0) {
+      return Eigen::MatrixXd::Zero(n, m);
+    }
+    const Eigen::Map<const Eigen::VectorXd> xv(xs.data(), n);
+    const Eigen::Map<const Eigen::RowVectorXd> yv(ys.data(), m);
+    const Eigen::MatrixXd D2 =
+        (xv.replicate(1, m) - yv.replicate(n, 1)).array().square();
+    return (sigma * sigma) *
+           (-D2 / (length_scale * length_scale)).array().exp().matrix();
   }
 
   DistanceMetricType distance_metric_;

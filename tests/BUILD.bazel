@@ -326,6 +326,17 @@ cc_test(
 )
 
 cc_test(
+    name = "albatross-test-matrix-call",
+    srcs = ["test_matrix_call.cc"],
+    additional_compiler_inputs = SANITIZER_INPUTS,
+    copts = TEST_COPTS,
+    linkstatic = True,
+    local_defines = ["CSV_IO_NO_THREAD"],
+    tags = ["unit"],
+    deps = TEST_DEPS,
+)
+
+cc_test(
     name = "albatross-test-misc",
     srcs = [
         "test_call_trace.cc",
@@ -356,6 +367,7 @@ test_suite(
         ":albatross-test-cross-validation",
         ":albatross-test-evaluation",
         ":albatross-test-indexing",
+        ":albatross-test-matrix-call",
         ":albatross-test-misc",
         ":albatross-test-models",
         ":albatross-test-polynomials",
