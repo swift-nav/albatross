@@ -48,7 +48,7 @@ git_override(
     remote = "https://github.com/swift-nav/bazel-compile-commands-extractor.git",
 )
 
-bazel_dep(name = "variant", version = "0.1.0.swiftnav")
+bazel_dep(name = "variant", version = "0.2.0.swiftnav")
 local_path_override(
     module_name = "variant",
     path = "third_party/variant",
