@@ -100,6 +100,45 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
   return MarginalDistribution(pred, marginal_variance);
 }
 
+/*
+ * Computes X^T X exploiting symmetry: a BLAS style rank update fills
+ * the lower triangle with half the flops of a general matrix product,
+ * after which the full symmetric matrix is materialized.
+ */
+inline Eigen::MatrixXd symmetric_transpose_product(const Eigen::MatrixXd &X) {
+  Eigen::MatrixXd product = Eigen::MatrixXd::Zero(X.cols(), X.cols());
+  product.selfadjointView<Eigen::Lower>().rankUpdate(X.transpose());
+  return Eigen::MatrixXd(product.selfadjointView<Eigen::Lower>());
+}
+
+/*
+ * The explained covariance, cross_cov^T K^-1 cross_cov, is symmetric.
+ * When the covariance representation provides a matrix square root
+ * solve we can form S = K^-1/2 cross_cov and compute S^T S with a
+ * symmetric rank update (one triangular solve and half the product
+ * flops); otherwise fall back to the generic solve based product.
+ */
+template <typename CovarianceRepresentation,
+          std::enable_if_t<
+              has_sqrt_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
+              int> = 0>
+inline Eigen::MatrixXd
+gp_explained_covariance(const Eigen::MatrixXd &cross_cov,
+                        const CovarianceRepresentation &train_covariance) {
+  const Eigen::MatrixXd sqrt = train_covariance.sqrt_solve(cross_cov);
+  return symmetric_transpose_product(sqrt);
+}
+
+template <typename CovarianceRepresentation,
+          std::enable_if_t<
+              !has_sqrt_solve<CovarianceRepresentation, Eigen::MatrixXd>::value,
+              int> = 0>
+inline Eigen::MatrixXd
+gp_explained_covariance(const Eigen::MatrixXd &cross_cov,
+                        const CovarianceRepresentation &train_covariance) {
+  return cross_cov.transpose() * train_covariance.solve(cross_cov);
+}
+
 template <typename CovarianceRepresentation>
 inline JointDistribution
 gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
@@ -107,8 +146,8 @@ gp_joint_prediction(const Eigen::MatrixXd &cross_cov,
                     const Eigen::VectorXd &information,
                     const CovarianceRepresentation &train_covariance) {
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
-  Eigen::MatrixXd explained_cov =
-      cross_cov.transpose() * train_covariance.solve(cross_cov);
+  const Eigen::MatrixXd explained_cov =
+      gp_explained_covariance(cross_cov, train_covariance);
   return JointDistribution(pred, prior_cov - explained_cov);
 }
 
@@ -314,9 +353,10 @@ public:
               const std::vector<FeatureType> &features,
               const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
               PredictTypeIdentity<JointDistribution> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
-    Eigen::MatrixXd prior_cov = covariance_function_(features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
+    Eigen::MatrixXd prior_cov =
+        covariance_function_(features, Base::threads_.get());
     auto pred = gp_joint_prediction(cross_cov, prior_cov, gp_fit.information,
                                     gp_fit.train_covariance);
     mean_function_.add_to(features, &pred.mean);
@@ -334,8 +374,10 @@ public:
       const std::vector<FeatureType> &features,
       const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
       PredictTypeIdentity<MarginalDistribution> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
+    // Note: the scalar prior variance calls below intentionally stay
+    // serial; they are cheap relative to the cross covariance.
     Eigen::VectorXd prior_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < prior_variance.size(); ++i) {
       prior_variance[i] = covariance_function_(features[cast::to_size(i)],
@@ -358,8 +400,8 @@ public:
       const std::vector<FeatureType> &features,
       const GPFitType<CovarianceRepresentation, FitFeaturetype> &gp_fit,
       PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    const auto cross_cov =
-        covariance_function_(gp_fit.train_features, features);
+    const auto cross_cov = covariance_function_(gp_fit.train_features, features,
+                                                Base::threads_.get());
     auto pred = gp_mean_prediction(cross_cov, gp_fit.information);
     mean_function_.add_to(features, &pred);
     return pred;
@@ -420,14 +462,15 @@ public:
   template <typename FeatureType>
   JointDistribution prior(const std::vector<FeatureType> &features) const {
     const auto measurement_features = as_measurements(features);
-    return JointDistribution(mean_function_(measurement_features),
-                             covariance_function_(measurement_features));
+    return JointDistribution(
+        mean_function_(measurement_features),
+        covariance_function_(measurement_features, Base::threads_.get()));
   }
 
   template <typename FeatureType>
   Eigen::MatrixXd
   compute_covariance(const std::vector<FeatureType> &features) const {
-    return covariance_function_(features);
+    return covariance_function_(features, Base::threads_.get());
   }
 
   template <typename FeatureType,
@@ -444,7 +487,8 @@ public:
     Eigen::VectorXd zero_mean(dataset.targets.mean);
     const auto measurement_features = as_measurements(dataset.features);
     mean_function_.remove_from(measurement_features, &zero_mean);
-    const Eigen::MatrixXd cov = covariance_function_(measurement_features);
+    const Eigen::MatrixXd cov =
+        covariance_function_(measurement_features, Base::threads_.get());
     double ll = -negative_log_likelihood(zero_mean, cov);
     ll += this->prior_log_likelihood();
     return ll;
