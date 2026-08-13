@@ -469,8 +469,8 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<Eigen::VectorXd> &&) const {
-    const auto cross_cov = this->covariance_function_(
-        sparse_gp_fit.train_features, features, Base::threads_.get());
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
@@ -482,14 +482,12 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<MarginalDistribution> &&) const {
-    const auto cross_cov = this->covariance_function_(
-        sparse_gp_fit.train_features, features, Base::threads_.get());
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
     Eigen::VectorXd mean =
         gp_mean_prediction(cross_cov, sparse_gp_fit.information);
     this->mean_function_.add_to(features, &mean);
 
-    // Note: the scalar prior variance calls below intentionally stay
-    // serial; they are cheap relative to the cross covariance.
     Eigen::VectorXd marginal_variance(cast::to_index(features.size()));
     for (Eigen::Index i = 0; i < marginal_variance.size(); ++i) {
       marginal_variance[i] = this->covariance_function_(
@@ -516,10 +514,9 @@ public:
   _predict_impl(const std::vector<FeatureType> &features,
                 const Fit<SparseGPFit<FitFeaturetype>> &sparse_gp_fit,
                 PredictTypeIdentity<JointDistribution> &&) const {
-    const auto cross_cov = this->covariance_function_(
-        sparse_gp_fit.train_features, features, Base::threads_.get());
-    const Eigen::MatrixXd prior_cov =
-        this->covariance_function_(features, Base::threads_.get());
+    const auto cross_cov =
+        this->covariance_function_(sparse_gp_fit.train_features, features);
+    const Eigen::MatrixXd prior_cov = this->covariance_function_(features);
 
     const Eigen::MatrixXd S_sqrt =
         sqrt_solve(sparse_gp_fit.R, sparse_gp_fit.P, cross_cov);
@@ -527,18 +524,9 @@ public:
     const Eigen::MatrixXd Q_sqrt =
         sparse_gp_fit.train_covariance.sqrt_solve(cross_cov);
 
-    // Both corrections are symmetric Gram products, so accumulate
-    // S_sqrt^T S_sqrt - Q_sqrt^T Q_sqrt in the lower triangle with
-    // rank updates (half the flops, one accumulator, no temporaries
-    // for the two full products).
-    Eigen::MatrixXd correction =
-        Eigen::MatrixXd::Zero(prior_cov.rows(), prior_cov.cols());
-    correction.selfadjointView<Eigen::Lower>().rankUpdate(S_sqrt.transpose(),
-                                                          1.);
-    correction.selfadjointView<Eigen::Lower>().rankUpdate(Q_sqrt.transpose(),
-                                                          -1.);
-    Eigen::MatrixXd covariance = prior_cov;
-    covariance += Eigen::MatrixXd(correction.selfadjointView<Eigen::Lower>());
+    const Eigen::MatrixXd max_explained = Q_sqrt.transpose() * Q_sqrt;
+    const Eigen::MatrixXd unexplained = S_sqrt.transpose() * S_sqrt;
+    const Eigen::MatrixXd covariance = prior_cov - max_explained + unexplained;
 
     JointDistribution pred(cross_cov.transpose() * sparse_gp_fit.information,
                            covariance);
@@ -701,11 +689,7 @@ private:
     for (const auto &pair : indexer) {
       Eigen::Index cols = cast::to_index(pair.second.size());
       auto P_cols = P.block(0, i, P.rows(), cols);
-      // P_cols^T P_cols is symmetric; use a rank update on the lower
-      // triangle and materialize the full block.
-      Eigen::MatrixXd block = Eigen::MatrixXd::Zero(cols, cols);
-      block.selfadjointView<Eigen::Lower>().rankUpdate(P_cols.transpose());
-      Q_ff_diag.blocks.emplace_back(block.selfadjointView<Eigen::Lower>());
+      Q_ff_diag.blocks.emplace_back(P_cols.transpose() * P_cols);
       i += cols;
     }
     auto A = K_ff - Q_ff_diag;
