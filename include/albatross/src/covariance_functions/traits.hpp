@@ -83,8 +83,6 @@ public:
 
 DEFINE_CLASS_METHOD_TRAITS(solve);
 
-DEFINE_CLASS_METHOD_TRAITS(sqrt_solve);
-
 DEFINE_CLASS_METHOD_TRAITS(_ssr_impl);
 
 template <typename T, typename FeatureType> class has_valid_ssr_impl {
