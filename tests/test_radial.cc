@@ -488,4 +488,17 @@ TEST(test_radial, test_matern_32_oracle) {
   }
 }
 
+TEST(test_radial, test_rq_peak) {
+  constexpr std::size_t test_iters = 10000;
+  std::mt19937 gen{22};
+  std::normal_distribution<> d{0., 10.};
+  for (std::size_t iter = 0; iter < test_iters; ++iter) {
+    const double x = d(gen);
+    const double length = 1e-6 + fabs(d(gen));
+    const double scale_mixture = 1e-6 + fabs(d(gen));
+    const RationalQuadratic<EuclideanDistance> cov(length, 1., scale_mixture);
+    EXPECT_EQ(cov(x, x), 1.0);
+  }
+}
+
 } // namespace albatross
