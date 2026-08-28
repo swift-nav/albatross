@@ -171,159 +171,364 @@ A prediction can then be made by computing, :math:`V_a = K_{uu}^{-1/2} K_{u*}` a
 	
 	    [f^*|f=y] \sim \mathcal{N}(K_{*u} v, K_{**} - V_a^T V_a + V_b^T V_b)
 
----------------------
-Adding a Group
----------------------	
+-------------------------
+Adding a Group (Updating)
+-------------------------
 
-Our implementation of the Sparse Gaussian Process can be efficiently updated with new groups in an online fasion. In otherwords this allows you to do:
+Sparse Gaussian Processes can be efficiently updated with new groups in
+an online fashion. In other words this allows you to do:
 
-.. code-block:: c
+::
 
-        auto fit_model = model.fit(dataset_a);
-        fit_model.update_in_place(dataset_b);
+           auto fit_model = model.fit(dataset_a);
+           fit_model.update_in_place(dataset_b);    
 
 Which will be equivalent to:
 
-.. code-block:: c
+::
 
-        fit_model == model.fit(concatenate_datasets(dataset_a, dataset_b));
+           auto fit_model = model.fit(concatenate(dataset_a, dataset_b));
 
-There are some papers which describe methods for performing online updates to sparse gaussian processes.  The paper
+There are some papers which describe methods for performing online
+updates to sparse Gaussian processes. The paper
 
-   [4] Streaming Sparse Gaussian Process Approximations
-   Thang  D  Bui,  Cuong  Nguyen,  and  Richard  E  Turner.
-   https://arxiv.org/abs/1705.07131
+::
 
-describes a way of both adding online observations and updating the inducing points for the the Variational Free Energy (VFE) approach (which is closely related to FITC).
+      Streaming Sparse Gaussian Process Approximations
+      Thang  D  Bui,  Cuong  Nguyen,  and  Richard  E  Turner.
+      https://arxiv.org/abs/1705.07131
 
-   [4] Online sparse Gaussian process regression using FITC and PITCapproximations
-   Hildo Bijl, Jan-Willem van Wingerden, Thomas B. Sch ̈on, and Michel Ver-haegen.
-   https://hildobijl.com/Downloads/OnlineSparseGP.pdf
+describes a way of both adding online observations and updating the
+inducing points for the the Variational Free Energy (VFE) approach
+(which is closely related to FITC). And,
 
-describes an approach to performing online updates to FITC and PITC but focuses on rank one updates in which the entire covariance is stored.  Here we describe how to update FITC and PITC with new batches of data.  These batches may contain a single observation (FITC) or a new group (PITC) and are used to update the QR decomposition (rather than the full dense covariances) used in the direct fit.
+::
 
-Consider the situation where we are first given a set of observation :math:`y_a`, fit the model, then want to update the model with new observations :math:`y_b`.  The existing model will consist of, :math:`v_a`, :math:`R_a`, :math:`P_a`, and :math:`L_{uu}` such that:
+      Online sparse Gaussian process regression using FITC and PITC approximations
+      Hildo Bijl, Jan-Willem van Wingerden, Thomas B. Sch ̈on, and Michel Ver-haegen.
+      https://hildobijl.com/Downloads/OnlineSparseGP.pdf
 
-.. math::
-	
-	    \Sigma_a^{-1} &= \left(K_{uu} + K_{ua} \Lambda_a^{-1} K_{au}\right) \\
-	    &= P_a R_a^T R_a P_a^T \\
-	    v_a &= \Sigma_a K_{ua} \Lambda_{a}^{-1} y_a \\
-	        &= P_a R_a^{-1} Q_a1^T \Lambda_a^{-1/2} y_a \\
-	    K_{uu} &= L_{uu} L_{uu}^T
-	
+describes an approach to performing online updates to FITC and PITC but
+focuses on rank one updates in which the entire covariance is stored.
+Here we describe how to update FITC and PITC with new batches of data.
+These batches may contain a single observation (FITC) or a new group
+(PITC) and are used to update the QR decomposition (rather than the full
+dense covariances) used in the direct fit.
 
-
-We'll be given a new group in the form of raw observations:
-
-.. math::
-	
-	    y_b \sim \mathcal{N}\left(y_b, \Lambda_b + K_{bu} K_{uu}^{-1} K_{ub}\right)
-
-
-And we wish to produce a new :math:`\hat{v}`, :math:`\hat{R}` and :math:`\hat{P}` which produce the same predictions as we would have gotten if we'd fit to :math:`\hat{y} = \begin{bmatrix} y_a \\ y_b \end{bmatrix}` directly.
-
-To do so we start by explicitly writing out the components we would get with all groups available.  We'll use a hat, :math:`\hat{a}` to indicate quantities which correspond to a full fit.  Starting with :math:`\hat{\Sigma}`,
+Consider the situation where we are first given a set of observations
+:math:`y_a`, fit the model, then want to update the model with new
+observations :math:`y_b`. The existing model will consist of,
+:math:`v_a`, :math:`R_a`, :math:`P_a`, and :math:`L_{uu}` such that,
 
 .. math::
-	
-	    \hat{\Sigma} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} \\
-	    &=\left(K_{uu} +
-	         \begin{bmatrix} K_{ua} & K_{ub} \end{bmatrix}
-	         \begin{bmatrix} \Lambda_a & 0 \\ 0 & \Lambda_b \end{bmatrix}^{-1} \begin{bmatrix} K_{au} \\ K_{bu} \end{bmatrix}
-	       \right)^{-1} \\
-	    &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
-	       \right)^{-1}
-	
 
+   \begin{aligned}
+           \Sigma_a^{-1} &= \left(K_{uu} + K_{ua} \Lambda_a^{-1} K_{au}\right) \\
+           &= P_a R_a^T R_a P_a^T \\
+           v_a &= \Sigma_a K_{ua} \Lambda_{a}^{-1} y_a \\
+               &= P_a R_a^{-1} Q_a1^T \Lambda_a^{-1/2} y_a \\
+           K_{uu} &= L_{uu} L_{uu}^T
+   \end{aligned}
 
-We can then find a :math:`\hat{B}` such that :math:`\hat{\Sigma} = \left(\hat{B}^T \hat{B}\right)^{-1}` using the same approach as Equation~\ref{eq:B_qr}.  In particular we can see that by setting,
+We’ll be given new observations and can use the same low rank prior,
 
 .. math::
-	
-	    \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix}
-	
 
+   \begin{aligned}
+   y_b \sim \mathcal{N}\left(m_b, \Lambda_b + K_{bu} K_{uu}^{-1} K_{ub}\right).
+   \end{aligned}
 
-We can then represent :math:`\hat{\Sigma}` by,
+And we wish to produce a new :math:`\hat{v}`, :math:`\hat{R}` and
+:math:`\hat{P}` which produce the same predictions as we would have
+gotten if we’d fit to
+:math:`\hat{y} = \begin{bmatrix} y_a \\ y_b \end{bmatrix}` directly.
 
-.. math::
-	
-	\hat{\Sigma} &= \left(\hat{B}^T \hat{B}\right)^{-1} \\
-	    &=  \left(P_a R_a^T R_a P_a^T + K_{ub} \Lambda_b^{-1} K_{bu}
-	       \right)^{-1}\\
-	    &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
-	       \right)^{-1}
-	
-
-
-We then need to update the existing QR decomposition to get :math:`\hat{P}` and :math:`\hat{R}`,
+To do so we start by explicitly writing out the components we would get
+with all groups available. We’ll use a hat, :math:`\hat{a}`, to indicate
+quantities which correspond to a full fit. Starting with
+:math:`\hat{\Sigma}`,
 
 .. math::
-	
-	    \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix} \\
-	    &= \hat{Q} \hat{R} \hat{P}^T
-	
 
+   \begin{aligned}
+           \hat{\Sigma} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} \\
+           &=\left(K_{uu} +
+                \begin{bmatrix} K_{ua} & K_{ub} \end{bmatrix}
+                \begin{bmatrix} \Lambda_a & 0 \\ 0 & \Lambda_b \end{bmatrix}^{-1} \begin{bmatrix} K_{au} \\ K_{bu} \end{bmatrix}
+              \right)^{-1} \\
+           &= \left(K_{uu} + K_{ua} \Lambda_a^{-1} K_{au} + K_{ub} \Lambda_b^{-1} K_{bu}
+              \right)^{-1} \\
+           &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
+              \right)^{-1}
+   \end{aligned}
 
-Now we need to figure out how to update the information vector :math:`\hat{v}`.  If we had fit the model all at once the information vector would take the form,
-
-.. math::
-	
-	    \hat{v} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} K_{uf} \hat{\Lambda}^{-1} \hat{y} \\
-	    &= \hat{\Sigma} \begin{bmatrix} K_{ua} \Lambda_a^{-1} & K_{ub} \Lambda_b^{-1} \end{bmatrix} \begin{bmatrix} y_a \\ y_b \end{bmatrix}
-	
-
-
-We'll already have the QR decomposition of :math:`\hat{B}` so we can try to find the :math:`z` such that :math:`\hat{v}` is the solution to the least squares problem, :math:`\left\lVert \hat{B} \hat{v} - z\right\rVert`.  Solving this system gives us,
-
-.. math::
-	
-	    \hat{v} &= \left(\hat{B}^T \hat{B}\right)^{-1} \hat{B}^T z \\
-	    &= \hat{\Sigma} \begin{bmatrix} P_a R_a^T & K_{ub} \Lambda_b^{-1/2} \end{bmatrix} \begin{bmatrix} z_a \\ z_b \end{bmatrix} \\
-	
-
-
-From which we can see that if we set,
+We can then prepare for a similar QR approach to the one we used when
+fitting and find a :math:`\hat{B}` such that
+:math:`\hat{\Sigma} = \left(\hat{B}^T \hat{B}\right)^{-1}`. We can see
+that by setting,
 
 .. math::
-	
-	    P_a R_a^T z_a &= K_{ua} \Lambda_a^{-1} y_a \\
-	    &= \Sigma_a^{-1} v_a \\
-	    z_a &= R_a^{-T} P_a^T \Sigma_a^{-1} v_a \\
-	    &= R_a^{-T} P_a^T P_a R_a^T R_a P_a^T v_a \\
-	    &= R_a P_a^T v_a
-	
 
+   \begin{aligned}
+   \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix}
+   \end{aligned}
+
+We can recover :math:`\hat{\Sigma}` by,
+
+.. math::
+
+   \begin{aligned}
+       \hat{\Sigma} &= \left(\hat{B}^T \hat{B}\right)^{-1} \\
+           &=  \left(P_a R_a^T R_a P_a^T + K_{ub} \Lambda_b^{-1} K_{bu}
+              \right)^{-1}\\
+           &= \left(\Sigma_a^{-1} + K_{ub} \Lambda_b^{-1} K_{bu}
+              \right)^{-1}
+   \end{aligned}
+
+So by solving for the QR decomposition,
+
+.. math::
+
+   \begin{aligned}
+           \hat{B} &= \begin{bmatrix} R_a P_a^T \\ \Lambda_{b}^{-1/2} K_{bu} \end{bmatrix} \\
+           &= \hat{Q} \hat{R} \hat{P}^T
+   \end{aligned}
+
+We get the new updated values for :math:`\hat{P}` and :math:`\hat{R}`.
+
+Now we need to figure out how to update the information vector
+:math:`\hat{v}`. If we had fit the model all at once the information
+vector would be,
+
+.. math::
+
+   \begin{aligned}
+           \hat{v} &= \left(K_{uu} + K_{uf} \hat{\Lambda}^{-1} K_{fu}\right)^{-1} K_{uf} \hat{\Lambda}^{-1} \hat{y} \\
+        &= \hat{\Sigma} K_{uf}\hat{\Lambda}^{-1} \hat{y}
+   \end{aligned}
+
+which we can divide into new and old observations,
+
+.. math::
+
+   \begin{aligned}
+      \hat{v} &= \hat{\Sigma} \begin{bmatrix} K_{ua} \Lambda_a^{-1} & K_{ub} \Lambda_b^{-1} \end{bmatrix} \begin{bmatrix} y_a \\ y_b \end{bmatrix}
+   \end{aligned}
+
+We’ll already have the QR decomposition of :math:`\hat{B}` which we can
+use to compute solutions in the form,
+
+.. math::
+
+   \begin{aligned}
+           \hat{v} &= \left(\hat{B}^T \hat{B}\right)^{-1} \hat{B}^T z \\
+        &= \hat{\Sigma} \hat{B}^T z
+   \end{aligned}
+
+so if we can find a :math:`z` such that
+
+.. math::
+
+   \begin{aligned}
+       \hat{B}^T z = K_{uf}\hat{\Lambda}^{-1} \hat{y}
+   \end{aligned}
+
+then we can use the QR decomposition of :math:`\hat{B}` to get
+:math:`\hat{v}`. By again dividing into new and old vectors we see that
+we need,
+
+.. math::
+
+   \begin{aligned}
+        \begin{bmatrix} P_a R_a^T & K_{ub} \Lambda_{b}^{-1/2} \end{bmatrix} \begin{bmatrix} z_a \\ z_b \end{bmatrix} &= \begin{bmatrix} K_{ua} \Lambda_a^{-1} & K_{ub} \Lambda_b^{-1} \end{bmatrix} \begin{bmatrix} y_a \\ y_b \end{bmatrix}
+   \end{aligned}
+
+We can satisfy that equality if we set,
+
+.. math::
+
+   \begin{aligned}
+           P_a R_a^T z_a &= K_{ua} \Lambda_a^{-1} y_a \\
+        K_{ub} \Lambda_b^{-1/2} z_b &= K_{ub} \Lambda_b^{-1} y_b
+   \end{aligned}
+
+Which gives us,
+
+.. math::
+
+   \begin{aligned}
+   z_a &= R_a^{-T} P_a^T K_{ua} \Lambda_a^{-1} y_a \\
+       &= R_a^{-T} P_a^T \Sigma_a^{-1} v_a \\
+       &= R_a^{-T} P_a^T P_a R_a^T R_a P_a^T v_a \\
+       &= R_a P_a^T v_a
+   \end{aligned}
 
 and
 
 .. math::
-	
-	    z_b = \Lambda_b^{-1/2} y_b 
 
-Then the following QR solution will effectively update the information vector,
+   \begin{aligned}
+           z_b = \Lambda_b^{-1/2} y_b 
+   \end{aligned}
 
-.. math::
-	
-	    \hat{v} &= \hat{P} \hat{R}^{-1} \hat{Q}^T \begin{bmatrix}R_a P_a^T v_a \\  \Lambda_b^{-1/2} y_b \end{bmatrix}
-	
-
-After an update the only term which changes in the posterior covariance in Equation~\ref{eq:posterior} is the computation of the explained covariance,
+Then we can plug that into the QR solution to get,
 
 .. math::
-	
-	    E_{**} = Q_{**} - K_{*u} \hat{\Sigma} K_{u*}
 
-And since we've already computed :math:`\hat{\Sigma} = \left(\hat{B}^T \hat{B}\right)^{-1}` we don't need to do any further work.
+   \begin{aligned}
+   \hat{v} &= \left(\hat{B}^T \hat{B}\right)^{-1} \hat{B}^T z \\
+           &=\hat{P} \hat{R}^{-1} \hat{Q}^T \begin{bmatrix}R_a P_a^T v_a \\  \Lambda_b^{-1/2} y_b \end{bmatrix}
+   \end{aligned}
 
-In summary, updating an existing sparse Gaussian process (where any added observations are considered independent of existing ones) can be done by,
+In summary, updating an existing sparse Gaussian process (where any
+added observations are considered independent of existing ones) can be
+done by,
 
-- Computing :math:`\Lambda_b^{-1/2}`.
-- Computing (or updating) the QR decomposition, :math:`\hat{Q} \hat{R} \hat{P}^T = \begin{bmatrix}R_a P_a^T \\ \Lambda_b^{-1/2} K_{bu} \end{bmatrix}`.
-- Setting :math:`\hat{v} = \hat{P} \hat{R}^{-1}\hat{Q}^T \begin{bmatrix} R_a P_a^T v_a \\ \Lambda_b^{-1/2} y_b \end{bmatrix}`
+-  Computing :math:`\Lambda_b^{-1/2}`.
 
-Note: As long as the new datasets you add consist of different groups you can continuously update the sparse Gaussian process retaining the same model you'd get if you had fit everything at once.  For FITC (each observation is treated independently) this is always the case, for PITC care needs to be taken that you don't update with a dataset containing groups which overlap with previous updates, the result would be over-confident predictions.
+-  Computing the QR decomposition,
+   :math:`\hat{Q} \hat{R} \hat{P}^T = \begin{bmatrix}R_a P_a^T \\ \Lambda_b^{-1/2} K_{bu} \end{bmatrix}`.
+
+-  Setting
+   :math:`\hat{v} = \hat{P} \hat{R}^{-1}\hat{Q}^T \begin{bmatrix} R_a P_a^T v_a \\ \Lambda_b^{-1/2} y_b \end{bmatrix}`
+
+Note: As long as the new datasets you add consist of different groups
+you can continuously update the sparse Gaussian process retaining the
+same model you’d get if you had fit everything at once. For FITC this is
+always the case (since each observation is treated independently), for
+PITC care needs to be taken that you don’t update with a dataset
+containing groups which overlap with previous updates, the result would
+be over-confident predictions.
+
+------------------------
+Rebasing Inducing Points
+------------------------
+
+Consider a problem which is temporal in nature and you’d like to be able
+to fit a model with some observations, make predictions, then update
+that model with more recent observations and repeat. You could do this
+using a dense Gaussian process by simply concatenating previous and
+new observations into a larger dataset, but the result would be
+unbounded growth in the model size and it would quickly become too large to
+manage.
+
+Instead, you could use a sparse Gaussian process, in which case you may
+fit with observations on time, :math:`t_p`, then update the model with
+new observations on time :math:`t_n`, and repeat. This would keep the
+computation costs bounded, but if your problem is temporal in nature,
+the time associated with the inducing points may diverge from the
+time of the observations, causing the inducing point approximation to
+degrade.
+
+Here we describe how to take a model which has already been fit using
+inducing points valid for some previous times, :math:`p`, and then
+advance them forward in time. This temporal example here is just that;
+an example. These operations do not require a temporal problem, they
+more generally describe how to take a model based on some previous set
+of inducing points, :math:`p`, and find an equivalent model based on new
+inducing points, :math:`n`. The result opens up a style of algorithms
+which involve, updating a model with observations, advancing the model
+forward in time, updating with new observations and repeating.
+
+Details
+-------
+
+Consider the situation where you’ve already fit a model using
+observations :math:`f` with inducing points :math:`p` and you then want
+to rebase the model on inducing points :math:`n`. This means you will have
+computed,
+
+.. math::
+
+   \begin{aligned}
+   \Sigma_p &= B_p^T B_p \\
+   &= K_{pp} + K_{pf} \Lambda^{-1} K_{fp}
+   \end{aligned}
+
+and would like to find the equivalent for the new inducing points,
+
+.. math::
+
+   \begin{aligned}
+   \Sigma_n &= B_n^T B_n \\
+   &= K_{nn} + K_{nf} \Lambda^{-1} K_{fn}
+   \end{aligned}
+
+We don’t have :math:`K_{nf}` because when we fit the model using
+observations, :math:`f`, we didn’t know the next inducing points,
+:math:`n`. But we could use the Nystrom approximation
+:math:`K_{nf} = K_{np} K_{pp}^{-1} K_{pf}` which can be interpreted as
+saying: the only information we can capture in the new inducing points
+is information that was already captured using the previous ones.
+
+.. math::
+
+   \begin{aligned}
+   \Sigma_n &= K_{nn} + K_{nf} \Lambda^{-1} K_{fn} \\
+   &\approx K_{nn} + K_{np} K_{pp}^{-1} K_{pf} \Lambda^{-1} K_{fp} K_{pp}^{-1} K_{pn}
+   \end{aligned}
+
+Now we can add and subtract a :math:`K_{np}K_{pp}^{-1}K_{pn}` term and
+do some rearranging,
+
+.. math::
+
+   \begin{aligned}
+   \Sigma_n &= K_{nn} + K_{np} K_{pp}^{-1} K_{pf} \Lambda^{-1} K_{fp} K_{pp}^{-1} K_{pn} + K_{np}K_{pp}^{-1}K_{pn} - K_{np}K_{pp}^{-1}K_{pn} \\
+   &= K_{nn} + K_{np} K_{pp}^{-1} \left(K_{pp} + K_{pf} \Lambda^{-1} K_{fp} \right) K_{pp}^{-1} K_{pn} - K_{np}K_{pp}^{-1}K_{pn}
+   \end{aligned}
+
+Remember that
+:math:`P_p R_p^T R_p P_p^T = K_{pp} + K_{pf} \Lambda^{-1} K_{fp}` and if
+we solve for :math:`\hat{L}_{nn}` such that
+:math:`\hat{L}_{nn} \hat{L}_{nn}^T = K_{nn} - K_{np}K_{pp}^{-1}K_{pn}`,
+then we have,
+
+.. math::
+
+   \begin{aligned}
+   \Sigma_n &= \left(R_{p} P_p^T K_{pp}^{-1} K_{pn}\right)^T \left(R_{p}P_p^T K_{pp}^{-1} K_{pn}\right) + \hat{L}_{nn} \hat{L}_{nn}^T
+   \end{aligned}
+
+we can write this as the symmetric product,
+:math:`\Sigma_n = \hat{B}_n^T \hat{B}_n`, where
+
+.. math::
+
+   \begin{aligned}
+       \hat{B}_n &= \begin{bmatrix} \hat{L}_{nn}^T \\ R_{p} P_p^T K_{pp}^{-1} K_{pn} \end{bmatrix}.
+   \end{aligned}
+
+Then by solving for :math:`\hat{Q}_n \hat{R}_n = \hat{B}_n \hat{P}_n` we
+have,
+
+.. math::
+
+   \begin{aligned}
+       \Sigma_n &\approx \hat{B}_n^T \hat{B}_n \\
+       &= \hat{P}_n \hat{R}_n^T \hat{R}_n \hat{P}_n^T \\
+       &= K_{nn} + K_{nf} \Lambda^{-1} K_{fn}
+   \end{aligned}
+
+Summary
+-------
+
+Starting with :math:`L_{pp}` and :math:`R_p` we can rebase onto new
+inducing points by,
+
+-  Building the matrices :math:`K_{pn}` and :math:`K_{nn}`.
+
+-  Computing :math:`A = L_{pp}^{-1}K_{pn}`.
+
+-  Solving for :math:`\hat{L}_{nn}` such that
+   :math:`\hat{L}_{nn} \hat{L}_{nn}^T= K_{nn} - A^T A`.
+
+-  Solving for
+   :math:`\hat{Q}_n\hat{R}_n = \begin{bmatrix}\hat{L}_{nn}^T \\ R_p P_p^T L_{pp}^{-T} A \end{bmatrix}`.
+
+-  Solving for :math:`L_{nn} = \mbox{chol}(K_{nn})`.
+
+-  Solving for :math:`v_n = K_{nn}^{-1} K_{np} v_p`
 
 ---------------------
 Alternative Approach
