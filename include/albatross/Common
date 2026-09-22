@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <set>
 #include <iostream>
+#include <iterator>
 #include <functional>
 #include <memory>
 #include <vector>
