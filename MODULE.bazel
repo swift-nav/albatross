@@ -35,11 +35,7 @@ register_toolchains(
     "@rules_swiftnav//cc/toolchains/llvm20/x86_64-aarch64-linux:cc-toolchain-aarch64-bullseye-graviton3",
 )
 
-bazel_dep(name = "eigen", version = "3.3.swiftnav.1")
-local_path_override(
-    module_name = "eigen",
-    path = "third_party/eigen",
-)
+bazel_dep(name = "eigen", version = "5.0.1.swiftnav.2")
 
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(

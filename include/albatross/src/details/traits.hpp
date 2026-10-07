@@ -330,11 +330,14 @@ public:
 template <typename T> class is_eigen_xpr {
   // Here we check if T is a generic eigen expression, but we then
   // want to rule out cases where T is a plain_object such as
-  // an Eigen::MatrixXd.
-  template <typename C,
-            typename IsGenericXpr =
-                typename Eigen::internal::generic_xpr_base<C>::type,
-            std::enable_if_t<!is_eigen_plain_object<C>::value, int> = 0>
+  // an Eigen::MatrixXd, or a decomposition (an xpr since Eigen 3.4).
+  template <
+      typename C,
+      typename IsGenericXpr =
+          typename Eigen::internal::generic_xpr_base<C>::type,
+      std::enable_if_t<!is_eigen_plain_object<C>::value &&
+                           !std::is_base_of<Eigen::SolverBase<C>, C>::value,
+                       int> = 0>
   static std::true_type test(int);
 
   template <typename C> static std::false_type test(...);
