@@ -427,8 +427,9 @@ TEST_P(VariogramScorePropertiesTest, Scaling) {
     // Variogram score should scale by c^(2*p)
     const double expected_scale = std::pow(scale, 2.0 * p);
 
-    // Use slightly relaxed tolerance for p=2 due to higher power
-    const double tolerance = (p == 2.0) ? 1e-8 : 1e-10;
+    // Scaled scores reach ~1e8, so the bound must be relative.
+    const double tolerance =
+        1e-12 * std::max(1.0, std::abs(expected_scale * vs_original));
 
     EXPECT_NEAR(vs_scaled, expected_scale * vs_original, tolerance)
         << "Variogram score (" << get_order_name()
@@ -735,6 +736,35 @@ TEST(test_stats, test_variogram_score_with_weights) {
     EXPECT_DOUBLE_EQ(vs_zero_weights, 0.0)
         << "Zero weights should give zero variogram score";
   }
+}
+
+// Expected values from a numpy sum over i < j of
+// w_ij (|y_i - y_j|^p - E|N(mu_i - mu_j, C_ii + C_jj - 2 C_ij)|^p)^2.
+TEST(test_stats, test_variogram_score_known_values) {
+  Eigen::MatrixXd covariance(4, 4);
+  covariance << 2.0, 0.3, -0.2, 0.1, 0.3, 1.5, 0.4, -0.3, -0.2, 0.4, 1.2, 0.25,
+      0.1, -0.3, 0.25, 0.9;
+  Eigen::VectorXd mean(4);
+  mean << 0.5, -1.0, 2.0, 0.25;
+  Eigen::VectorXd truth(4);
+  truth << 0.1, -0.7, 1.4, 1.1;
+  Eigen::MatrixXd weights(4, 4);
+  weights << 0.0, 1.0, 2.0, 3.0, 1.0, 0.0, 0.5, 4.0, 2.0, 0.5, 0.0, 1.5, 3.0,
+      4.0, 1.5, 0.0;
+  const JointDistribution prediction(mean, covariance);
+
+  EXPECT_NEAR(score::variogram_score(prediction, truth, nullptr,
+                                     score::VariogramScoreOrder::cVariogram),
+              105.52896875, 1e-10);
+  EXPECT_NEAR(score::variogram_score(prediction, truth, nullptr,
+                                     score::VariogramScoreOrder::cMadogram),
+              4.8905981946437045, 1e-10);
+  EXPECT_NEAR(score::variogram_score(prediction, truth, &weights,
+                                     score::VariogramScoreOrder::cVariogram),
+              123.688228125, 1e-10);
+  EXPECT_NEAR(score::variogram_score(prediction, truth, &weights,
+                                     score::VariogramScoreOrder::cMadogram),
+              6.337283419891701, 1e-10);
 }
 
 // Death tests for draw_mvn
