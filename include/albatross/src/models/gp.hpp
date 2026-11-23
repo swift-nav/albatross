@@ -84,6 +84,39 @@ inline Eigen::VectorXd gp_mean_prediction(const Eigen::MatrixXd &cross_cov,
   return cross_cov.transpose() * information;
 }
 
+/*
+ * The diagonal of cross_cov^T K^-1 cross_cov: the variance each prediction
+ * explains.
+ */
+template <typename CovarianceRepresentation>
+inline Eigen::VectorXd
+gp_explained_variance(const CovarianceRepresentation &train_covariance,
+                      const Eigen::MatrixXd &cross_cov) {
+  const Eigen::MatrixXd explained = train_covariance.solve(cross_cov);
+  return explained.cwiseProduct(cross_cov).array().colwise().sum();
+}
+
+// ||D^-1/2 L^-1 P k||^2: one triangular solve instead of two.
+inline Eigen::VectorXd
+gp_explained_variance(const Eigen::SerializableLDLT &train_covariance,
+                      const Eigen::MatrixXd &cross_cov) {
+  return train_covariance.sqrt_solve(cross_cov).colwise().squaredNorm();
+}
+
+// With K = [A B; B^T C] and S = C - B^T A^-1 B:
+//   k^T K^-1 k = ||A^-1/2 k_a||^2 + ||S^-1/2 (B^T A^-1 k_a - k_b)||^2
+template <typename Solver>
+inline Eigen::VectorXd
+gp_explained_variance(const BlockSymmetric<Solver> &train_covariance,
+                      const Eigen::MatrixXd &cross_cov) {
+  const Eigen::Index n_a = train_covariance.A.rows();
+  const auto cross_a = cross_cov.topRows(n_a);
+  Eigen::MatrixXd schur_rhs = train_covariance.Ai_B.transpose() * cross_a;
+  schur_rhs -= cross_cov.bottomRows(cross_cov.rows() - n_a);
+  return gp_explained_variance(train_covariance.A, Eigen::MatrixXd(cross_a)) +
+         gp_explained_variance(train_covariance.S, schur_rhs);
+}
+
 template <typename CovarianceRepresentation>
 inline MarginalDistribution
 gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
@@ -93,10 +126,8 @@ gp_marginal_prediction(const Eigen::MatrixXd &cross_cov,
   const Eigen::VectorXd pred = gp_mean_prediction(cross_cov, information);
   // Here we efficiently only compute the diagonal of the posterior
   // covariance matrix.
-  Eigen::MatrixXd explained = train_covariance.solve(cross_cov);
-  Eigen::VectorXd explained_variance =
-      explained.cwiseProduct(cross_cov).array().colwise().sum();
-  Eigen::VectorXd marginal_variance = prior_variance - explained_variance;
+  Eigen::VectorXd marginal_variance =
+      prior_variance - gp_explained_variance(train_covariance, cross_cov);
   return MarginalDistribution(pred, marginal_variance);
 }
 
