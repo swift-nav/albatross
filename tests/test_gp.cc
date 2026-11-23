@@ -12,6 +12,8 @@
 
 #include <gtest/gtest.h>
 
+#include <albatross/utils/RandomUtils>
+
 #include "albatross/test/test_models.h"
 
 namespace albatross {
@@ -533,6 +535,29 @@ TEST(test_gp, test_predict_with_complicated_feature) {
 
   EXPECT_NEAR(expected_mean, pred.mean[2], 1e-6);
   EXPECT_NEAR(expected_variance, pred.covariance(2, 2), 1e-6);
+}
+
+TEST(test_gp, test_explained_variance_matches_a_full_solve) {
+  std::default_random_engine gen(2012);
+  const Eigen::MatrixXd K = random_covariance_matrix(8, gen);
+  const Eigen::MatrixXd cross = Eigen::MatrixXd::Random(K.rows(), 4);
+  const Eigen::VectorXd expected =
+      cross.cwiseProduct(K.ldlt().solve(cross)).colwise().sum().transpose();
+
+  // The half solve of an LDLT.
+  const Eigen::SerializableLDLT ldlt(K);
+  EXPECT_TRUE(gp_explained_variance(ldlt, cross).isApprox(expected));
+
+  // The Schur complement form of a block symmetric representation.
+  const auto block = build_block_symmetric(
+      Eigen::SerializableLDLT(Eigen::MatrixXd(K.topLeftCorner(5, 5))),
+      Eigen::MatrixXd(K.topRightCorner(5, 3)),
+      Eigen::MatrixXd(K.bottomRightCorner(3, 3)));
+  EXPECT_TRUE(gp_explained_variance(block, cross).isApprox(expected));
+
+  // The generic full solve, for representations without a half solve.
+  const Eigen::LDLT<Eigen::MatrixXd> eigen_ldlt(K);
+  EXPECT_TRUE(gp_explained_variance(eigen_ldlt, cross).isApprox(expected));
 }
 
 } // namespace albatross
