@@ -91,6 +91,11 @@ inline bool ransac_success(const ransac_return_code_t &rc) {
 
 template <typename GroupKey> struct RansacIteration {
   std::vector<GroupKey> candidates;
+
+  // station_name => chi^2 scoring value (use to rank outliers)
+  // preserve scoring information until we're outside of individual groups
+  // Associate the chi^2 scoring value with all outliers until we are done with per
+  // constellation, per station
   std::map<GroupKey, double> inliers;
   std::map<GroupKey, double> outliers;
   double consensus_metric_value;
@@ -121,6 +126,8 @@ template <typename GroupKey> struct RansacOutput {
   using key_type = GroupKey;
 
   ransac_return_code_t return_code;
+
+  // Best candidate.. use classifications to choose inliers and outliers
   RansacIteration<GroupKey> best;
   std::vector<RansacIteration<GroupKey>> iterations;
 
