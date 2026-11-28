@@ -488,4 +488,31 @@ TEST(test_radial, test_matern_32_oracle) {
   }
 }
 
+TEST(test_radial, test_matern_peak) {
+  constexpr std::size_t test_iters = 1000;
+  std::mt19937 gen{22};
+  std::normal_distribution<> d{0., 10.};
+  for (std::size_t iter = 0; iter < test_iters; ++iter) {
+    const double x = d(gen);
+    const double length = 1e-6 + fabs(d(gen));
+    const double nu = 1e-6 + fabs(d(gen));
+    const Matern<EuclideanDistance> cov(length, 1., nu);
+    EXPECT_EQ(cov(x, x), 1.0);
+  }
+}
+
+TEST(test_radial, test_matern_off_peak) {
+  constexpr std::size_t test_iters = 10000000;
+  std::mt19937 gen{22};
+  std::normal_distribution<> d{0., 10.};
+  for (std::size_t iter = 0; iter < test_iters; ++iter) {
+    const double x = d(gen);
+    const double delta = 1e-6 + d(gen);
+    const double length = 1e-6 + fabs(d(gen));
+    const double nu = 1e-6 + fabs(d(gen));
+    const Matern<EuclideanDistance> cov(length, 1., nu);
+    EXPECT_LT(cov(x, x + delta), 1.0);
+  }
+}
+
 } // namespace albatross
