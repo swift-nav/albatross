@@ -490,7 +490,7 @@ inline double variogram_score(
     Eigen::VectorXd sigma =
         (prediction.get_diagonal(row) +
          prediction.covariance.diagonal().tail(rest).array() -
-         2. * prediction.covariance.row(row).tail(rest).array())
+         2. * prediction.covariance.row(row).tail(rest).transpose().array())
             .sqrt();
     Eigen::VectorXd expectation =
         mean_err.binaryExpr(sigma, [order](double mean, double std) {
@@ -499,8 +499,8 @@ inline double variogram_score(
     Eigen::VectorXd truth_err =
         (truth(row) - truth.tail(rest).array()).abs().pow(p);
     Eigen::VectorXd diff = truth_err - expectation;
-    sum += (weight_matrix.row(row).tail(rest).array() * diff.array() *
-            diff.array())
+    sum += (weight_matrix.row(row).tail(rest).transpose().array() *
+            diff.array() * diff.array())
                .sum();
   }
 
